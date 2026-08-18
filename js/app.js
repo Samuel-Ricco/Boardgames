@@ -24,13 +24,43 @@ const CAB = {
 CAB.front = CAB.d / 2;
 
 const BOX = { w: 3.4, h: 3.4, t: 0.84, lid: 0.55 };
-const PER_BAY = 3;                       // scatole per scaffale
-const SLOT_X = [-3.55, 0, 3.55];         // le tre posizioni sul ripiano
+/* Quante scatole per scaffale, e dove. Non e' fisso: dipende dal
+   formato dello schermo, come le colonne di una griglia CSS.
+   Uno scaffale da tre e' largo 10.5 e alto 4 -- rapporto 2.6 -- e su una
+   finestra verticale, per farlo entrare in larghezza, la camera deve
+   arretrare tanto da mostrare quattro mensole con le scatole grandi come
+   francobolli. Con meno scatole per ripiano lo scaffale si accorcia, la
+   camera resta vicina, e l'armadio semplicemente diventa piu' alto: cosa
+   di cui non gliene importa niente, visto che e' gia' infinito. */
+const SLOTS = {
+  1: [0],
+  2: [-1.85, 1.85],
+  3: [-3.55, 0, 3.55]
+};
+function perBayPer(aspect){
+  if (aspect >= 1.05) return 3;
+  if (aspect >= 0.72) return 2;
+  return 1;
+}
 const DOOR_MAX = 1.42;                   // ~81 gradi
 
-const bayFloor  = i => CAB.plinth + CAB.t + i * (CAB.bayH + CAB.t);
-const bayCenter = i => bayFloor(i) + CAB.bayH / 2;
+/* L'armadio e' ancorato in ALTO, non in basso.
+   Il cielo del primo vano sta a una quota fissa e i vani in piu'
+   crescono verso il basso, insieme allo zoccolo e al pavimento. Cosi'
+   aggiungere giochi non cambia di una virgola quello che si vede
+   nell'animazione di apertura: la facciata inquadrata all'inizio e'
+   sempre la stessa, tre mensole, e il resto continua fuori dal quadro.
+   Ancorandolo in basso invece il mobile si allungava verso l'alto e
+   l'intro doveva allontanarsi per farcelo stare. */
+const FACCIATA = 3;                        // vani mostrati nell'intro
+CAB.topY = CAB.plinth + FACCIATA * CAB.bayH + FACCIATA * CAB.t;
+
+// pagina 0 = vano in cima; cresce verso il basso
+const bayFloor  = p => CAB.topY - p * (CAB.bayH + CAB.t) - CAB.bayH;
+const bayCenter = p => bayFloor(p) + CAB.bayH / 2;
 const cabH      = b => b * CAB.bayH + (b + 1) * CAB.t;
+// quota del pavimento: scende insieme all'armadio
+const groundY   = b => CAB.topY + CAB.t - cabH(b) - CAB.plinth;
 
 /* --- stato ---------------------------------------------------- */
 const state = {
@@ -47,7 +77,8 @@ const state = {
   scroll: 0, scrollTo: 0,      // 0 = scaffale in cima
   dragging: false,
   distShelf: 22, distFar: 30, introY: 8,
-  side: true
+  side: true,                  // il pannello si apre di lato (schermo largo)
+  perBay: 3, slotX: SLOTS[3]   // riempiti da layout(), dipendono dal formato
 };
 
 const FOV = 38;
@@ -56,6 +87,7 @@ const camBase = new THREE.Vector3(0, 8, 26);
 
 let renderer, scene, camera, raycaster, pointer;
 let cabGroup, propGroup, doorL, doorR, bayLights = [], focusLight;
+let floorMesh, wallMesh;
 let boxes = [];
 let MATS = null;
 
@@ -154,23 +186,27 @@ function buildRoom(){
   scene.background = new THREE.Color(0x100d0b);
   scene.fog = new THREE.Fog(0x100d0b, 34, 96);
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(160,160), makeWoodMat({
+  // Il pavimento non sta a quota zero: sta sotto l'armadio, e l'armadio
+  // scende man mano che si allunga. Altrimenti, con molti scaffali, la
+  // camera scorrendo verso il basso finirebbe sotto il pavimento e se lo
+  // troverebbe davanti a tagliare la scena.
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(200,200), makeWoodMat({
     base:'#33200f', dark:'#170d06', light:'#4d301a',
-    lines: 200, knots: 2, repeat:[9,9], rough:.62, bump:.02
+    lines: 200, knots: 2, repeat:[11,11], rough:.62, bump:.02
   }));
-  floor.rotation.x = -Math.PI/2;
-  floor.receiveShadow = true;
-  scene.add(floor);
+  floorMesh.rotation.x = -Math.PI/2;
+  floorMesh.receiveShadow = true;
+  scene.add(floorMesh);
 
   // parete quasi a contatto con lo schienale: staccata, l'ombra
   // dell'armadio ci si stampa sopra come una lastra nera
-  const wall = new THREE.Mesh(
-    new THREE.PlaneGeometry(170, 120),
+  wallMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 400),
     new THREE.MeshStandardMaterial({ color: 0x35261c, roughness: .96, metalness: 0 })
   );
-  wall.position.set(0, 50, -2.35);
-  wall.receiveShadow = true;
-  scene.add(wall);
+  wallMesh.position.set(0, 0, -2.35);
+  wallMesh.receiveShadow = true;
+  scene.add(wallMesh);
 
   scene.add(new THREE.AmbientLight(0xffdcb4, .34));
 
@@ -209,10 +245,14 @@ function buildCabinet(){
   bayLights.length = 0;
 
   const bays = state.bays, H = cabH(bays), W = CAB.w, D = CAB.d, T = CAB.t;
-  const y0 = CAB.plinth;
+  const y0 = groundY(bays) + CAB.plinth;         // quota del fondo della cassa
   const g = new THREE.Group();
 
-  g.add(slab(W, CAB.plinth, D - .3, MATS.dim, 0, CAB.plinth/2, -.15));
+  // stanza e zoccolo seguono l'armadio verso il basso
+  floorMesh.position.y = groundY(bays);
+  wallMesh.position.y = y0 + H/2;
+
+  g.add(slab(W, CAB.plinth, D - .3, MATS.dim, 0, y0 - CAB.plinth/2, -.15));
   g.add(slab(W + .7, .42, D + .5, MATS.front, 0, y0 + H + .21, .1));
 
   g.add(slab(T, H, D, MATS.vert, -W/2 + T/2, y0 + H/2, 0));
@@ -221,14 +261,15 @@ function buildCabinet(){
   g.add(slab(W - T*2, T, D, MATS.front, 0, y0 + T/2, 0));
   g.add(slab(W - T*2, H - T*2, .16, MATS.dim, 0, y0 + H/2, -D/2 + .12));
 
-  for (let i = 1; i < bays; i++){
-    g.add(slab(W - T*2, T, D - .55, MATS.inner, 0, bayFloor(i) - T/2, -.2));
+  // i ripiani stanno sotto ogni vano tranne l'ultimo, che poggia sul fondo
+  for (let p = 0; p < bays - 1; p++){
+    g.add(slab(W - T*2, T, D - .55, MATS.inner, 0, bayFloor(p) - T/2, -.2));
   }
 
   // una luce per vano, alta e avanti: striscia sulle copertine
-  for (let i = 0; i < bays; i++){
+  for (let p = 0; p < bays; p++){
     const l = new THREE.PointLight(0xffcb92, 0, 9.5, 1.8);
-    l.position.set(0, bayFloor(i) + CAB.bayH * .74, 1.2);
+    l.position.set(0, bayFloor(p) + CAB.bayH * .74, 1.2);
     bayLights.push(l);
     g.add(l);
   }
@@ -360,15 +401,14 @@ function buildProps(used){
   killGroup(propGroup, true);
   const g = new THREE.Group();
 
-  for (let bay = 0; bay < state.bays; bay++){
-    const page = state.bays - 1 - bay;
-    const y = bayFloor(bay);
-    for (let slot = 0; slot < PER_BAY; slot++){
-      if (used.has(page * PER_BAY + slot)) continue;
-      const seed = bay * 17 + slot * 5 + 3;
+  for (let page = 0; page < state.bays; page++){
+    const y = bayFloor(page);
+    for (let slot = 0; slot < state.perBay; slot++){
+      if (used.has(page * state.perBay + slot)) continue;
+      const seed = page * 17 + slot * 5 + 3;
       const r = srnd(seed);
       if (r < .34) continue;                       // qualche posto resta vuoto
-      const x = SLOT_X[slot];
+      const x = state.slotX[slot];
 
       if (r < .58){                                // pila di scatole coricate
         const n = 2 + Math.floor(srnd(seed+1)*2);
@@ -429,9 +469,8 @@ function buildProps(used){
    =============================================================== */
 
 function homeOf(index, h){
-  const page = Math.floor(index / PER_BAY), slot = index % PER_BAY;
-  const bay = state.bays - 1 - page;                 // il primo gioco sta in cima
-  return new THREE.Vector3(SLOT_X[slot], bayFloor(bay) + h/2, .35);
+  const page = Math.floor(index / state.perBay), slot = index % state.perBay;
+  return new THREE.Vector3(state.slotX[slot], bayFloor(page) + h/2, .35);
 }
 
 /* Rifa' la scena a partire dalla libreria. Le scatole gia' presenti
@@ -440,7 +479,7 @@ function homeOf(index, h){
 function applyLibrary(opts){
   opts = opts || {};
   const list = LIB.list(state.sort);
-  const bays = Math.max(3, Math.ceil(list.length / PER_BAY) + 1);
+  const bays = Math.max(FACCIATA, Math.ceil(list.length / state.perBay) + 1);
 
   if (bays !== state.bays || !cabGroup){
     state.bays = bays;
@@ -517,6 +556,13 @@ function layout(){
   const aspect = w / h;
   state.side = w >= 880;
 
+  // le colonne dello scaffale cambiano col formato: se cambiano, la
+  // libreria va ridisposta prima di ricalcolare le distanze
+  const perBay = perBayPer(aspect);
+  const cambiato = perBay !== state.perBay;
+  state.perBay = perBay;
+  state.slotX = SLOTS[perBay];
+
   const half = THREE.MathUtils.degToRad(FOV) / 2, tan = Math.tan(half);
   const tall = aspect < .8;
 
@@ -524,17 +570,20 @@ function layout(){
   // le scatole, non il mobile: i fianchi possono uscire dal quadro,
   // se li si volesse tenere bisognerebbe stare cosi' lontani da vedere
   // mezzo armadio invece dello scaffale.
-  const bw = (SLOT_X[SLOT_X.length-1] + BOX.w/2) + .5;
+  const bw = (state.slotX[state.slotX.length-1] + BOX.w/2) + .5;
   const bh = (CAB.bayH + 1.1) / 2;
   state.distShelf = .6 + Math.max(bh / tan, bw / (tan * aspect));
 
-  // intro: il mobile intero, ma non piu' di quattro vani, se no da
-  // lontano le scatole diventano francobolli
-  const shown = Math.min(state.bays, 4);
-  const fitH = shown * (CAB.bayH + CAB.t) + 3.4;
+  // Intro: sempre la stessa facciata, tre mensole, comunque sia lunga
+  // la libreria. Non dipende da state.bays apposta -- se dipendesse,
+  // aggiungere giochi farebbe rimpicciolire l'armadio nell'animazione
+  // di apertura, e l'effetto "poi continua" si perderebbe.
+  const cima = CAB.topY + CAB.t + .42;                       // sopra la cornice
+  const fondo = CAB.topY - FACCIATA * CAB.bayH - (FACCIATA - 1) * CAB.t;
+  const fitH = (cima - fondo) + 2.2;
   const fitW = (CAB.w + (tall ? 1.4 : 5.0)) / 2;
   state.distFar = CAB.front + Math.max((fitH/2) / tan, fitW / (tan * aspect));
-  state.introY = CAB.plinth + cabH(state.bays) + .4 - fitH/2;
+  state.introY = (cima + fondo) / 2;
 
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
@@ -542,16 +591,29 @@ function layout(){
   renderer.setSize(w, h, false);
 
   if (state.phase === 'browse') camBase.z = state.distShelf;
+
+  if (cambiato && state.phase !== 'load') applyLibrary({ animate: true });
+  reposeFocused();          // una scatola aperta va rimessa a posto sul quadro nuovo
 }
 
 // Non il centro geometrico del vano: le scatole poggiano sul ripiano,
 // quindi la loro massa sta nella meta' bassa e l'inquadratura va
 // abbassata di conseguenza.
-const camYFor = s => bayCenter(state.bays - 1) - .75 - s * (CAB.bayH + CAB.t);
+const camYFor = s => bayCenter(s) - .75;
 
-/* Dove va la scatola quando esce: davanti alla camera dov'e' adesso,
-   espresso in frazioni di quadro. A sinistra se il pannello si apre
-   di lato, in alto se sale dal basso. */
+// Quanto davanti al mobile viene tenuta la scatola aperta. Deve stare
+// oltre il fronte e oltre lo sventagliamento delle ante, se no il
+// coperchio alzato entra nel ripiano.
+const FOCUS_Z = CAB.front + 4.2;
+
+/* Dove va la scatola quando esce, in frazioni di quadro: a sinistra se
+   il pannello si apre di lato, in alto se sale dal basso.
+
+   La scatola sta a una z fissa DAVANTI all'armadio ed e' la camera ad
+   arretrare quanto serve. Prima succedeva il contrario -- la scatola
+   veniva messa a `camera - distanza` -- e con la camera dentro il vano
+   quella distanza la spingeva dietro al fronte del mobile: la scatola
+   si apriva compenetrata nel ripiano. */
 function focusPose(box){
   const fw   = state.side ? .48 : .74;
   const fh   = state.side ? .60 : .28;
@@ -560,7 +622,6 @@ function focusPose(box){
   const scale = 1.1;
 
   const half = THREE.MathUtils.degToRad(FOV) / 2, tan = Math.tan(half);
-  const camPos = camBase.clone();
 
   // l'ingombro non e' la scatola chiusa: il coperchio si alza e viene avanti
   const fitW = BOX.w * scale * 1.24;
@@ -568,12 +629,13 @@ function focusPose(box){
   const d = Math.max(fitH / (2 * fh * tan), fitW / (2 * fw * tan * camera.aspect));
 
   const vh = 2 * d * tan, vw = vh * camera.aspect;
-  const pos = new THREE.Vector3(
-    camPos.x + offX * vw,
-    camPos.y + offY * vh,
-    camPos.z - d
-  );
-  return { pos: pos, rot: new THREE.Euler(-.05, .34, .02), scale: scale };
+  const y = camYFor(state.scrollTo);
+  return {
+    pos: new THREE.Vector3(offX * vw, y + offY * vh, FOCUS_Z),
+    cam: new THREE.Vector3(0, y, FOCUS_Z + d),
+    rot: new THREE.Euler(-.05, .34, .02),
+    scale: scale
+  };
 }
 
 /* ===============================================================
@@ -611,20 +673,38 @@ function focusOn(box){
   const p0 = box.position.clone();
   const r0 = { x: box.rotation.x, y: box.rotation.y, z: box.rotation.z };
   const target = focusPose(box);
+  const cam0 = camBase.clone();
+  u.pose = target;
 
   tween(.9, function(p){
     const e = easeInOut(p);
     box.position.lerpVectors(p0, target.pos, e);
-    box.position.z += Math.sin(Math.PI * p) * 1.4;   // prima esce, poi viene avanti
     box.rotation.set(
       lerp(r0.x, target.rot.x, e),
       lerp(r0.y, target.rot.y, e),
       lerp(r0.z, target.rot.z, e)
     );
     box.scale.setScalar(lerp(1, target.scale, e));
+    camBase.lerpVectors(cam0, target.cam, e);   // la camera arretra per far posto
     state.focusLight = e;
     state.bayLight = 1 - e * .5;
   }, openLid);
+}
+
+/* Se la finestra cambia mentre una scatola e' aperta, la posa non vale
+   piu': cambia il rapporto d'aspetto e, sotto gli 880 px, anche il lato
+   da cui si apre il pannello. Va rifatta, senza rigiocare l'animazione. */
+function reposeFocused(){
+  const box = state.focused;
+  if (!box || (state.phase !== 'focus' && state.phase !== 'review')) return;
+  const target = focusPose(box);
+  box.userData.pose = target;
+  const p0 = box.position.clone(), cam0 = camBase.clone();
+  tween(.35, function(p){
+    const e = easeInOut(p);
+    box.position.lerpVectors(p0, target.pos, e);
+    camBase.lerpVectors(cam0, target.cam, e);
+  });
 }
 
 function openLid(){
@@ -671,17 +751,19 @@ function unfocus(){
     const p0 = box.position.clone();
     const r0 = { x: box.rotation.x, y: box.rotation.y, z: box.rotation.z };
     const s0 = box.scale.x;
+    const cam0 = camBase.clone();
+    const camTo = new THREE.Vector3(0, camYFor(state.scrollTo), state.distShelf);
 
     tween(.8, function(p){
       const e = easeInOut(p);
       box.position.lerpVectors(p0, u.homePos, e);
-      box.position.z += Math.sin(Math.PI * p) * .9;
       box.rotation.set(
         lerp(r0.x, u.homeRot.x, e),
         lerp(r0.y, u.homeRot.y, e),
         lerp(r0.z, u.homeRot.z, e)
       );
       box.scale.setScalar(lerp(s0, 1, e));
+      camBase.lerpVectors(cam0, camTo, e);   // la camera rientra nello scaffale
       state.focusLight = 1 - e;
       state.bayLight = .5 + e * .5;
     }, function(){
@@ -704,11 +786,14 @@ function removeFocused(){
   anims.length = 0;
 
   const p0 = box.position.clone();
+  const cam0 = camBase.clone();
+  const camTo = new THREE.Vector3(0, camYFor(state.scrollTo), state.distShelf);
   tween(.5, function(p){
     const e = easeInOut(p);
     box.position.set(p0.x, p0.y - e * 2.2, p0.z + e * 1.2);
     box.rotation.z = e * .7;
     box.scale.setScalar(1.1 * (1 - e));
+    camBase.lerpVectors(cam0, camTo, e);
     state.focusLight = 1 - e;
   }, function(){
     killGroup(box, true);
@@ -1105,7 +1190,7 @@ function goToGame(id){
   const list = LIB.list(state.sort);
   const i = list.findIndex(function(g){ return g.id === id; });
   if (i < 0) return;
-  state.scrollTo = clamp(Math.floor(i / PER_BAY), 0, state.bays - 1);
+  state.scrollTo = clamp(Math.floor(i / state.perBay), 0, state.bays - 1);
 }
 
 /* ===============================================================
@@ -1270,13 +1355,15 @@ async function boot(){
   await wait(20); setProg(.28, 'monto la stanza');
   makeMats();
   buildRoom();
+  // prima le misure dello schermo: decidono quante scatole per scaffale,
+  // e quindi quanto viene alto l'armadio che sto per costruire
+  layout();
   setProg(.46, 'stampo le copertine');
   await loadCovers();
   await wait(20); setProg(.72, 'monto le mensole');
   applyLibrary({});
   await wait(20); setProg(.92, 'accendo la lampada');
 
-  layout();
   bindInput();
   bindTools();
   setSort(state.sort);

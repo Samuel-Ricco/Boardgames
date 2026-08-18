@@ -140,6 +140,7 @@ body.browse .hint{opacity:1; transform:translateX(-50%)}
 .hint em{color:var(--amber); font-style:normal}
 .hint small{display:block; margin-top:7px; font-size:10px; letter-spacing:.16em;
   color:rgba(246,236,221,.36)}
+.hint .narrow{display:none}
 
 /* --- pannello della recensione -------------------------------- */
 /* incernierato a sinistra: si apre come l'anta di un armadio */
@@ -231,9 +232,12 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   .pan-scroll{padding-top:36px}
   #close{top:0; right:0}
   .specs{grid-template-columns:repeat(2,1fr)}
-  /* il suggerimento su una riga sola: a capo tre volte era illeggibile */
+  /* il suggerimento su una riga sola: a capo tre volte era illeggibile,
+     e su schermo stretto il testo lungo non ci sta comunque */
   .hint{font-size:11px; letter-spacing:.1em; bottom:18px}
-  .hint small{display:none}
+  .hint small, .hint .wide{display:none}
+  .hint .narrow{display:inline}
+  #sort .lbl{display:none}
   .tool{padding:7px 9px; letter-spacing:.08em}
   #rail{left:8px}
   .rail-bar{height:22vh}

@@ -82,6 +82,31 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
 - Le conferme sono **in due tempi sul bottone**, non `window.confirm`: quello
   blocca il rendering, e una finestra di sistema in mezzo a una scena 3D stona.
 
+## L'armadio è ancorato in alto
+
+`CAB.topY` è una **costante**: il cielo del primo vano sta sempre alla stessa
+quota e i vani in più crescono **verso il basso**, portandosi dietro zoccolo,
+pavimento e parete (`groundY()`). Di conseguenza l'intro inquadra sempre la
+stessa facciata di tre mensole (`FACCIATA`), qualunque sia la lunghezza della
+libreria: `state.distFar` e `state.introY` non guardano `state.bays` **apposta**.
+
+Ancorandolo in basso — com'era all'inizio — aggiungere giochi allungava il mobile
+verso l'alto, l'intro doveva allontanarsi per farcelo stare, e l'armadio
+rimpiccioliva a ogni gioco aggiunto.
+
+## Il responsive è geometrico, non solo CSS
+
+`state.perBay` (1, 2 o 3) e `state.slotX` **dipendono dal rapporto d'aspetto**,
+come le colonne di una griglia. Uno scaffale da tre scatole è largo 10.5 e alto
+4: su schermo verticale, per farlo entrare in larghezza, la camera arretra fino a
+mostrare quattro mensole con le scatole grandi come francobolli. Con meno scatole
+per ripiano lo scaffale si accorcia, la camera resta vicina, e l'armadio diventa
+semplicemente più alto — cosa di cui non gli importa niente, visto che è già
+infinito.
+
+Se `perBay` cambia a `resize`, `layout()` richiama `applyLibrary()`: cambia il
+numero di vani e le scatole scivolano al posto nuovo.
+
 ## Inquadratura (la parte che è costata di più)
 
 Niente numeri fissi: la distanza della camera esce dall'ingombro dell'armadio e
@@ -94,6 +119,13 @@ in **frazioni di quadro**.
   resta un francobollo in mezzo al buio.
 - `focusPose()` prende il **vincolo più stretto fra altezza e larghezza**: con la
   sola altezza, su una finestra stretta la scatola usciva dal quadro a sinistra.
+- **La scatola aperta sta a una z fissa davanti al mobile** (`FOCUS_Z`) ed è la
+  **camera ad arretrare** di quanto serve. Prima era il contrario — la scatola
+  veniva messa a `camera − distanza` — e con la camera dentro il vano quella
+  distanza la spingeva *dietro* al fronte dell'armadio: si apriva compenetrata
+  nel ripiano. `FOCUS_Z` deve stare oltre lo sventagliamento delle ante.
+- A `resize` con una scatola aperta va richiamato `reposeFocused()`: cambia il
+  rapporto d'aspetto e, sotto gli 880 px, anche il lato da cui esce il pannello.
 - L'ingombro usato per il calcolo è **più grande della scatola chiusa** (×1.24 e
   ×1.34): il coperchio si alza e viene avanti, quindi occupa più spazio di quanto
   misuri.
