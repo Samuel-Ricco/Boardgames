@@ -1,0 +1,217 @@
+/* ============================================================
+   il dado e' trap
+   Palette: legno caldo, luce da lampada, ottone.
+   ============================================================ */
+:root{
+  --bg:#100d0b;          /* nero caldo: e' anche il colore del fog nella scena 3D */
+  --ink:#f6ecdd;         /* crema: il testo */
+  --ink-soft:rgba(246,236,221,.60);
+  --amber:#e8b25f;       /* ottone: accenti ed elementi interattivi */
+  --rust:#c2562f;        /* mattone: etichette */
+  --card:rgba(21,15,11,.975);
+  --line:rgba(232,178,95,.26);
+  --shadow:0 24px 60px rgba(0,0,0,.6);
+  --ff-display:'Bebas Neue','Haettenschweiler','Arial Narrow',sans-serif;
+  --ff-text:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--ff-text); font-size:16px; line-height:1.6;
+  overflow:hidden; overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+}
+canvas{display:block}
+
+/* --- scena --------------------------------------------------- */
+/* touch-action:none, altrimenti il browser legge il trascinamento
+   come scroll e annulla i pointer event a meta' gesto */
+#scene{position:fixed; inset:0; z-index:0; touch-action:none}
+#scene canvas{width:100%; height:100%}
+
+/* vignettatura: chiude gli angoli, la stanza sembra piu' profonda */
+#vig{position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse 78% 70% at 50% 46%, transparent 38%, rgba(0,0,0,.74) 100%)}
+
+/* --- interfaccia --------------------------------------------- */
+header{
+  position:fixed; z-index:3; top:0; left:0; right:0;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:18px clamp(16px,4vw,40px);
+  opacity:0; transform:translateY(-10px);
+  transition:opacity .9s ease .2s, transform .9s ease .2s;
+  pointer-events:none;
+}
+body.ready header{opacity:1; transform:none}
+.brand{display:flex; align-items:baseline; gap:12px; pointer-events:auto}
+.brand b{
+  font-family:var(--ff-display); font-weight:400;
+  font-size:clamp(24px,3.4vw,34px); letter-spacing:.06em; line-height:1;
+}
+.brand b i{color:var(--amber); font-style:normal}
+.brand span{
+  font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--ink-soft); display:none;
+}
+@media (min-width:760px){ .brand span{display:inline} }
+
+.hint{
+  position:fixed; z-index:3; left:50%; bottom:26px;
+  transform:translateX(-50%) translateY(8px);
+  margin:0; padding:0 16px; text-align:center;
+  font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft);
+  opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none;
+}
+body.browse .hint{opacity:1; transform:translateX(-50%)}
+.hint em{color:var(--amber); font-style:normal}
+
+/* --- pannello della recensione -------------------------------- */
+/* incernierato a sinistra: si apre come l'anta di un armadio */
+#panel{
+  position:fixed; z-index:4; top:50%; right:clamp(16px,3vw,48px);
+  width:min(430px,40vw); max-height:76vh; margin-top:-30vh;
+  transform-origin:left center;
+  transform:perspective(1500px) rotateY(-84deg);
+  opacity:0; visibility:hidden;
+  background:var(--card); border:1px solid var(--line);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  box-shadow:var(--shadow);
+  display:flex; flex-direction:column;
+  transition:transform .62s cubic-bezier(.22,.9,.26,1), opacity .3s ease, visibility 0s .62s;
+}
+body.review #panel{
+  transform:perspective(1500px) rotateY(0deg); opacity:1; visibility:visible;
+  transition:transform .62s cubic-bezier(.22,.9,.26,1), opacity .3s ease .05s, visibility 0s;
+}
+#panel::before{ /* il filo d'ottone lungo la cerniera */
+  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--amber); opacity:.85;
+}
+.pan-scroll{overflow:auto; padding:28px clamp(20px,2.4vw,30px); -webkit-overflow-scrolling:touch}
+.pan-scroll>*{opacity:0; transform:translateY(12px); transition:opacity .5s ease, transform .5s ease}
+body.review .pan-scroll>*{opacity:1; transform:none}
+body.review .pan-scroll>*:nth-child(1){transition-delay:.30s}
+body.review .pan-scroll>*:nth-child(2){transition-delay:.36s}
+body.review .pan-scroll>*:nth-child(3){transition-delay:.42s}
+body.review .pan-scroll>*:nth-child(4){transition-delay:.48s}
+body.review .pan-scroll>*:nth-child(5){transition-delay:.54s}
+body.review .pan-scroll>*:nth-child(6){transition-delay:.60s}
+body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
+
+.eyebrow{margin:0 0 6px; font-size:11px; letter-spacing:.3em; text-transform:uppercase;
+  color:var(--rust); font-weight:700}
+#p-title{margin:0; font-family:var(--ff-display); font-weight:400;
+  font-size:clamp(40px,4.6vw,56px); line-height:.9; letter-spacing:.02em}
+.byline{margin:10px 0 20px; font-size:13px; color:var(--ink-soft)}
+.byline b{color:var(--ink); font-weight:500}
+
+.specs{list-style:none; margin:0 0 20px; padding:0; gap:1px;
+  display:grid; grid-template-columns:repeat(4,1fr);
+  background:var(--line); border:1px solid var(--line)}
+.specs li{background:#1a130e; padding:10px 6px; text-align:center}
+.specs b{display:block; font-family:var(--ff-display); font-size:21px; letter-spacing:.04em;
+  color:var(--amber); line-height:1.2}
+.specs span{font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft)}
+
+.score{display:flex; align-items:baseline; gap:10px; margin:0 0 20px; padding-bottom:20px;
+  border-bottom:1px solid var(--line)}
+.score b{font-family:var(--ff-display); font-size:56px; line-height:.8; color:var(--ink)}
+.score i{font-style:normal; font-size:19px; color:var(--ink-soft)}
+.score small{margin-left:auto; text-align:right; line-height:1.5;
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft)}
+
+.body p{margin:0 0 14px; font-size:15px; color:rgba(246,236,221,.86)}
+.body p:first-child::first-letter{
+  font-family:var(--ff-display); font-size:48px; line-height:.76; float:left;
+  margin:8px 9px 0 0; color:var(--amber);
+}
+.tags{display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0}
+.tags span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);
+  border:1px solid var(--line); padding:5px 9px}
+.bgg{display:inline-block; margin-top:20px; font-size:12px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--amber); text-decoration:none;
+  border-bottom:1px solid var(--line); padding-bottom:3px}
+.bgg:hover{border-color:var(--amber)}
+
+#close{
+  position:absolute; z-index:2; top:-1px; right:-1px;
+  background:var(--amber); color:#20150c; border:0; cursor:pointer;
+  font-family:var(--ff-text); font-weight:700; font-size:11px;
+  letter-spacing:.18em; text-transform:uppercase; padding:9px 13px;
+}
+#close:hover{background:var(--ink)}
+
+@media (max-width:880px){
+  /* su schermo stretto il pannello diventa un cassetto che sale dal basso */
+  #panel{
+    top:auto; bottom:0; right:0; left:0; width:auto; margin:0; max-height:64vh;
+    transform-origin:bottom center; transform:perspective(1200px) rotateX(74deg);
+    border-left:0; border-right:0; border-bottom:0;
+  }
+  body.review #panel{transform:perspective(1200px) rotateX(0deg)}
+  #panel::before{left:0; right:0; bottom:auto; width:auto; height:2px}
+  .pan-scroll{padding-top:36px}
+  #close{top:0; right:0}
+  .specs{grid-template-columns:repeat(2,1fr)}
+  /* il suggerimento su una riga sola: a capo tre volte era illeggibile */
+  .hint{font-size:11px; letter-spacing:.1em; bottom:18px}
+}
+
+/* --- caricamento: il dado che gira ---------------------------- */
+#load{
+  position:fixed; inset:0; z-index:9; background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:34px;
+  transition:opacity .7s ease, visibility 0s .7s;
+}
+body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
+.stage{perspective:700px; width:110px; height:110px}
+.die{
+  position:relative; width:88px; height:88px; margin:11px auto;
+  transform-style:preserve-3d;
+  animation:tumble 3.6s cubic-bezier(.62,.02,.38,1) infinite;
+}
+@keyframes tumble{
+  0%   {transform:rotateX(-24deg) rotateY(18deg)}
+  25%  {transform:rotateX(66deg)  rotateY(108deg)}
+  50%  {transform:rotateX(156deg) rotateY(198deg)}
+  75%  {transform:rotateX(246deg) rotateY(288deg)}
+  100% {transform:rotateX(336deg) rotateY(378deg)}
+}
+.f{
+  position:absolute; inset:0; padding:11px; border-radius:12px;
+  display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr);
+  background:linear-gradient(150deg,#f6ecdd,#d6c1a1);
+  box-shadow:inset 0 0 0 1px rgba(80,50,25,.28);
+}
+.f i{align-self:center; justify-self:center; width:13px; height:13px; border-radius:50%;
+  background:#2a1a0f; box-shadow:inset 0 -1px 2px rgba(255,255,255,.3)}
+.f1{transform:translateZ(44px)}
+.f2{transform:rotateY(90deg) translateZ(44px)}
+.f3{transform:rotateY(180deg) translateZ(44px)}
+.f4{transform:rotateY(-90deg) translateZ(44px)}
+.f5{transform:rotateX(90deg) translateZ(44px)}
+.f6{transform:rotateX(-90deg) translateZ(44px)}
+.load-txt{text-align:center}
+.load-txt b{display:block; font-family:var(--ff-display); font-weight:400;
+  font-size:30px; letter-spacing:.08em; line-height:1}
+.load-txt b i{color:var(--amber); font-style:normal}
+.load-txt span{display:block; margin-top:10px; font-size:11px; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--ink-soft)}
+.bar{width:180px; height:2px; background:rgba(246,236,221,.14); overflow:hidden}
+.bar i{display:block; height:100%; width:0; background:var(--amber); transition:width .3s ease}
+
+/* --- fallback senza WebGL ------------------------------------- */
+#flat{display:none; position:fixed; inset:0; z-index:6; overflow:auto;
+  padding:92px clamp(18px,5vw,56px) 60px}
+body.no3d{overflow:auto}
+body.no3d #flat{display:block}
+body.no3d #scene,body.no3d #vig,body.no3d .hint,body.no3d #panel{display:none}
+#flat h1{font-family:var(--ff-display); font-weight:400; font-size:clamp(34px,7vw,64px);
+  letter-spacing:.04em; margin:0 0 6px}
+#flat .lead{color:var(--ink-soft); margin:0 0 44px; max-width:52ch}
+#flat article{border-top:1px solid var(--line); padding:28px 0; max-width:70ch}
+#flat h2{font-family:var(--ff-display); font-weight:400; font-size:36px;
+  letter-spacing:.03em; margin:0 0 4px}
+#flat .byline{margin:0 0 14px}
