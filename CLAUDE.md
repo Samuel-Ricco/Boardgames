@@ -7,13 +7,15 @@ la recensione. Niente build, niente dipendenze da installare.
 ```
 index.html            markup
 css/style.css         stile
-js/data.js            i giochi (i contenuti stanno tutti qui)
+js/data.js            i giochi committati: il seme della libreria
+js/store.js           libreria viva in localStorage, ordinamenti, export
+js/bgg.js             ricerca BGG (passa dal proxy locale)
 js/art.js             grafica generata su canvas
 js/app.js             scena 3D e interazione
 img/                  le copertine vere delle scatole
 fonts/                Bebas Neue e Inter in locale
 vendor/three.min.js   three.js r152, committato
-tools/bgg-fetch.mjs   scarico dati BGG, da lanciare a mano
+tools/bgg-*.mjs       scarico dati BGG e proxy per la ricerca admin
 ```
 
 **Niente risorse esterne, mai.** three.js, font e copertine sono nel repo: il
@@ -38,13 +40,47 @@ sito deve funzionare a rete staccata. Prima di aggiungere un `<link>` o un
   resterebbe fermo per sempre;
 - `innerWidth`/`innerHeight` possono valere **0** se il pannello non è disposto:
   `layout()` esce subito se sono minori di 2;
-- il riquadro dell'anteprima è **verticale** (circa 1072×1270), quindi non è un
-  buon giudice dell'inquadratura su un monitor normale.
+- il riquadro dell'anteprima è **verticale**, quindi non è un buon giudice
+  dell'inquadratura su un monitor normale;
+- con il pannello non visibile `document.visibilityState` è `hidden`, i frame non
+  arrivano e **le animazioni restano congelate a metà**: se una fase sembra
+  bloccata, guardare lì prima di cercare il bug. Per verificare senza frame si
+  può esporre temporaneamente il `frame()` e chiamarlo a mano con un orologio
+  finto — che però deve essere **monotono**, se no `dt` va negativo e le
+  animazioni tornano indietro.
 
 ## Le fasi
 
 `state.phase`: `load` → `intro` → `browse` → `focus` → `review` → `closing`.
 Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
+
+## Armadio a scaffali
+
+- I vani si contano dai giochi: `max(3, ceil(n/3) + 1)`. Quello di scorta serve a
+  far capire che l'armadio continua.
+- **Il primo gioco dell'ordinamento sta in cima**: `bay = bays-1-page`. Lo scroll
+  si misura in pagine dall'alto, non in vani dal basso.
+- `applyLibrary()` non ricrea le scatole che ci sono già: le fa scivolare al posto
+  nuovo, così riordinare si vede. Ricostruisce il mobile solo se cambia il numero
+  di vani.
+- Gli oggetti di contorno riempiono i posti vuoti e usano un rumore **ripetibile**
+  (`srnd`), se no a ogni riordino saltavano da un ripiano all'altro.
+- In navigazione la camera inquadra **le scatole, non i fianchi**: tenerli nel
+  quadro vorrebbe dire stare così lontani da vedere mezzo armadio. E guarda un
+  filo sotto il centro del vano, perché le scatole poggiano sul ripiano.
+- Lo scroll si aggancia allo scaffale più vicino 220 ms dopo che ci si è fermati.
+
+## Admin
+
+- Non è protetto e non deve fingere di esserlo: su un sito statico non c'è dove
+  tenere una password. Sta scritto nella schermata iniziale.
+- Le modifiche vivono in `localStorage`; per pubblicarle c'è `esporta js/data.js`.
+- **Mai salvare `img` nella libreria**: è l'immagine decodificata, in JSON diventa
+  `{}` e al ricaricamento sembra una copertina valida senza esserlo. Le proporzioni
+  della scatola finivano a NaN e le scatole sparivano dalla scena. `save()` lo
+  toglie, `loadCovers()` verifica `naturalWidth`.
+- Le conferme sono **in due tempi sul bottone**, non `window.confirm`: quello
+  blocca il rendering, e una finestra di sistema in mezzo a una scena 3D stona.
 
 ## Inquadratura (la parte che è costata di più)
 
@@ -107,12 +143,12 @@ in **frazioni di quadro**.
 ## Stato attuale
 
 - Le **recensioni sono lorem ipsum**, in `js/data.js`. Da riempire.
-- Ci sono due giochi, Root e Scythe, con le copertine vere. Il ripiano di mezzo
-  ne tiene due: per metterne di più serve allargare `CAB.w` o dedicare un altro
-  ripiano ai giochi.
-- **L'API di BGG non è agganciata**, ed è una scelta: dal 2025 richiede
-  registrazione, token `Authorization: Bearer` e sconsiglia esplicitamente le
-  chiamate dal browser. Lo script `tools/bgg-fetch.mjs` è pronto per quando ci
-  sarà un token approvato. Dettagli nel README.
+- Nel repo ci sono due giochi, Root e Scythe, con le copertine vere. Tre per
+  scaffale; l'armadio cresce da solo aggiungendone.
+- **L'API di BGG non si chiama dal browser**, ed è una scelta: dal 2025 richiede
+  registrazione, token `Authorization: Bearer` (senza, è `401` secco) e le
+  condizioni dicono di chiamarla da server. Passa tutto da `tools/bgg-proxy.mjs`,
+  che gira in locale e tiene lui il token. **Un token approvato ancora non c'è**:
+  finché non arriva, la ricerca risponde 401 e resta il modulo a mano.
 - Remote: `https://github.com/Samuel-Ricco/Boardgames.git`, branch `main`.
   L'auth passa dal Git Credential Manager, `gh` non è installato.

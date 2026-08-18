@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>il dado &egrave; trap &mdash; recensioni di giochi da tavolo</title>
-<meta name="description" content="Un armadio di giochi da tavolo in 3D: apri le ante, prendi una scatola, leggi la recensione.">
+<meta name="description" content="Un armadio di giochi da tavolo in 3D: apri le ante, scorri gli scaffali, prendi una scatola, leggi la recensione.">
 <meta name="theme-color" content="#100d0b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f6ecdd'/%3E%3Cg fill='%232a1a0f'%3E%3Ccircle cx='10' cy='10' r='3'/%3E%3Ccircle cx='22' cy='10' r='3'/%3E%3Ccircle cx='16' cy='16' r='3'/%3E%3Ccircle cx='10' cy='22' r='3'/%3E%3Ccircle cx='22' cy='22' r='3'/%3E%3C/g%3E%3C/svg%3E">
 
@@ -22,9 +22,30 @@
     <b>il dado <i>&egrave;</i> trap</b>
     <span>recensioni di giochi da tavolo</span>
   </div>
+
+  <div class="tools">
+    <button id="add" type="button" class="tool admin-only" title="aggiungi un gioco">+</button>
+    <div class="sortwrap">
+      <button id="sort" type="button" class="tool" aria-haspopup="true" aria-expanded="false">
+        ordina: <b id="sort-now">aggiunta</b>
+      </button>
+      <div id="sortmenu" role="menu">
+        <button type="button" data-sort="aggiunta" role="menuitem">ordine di aggiunta</button>
+        <button type="button" data-sort="nome" role="menuitem">nome</button>
+        <button type="button" data-sort="voto" role="menuitem">voto</button>
+      </div>
+    </div>
+    <button id="mode" type="button" class="tool chip" title="cambia modalit&agrave;">utente</button>
+  </div>
 </header>
 
-<p class="hint">clicca una scatola per <em>leggere la recensione</em></p>
+<!-- a che scaffale siamo -->
+<div id="rail" aria-hidden="true">
+  <span id="rail-txt">1 / 3</span>
+  <div class="rail-bar"><i id="rail-thumb"></i></div>
+</div>
+
+<p class="hint">clicca una scatola per <em>leggere la recensione</em><br><small>rotella o trascina per scorrere gli scaffali</small></p>
 
 <!-- pannello della recensione: si apre come un'anta, incernierato sul lato -->
 <aside id="panel" role="dialog" aria-modal="false" aria-labelledby="p-title" aria-hidden="true">
@@ -37,9 +58,35 @@
     <div class="score"><b id="p-score"></b><i>/10</i><small>il voto della<br>ludoteca</small></div>
     <div class="body" id="p-body"></div>
     <div class="tags" id="p-tags"></div>
-    <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
+    <p class="pan-foot">
+      <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
+      <button id="del" type="button" class="admin-only" title="togli questo gioco dall'armadio">
+        <span aria-hidden="true">&#9003;</span> togli dall'armadio
+      </button>
+    </p>
   </div>
 </aside>
+
+<!-- schermata iniziale: chi sei -->
+<div id="gate">
+  <div class="gate-in">
+    <b class="gate-logo">il dado <i>&egrave;</i> trap</b>
+    <p class="gate-q">Chi apre l&rsquo;armadio?</p>
+    <div class="gate-pick">
+      <button type="button" data-mode="utente">
+        <b>Utente</b>
+        <span>Sfogli gli scaffali e leggi le recensioni.</span>
+      </button>
+      <button type="button" data-mode="admin">
+        <b>Admin</b>
+        <span>Puoi aggiungere giochi all&rsquo;armadio e toglierli.</span>
+      </button>
+    </div>
+    <p class="gate-note">La modalit&agrave; admin non &egrave; protetta da password: su un sito
+      statico non ci sarebbe modo di farlo davvero. Le modifiche restano su questo
+      browser finch&eacute; non le esporti.</p>
+  </div>
+</div>
 
 <!-- caricamento: un dado che rotola finche' la scena non e' pronta -->
 <div id="load">
@@ -60,6 +107,43 @@
   <div class="bar"><i id="bar"></i></div>
 </div>
 
+<!-- admin: cerca e aggiungi -->
+<div id="addlayer" aria-hidden="true">
+  <div class="add-card" role="dialog" aria-labelledby="add-h">
+    <button id="add-x" type="button">chiudi &times;</button>
+    <p class="eyebrow">nuovo gioco</p>
+    <h2 id="add-h">Aggiungi all&rsquo;armadio</h2>
+
+    <div class="add-search">
+      <input id="add-q" type="text" placeholder="cerca su BoardGameGeek&hellip;" autocomplete="off" spellcheck="false">
+      <button id="add-go" type="button">cerca</button>
+    </div>
+    <p id="add-msg" class="add-msg"></p>
+    <ul id="add-res"></ul>
+
+    <details id="add-man">
+      <summary>oppure scrivilo a mano</summary>
+      <div class="add-form">
+        <label>titolo <input id="m-title" type="text" autocomplete="off"></label>
+        <label>id BGG <input id="m-bgg" type="text" inputmode="numeric" autocomplete="off"></label>
+        <label>autore <input id="m-designer" type="text" autocomplete="off"></label>
+        <label>editore <input id="m-publisher" type="text" autocomplete="off"></label>
+        <label>anno <input id="m-year" type="text" inputmode="numeric" autocomplete="off"></label>
+        <label>giocatori <input id="m-players" type="text" placeholder="2-4" autocomplete="off"></label>
+        <label>durata <input id="m-time" type="text" placeholder="60-90" autocomplete="off"></label>
+        <label>voto <input id="m-score" type="text" placeholder="8.0" autocomplete="off"></label>
+        <button id="m-go" type="button">metti sullo scaffale</button>
+      </div>
+    </details>
+
+    <p class="add-foot">
+      Le modifiche restano su questo browser.
+      <button id="exp" type="button">esporta js/data.js</button>
+      <button id="rst" type="button">ripristina</button>
+    </p>
+  </div>
+</div>
+
 <!-- senza WebGL il sito resta leggibile: stesse recensioni, in piano -->
 <div id="flat">
   <h1>il dado &egrave; trap</h1>
@@ -69,6 +153,8 @@
 
 <script src="vendor/three.min.js"></script>
 <script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/bgg.js"></script>
 <script src="js/art.js"></script>
 <script src="js/app.js"></script>
 </body>

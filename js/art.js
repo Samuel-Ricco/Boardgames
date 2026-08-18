@@ -400,6 +400,71 @@ function coverGeneric(seed){
   return c;
 }
 
+/* Copertina di ripiego per i giochi aggiunti dall'admin: quando la
+   vera immagine non c'e' (proxy spento, o gioco scritto a mano) la
+   scatola deve comunque sembrare una scatola, con il suo titolo.
+   Proporzioni da scatola vera, non quadrata. */
+function coverTitolo(game){
+  const W = 720, H = 520, [c,x] = cnv(W,H);
+  const base = game.wrap || '#4a4632';
+
+  x.fillStyle = base; x.fillRect(0,0,W,H);
+  const g = x.createLinearGradient(0,0,W*.4,H);
+  g.addColorStop(0,'rgba(255,255,255,.20)'); g.addColorStop(1,'rgba(0,0,0,.35)');
+  x.fillStyle = g; x.fillRect(0,0,W,H);
+
+  // raggiera dietro all'emblema
+  x.save(); x.translate(W/2, H*.42);
+  x.globalAlpha = .10; x.fillStyle = game.ink || '#f1e2bd';
+  for (let i=0;i<12;i++){
+    x.rotate(6.283/12);
+    x.beginPath(); x.moveTo(0,0); x.lineTo(W, -34); x.lineTo(W, 34); x.closePath(); x.fill();
+  }
+  x.restore(); x.globalAlpha = 1;
+
+  // un dado in prospettiva: e' pur sempre il dado e' trap
+  x.save(); x.translate(W/2, H*.40); x.rotate(-.16);
+  const s = 78;
+  x.fillStyle = 'rgba(0,0,0,.28)';
+  x.fillRect(-s+10, -s+14, s*2, s*2);
+  x.fillStyle = game.ink || '#f1e2bd';
+  x.fillRect(-s, -s, s*2, s*2);
+  x.fillStyle = base;
+  const pips = [[-1,-1],[1,-1],[0,0],[-1,1],[1,1]];
+  for (let i=0;i<pips.length;i++){
+    x.beginPath(); x.arc(pips[i][0]*s*.48, pips[i][1]*s*.48, s*.15, 0, 6.283); x.fill();
+  }
+  x.restore();
+
+  // titolo, rimpicciolito finche' non ci sta
+  const ink = game.ink || '#f1e2bd';
+  const title = String(game.title || '').toUpperCase();
+  let size = 92;
+  x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+  do {
+    x.font = size + "px 'Bebas Neue', Impact, sans-serif";
+    size -= 4;
+  } while (size > 26 && x.measureText(title).width + title.length*7 > W - 90);
+
+  x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(46, H-152, W-92, 4);
+  x.fillStyle = ink;
+  x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 12; x.shadowOffsetY = 3;
+  spaced(x, title, W/2, H-64, 7, 'center');
+  x.shadowBlur = 0; x.shadowOffsetY = 0;
+
+  if (game.designer){
+    x.fillStyle = 'rgba(255,255,255,.55)';
+    x.font = "20px 'Inter', sans-serif";
+    spaced(x, String(game.designer).toUpperCase(), W/2, H-30, 3, 'center');
+  }
+
+  vignette(x, W, H, .34);
+  grain(x, W, H, 12);
+  x.strokeStyle = 'rgba(255,255,255,.16)'; x.lineWidth = 3;
+  x.strokeRect(10,10,W-20,H-20);
+  return c;
+}
+
 /* ---------------------------------------------------------------
    FIANCHI, DORSO E INTERNO DELLA SCATOLA
    --------------------------------------------------------------- */
@@ -536,6 +601,7 @@ function dieMaterials(body, pip){
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
+  coverTitolo: coverTitolo,
   spine: spine, cardboard: cardboard, inside: inside,
   dieFace: dieFace, dieMaterials: dieMaterials
 };

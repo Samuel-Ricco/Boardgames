@@ -46,7 +46,9 @@ canvas{display:block}
 
 /* vignettatura: chiude gli angoli, la stanza sembra piu' profonda */
 #vig{position:fixed; inset:0; z-index:1; pointer-events:none;
-  background:radial-gradient(ellipse 78% 70% at 50% 46%, transparent 38%, rgba(0,0,0,.74) 100%)}
+  background:
+    linear-gradient(to top, rgba(16,13,11,.85), rgba(16,13,11,0) 22%),
+    radial-gradient(ellipse 82% 74% at 50% 46%, transparent 40%, rgba(0,0,0,.7) 100%)}
 
 /* --- interfaccia --------------------------------------------- */
 header{
@@ -56,6 +58,12 @@ header{
   opacity:0; transform:translateY(-10px);
   transition:opacity .9s ease .2s, transform .9s ease .2s;
   pointer-events:none;
+}
+/* velo scuro dietro alla testata: con la camera dentro l'armadio il
+   legno chiaro le arriva sotto e il testo si perdeva */
+header::before{
+  content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(to bottom, rgba(16,13,11,.92), rgba(16,13,11,0));
 }
 body.ready header{opacity:1; transform:none}
 .brand{display:flex; align-items:baseline; gap:12px; pointer-events:auto}
@@ -70,6 +78,57 @@ body.ready header{opacity:1; transform:none}
 }
 @media (min-width:760px){ .brand span{display:inline} }
 
+/* --- barra degli strumenti in alto a destra -------------------- */
+.tools{display:flex; align-items:center; gap:8px; pointer-events:auto}
+.tool{
+  font-family:var(--ff-text); font-size:11px; font-weight:500;
+  letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-soft); background:rgba(21,15,11,.82); cursor:pointer;
+  border:1px solid var(--line); padding:8px 11px;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+}
+.tool:hover{color:var(--ink); border-color:var(--amber)}
+.tool b{color:var(--amber); font-weight:500}
+#add{font-size:18px; line-height:1; padding:6px 12px 8px; color:var(--amber)}
+#mode.chip{color:var(--ink)}
+body.admin #mode.chip{background:var(--rust); color:#fff; border-color:var(--rust)}
+
+.sortwrap{position:relative}
+#sortmenu{
+  position:absolute; top:calc(100% + 6px); right:0; min-width:190px;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  display:none; flex-direction:column; z-index:5;
+}
+#sortmenu.on{display:flex}
+#sortmenu button{
+  font-family:var(--ff-text); font-size:12px; text-align:left; cursor:pointer;
+  background:none; border:0; border-bottom:1px solid rgba(232,178,95,.12);
+  color:var(--ink-soft); padding:11px 14px;
+}
+#sortmenu button:last-child{border-bottom:0}
+#sortmenu button:hover{background:rgba(232,178,95,.10); color:var(--ink)}
+#sortmenu button.on{color:var(--amber)}
+#sortmenu button.on::after{content:' \2022'}
+
+/* elementi che esistono solo per l'admin */
+.admin-only{display:none !important}
+body.admin .admin-only{display:inline-flex !important}
+
+/* --- a che scaffale siamo -------------------------------------- */
+#rail{
+  position:fixed; z-index:3; left:clamp(12px,2.4vw,28px); top:50%;
+  transform:translateY(-50%); display:flex; align-items:center; gap:10px;
+  opacity:0; transition:opacity .5s ease; pointer-events:none;
+}
+body.browse #rail{opacity:1}
+#rail-txt{
+  font-family:var(--ff-display); font-size:15px; letter-spacing:.12em;
+  color:var(--ink-soft); writing-mode:vertical-rl;
+}
+.rail-bar{width:2px; height:min(210px,32vh); background:rgba(246,236,221,.14); position:relative}
+.rail-bar i{position:absolute; left:0; width:2px; background:var(--amber);
+  transition:transform .25s ease, height .25s ease}
+
 .hint{
   position:fixed; z-index:3; left:50%; bottom:26px;
   transform:translateX(-50%) translateY(8px);
@@ -79,6 +138,8 @@ body.ready header{opacity:1; transform:none}
 }
 body.browse .hint{opacity:1; transform:translateX(-50%)}
 .hint em{color:var(--amber); font-style:normal}
+.hint small{display:block; margin-top:7px; font-size:10px; letter-spacing:.16em;
+  color:rgba(246,236,221,.36)}
 
 /* --- pannello della recensione -------------------------------- */
 /* incernierato a sinistra: si apre come l'anta di un armadio */
@@ -172,7 +233,147 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   .specs{grid-template-columns:repeat(2,1fr)}
   /* il suggerimento su una riga sola: a capo tre volte era illeggibile */
   .hint{font-size:11px; letter-spacing:.1em; bottom:18px}
+  .hint small{display:none}
+  .tool{padding:7px 9px; letter-spacing:.08em}
+  #rail{left:8px}
+  .rail-bar{height:22vh}
+  #rail-txt{font-size:13px}
+  .add-form{grid-template-columns:1fr}
 }
+
+.pan-foot{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:20px 0 0}
+#del{
+  font-family:var(--ff-text); font-size:11px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
+  color:var(--rust); background:none; border:1px solid rgba(194,86,47,.5);
+  padding:7px 11px; align-items:center; gap:6px;
+}
+#del:hover{background:var(--rust); color:#fff; border-color:var(--rust)}
+/* armato: il secondo clic esegue davvero */
+#del.armed, .add-foot button.armed{background:var(--rust); color:#fff; border-color:var(--rust)}
+#del.armed{animation:pulse 1s steps(2) infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:.62}100%{opacity:1}}
+
+/* --- schermata iniziale: chi sei ------------------------------- */
+#gate{
+  position:fixed; inset:0; z-index:11; background:var(--bg);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+  transition:opacity .5s ease, visibility 0s .5s;
+}
+#gate.gone{opacity:0; visibility:hidden; pointer-events:none}
+.gate-in{max-width:560px; text-align:center}
+.gate-logo{
+  display:block; font-family:var(--ff-display); font-weight:400;
+  font-size:clamp(34px,6vw,52px); letter-spacing:.07em; line-height:1;
+}
+.gate-logo i{color:var(--amber); font-style:normal}
+.gate-q{margin:14px 0 30px; font-size:12px; letter-spacing:.26em;
+  text-transform:uppercase; color:var(--ink-soft)}
+.gate-pick{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media (max-width:560px){ .gate-pick{grid-template-columns:1fr} }
+.gate-pick button{
+  font-family:var(--ff-text); text-align:left; cursor:pointer;
+  background:rgba(246,236,221,.03); border:1px solid var(--line);
+  padding:20px 18px; color:var(--ink-soft);
+  transition:border-color .2s ease, background .2s ease, transform .2s ease;
+}
+.gate-pick button:hover{border-color:var(--amber); background:rgba(232,178,95,.08); transform:translateY(-2px)}
+.gate-pick button b{
+  display:block; font-family:var(--ff-display); font-weight:400;
+  font-size:30px; letter-spacing:.05em; color:var(--ink); margin-bottom:6px;
+}
+.gate-pick button.last b::after{
+  content:'ultima volta'; float:right; font-family:var(--ff-text); font-size:9px;
+  letter-spacing:.18em; color:var(--amber); margin-top:9px;
+}
+.gate-pick button span{font-size:13px; line-height:1.5}
+.gate-note{margin:28px 0 0; font-size:11px; line-height:1.7;
+  color:rgba(246,236,221,.34)}
+
+/* --- admin: cerca e aggiungi ----------------------------------- */
+#addlayer{
+  position:fixed; inset:0; z-index:8; background:rgba(8,6,4,.72);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; visibility:hidden; transition:opacity .3s ease, visibility 0s .3s;
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+}
+#addlayer.on{opacity:1; visibility:visible; transition:opacity .3s ease, visibility 0s}
+.add-card{
+  position:relative; width:min(560px,100%); max-height:86vh; overflow:auto;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  padding:28px clamp(20px,3vw,32px) 24px;
+}
+#add-x{
+  position:absolute; top:-1px; right:-1px; background:var(--amber); color:#20150c;
+  border:0; cursor:pointer; font-family:var(--ff-text); font-weight:700;
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase; padding:9px 13px;
+}
+.add-card h2{margin:0 0 18px; font-family:var(--ff-display); font-weight:400;
+  font-size:40px; line-height:.95; letter-spacing:.02em}
+.add-search{display:flex; gap:8px}
+.add-search input{
+  flex:1; min-width:0; font-family:var(--ff-text); font-size:15px; color:var(--ink);
+  background:rgba(246,236,221,.05); border:1px solid var(--line); padding:11px 13px;
+}
+.add-search input:focus{outline:none; border-color:var(--amber)}
+.add-search button, .add-form button{
+  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; cursor:pointer; background:var(--amber); color:#20150c;
+  border:0; padding:11px 16px;
+}
+.add-search button:hover, .add-form button:hover{background:var(--ink)}
+.add-msg{margin:12px 0 0; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
+.add-msg:empty{margin:0}
+.add-msg.warn{color:#e9a86a}
+.add-msg code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px;
+  background:rgba(246,236,221,.08); padding:2px 5px; color:var(--ink)}
+
+#add-res{list-style:none; margin:14px 0 0; padding:0; max-height:38vh; overflow:auto}
+#add-res li{border-bottom:1px solid rgba(232,178,95,.14)}
+#add-res button{
+  width:100%; display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  font-family:var(--ff-text); text-align:left; cursor:pointer;
+  background:none; border:0; color:var(--ink-soft); padding:11px 4px;
+}
+#add-res button:hover{background:rgba(232,178,95,.08); color:var(--ink)}
+#add-res button b{font-weight:500; font-size:15px; color:var(--ink)}
+#add-res button span{font-size:12px; flex:none}
+#add-res button:disabled{opacity:.6; cursor:default}
+
+#add-man{margin:18px 0 0; border-top:1px solid var(--line); padding-top:14px}
+#add-man summary{cursor:pointer; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-soft)}
+#add-man summary:hover{color:var(--amber)}
+.add-form{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
+/* min-width:0, se no le celle della griglia prendono la larghezza
+   naturale dell'input e la scheda esce di lato */
+.add-form label{display:flex; flex-direction:column; gap:5px; min-width:0; font-size:10px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft)}
+.add-form input{
+  min-width:0; width:100%;
+  font-family:var(--ff-text); font-size:14px; color:var(--ink);
+  background:rgba(246,236,221,.05); border:1px solid var(--line); padding:8px 10px;
+}
+.add-form input:focus{outline:none; border-color:var(--amber)}
+.add-form button{grid-column:1/-1; margin-top:6px}
+.add-foot{margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line);
+  font-size:11px; color:rgba(246,236,221,.4); display:flex; flex-wrap:wrap;
+  align-items:center; gap:10px}
+.add-foot button{
+  font-family:var(--ff-text); font-size:11px; letter-spacing:.1em; cursor:pointer;
+  background:none; border:1px solid var(--line); color:var(--ink-soft); padding:6px 10px;
+}
+.add-foot button:hover{border-color:var(--amber); color:var(--amber)}
+
+/* --- messaggino di conferma ------------------------------------ */
+#flash{
+  position:fixed; z-index:10; left:50%; bottom:26px; transform:translate(-50%,14px);
+  background:var(--card); border:1px solid var(--line); border-left:2px solid var(--amber);
+  padding:11px 16px; font-size:13px; color:var(--ink);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .3s ease, transform .3s ease, visibility 0s .3s;
+}
+#flash.on{opacity:1; visibility:visible; transform:translate(-50%,0); transition:opacity .3s ease, transform .3s ease, visibility 0s}
 
 /* --- caricamento: il dado che gira ---------------------------- */
 #load{

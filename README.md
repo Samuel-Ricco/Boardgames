@@ -10,13 +10,17 @@ server statico qualsiasi.
 ```
 index.html            markup e struttura
 css/style.css         stile dell'interfaccia
-js/data.js            i giochi e le recensioni  <- si tocca solo questo per aggiungerne
-js/art.js             legno, cartone, dadi: disegnati su canvas a runtime
+js/data.js            i giochi committati: il seme della libreria
+js/store.js           la libreria viva (localStorage) e l'ordinamento
+js/bgg.js             ricerca su BGG, attraverso il proxy locale
+js/art.js             legno, cartone, dadi, copertine di ripiego
 js/app.js             scena 3D, animazioni, interazione
 img/                  le copertine delle scatole
 fonts/                Bebas Neue e Inter, sottoinsieme latino
 vendor/three.min.js   three.js r152, committato nel repo
-tools/bgg-fetch.mjs   script per scaricare i dati da BoardGameGeek
+tools/bgg-lib.mjs     il poco che serve per parlare con la XML API
+tools/bgg-fetch.mjs   scarico una tantum, da riga di comando
+tools/bgg-proxy.mjs   proxy locale per la ricerca in modalita' admin
 ```
 
 **Non c'è una sola risorsa esterna.** three.js, i font e le copertine stanno nel
@@ -52,27 +56,55 @@ il sito va avanti lo stesso.
 
 | fase | cosa succede |
 |---|---|
-| `load` | gira il dado del caricamento, la scena si costruisce a pezzi |
-| `intro` | la camera si avvicina, le ante ruotano sui cardini, le luci dei vani salgono |
-| `browse` | si passa sopra le scatole, quella sotto il cursore si sporge |
+| `load` | si sceglie la modalità, gira il dado, la scena si costruisce a pezzi |
+| `intro` | le ante ruotano sui cardini e la camera entra fino a inquadrare uno scaffale |
+| `browse` | si scorre fra gli scaffali; la scatola sotto il cursore si sporge |
 | `focus` | la scatola esce dall'armadio e viene in primo piano |
 | `review` | il coperchio si alza e il pannello si apre come un'anta |
 
 Il ciclo di rendering non si ferma mai: le fasi cambiano cosa viene animato,
 non se animare.
 
-**L'inquadratura si calcola, non è fissa.** La distanza della camera esce
-dall'ingombro dell'armadio e dal formato dello schermo, e la posizione della
-scatola in primo piano è espressa in frazioni di quadro: a sinistra quando il
-pannello si apre di lato, in alto quando sale dal basso. Le frazioni ricalcano
-il breakpoint del CSS (880 px), quindi 3D e interfaccia si muovono insieme.
+**L'armadio non ha un'altezza fissa.** I vani si contano dai giochi in libreria
+(tre per scaffale, più uno di scorta) e la camera scorre da uno all'altro con
+rotella, trascinamento o frecce, agganciandosi allo scaffale più vicino quando ci
+si ferma. Aggiungere giochi lo fa crescere verso il basso; il primo gioco
+dell'ordinamento sta sempre in cima.
+
+**L'inquadratura si calcola, non è fissa.** In navigazione la camera sta dentro
+il mobile e inquadra le scatole, non i fianchi: tenerli nel quadro vorrebbe dire
+stare così lontani da vedere mezzo armadio invece dello scaffale. La posizione
+della scatola in primo piano è espressa in frazioni di quadro — a sinistra quando
+il pannello si apre di lato, in alto quando sale dal basso — e le frazioni
+ricalcano il breakpoint del CSS (880 px), così 3D e interfaccia si muovono
+insieme.
 
 **Senza WebGL** il sito resta leggibile: `#flat` mostra le stesse recensioni in
 piano, e la costruzione della scena è dentro un `try`.
 
+## Le due modalità
+
+All'apertura il sito chiede chi sei. **Utente** sfoglia e legge. **Admin** può
+aggiungere giochi con il `+` in alto a destra e toglierli dal pulsante che compare
+nella recensione (due tocchi, il primo arma e il secondo esegue). In alto a destra,
+per entrambe le modalità, c'è l'ordinamento: aggiunta, nome, voto.
+
+**La modalità admin non è protetta, ed è una scelta dichiarata**: su un sito
+statico non esiste un posto sicuro dove tenere una password, e fingere un login
+sarebbe peggio che non averlo. Chiunque può scegliere Admin, ma quello che fa
+resta **solo nel suo browser**: la libreria vive in `localStorage`, il sito
+pubblico continua a mostrare quella committata in `js/data.js`.
+
+Per pubblicare davvero una modifica: `esporta js/data.js` nella scheda di
+aggiunta scarica il file aggiornato, che va messo al posto di `js/data.js` e
+committato. `ripristina` butta via le modifiche locali e torna a quella del repo.
+
 ## Aggiungere un gioco
 
-Basta una voce in `GAMES` dentro `js/data.js`. I campi che contano:
+Da admin, col `+`. La ricerca su BoardGameGeek passa dal proxy locale (vedi sotto);
+senza proxy resta il modulo a mano, che chiede solo il titolo.
+
+A mano nel codice, basta una voce in `GAMES` dentro `js/data.js`. I campi che contano:
 
 - `cover`: percorso dell'immagine della scatola in `img/`. Va bene un'immagine
   qualsiasi purché sia la copertina intera, senza bordi: le proporzioni della
@@ -105,15 +137,32 @@ risposta può richiedere una settimana o più. Le condizioni dicono anche che:
 - se il sito ha pubblicità o vende qualcosa serve una licenza commerciale, se no
   ne basta una non commerciale, di norma gratuita.
 
-Per questo lo scarico è uno script da lanciare a mano, che stampa la scheda già
-formattata da incollare in `js/data.js`:
+Per questo le chiamate non partono mai dalla pagina pubblica. Ci sono due strade,
+tutte e due locali e tutte e due con il token solo in `BGG_TOKEN`.
+
+**Una tantum, da riga di comando.** Stampa la scheda già formattata da incollare
+in `js/data.js`:
 
 ```bash
 node tools/bgg-fetch.mjs 237182 169786
 ```
 
-con `BGG_TOKEN` nell'ambiente. Finché non c'è un token approvato, i dati si
-scrivono a mano: sono quattro numeri per gioco.
+**La ricerca in modalità admin**, che ha bisogno di un interlocutore vivo:
+
+```bash
+node tools/bgg-proxy.mjs
+```
+
+Sta in ascolto su `:8125` e fa le tre cose che il browser non può fare da solo:
+mette l'header `Authorization`, rimette gli header CORS sulle risposte, e
+rilancia l'immagine di copertina — che su `cf.geekdo-images.com` arriva **senza
+CORS**, quindi come texture WebGL da un altro dominio sarebbe inutilizzabile.
+La copertina scaricata viene ridisegnata su canvas a larghezza contenuta e
+tenuta nella libreria come data URL, così resta anche a proxy spento.
+
+Senza token il proxy parte lo stesso e lo dice; la ricerca risponde `401` e
+l'interfaccia lo spiega invece di limitarsi a fallire. Finché il token non c'è,
+i giochi si scrivono a mano: sono quattro numeri per gioco.
 
 ## Crediti
 
@@ -131,5 +180,9 @@ I font sono Bebas Neue e Inter, licenza SIL Open Font. three.js è MIT.
 ## Rimasto da fare
 
 - le **recensioni vere** al posto del lorem ipsum in `js/data.js`;
-- il logo **"Powered by BGG"** nel piede, se e quando si usa l'API;
+- un **token BGG approvato**, senza il quale la ricerca dell'admin resta a 401;
+- il logo **"Powered by BGG"** nel piede, obbligatorio quando si usa l'API;
+- le copertine dei giochi aggiunti da admin vivono come data URL dentro
+  `localStorage`: all'export diventano `img/<id>.jpg`, e l'immagine va salvata
+  lì a mano;
 - un dominio, se il sito deve andare online.
