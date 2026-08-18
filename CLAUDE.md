@@ -114,4 +114,5 @@ in **frazioni di quadro**.
   registrazione, token `Authorization: Bearer` e sconsiglia esplicitamente le
   chiamate dal browser. Lo script `tools/bgg-fetch.mjs` è pronto per quando ci
   sarà un token approvato. Dettagli nel README.
-- Nessun remote git configurato.
+- Remote: `https://github.com/Samuel-Ricco/Boardgames.git`, branch `main`.
+  L'auth passa dal Git Credential Manager, `gh` non è installato.
