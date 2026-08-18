@@ -581,6 +581,10 @@ function unfocus(){
   state.phase = 'closing';
   hidePanel();
 
+  // Se si richiude mentre la scatola sta ancora uscendo, le due animazioni
+  // si contendono la stessa posizione: la coda va svuotata prima.
+  anims.length = 0;
+
   const lid = box.userData.lid;
   const l0 = { z: lid.position.z, y: lid.position.y, x: lid.position.x,
                rx: lid.rotation.x, rz: lid.rotation.z };
