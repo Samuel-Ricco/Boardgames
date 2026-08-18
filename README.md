@@ -11,11 +11,18 @@ server statico qualsiasi.
 index.html            markup e struttura
 css/style.css         stile dell'interfaccia
 js/data.js            i giochi e le recensioni  <- si tocca solo questo per aggiungerne
-js/art.js             copertine, legno, dadi: tutto disegnato su canvas a runtime
+js/art.js             legno, cartone, dadi: disegnati su canvas a runtime
 js/app.js             scena 3D, animazioni, interazione
+img/                  le copertine delle scatole
+fonts/                Bebas Neue e Inter, sottoinsieme latino
 vendor/three.min.js   three.js r152, committato nel repo
 tools/bgg-fetch.mjs   script per scaricare i dati da BoardGameGeek
 ```
+
+**Non c'è una sola risorsa esterna.** three.js, i font e le copertine stanno nel
+repo: staccata la rete, il sito continua a funzionare identico. È una scelta, non
+una svista — l'unica cosa che va in rete sono i link "scheda su BoardGameGeek",
+che sono link e non risorse.
 
 ## Farlo girare
 
@@ -30,11 +37,16 @@ Poi `http://localhost:8124`. C'è già un `.claude/launch.json` con la stessa co
 
 ## Come è fatto
 
-**Tutta la grafica è generata da codice.** Non c'è nemmeno un'immagine nel repo:
-le copertine, il legno, il cartone, le facce dei dadi sono disegnati su canvas 2D
-all'avvio e passati a three.js come texture. Le copertine di Root e Scythe sono
-illustrazioni originali ispirate al tema dei giochi, non riproduzioni delle
-scatole vere.
+**Tutte le superfici tranne le copertine sono generate da codice**: legno,
+cartone, dorsi, facce dei dadi, l'interno della scatola sono disegnati su canvas
+2D all'avvio e passati a three.js come texture.
+
+**Le copertine sono quelle vere**, in `img/`, e da loro escono anche le
+proporzioni della scatola: la larghezza è fissa, l'altezza viene dall'aspetto
+dell'immagine, così Root resta bassa e larga com'è davvero e l'immagine non va
+stirata. Se una copertina non si carica, la scatola ripiega su
+un'illustrazione disegnata a mano (`coverRoot`, `coverScythe` in `js/art.js`) e
+il sito va avanti lo stesso.
 
 **Le fasi** stanno in `state.phase`:
 
@@ -62,9 +74,11 @@ piano, e la costruzione della scena è dentro un `try`.
 
 Basta una voce in `GAMES` dentro `js/data.js`. I campi che contano:
 
-- `art`: quale copertina disegnare. Le funzioni stanno in `js/art.js`
-  (`coverRoot`, `coverScythe`); per un gioco nuovo se ne aggiunge una e la si
-  aggancia in `makeGameBox()`.
+- `cover`: percorso dell'immagine della scatola in `img/`. Va bene un'immagine
+  qualsiasi purché sia la copertina intera, senza bordi: le proporzioni della
+  scatola nella scena escono da lì.
+- `artist`: chi ha disegnato la copertina, finisce nel credito sotto al titolo.
+- `art`: il ripiego disegnato a mano se l'immagine non c'è.
 - `slot`: la posizione sul ripiano di mezzo, da sinistra.
 - `wrap` e `ink`: i colori dei bordi della scatola e del titolo sul dorso.
 - `review`: un array di capoversi. **Adesso è lorem ipsum**, da sostituire.
@@ -100,6 +114,19 @@ node tools/bgg-fetch.mjs 237182 169786
 
 con `BGG_TOKEN` nell'ambiente. Finché non c'è un token approvato, i dati si
 scrivono a mano: sono quattro numeri per gioco.
+
+## Crediti
+
+Le copertine sono degli editori, usate qui per parlare dei giochi:
+
+- *Root* — illustrazioni di Kyle Ferrin, © Leder Games
+- *Scythe* — illustrazioni di Jakub Rozalski, © Stonemaier Games
+
+Il credito compare sotto al titolo in ogni recensione. Se un editore chiede di
+toglierla, basta cancellare il campo `cover` dalla sua voce in `js/data.js`: la
+scatola torna a usare la copertina disegnata e non si rompe niente.
+
+I font sono Bebas Neue e Inter, licenza SIL Open Font. three.js è MIT.
 
 ## Rimasto da fare
 

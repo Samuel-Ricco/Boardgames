@@ -25,8 +25,13 @@ CAB.front = CAB.d/2;
 // quota del piano d'appoggio del vano i (0 = quello in basso)
 function bayFloor(i){ return CAB.y0 + CAB.t + i*(CAB.bayH + CAB.t); }
 
-/* --- scatole -------------------------------------------------- */
-const BOX = { w: 3.0, h: 3.0, t: 0.82, lid: 0.54 };
+/* --- scatole ---------------------------------------------------
+   La larghezza e' fissa, l'altezza no: viene dalle proporzioni della
+   copertina vera, cosi' Root resta bassa e larga com'e' davvero e
+   l'immagine non va stirata. Se la copertina non si carica si usa
+   quella disegnata a mano, che e' quadrata.
+   --------------------------------------------------------------- */
+const BOX = { w: 3.4, h: 3.4, t: 0.84, lid: 0.55 };
 
 const DOOR_MAX = 1.42;   // ~81 gradi: aperte ma senza coprire i ripiani
 
@@ -79,6 +84,20 @@ const lerp      = (a,b,t) => a + (b-a)*t;
 /* --- utilita' -------------------------------------------------- */
 const q = s => document.querySelector(s);
 const wait = ms => new Promise(r => setTimeout(r, ms));
+
+// Le copertine vere. Se una non arriva non e' un errore: la scatola usa
+// quella disegnata a mano e il sito va avanti lo stesso.
+function loadCovers(){
+  return Promise.all(GAMES.map(function(g){
+    return new Promise(function(done){
+      if (!g.cover) return done();
+      const im = new Image();
+      im.onload = function(){ if (im.naturalWidth) g.img = im; done(); };
+      im.onerror = function(){ done(); };
+      im.src = g.cover;
+    });
+  }));
+}
 
 function setProg(p, msg){
   const bar = q('#bar'); if (bar) bar.style.width = Math.round(p*100) + '%';
@@ -254,8 +273,16 @@ function buildCabinet(){
 function makeGameBox(game){
   const grp = new THREE.Group();
 
-  const coverCanvas = game.art === 'root' ? ART.coverRoot() : ART.coverScythe();
-  const coverTex = ART.toTex(coverCanvas);
+  let coverTex, aspect;
+  if (game.img){
+    coverTex = ART.imgTex(game.img);
+    aspect = game.img.naturalWidth / game.img.naturalHeight;
+  } else {
+    coverTex = ART.toTex(game.art === 'root' ? ART.coverRoot() : ART.coverScythe());
+    aspect = 1;
+  }
+  const H = BOX.w / aspect;
+
   const cover = new THREE.MeshStandardMaterial({
     map: coverTex, emissiveMap: coverTex, emissive: 0xffffff, emissiveIntensity: 0,
     roughness: .58, metalness: .02
@@ -268,7 +295,7 @@ function makeGameBox(game){
 
   // coperchio: la meta' davanti, con la copertina sulla faccia +Z
   const lid = new THREE.Mesh(
-    new THREE.BoxGeometry(BOX.w, BOX.h, BOX.lid),
+    new THREE.BoxGeometry(BOX.w, H, BOX.lid),
     [sideV, sideV, sideH, sideH, cover, dark]
   );
   lid.position.z = BOX.t/2 - BOX.lid/2;
@@ -277,7 +304,7 @@ function makeGameBox(game){
   // fondo: un filo piu' piccolo, cosi' il coperchio ci calza sopra
   const baseD = BOX.t - BOX.lid;
   const base = new THREE.Mesh(
-    new THREE.BoxGeometry(BOX.w*.97, BOX.h*.97, baseD),
+    new THREE.BoxGeometry(BOX.w*.97, H*.97, baseD),
     [card, card, card, card, inMat, card]
   );
   base.position.z = BOX.t/2 - BOX.lid - baseD/2;
@@ -285,7 +312,7 @@ function makeGameBox(game){
 
   grp.add(lid, base);
   grp.userData = {
-    game: game, lid: lid, cover: cover,
+    game: game, lid: lid, cover: cover, h: H,
     hover: 0, busy: false,
     homePos: new THREE.Vector3(), homeRot: new THREE.Euler()
   };
@@ -342,11 +369,11 @@ function makeMeeple(col){
 function buildContents(){
   // i due giochi, sul ripiano di mezzo
   const midY = bayFloor(1);
-  const slotX = [-1.65, 1.65];
+  const slotX = [-1.85, 1.85];
   for (let i = 0; i < GAMES.length; i++){
     const game = GAMES[i];
     const b = makeGameBox(game);
-    b.position.set(slotX[game.slot % slotX.length], midY + BOX.h/2, .35);
+    b.position.set(slotX[game.slot % slotX.length], midY + b.userData.h/2, .35);
     b.rotation.y = (i === 0 ? .02 : -.03);
     b.userData.homePos.copy(b.position);
     b.userData.homeRot.copy(b.rotation);
@@ -358,18 +385,18 @@ function buildContents(){
   // una pila bassa a sinistra, tre dorsi a destra
   for (let i = 0; i < 2; i++){
     const m = new THREE.Mesh(
-      new THREE.BoxGeometry(2.0, .5, 2.4),
+      new THREE.BoxGeometry(1.6, .48, 2.2),
       new THREE.MeshStandardMaterial({ map: ART.toTex(ART.coverGeneric(i+1)), roughness: .7 })
     );
-    m.position.set(-4.25, midY + .25 + i*.5, .1);
+    m.position.set(-4.45, midY + .24 + i*.48, .1);
     m.rotation.y = .04 - i*.09;
     m.castShadow = true; m.receiveShadow = true;
     scene.add(m);
   }
   for (let i = 0; i < 3; i++){
-    const w = .46 + Math.random()*.16, h = 2.3 + Math.random()*.5;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.7), thinSpine(i+3));
-    m.position.set(3.7 + i*.72, midY + h/2, .1);
+    const w = .42 + Math.random()*.14, h = 2.2 + Math.random()*.45;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.6), thinSpine(i+3));
+    m.position.set(3.95 + i*.62, midY + h/2, .1);
     m.rotation.y = (Math.random()-.5)*.06;
     m.castShadow = true; m.receiveShadow = true;
     scene.add(m);
@@ -471,7 +498,7 @@ function layout(){
 // Dove va la scatola quando esce dall'armadio: un punto davanti alla
 // camera, calcolato in modo che occupi sempre la stessa fetta di
 // schermo, a sinistra se c'e' spazio per il pannello, in alto se no.
-function focusPose(){
+function focusPose(box){
   // Quanta parte dello schermo puo' prendersi la scatola, e dove sta il
   // suo centro: a sinistra se il pannello e' di lato, in alto se il
   // pannello sale dal basso. Le frazioni ricalcano il CSS.
@@ -489,8 +516,9 @@ function focusPose(){
   // La distanza soddisfa il vincolo piu' stretto fra altezza e larghezza.
   // L'ingombro non e' quello della scatola chiusa: il coperchio si alza e
   // viene avanti, quindi occupa piu' spazio di quanto misuri.
+  const boxH = box ? box.userData.h : BOX.h;
   const fitW = BOX.w * scale * 1.24;
-  const fitH = BOX.h * scale * 1.34;
+  const fitH = boxH * scale * 1.34 + BOX.w * .18;   // il coperchio alzato
   const d = Math.max(
     fitH / (2 * fh * tan),
     fitW / (2 * fw * tan * camera.aspect)
@@ -535,7 +563,7 @@ function focusOn(box){
   u.busy = true;
   const p0 = box.position.clone();
   const r0 = { x: box.rotation.x, y: box.rotation.y, z: box.rotation.z };
-  const target = focusPose();
+  const target = focusPose(box);
   const cam0 = camBase.clone();
 
   tween(.95, function(p){
@@ -630,7 +658,9 @@ function unfocus(){
 /* --- pannello -------------------------------------------------- */
 function showPanel(game){
   q('#p-title').textContent = game.title;
-  q('#p-by').innerHTML = '<b>' + game.designer + '</b> &middot; ' + game.publisher + ' &middot; ' + game.year;
+  q('#p-by').innerHTML = '<b>' + game.designer + '</b> &middot; ' + game.publisher + ' &middot; ' + game.year +
+    (game.artist ? '<br><span class="credit">copertina di ' + game.artist +
+                   ', &copy; ' + game.publisher + '</span>' : '');
 
   const specs = [
     [game.players, 'giocatori'], [game.time, 'minuti'],
@@ -788,9 +818,12 @@ function fallbackFlat(){
 function buildFlatList(){
   const html = GAMES.map(function(g){
     return '<article>' +
+      (g.cover ? '<img src="' + g.cover + '" alt="la scatola di ' + g.title + '" loading="lazy">' : '') +
       '<h2>' + g.title + '</h2>' +
       '<p class="byline"><b>' + g.designer + '</b> &middot; ' + g.publisher + ' &middot; ' + g.year +
-      ' &middot; ' + g.players + ' giocatori &middot; ' + g.time + ' min</p>' +
+      ' &middot; ' + g.players + ' giocatori &middot; ' + g.time + ' min' +
+      (g.artist ? '<br><span class="credit">copertina di ' + g.artist +
+                  ', &copy; ' + g.publisher + '</span>' : '') + '</p>' +
       g.review.map(function(t){ return '<p>' + t + '</p>'; }).join('') +
       '<p><a class="bgg" href="https://boardgamegeek.com/boardgame/' + g.bgg + '/" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a></p>' +
       '</article>';
@@ -830,11 +863,13 @@ async function boot(){
   // Un passo per volta, con una pausa in mezzo: la barra si muove
   // davvero. setTimeout e non requestAnimationFrame, perche' a pagina
   // nascosta i frame non arrivano affatto e il caricamento resterebbe li'.
-  await wait(20); setProg(.34, 'monto la stanza');
+  await wait(20); setProg(.30, 'monto la stanza');
   buildRoom();
-  await wait(20); setProg(.55, 'monto le mensole');
+  await wait(20); setProg(.48, 'monto le mensole');
   buildCabinet();
-  await wait(20); setProg(.78, 'carico le scatole');
+  setProg(.62, 'stampo le copertine');
+  await loadCovers();
+  await wait(20); setProg(.82, 'carico le scatole');
   buildContents();
   await wait(20); setProg(.94, 'accendo la lampada');
 

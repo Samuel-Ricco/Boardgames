@@ -30,7 +30,10 @@ const GAMES = [
     score: '8.6',                      // il voto della casa
     tags: ['asimmetrico', 'controllo aree', 'guerra', 'peso medio-alto'],
     review: LOREM,
-    art: 'root',                       // quale copertina disegnare (js/art.js)
+    cover: 'img/root.jpg',             // copertina vera; le proporzioni della
+                                       // scatola escono da quelle dell'immagine
+    artist: 'Kyle Ferrin',             // chi ha fatto la copertina
+    art: 'root',                       // ripiego disegnato a mano (js/art.js)
     slot: 0,                           // posizione sul ripiano, da sinistra
     wrap: '#8f3a22',                   // colore dei bordi della scatola
     ink: '#f4e6c8'                     // colore del titolo sul dorso
@@ -50,9 +53,11 @@ const GAMES = [
     score: '8.2',
     tags: ['gestionale', 'motore di produzione', 'esplorazione', 'solitario'],
     review: LOREM,
+    cover: 'img/scythe.jpg',
+    artist: 'Jakub Rozalski',
     art: 'scythe',
     slot: 1,
-    wrap: '#4a4632',
+    wrap: '#3f4239',
     ink: '#f1e2bd'
   }
 ];

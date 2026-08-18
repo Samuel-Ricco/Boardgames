@@ -31,6 +31,16 @@ function toTex(c, opt){
   return t;
 }
 
+// Texture da un'immagine gia' caricata (le copertine vere in img/).
+function imgTex(im){
+  const t = new THREE.Texture(im);
+  if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
+  else t.encoding = THREE.sRGBEncoding;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
 const rnd = (a,b) => a + Math.random()*(b-a);
 
 // Testo con crenatura allargata: il canvas non ha letter-spacing
@@ -524,7 +534,7 @@ function dieMaterials(body, pip){
 }
 
 return {
-  cnv: cnv, toTex: toTex, wood: wood, spaced: spaced, grain: grain,
+  cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   spine: spine, cardboard: cardboard, inside: inside,
   dieFace: dieFace, dieMaterials: dieMaterials

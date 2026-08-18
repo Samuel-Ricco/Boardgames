@@ -2,6 +2,19 @@
    il dado e' trap
    Palette: legno caldo, luce da lampada, ottone.
    ============================================================ */
+
+/* I font stanno nel repo, non su Google: il sito deve funzionare
+   anche senza rete. Servono anche a js/art.js, che scrive i titoli
+   delle scatole su canvas. Sottoinsieme latino, licenza SIL OFL. */
+@font-face{
+  font-family:'Bebas Neue'; font-style:normal; font-weight:400; font-display:swap;
+  src:url(../fonts/bebas-neue-latin.woff2) format('woff2');
+}
+@font-face{
+  font-family:'Inter'; font-style:normal; font-weight:100 900; font-display:swap;
+  src:url(../fonts/inter-latin.woff2) format('woff2');
+}
+
 :root{
   --bg:#100d0b;          /* nero caldo: e' anche il colore del fog nella scena 3D */
   --ink:#f6ecdd;         /* crema: il testo */
@@ -106,6 +119,8 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   font-size:clamp(40px,4.6vw,56px); line-height:.9; letter-spacing:.02em}
 .byline{margin:10px 0 20px; font-size:13px; color:var(--ink-soft)}
 .byline b{color:var(--ink); font-weight:500}
+.credit{display:inline-block; margin-top:4px; font-size:11px;
+  letter-spacing:.04em; color:rgba(246,236,221,.42)}
 
 .specs{list-style:none; margin:0 0 20px; padding:0; gap:1px;
   display:grid; grid-template-columns:repeat(4,1fr);
@@ -215,3 +230,5 @@ body.no3d #scene,body.no3d #vig,body.no3d .hint,body.no3d #panel{display:none}
 #flat h2{font-family:var(--ff-display); font-weight:400; font-size:36px;
   letter-spacing:.03em; margin:0 0 4px}
 #flat .byline{margin:0 0 14px}
+#flat img{display:block; width:100%; max-width:420px; height:auto;
+  margin:0 0 18px; border:1px solid var(--line)}

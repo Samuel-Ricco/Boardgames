@@ -10,9 +10,15 @@ css/style.css         stile
 js/data.js            i giochi (i contenuti stanno tutti qui)
 js/art.js             grafica generata su canvas
 js/app.js             scena 3D e interazione
+img/                  le copertine vere delle scatole
+fonts/                Bebas Neue e Inter in locale
 vendor/three.min.js   three.js r152, committato
 tools/bgg-fetch.mjs   scarico dati BGG, da lanciare a mano
 ```
+
+**Niente risorse esterne, mai.** three.js, font e copertine sono nel repo: il
+sito deve funzionare a rete staccata. Prima di aggiungere un `<link>` o un
+`src` verso l'esterno, scaricare il file e committarlo.
 
 ## Modo di lavorare
 
@@ -76,22 +82,34 @@ in **frazioni di quadro**.
 - Un **clic** è un `pointerup` entro 600 ms e 9 px dal `pointerdown`: senza questo
   controllo, trascinare per guardarsi intorno apriva una scatola.
 
+## Le scatole
+
+- **La scatola prende le proporzioni dalla sua copertina**: `BOX.w` è fisso,
+  l'altezza è `BOX.w / aspetto dell'immagine`. Root è bassa e larga davvero, e
+  così l'immagine non viene stirata. L'altezza finisce in `userData.h` e la usano
+  sia il posizionamento sul ripiano sia `focusPose()`.
+- Le immagini vanno caricate **prima** di costruire le scatole (`loadCovers()` in
+  `boot()`), se no la geometria non sa che proporzioni avere.
+- Se una copertina manca, `makeGameBox` ripiega sull'illustrazione disegnata e
+  usa aspetto 1: non è un errore, il sito continua.
+- Il credito all'illustratore compare sotto al titolo nel pannello. Le copertine
+  sono degli editori: vedi la sezione Crediti nel README.
+
 ## Estetica (vincoli fissi)
 
 - Legno caldo, luce da lampada, ottone. `--void #100d0b`, `--ink #f6ecdd`,
   `--amber #e8b25f` (interattivi), `--rust #c2562f` (etichette).
 - Font: **Bebas Neue** per titoli e numeri, **Inter** per il testo. Sono anche i
-  font disegnati sulle copertine, quindi `document.fonts.ready` va aspettato
-  **prima** di generare le texture, se no i titoli escono con il ripiego.
-- **Tutta la grafica è generata da codice**: nel repo non c'è nemmeno
-  un'immagine. Le copertine sono illustrazioni originali ispirate al tema, non
-  riproduzioni delle scatole vere.
+  font disegnati su canvas, quindi `document.fonts.ready` va aspettato **prima**
+  di generare le texture, se no i titoli escono con il ripiego. Stanno in
+  `fonts/`, dichiarati con `@font-face` in cima al CSS.
 
 ## Stato attuale
 
 - Le **recensioni sono lorem ipsum**, in `js/data.js`. Da riempire.
-- Ci sono due giochi, Root e Scythe. Il ripiano di mezzo ne tiene due: per
-  metterne di più serve allargare `CAB.w` o dedicare un altro ripiano.
+- Ci sono due giochi, Root e Scythe, con le copertine vere. Il ripiano di mezzo
+  ne tiene due: per metterne di più serve allargare `CAB.w` o dedicare un altro
+  ripiano ai giochi.
 - **L'API di BGG non è agganciata**, ed è una scelta: dal 2025 richiede
   registrazione, token `Authorization: Bearer` e sconsiglia esplicitamente le
   chiamate dal browser. Lo script `tools/bgg-fetch.mjs` è pronto per quando ci
