@@ -1076,6 +1076,8 @@ function showPanel(game){
     link.style.display = 'none';
   }
 
+  disegnaGiocate(game);
+
   const panel = q('#panel');
   panel.setAttribute('aria-hidden', 'false');
   panel.scrollTop = 0;
@@ -1248,7 +1250,7 @@ function bindInput(){
   }, { passive: false });
 
   window.addEventListener('keydown', function(e){
-    if (e.key === 'Escape'){ finiscePresa(true); unfocus(); closeAdd(); return; }
+    if (e.key === 'Escape'){ finiscePresa(true); unfocus(); closeAdd(); chiudiPartita(); return; }
     if (state.phase !== 'browse') return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); scrollBy(1); }
     if (e.key === 'ArrowLeft'  || e.key === 'PageUp'){   e.preventDefault(); scrollBy(-1); }
@@ -1961,12 +1963,21 @@ function disegnaFaccia(el, av, lato){
 }
 
 function apriProfilo(){
+  /* Anche quando il profilo non si carica, i blocchi sotto vanno
+     disegnati lo stesso: hanno un guasto loro da raccontare, e tre
+     titoli seguiti dal vuoto non spiegano niente a nessuno. */
+  PARTITE.caricaGiocatori().then(disegnaGiocatori);
+  PARTITE.carica().then(disegnaPartite);
+
   if (!PROFILO.mio()){
     proMsg('#pro-amici-msg', esc(PROFILO.problema() || 'profilo non disponibile'), true);
     return;
   }
   disegnaProfilo();
-  PROFILO.caricaAmici().then(disegnaAmici);
+  PROFILO.caricaAmici().then(function(){
+    disegnaAmici();
+    disegnaGiocatori();          // le proposte "dai tuoi amici" arrivano da li'
+  });
 }
 
 function proMsg(sel, html, male){
@@ -2194,6 +2205,295 @@ function bindProfilo(){
 }
 
 /* ===============================================================
+   GIOCATORI E PARTITE
+   ===============================================================
+
+   Lo stesso modulo si apre da due posti: dalla scatola aperta, che e'
+   il momento in cui hai appena finito di giocare, e dal profilo, che
+   e' quando rimetti in ordine. Cambia solo se il gioco arriva gia'
+   scritto o va scelto. */
+
+let paCorrente = null;             // la partita in lavorazione
+
+const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+              'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+function dataIt(iso){
+  const p = String(iso || '').split('-');
+  if (p.length !== 3) return '';
+  return parseInt(p[2], 10) + ' ' + MESI[parseInt(p[1], 10) - 1] + ' ' + p[0];
+}
+
+function oggiIso(){
+  const d = new Date();
+  const due = function(n){ return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + due(d.getMonth() + 1) + '-' + due(d.getDate());
+}
+
+/* Una serata: il gioco e il quando in alto, chi c'era sotto. Il
+   vincitore in ocra, che nel resto del sito e' gia' il colore di cio'
+   che conta. */
+function rigaGiocata(p, conTitolo){
+  const quando = p.giocata_il ? dataIt(p.giocata_il) : '';
+  const ora = p.ora ? String(p.ora).slice(0, 5) : '';
+  const chi = (p.chi || []).map(function(x){
+    return '<i class="' + (x.vincitore ? 'vince' : '') + '">' + esc(x.nome) + '</i>';
+  }).join(', ');
+  return '<li data-id="' + esc(p.id) + '">' +
+    '<span class="gio-testa">' +
+      (conTitolo ? '<b>' + esc(p.titolo) + '</b>' : '') +
+      (quando ? '<span>' + esc(quando) + (ora ? ' &middot; ' + esc(ora) : '') + '</span>' : '') +
+    '</span>' +
+    (chi ? '<p class="gio-chi">' + chi + '</p>' : '') +
+  '</li>';
+}
+
+// le partite di quel gioco, nel pannello della recensione
+function disegnaGiocate(game){
+  const el = q('#p-giocate');
+  if (!el) return;
+  const g = (game && state.dentro && !PARTITE.problema())
+    ? PARTITE.diGioco(game.bgg, game.title) : [];
+  el.innerHTML = g.length
+    ? '<p class="eyebrow">le tue partite</p><ul class="giocate">' +
+      g.slice(0, 6).map(function(p){ return rigaGiocata(p, false); }).join('') + '</ul>'
+    : '';
+}
+
+function disegnaPartite(){
+  const el = q('#pro-partite');
+  if (!el) return;
+  const tutte = PARTITE.tutte();
+  el.innerHTML = tutte.map(function(p){ return rigaGiocata(p, true); }).join('');
+
+  if (PARTITE.problema()){ proMsg('#par-msg', esc(PARTITE.problema()), true); return; }
+  if (!tutte.length){
+    proMsg('#par-msg', 'Nessuna partita segnata. Si segna da qui, oppure dalla scatola ' +
+                       'del gioco appena finito.');
+    return;
+  }
+  // chi vince di piu': due righe, non una classifica intera
+  const cl = PARTITE.classifica().slice(0, 3).map(function(x){
+    return '<b>' + esc(x.nome) + '</b> ' + x.vinte + '/' + x.partite;
+  }).join(' &middot; ');
+  proMsg('#par-msg', tutte.length + (tutte.length === 1 ? ' partita' : ' partite') +
+                     '. ' + cl);
+}
+
+function disegnaGiocatori(){
+  const el = q('#pro-giocatori');
+  if (!el) return;
+  const g = PARTITE.giocatori();
+  el.innerHTML = g.map(function(x){
+    return '<li data-id="' + esc(x.id) + '">' +
+      '<span class="chi"><b>' + esc(x.nome) + '</b>' +
+      (x.amico ? '<span>amico sul sito</span>' : '') + '</span>' +
+      '<span class="fa"><button type="button" class="no" data-fa="via">togli</button></span>' +
+    '</li>';
+  }).join('');
+
+  if (PARTITE.problema()){ proMsg('#gio-msg', esc(PARTITE.problema()), true); return; }
+  // gli amici che non sono ancora al tavolo: proporli evita di riscriverli
+  const da = PARTITE.amiciDaAggiungere();
+  proMsg('#gio-msg', da.length
+    ? 'Dai tuoi amici: ' + da.map(function(a){
+        return '<button type="button" class="pro-lin" data-amico="' + esc(a.id) + '">' +
+               esc(a.profilo.nick || a.profilo.nome || 'senza nome') + '</button>';
+      }).join(' ')
+    : '');
+}
+
+/* --- l'editor --------------------------------------------------- */
+function apriPartita(dati){
+  if (PARTITE.problema()){ flash(PARTITE.problema()); return; }
+  paCorrente = Object.assign({ id: null, bgg: '', titolo: '', giocata_il: oggiIso(),
+                               ora: '', note: '', chi: [] }, dati || {});
+  paCorrente.chi = (paCorrente.chi || []).map(function(x){ return Object.assign({}, x); });
+
+  q('#pa-h').textContent = paCorrente.id ? 'Correggi la partita' : 'Segna una partita';
+  q('#pa-titolo').value = paCorrente.titolo || '';
+  q('#pa-bgg').value    = paCorrente.bgg || '';
+  q('#pa-data').value   = paCorrente.giocata_il || '';
+  q('#pa-ora').value    = paCorrente.ora ? String(paCorrente.ora).slice(0, 5) : '';
+  q('#pa-note').value   = paCorrente.note || '';
+  q('#pa-togli').hidden = !paCorrente.id;
+  q('#pa-msg').textContent = '';
+
+  disegnaTavolo();
+  q('#partitalayer').classList.add('on');
+  q('#partitalayer').setAttribute('aria-hidden', 'false');
+  if (!paCorrente.titolo) q('#pa-titolo').focus();
+}
+
+function chiudiPartita(){
+  q('#partitalayer').classList.remove('on');
+  q('#partitalayer').setAttribute('aria-hidden', 'true');
+  paCorrente = null;
+}
+
+function disegnaTavolo(){
+  if (!paCorrente) return;
+  q('#pa-chi').innerHTML = paCorrente.chi.map(function(x, i){
+    return '<li data-i="' + i + '">' +
+      '<span class="nome">' + esc(x.nome) + '</span>' +
+      '<input class="pos" type="text" inputmode="numeric" maxlength="2" ' +
+        'value="' + esc(x.posizione == null ? '' : x.posizione) + '" ' +
+        'placeholder="&ndash;" aria-label="posizione di ' + esc(x.nome) + '">' +
+      '<button type="button" class="vince' + (x.vincitore ? ' on' : '') +
+        '" data-fa="vince">vince</button>' +
+      '<button type="button" class="via" data-fa="via" aria-label="togli">&times;</button>' +
+    '</li>';
+  }).join('');
+
+  // i salvati che non sono gia' al tavolo
+  const alTavolo = {};
+  paCorrente.chi.forEach(function(x){ alTavolo[x.nome] = true; });
+  const liberi = PARTITE.giocatori().filter(function(g){ return !alTavolo[g.nome]; });
+  q('#pa-scelta').innerHTML = '<option value="">dai salvati&hellip;</option>' +
+    liberi.map(function(g){
+      return '<option value="' + esc(g.id) + '">' + esc(g.nome) + '</option>';
+    }).join('');
+}
+
+function metteAlTavolo(nome, idGiocatore){
+  const t = String(nome || '').trim();
+  if (!t) return;
+  if (paCorrente.chi.some(function(x){ return x.nome === t; })){
+    q('#pa-msg').textContent = t + ' e\' gia\' al tavolo';
+    return;
+  }
+  paCorrente.chi.push({ nome: t, giocatore: idGiocatore || null,
+                        posizione: null, vincitore: false });
+  q('#pa-msg').textContent = '';
+  disegnaTavolo();
+}
+
+async function salvaPartita(){
+  if (!paCorrente) return;
+  const b = q('#pa-salva');
+  paCorrente.titolo = q('#pa-titolo').value;
+  paCorrente.bgg    = q('#pa-bgg').value;
+  paCorrente.giocata_il = q('#pa-data').value || null;
+  paCorrente.ora    = q('#pa-ora').value || null;
+  paCorrente.note   = q('#pa-note').value.trim() || null;
+
+  b.disabled = true;
+  try {
+    await PARTITE.salva(paCorrente);
+    chiudiPartita();
+    disegnaPartite();
+    disegnaGiocate(state.focused && state.focused.userData.game);
+    flash('partita segnata');
+  } catch(e){
+    q('#pa-msg').textContent = 'non salvata: ' + e.message;
+  }
+  b.disabled = false;
+}
+
+function bindPartite(){
+  q('#pa-x').addEventListener('click', chiudiPartita);
+  q('#pa-salva').addEventListener('click', salvaPartita);
+
+  armaBottone(q('#pa-togli'), 'elimina', 'sicuro? tocca ancora', async function(){
+    if (!paCorrente || !paCorrente.id) return;
+    try {
+      await PARTITE.togli(paCorrente.id);
+      chiudiPartita();
+      disegnaPartite();
+      disegnaGiocate(state.focused && state.focused.userData.game);
+      flash('partita eliminata');
+    } catch(e){ flash('non eliminata: ' + e.message); }
+  });
+
+  q('#pa-piu').addEventListener('click', function(){
+    const sel = q('#pa-scelta');
+    if (sel.value){
+      const g = PARTITE.giocatori().find(function(x){ return x.id === sel.value; });
+      if (g) metteAlTavolo(g.nome, g.id);
+      sel.value = '';
+      return;
+    }
+    metteAlTavolo(q('#pa-nuovo').value, null);
+    q('#pa-nuovo').value = '';
+  });
+  q('#pa-nuovo').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter') q('#pa-piu').click();
+  });
+  qa('#partitalayer input, #partitalayer textarea').forEach(function(i){
+    i.addEventListener('keydown', function(e){ e.stopPropagation(); });
+  });
+
+  // il tavolo: un ascoltatore solo, le righe si rifanno di continuo
+  q('#pa-chi').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-fa]');
+    if (!b || !paCorrente) return;
+    const i = parseInt(b.closest('li').getAttribute('data-i'), 10);
+    if (b.getAttribute('data-fa') === 'via') paCorrente.chi.splice(i, 1);
+    else paCorrente.chi[i].vincitore = !paCorrente.chi[i].vincitore;
+    disegnaTavolo();
+  });
+  q('#pa-chi').addEventListener('input', function(e){
+    if (!e.target.classList.contains('pos') || !paCorrente) return;
+    const i = parseInt(e.target.closest('li').getAttribute('data-i'), 10);
+    const v = e.target.value.trim();
+    paCorrente.chi[i].posizione = v === '' ? null : (parseInt(v, 10) || null);
+  });
+
+  /* Dalla scatola aperta: il gioco arriva gia' scritto, ed e' il punto
+     -- appena finito di giocare non si ha voglia di ricercarlo. */
+  q('#p-segna').addEventListener('click', function(e){
+    e.stopPropagation();
+    const g = state.focused && state.focused.userData.game;
+    if (!g) return;
+    apriPartita({ bgg: g.bgg || '', titolo: g.title });
+  });
+  q('#par-nuova').addEventListener('click', function(){ apriPartita(null); });
+
+  // riaprire una partita gia' segnata, da tutti e due gli elenchi
+  ['#pro-partite', '#p-giocate'].forEach(function(sel){
+    q(sel).addEventListener('click', function(e){
+      const li = e.target.closest('li[data-id]');
+      if (!li) return;
+      e.stopPropagation();
+      const p = PARTITE.tutte().find(function(x){ return x.id === li.getAttribute('data-id'); });
+      if (p) apriPartita(p);
+    });
+  });
+
+  q('#gio-piu').addEventListener('click', async function(){
+    const v = q('#gio-nuovo').value;
+    if (!v.trim()) return;
+    try { await PARTITE.aggiungiGiocatore(v, null); q('#gio-nuovo').value = ''; }
+    catch(e){ proMsg('#gio-msg', esc(e.message), true); return; }
+    disegnaGiocatori();
+  });
+  q('#gio-nuovo').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter') q('#gio-piu').click();
+  });
+
+  q('#pro-giocatori').addEventListener('click', async function(e){
+    const b = e.target.closest('button[data-fa="via"]');
+    if (!b) return;
+    b.disabled = true;
+    try { await PARTITE.togliGiocatore(b.closest('li').getAttribute('data-id')); }
+    catch(err){ b.disabled = false; flash('non tolto: ' + err.message); return; }
+    disegnaGiocatori();
+  });
+
+  // "dai tuoi amici: Tizio Caio" -- un clic e sono giocatori salvati
+  q('#gio-msg').addEventListener('click', async function(e){
+    const b = e.target.closest('button[data-amico]');
+    if (!b) return;
+    b.disabled = true;
+    try { await PARTITE.aggiungiGiocatore(b.textContent, b.getAttribute('data-amico')); }
+    catch(err){ proMsg('#gio-msg', esc(err.message), true); return; }
+    disegnaGiocatori();
+  });
+}
+
+/* ===============================================================
    CICLO DI RENDERING
    =============================================================== */
 function updateBoxes(dt){
@@ -2385,8 +2685,11 @@ async function boot(){
   setMode(chi);
   bindCatalogo();
   bindProfilo();            // e' anche chi collega le due navigazioni
+  bindPartite();
   RECE.carica();            // parte per conto suo: la aspetta solo il catalogo
   await PROFILO.carica();   // questo invece serve subito: puo' chiedere il nick
+  // le partite servono al pannello della recensione, che si apre presto
+  PARTITE.carica().then(function(){ PARTITE.caricaGiocatori(); });
 
   /* L'ospite va dritto al catalogo. Non e' una scorciatoia: non ha
      nessuna collezione, quindi non c'e' niente da costruire in tre

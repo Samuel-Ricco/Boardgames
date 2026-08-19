@@ -36,6 +36,7 @@ js/auth.js            accesso con Google, e "sono admin?"
 js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
 js/recensioni.js      le recensioni del sito: pubbliche, lette anche dall'ospite
 js/profilo.js         nick, faccia, codice amico, amicizie
+js/partite.js         giocatori salvati e partite giocate
 js/bgg.js             ricerca BGG (passa dal proxy locale)
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             grafica generata su canvas
@@ -319,6 +320,35 @@ La prima parte del sito che non parla di giochi ma di chi li gioca.
   che ci sono. Senza il controllo `'nick' in riga`, il sito vedeva un profilo
   senza nick, lo chiedeva, e il salvataggio falliva su una colonna inesistente —
   cioè una finestra che non si può chiudere. Vale per ogni migrazione futura.
+
+## Giocatori e partite
+
+Una collezione dice cosa hai; le partite dicono cosa hai giocato, con chi e chi
+ha vinto — che di un gioco da tavolo è la metà più interessante.
+
+- **La partita si aggancia all'id BGG, non a una riga di `giochi`.** Così si
+  segna anche una serata a casa di un amico su un gioco che non hai, e togliere
+  una scatola dallo scaffale non cancella la storia di quando ci hai giocato.
+  È la stessa chiave delle recensioni del catalogo.
+- **`titolo` e `nome` sono copie, non ridondanza da normalizzare via.** Il titolo
+  è come si chiamava il gioco quando ci hai giocato e serve anche senza id BGG;
+  il nome è chi c'era, e cancellando un giocatore salvato la partita non deve
+  dimenticarselo (`giocatore` è `on delete set null`, la chiave è `(partita, nome)`).
+- **I giocatori sono nomi, non account**: al tavolo c'è quasi sempre qualcuno che
+  sul sito non c'è. Chi è un amico si collega con `amico`, e il profilo lo propone
+  da solo così non lo si riscrive.
+- `posizione` nulla vuol dire «classifica non registrata», che è il caso normale:
+  quasi sempre si ricorda chi ha vinto e nient'altro.
+- **Salvare riscrive i partecipanti per intero** invece di calcolare cosa è
+  cambiato: sono quattro righe, e il conto costerebbe più codice di quanto valga.
+- `mia_partita()` è `security definer` per lo stesso motivo di `sono_amico()`: la
+  policy di `partecipanti` deve guardare `partite` senza ripassare dalle policy
+  di `partite`.
+- Lo **stesso modulo si apre da due posti**: dalla scatola aperta, che è quando
+  hai appena finito di giocare, e dal profilo, che è quando rimetti in ordine.
+  Cambia solo se il gioco arriva già scritto.
+- La classifica conta **sui nomi**, non sui giocatori salvati: se no cancellare
+  un giocatore cancellerebbe anche le sue vittorie.
 
 ## Le tre sezioni
 

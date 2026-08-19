@@ -418,6 +418,97 @@ body.sez-profilo #profilo{display:block}
 .pro-gente button.si{color:var(--amber); border-color:rgba(154,106,21,.5)}
 .pro-gente button.no:hover{color:var(--rust); border-color:var(--rust)}
 
+/* --- le partite --------------------------------------------------
+   La stessa forma nel profilo e nel pannello della recensione: una
+   riga per serata, il gioco e la data a sinistra, chi c'era sotto.
+   Il vincitore in ocra, che nel resto del sito e' gia' il colore di
+   cio' che conta. */
+.giocate{list-style:none; margin:0; padding:0}
+.giocate:empty{display:none}
+.giocate li{
+  padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer;
+}
+.giocate li:hover .gio-testa b{color:var(--amber)}
+.gio-testa{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.gio-testa b{font-size:14px; font-weight:500; color:var(--ink)}
+.gio-testa span{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft)}
+.gio-chi{margin:5px 0 0; font-size:13px; color:var(--ink-soft); line-height:1.7}
+.gio-chi i{font-style:normal}
+.gio-chi .vince{
+  color:var(--ink); font-weight:500;
+  border-bottom:2px solid var(--amber); padding-bottom:1px;
+}
+/* nel pannello della recensione lo spazio e' meno e il fondo e' chiaro */
+#p-giocate{margin:22px 0 0; padding-top:16px; border-top:1px solid var(--line)}
+#p-giocate:empty{display:none}
+#p-giocate .eyebrow{margin:0 0 8px}
+
+/* --- l'editor della partita --------------------------------------- */
+#partitalayer{
+  position:fixed; inset:0; z-index:9; display:flex; align-items:center;
+  justify-content:center; padding:20px; background:rgba(90,74,50,.42);
+  opacity:0; visibility:hidden; transition:opacity .3s ease, visibility 0s .3s;
+}
+#partitalayer.on{opacity:1; visibility:visible; transition:opacity .3s ease, visibility 0s}
+.pa-form{margin-top:4px}
+.pa-eye{margin:18px 0 8px}
+.pa-chi{list-style:none; margin:0; padding:0}
+.pa-chi:empty{display:none}
+.pa-chi li{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.pa-chi .nome{flex:1; min-width:0; font-size:14px; color:var(--ink); overflow-wrap:anywhere}
+.pa-chi .pos{
+  width:46px; flex:none; font-family:var(--ff-text); font-size:13px; text-align:center;
+  color:var(--ink); background:var(--card); border:1px solid var(--line); padding:6px 4px;
+}
+.pa-chi .pos:focus{outline:none; border-color:var(--amber)}
+.pa-chi button{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; cursor:pointer; white-space:nowrap;
+  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:7px 9px;
+}
+.pa-chi button:hover{color:var(--ink); border-color:var(--amber)}
+.pa-chi button.vince.on{background:var(--amber); color:#fdfaf4; border-color:var(--amber)}
+.pa-chi button.via:hover{color:var(--rust); border-color:var(--rust)}
+.pa-agg{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px}
+#pa-scelta{
+  font-family:var(--ff-text); font-size:13px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); padding:9px 10px; max-width:46%;
+}
+#pa-nuovo{
+  flex:1; min-width:120px; font-family:var(--ff-text); font-size:13px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); padding:9px 11px;
+}
+#pa-nuovo:focus, #pa-scelta:focus{outline:none; border-color:var(--amber)}
+#pa-piu{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:var(--card); border:1px solid var(--line); padding:9px 12px;
+}
+#pa-piu:hover{color:var(--ink); border-color:var(--amber)}
+.pa-foot #pa-salva{
+  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:#fdfaf4;
+  background:var(--amber); border:1px solid var(--amber); padding:11px 18px;
+}
+.pa-foot #pa-salva:hover{background:var(--ink); border-color:var(--ink)}
+.pa-foot #pa-togli{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:var(--rust);
+  background:none; border:1px solid rgba(194,86,47,.5); padding:10px 14px;
+}
+.pa-foot #pa-togli:hover{background:var(--rust); color:#fff; border-color:var(--rust)}
+.pa-foot #pa-togli[hidden]{display:none}
+
+#p-segna{
+  font-family:var(--ff-text); font-size:11px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
+  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:9px 12px;
+}
+#p-segna:hover{color:var(--amber); border-color:var(--amber)}
+
 .pro-aggiungi{display:flex; gap:8px; margin:18px 0 0}
 #ami-q{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:14px; color:var(--ink);

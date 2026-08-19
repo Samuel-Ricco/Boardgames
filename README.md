@@ -4,12 +4,17 @@ Un sito di recensioni di giochi da tavolo che **è** una libreria in 3D. Una
 KALLAX: cubi da 33 centimetri, una scatola per cubo, e cliccandone una la scatola
 esce dallo scaffale, si apre e mostra la recensione.
 
-Il sito ha due metà:
+Il sito ha tre sezioni:
 
 - **la mia collezione** — la libreria in tre dimensioni, tua, che si costruisce
   aggiungendo giochi;
 - **il catalogo** — migliaia di titoli in un elenco piatto, da sfogliare e
-  cercare, con le recensioni di questo sito. Si legge **anche senza account**.
+  cercare, con le recensioni di questo sito. Si legge **anche senza account**;
+- **il profilo** — chi sei, la tua faccia, i tuoi amici, i giocatori con cui
+  giochi e le partite che avete fatto.
+
+Su schermo stretto le tre sezioni stanno in una barra in basso, dove arriva il
+pollice.
 
 Niente build, niente bundler, niente dipendenze da installare: si apre con un
 server statico qualsiasi.
@@ -22,6 +27,8 @@ js/data.js            i giochi committati: il seme della libreria
 js/auth.js            accesso con Google, e la domanda "sono admin?"
 js/store.js           la collezione: database, copia locale, ordinamenti, ricerca
 js/recensioni.js      le recensioni del sito, pubbliche, lette da chiunque
+js/profilo.js         nick, faccia, codice amico, amicizie
+js/partite.js         giocatori salvati e partite giocate
 js/bgg.js             ricerca su BGG, attraverso il proxy locale
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             legno, cartone, dadi, copertine di ripiego
@@ -134,6 +141,21 @@ scrittura — quindi nessun account può promuovere sé stesso o altri. Sulla
 collezione personale l'admin non ha nessun potere in più; quello che può fare è
 **pubblicare una recensione nel catalogo**, che è uno solo e parla per il sito.
 
+## Le partite
+
+Una collezione dice cosa hai; le partite dicono cosa hai giocato, con chi e chi
+ha vinto. Si segnano da due posti: dalla scatola aperta, appena finito di
+giocare, e dal profilo, quando rimetti in ordine.
+
+Una partita si aggancia all'**id BoardGameGeek**, non a una scatola del tuo
+scaffale: così si segna anche una serata a casa di un amico su un gioco che non
+hai, e togliere un gioco dalla libreria non cancella la storia di quando ci hai
+giocato.
+
+I **giocatori** sono nomi salvati, non account: al tavolo c'è quasi sempre
+qualcuno che sul sito non c'è. Chi invece è un amico viene proposto da solo, così
+non lo si riscrive ogni volta.
+
 ## Ordinare, cercare, contare
 
 - **Quattro ordinamenti**: il mio, data di aggiunta, nome, voto.
@@ -231,6 +253,7 @@ pubbliche per progetto, e a proteggere i dati sono le regole in
 20260819180000_ordine_manuale.sql         la colonna `posizione`
 20260819190000_recensioni_pubbliche.sql   le recensioni del sito, lette da tutti
 20260819200000_profili_e_amici.sql        nick, faccia, codice amico, amicizie
+20260819210000_partite.sql                giocatori salvati, partite, partecipanti
 ```
 
 **`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un

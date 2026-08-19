@@ -78,10 +78,14 @@
     <div class="score"><b id="p-score"></b><i>/10</i><small>il voto della<br>ludoteca</small></div>
     <div class="body" id="p-body"></div>
     <div class="tags" id="p-tags"></div>
+    <div class="giocate" id="p-giocate"></div>
     <p class="pan-foot">
       <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
       <button id="edit" type="button" class="dentro-only" title="correggi la scheda e scrivi la recensione">
         <span aria-hidden="true">&#9998;</span> modifica
+      </button>
+      <button id="p-segna" type="button" class="dentro-only" title="segna una partita a questo gioco">
+        <span aria-hidden="true">&#9860;</span> segna una partita
       </button>
       <button id="del" type="button" class="dentro-only" title="togli questo gioco dalla libreria">
         <span aria-hidden="true">&#9003;</span> togli dalla libreria
@@ -184,6 +188,28 @@
         <button id="ami-go" type="button">chiedi</button>
       </div>
       <p id="ami-msg" class="pro-msg"></p>
+    </section>
+
+    <section class="pro-blocco">
+      <h3>Giocatori</h3>
+      <p class="pro-msg">I nomi che usi per segnare le partite. Al tavolo c&rsquo;&egrave;
+        quasi sempre qualcuno che sul sito non c&rsquo;&egrave;: qui ci sta lo stesso.</p>
+      <ul id="pro-giocatori" class="pro-gente"></ul>
+      <p id="gio-msg" class="pro-msg"></p>
+      <div class="pro-aggiungi">
+        <input id="gio-nuovo" type="text" placeholder="un nome" autocomplete="off"
+               maxlength="40" aria-label="nome del giocatore">
+        <button id="gio-piu" type="button">aggiungi</button>
+      </div>
+    </section>
+
+    <section class="pro-blocco">
+      <h3>Partite</h3>
+      <p id="par-msg" class="pro-msg"></p>
+      <ul id="pro-partite" class="giocate"></ul>
+      <p class="pro-fondo">
+        <button id="par-nuova" type="button" class="pro-lin">segna una partita</button>
+      </p>
     </section>
 
   </div>
@@ -297,6 +323,47 @@
   </div>
 </div>
 
+<!-- SEGNARE UNA PARTITA. Si apre da due posti -- dalla scatola aperta,
+     che e' il momento in cui hai appena finito di giocare, e dal
+     profilo, che e' quando rimetti in ordine -- ed e' lo stesso modulo:
+     cambia solo se il gioco arriva gia' scritto. -->
+<div id="partitalayer" aria-hidden="true">
+  <div class="add-card" role="dialog" aria-labelledby="pa-h">
+    <button id="pa-x" type="button">chiudi &times;</button>
+    <p class="eyebrow">una serata</p>
+    <h2 id="pa-h">Segna una partita</h2>
+
+    <div class="add-form pa-form">
+      <label class="wide">gioco <input id="pa-titolo" type="text" autocomplete="off"></label>
+      <label>id BGG <input id="pa-bgg" type="text" inputmode="numeric" autocomplete="off"></label>
+      <label>data <input id="pa-data" type="date"></label>
+      <label>ora <input id="pa-ora" type="time"></label>
+    </div>
+
+    <p class="eyebrow pa-eye">chi c&rsquo;era</p>
+    <ul id="pa-chi" class="pa-chi"></ul>
+    <p id="pa-msg" class="add-msg"></p>
+
+    <div class="pa-agg">
+      <select id="pa-scelta" aria-label="giocatore salvato"></select>
+      <input id="pa-nuovo" type="text" placeholder="oppure un nome nuovo"
+             autocomplete="off" maxlength="40" aria-label="nome nuovo">
+      <button id="pa-piu" type="button">metti al tavolo</button>
+    </div>
+
+    <div class="add-form">
+      <label class="wide">note
+        <textarea id="pa-note" rows="2" placeholder="com&rsquo;&egrave; andata, se ti va"></textarea>
+      </label>
+    </div>
+
+    <p class="add-foot pa-foot">
+      <button id="pa-salva" type="button">salva la partita</button>
+      <button id="pa-togli" type="button">elimina</button>
+    </p>
+  </div>
+</div>
+
 <!-- senza WebGL il sito resta leggibile: stesse recensioni, in piano -->
 <div id="flat">
   <h1>il dado &egrave; trap</h1>
@@ -312,6 +379,7 @@
 <script src="js/store.js"></script>
 <script src="js/recensioni.js"></script>
 <script src="js/profilo.js"></script>
+<script src="js/partite.js"></script>
 <script src="js/bgg.js"></script>
 <script src="js/catalogo.js"></script>
 <script src="js/art.js"></script>
