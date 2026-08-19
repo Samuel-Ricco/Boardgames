@@ -7,6 +7,25 @@ una esce, si apre e mostra la recensione. Niente build, niente dipendenze.
 Questo ramo è la variante «libreria» del progetto: su `main` il mobile è un
 armadio con le ante e la scena è notturna.
 
+## Dove sta cosa
+
+Due cartelle affiancate, **un solo repository**. Entrambe sotto
+`C:/Users/Windows/_Claude/`:
+
+| cartella | ramo | com'è il mobile |
+|---|---|---|
+| `dado-e-trap` | `main` | armadio con le ante, scena notturna |
+| `new_dado-e-trap` | `libreria` | **libreria a cubi, stanza chiara** — si lavora qui |
+
+Remote: <https://github.com/Samuel-Ricco/Boardgames.git>. L'auth passa dal Git
+Credential Manager, `gh` non è installato. Pubblicato su GitHub Pages a
+<https://samuel-ricco.github.io/Boardgames/>, che serve `main` — quindi online si
+vede ancora l'armadio.
+
+Server locale: `python -m http.server 8124 --directory <cartella>`. **La porta
+8124 non è casuale**: è l'unica autorizzata nei Redirect URLs di Supabase, e su
+altre porte il login parte, va su Google e non riesce a tornare indietro.
+
 ```
 index.html            markup
 css/style.css         stile
@@ -135,48 +154,41 @@ Serve anche a misurare la luce invece di indovinarla.
 - Le conferme sono **in due tempi sul bottone**, non `window.confirm`: quello
   blocca il rendering, e una finestra di sistema in mezzo a una scena 3D stona.
 
-## L'armadio è ancorato in alto
+## La libreria è ancorata in alto
 
-`CAB.topY` è una **costante**: il cielo del primo vano sta sempre alla stessa
-quota e i vani in più crescono **verso il basso**, portandosi dietro zoccolo,
-pavimento e parete (`groundY()`). Di conseguenza l'intro inquadra sempre la
-stessa facciata di tre mensole (`FACCIATA`), qualunque sia la lunghezza della
-libreria: `state.distFar` e `state.introY` non guardano `state.bays` **apposta**.
+`KAL.topY` è una **costante**: il cielo della prima fila sta sempre alla stessa
+quota e le file in più crescono **verso il basso**, portandosi dietro il pavimento
+(`groundY()`). Di conseguenza l'avvicinamento iniziale inquadra sempre la stessa
+facciata di quattro file (`FACCIATA`), qualunque sia la lunghezza della
+collezione: `state.distFar` e `state.introY` non guardano `state.righe` **apposta**.
 
-Ancorandolo in basso — com'era all'inizio — aggiungere giochi allungava il mobile
-verso l'alto, l'intro doveva allontanarsi per farcelo stare, e l'armadio
+Ancorandola in basso — com'era all'inizio — aggiungere giochi allungava il mobile
+verso l'alto, l'intro doveva allontanarsi per farcelo stare, e la libreria
 rimpiccioliva a ogni gioco aggiunto.
 
 ## Il responsive è geometrico, non solo CSS
 
-`state.perBay` (1, 2 o 3) e `state.slotX` **dipendono dal rapporto d'aspetto**,
-come le colonne di una griglia. Uno scaffale da tre scatole è largo 10.5 e alto
-4: su schermo verticale, per farlo entrare in larghezza, la camera arretra fino a
-mostrare quattro mensole con le scatole grandi come francobolli. Con meno scatole
-per ripiano lo scaffale si accorcia, la camera resta vicina, e l'armadio diventa
-semplicemente più alto — cosa di cui non gli importa niente, visto che è già
-infinito.
+`state.cols` **dipende dal rapporto d'aspetto**, come le colonne di una griglia:
+quattro in orizzontale, tre altrimenti. Se cambia a `resize`, `layout()` richiama
+`applyLibrary()`: cambia il numero di file e le scatole scivolano al posto nuovo.
 
-Se `perBay` cambia a `resize`, `layout()` richiama `applyLibrary()`: cambia il
-numero di vani e le scatole scivolano al posto nuovo.
+Il resto — perché tre è il minimo, e perché su telefono si finisce per inquadrare
+tutta la libreria — sta sopra, in «Libreria a cubi».
 
 ## Inquadratura (la parte che è costata di più)
 
-Niente numeri fissi: la distanza della camera esce dall'ingombro dell'armadio e
-dal formato dello schermo, e la posizione della scatola in primo piano è espressa
-in **frazioni di quadro**.
+Niente numeri fissi: la distanza della camera esce dall'ingombro del mobile e dal
+formato dello schermo, e la posizione della scatola in primo piano è espressa in
+**frazioni di quadro**.
 
-- La misura si prende sul **fronte del mobile** (`z = CAB.front`), non sul suo
+- La misura si prende sul **fronte del mobile** (`z = KAL.front`), non sul suo
   centro: è quello il piano che deve stare nello schermo.
-- Su schermo **verticale** (aspect < 0.8) i margini si stringono, se no l'armadio
-  resta un francobollo in mezzo al buio.
 - `focusPose()` prende il **vincolo più stretto fra altezza e larghezza**: con la
   sola altezza, su una finestra stretta la scatola usciva dal quadro a sinistra.
 - **La scatola aperta sta a una z fissa davanti al mobile** (`FOCUS_Z`) ed è la
   **camera ad arretrare** di quanto serve. Prima era il contrario — la scatola
-  veniva messa a `camera − distanza` — e con la camera dentro il vano quella
-  distanza la spingeva *dietro* al fronte dell'armadio: si apriva compenetrata
-  nel ripiano. `FOCUS_Z` deve stare oltre lo sventagliamento delle ante.
+  veniva messa a `camera − distanza` — e con la camera vicina ai cubi quella
+  distanza la spingeva *dietro* al fronte: si apriva compenetrata nel ripiano.
 - A `resize` con una scatola aperta va richiamato `reposeFocused()`: cambia il
   rapporto d'aspetto e, sotto gli 880 px, anche il lato da cui esce il pannello.
 - L'ingombro usato per il calcolo è **più grande della scatola chiusa** (×1.24 e
@@ -190,18 +202,28 @@ in **frazioni di quadro**.
 
 - **Il coperchio si alza più che avvicinarsi.** Venendo verso la camera ingrandiva
   di colpo e usciva dal quadro: ora fa 0.95 in avanti e 1.05 in su.
-- **La luce principale è quasi frontale.** Spostata di lato, l'ombra dell'armadio
-  si stampava sulla parete come una lastra nera con i bordi netti. Aiutano anche
-  la parete quasi a contatto con lo schienale e un *wash* che non proietta ombre,
-  quindi schiarisce proprio dentro l'ombra.
-- **Le luci dei vani stanno alte e avanti** (74% dell'altezza del vano, z 1.2):
-  attaccate al ripiano di sopra facevano una macchia tonda sul legno.
-- Le ante si aprono a **1.42 rad (~81°)**: più aperte cominciano a coprire i
-  ripiani, a 90° spariscono perché si vedono di taglio.
+- **`crossOrigin='anonymous'` sulle copertine di un altro dominio**, e prima di
+  `src`. Quelle caricate stanno su Supabase e finiscono in una texture WebGL:
+  senza, l'immagine si carica benissimo in un `<img>` ma la texture resta vuota
+  con `SecurityError: contains cross-origin data`. Si vedeva **solo uscendo e
+  rientrando**, perché appena aggiunto un gioco `cover` è ancora un data URL.
+  Per verificarlo: disegnare l'immagine su un canvas e chiamare `getImageData` —
+  se è contaminata lancia, ed è lo stesso controllo che fa WebGL.
+- **Le immagini di Wikimedia vanno chieste all'API di Commons** (`imageinfo` con
+  `iiurlwidth`), mai da `Special:FilePath`: quello risponde con un **redirect**, e
+  in una richiesta CORS ogni passaggio della catena deve avere l'header —
+  l'intermedio non ce l'ha e il browser blocca. Con `curl` non si vede, perché
+  guarda solo la risposta finale. Le larghezze sono un elenco fisso: 900 dà `400`,
+  l'API arrotonda a 960.
+- **Mai salvare `img` nella libreria**: è l'immagine decodificata, in JSON diventa
+  `{}` e al ricaricamento sembra una copertina valida senza esserlo. Le
+  proporzioni della scatola finivano a NaN e le scatole sparivano.
 - `#scene` ha **`touch-action:none`**: se no il browser legge il trascinamento
   come scroll e annulla i pointer event.
 - Un **clic** è un `pointerup` entro 600 ms e 9 px dal `pointerdown`: senza questo
   controllo, trascinare per guardarsi intorno apriva una scatola.
+- Il passo delle animazioni è **forzato positivo e corto**: un `dt` negativo le
+  farebbe girare all'indietro, uno lungo le farebbe saltare alla fine.
 
 ## Le scatole
 
@@ -251,39 +273,59 @@ in `supabase/migrations/`. La chiave `sb_secret_` non deve mai entrare nel repo.
 - **Tre sorgenti in ordine**: database → copia in `localStorage` → `js/data.js`.
   L'armadio si apre anche a rete staccata.
 
+## Supabase, in concreto
+
+Progetto `stslddkkzqonauavgxuy`. URL e chiave **publishable** stanno committati in
+`js/config.js`: sono pubbliche per progetto, a proteggere i dati sono le regole in
+`supabase/migrations/`. La chiave `sb_secret_` non deve **mai** entrare nel repo.
+
+Cos'è già fatto e verificato:
+
+- tre migrazioni applicate: schema iniziale, percorsi delle copertine locali,
+  **collezioni personali**;
+- accesso con Google configurato su entrambi i pannelli (client OAuth sotto
+  l'account `admin@smlrcc.it`), Site URL e Redirect URLs a posto;
+- l'admin è nella tabella `admin`, UID `c33cca27-b28b-48b6-9384-cd126932b653`.
+
+Per aggiungere un admin **si passa solo dal Table Editor**: sulla tabella `admin`
+non esiste nessuna regola di scrittura, quindi nessun account può promuovere sé
+stesso o altri. Non è una scomodità, è la garanzia.
+
+Da sapere: il piano gratuito **mette in pausa il progetto** dopo circa una
+settimana senza traffico, e si riattiva a mano dal pannello.
+
 ## Stato attuale
 
-- Le **recensioni sono lorem ipsum**, in `js/data.js`. Da riempire.
-- Nel repo ci sono due giochi, Root e Scythe, con le copertine vere. Tre per
-  scaffale; l'armadio cresce da solo aggiungendone.
-- **Il catalogo ha due fonti** (`js/catalogo.js`) e si sceglie da sola: BGG via
-  proxy quando c'è il token, **Wikidata** altrimenti. Quando il token arriverà non
-  c'è niente da cambiare, il proxy risponde e la fonte cambia da sé.
-  Wikidata: ~4.400 giochi contro 175.000, dati più magri e a volte sbagliati
-  (l'editore è spesso il distributore locale), e l'immagine è quasi sempre una
-  **foto del gioco allestito**, non la scatola. Per questo un risultato **riempie
-  il modulo** invece di finire dritto sullo scaffale.
-- **Wikidata non ha le copertine, e non le avra' mai.** Le sue immagini vengono
-  da Wikimedia Commons, che accetta solo file con licenza libera: la grafica di
-  una scatola e' protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%)
-  e sono foto di partite sul tavolo. Per le copertine c'e' il **campo file** nel
-  modulo admin, che vince sempre sull'immagine della fonte.
-- **Le immagini di Wikimedia vanno chieste all'API di Commons** (`imageinfo` con
-  `iiurlwidth`), mai costruite a mano né prese da `Special:FilePath`: quello
-  risponde con un **redirect**, e in una richiesta CORS ogni passaggio della
-  catena deve avere l'header — l'intermedio non ce l'ha e il browser blocca.
-  Con `curl` non si vede, perché curl guarda solo la risposta finale. In più le
-  larghezze sono un elenco fisso: 900 dà `400`, l'API arrotonda a 960.
-- **L'API di BGG non si chiama dal browser**, ed è una scelta: dal 2025 richiede
-  registrazione, token `Authorization: Bearer` (senza, è `401` secco) e le
-  condizioni dicono di chiamarla da server. Passa tutto da `tools/bgg-proxy.mjs`,
-  che gira in locale e tiene lui il token. **Un token approvato ancora non c'è**:
-  finché non arriva, la ricerca risponde 401 e resta il modulo a mano.
-- **Login con Google collaudato end-to-end il 2026-08-19**: accesso, ruolo admin
-  letto dal server, inserimento e cancellazione verificati rileggendo il database
-  dall'esterno e non dalla cache del browser. L'admin è `admin@smlrcc.it`.
-- Il passo successivo sul proxy BGG è spostarlo in una *edge function*: il token
-  starebbe sul server, la ricerca funzionerebbe da qualunque browser senza
-  accendere niente, e sarebbe anche ciò che le condizioni di BGG chiedono.
-- Remote: `https://github.com/Samuel-Ricco/Boardgames.git`, branch `main`.
-  L'auth passa dal Git Credential Manager, `gh` non è installato.
+Funziona ed è collaudato end-to-end sul progetto vero (2026-08-19): accesso con
+Google, ruolo letto dal server, aggiunta, **modifica** (scheda e recensione),
+rimozione, copertine caricate nel bucket. Verificato rileggendo il database
+dall'esterno, non dalla cache del browser.
+
+Cosa manca, in ordine di fastidio:
+
+1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito, con *modifica*.
+2. **Il token BGG non è ancora arrivato.** Finché non c'è, la ricerca cade su
+   Wikidata: ~4.400 giochi contro 175.000, dati più magri e a volte sbagliati
+   (l'editore è spesso il distributore locale). Per questo un risultato **riempie
+   il modulo** invece di finire dritto sullo scaffale.
+3. **Wikidata non ha le copertine, e non le avrà mai**: le sue immagini vengono da
+   Wikimedia Commons, che accetta solo licenze libere, e la grafica di una scatola
+   è protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%) e sono foto
+   di partite sul tavolo. Per le copertine c'è il **campo file** nel modulo, che
+   vince sempre sull'immagine della fonte — la fonte giusta è il press kit
+   dell'editore.
+4. **L'ingresso come ospite è stato tolto**: tornerà quando avrà i giochi del
+   momento da mostrare. Oggi il sito è un muro di login per chi non ha un account.
+5. Su telefono la scatola è **90 px di larghezza**: si riconosce la copertina ma
+   non si legge il titolo. È il prezzo delle tre colonne; se dà fastidio,
+   l'alternativa è tornare a due.
+
+Prossimi passi già discussi, non ancora fatti:
+
+- **Edge function per BGG** al posto del proxy locale: il token starebbe sul
+  server, la ricerca funzionerebbe da qualunque browser senza accendere niente, ed
+  è anche ciò che le condizioni di BGG chiedono.
+- **App Android/iOS**: la strada è Capacitor, che imbarca questi stessi file. Da
+  fare *dopo* i contenuti veri, perché Apple rifiuta le app che sembrano solo un
+  sito (linea guida 4.2). Serve anche safe-area (`env(safe-area-inset-*)`, oggi
+  non usata), gestione del tasto indietro, e un livello di qualità più leggero.
