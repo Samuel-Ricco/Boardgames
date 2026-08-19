@@ -146,8 +146,34 @@ const ORDERS = {
   voto:     function(a,b){ return (parseFloat(b.score)||0) - (parseFloat(a.score)||0); }
 };
 
-function list(order){
-  return all().slice().sort(ORDERS[order] || ORDERS.aggiunta);
+/* --- ricerca -----------------------------------------------------
+   Guarda tutto quello che si legge sulla scatola e nella scheda:
+   titolo, autore, editore, anno, etichette.
+
+   Il testo viene appiattito prima del confronto -- minuscolo e senza
+   segni diacritici -- se no chi scrive "citta" non trova "Citta'" e chi
+   scrive minuscolo non trova niente.
+
+   Le parole scritte valgono tutte, in qualunque ordine: due parole
+   restringono la ricerca invece di allargarla, che e' quello che si
+   aspetta chi ne scrive due. */
+function piatto(s){
+  return String(s == null ? '' : s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function corrisponde(g, q){
+  if (!q) return true;
+  const testo = piatto([g.title, g.sub, g.designer, g.publisher,
+                        g.year, (g.tags || []).join(' ')].join(' '));
+  return piatto(q).split(/\s+/).filter(Boolean).every(function(p){
+    return testo.indexOf(p) >= 0;
+  });
+}
+
+function list(order, q){
+  return all().filter(function(g){ return corrisponde(g, q); })
+              .sort(ORDERS[order] || ORDERS.aggiunta);
 }
 
 function get(id){

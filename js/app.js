@@ -85,6 +85,7 @@ const state = {
   bayLight: 0,
   focusLight: 0,
   px: 0, py: 0, tx: 0, ty: 0,
+  q: '',                       // il testo cercato, '' se non si sta cercando
   libs: 1,                     // quante librerie in fila lungo la parete
   scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
   dragging: false,
@@ -418,6 +419,12 @@ function buildProps(used){
   killGroup(propGroup, true);
   const g = new THREE.Group();
 
+  /* Mentre si cerca i cubi vuoti restano vuoti. Riempirli di libri e
+     dadi fa sembrare lo scaffale pieno, e i risultati -- che sono il
+     motivo per cui si sta guardando -- non si distinguono piu' dal
+     contorno. */
+  if (!used){ propGroup = g; scene.add(g); return; }
+
   for (let l = 0; l < state.libs; l++){
     for (let k = 0; k < PER_LIB; k++){
       const posto = l * PER_LIB + k;
@@ -486,6 +493,13 @@ function buildProps(used){
    LIBRERIA -> SCENA
    =============================================================== */
 
+/* La lista che vede la scena: ordinata e filtrata insieme. Tutto quello
+   che dispone scatole deve passare di qui, se no cercando un gioco la
+   posizione sullo scaffale e quella nell'elenco non coincidono piu'. */
+function lista(){
+  return LIB.list(state.sort, state.q);
+}
+
 function homeOf(index, h){
   const l = Math.floor(index / PER_LIB), k = index % PER_LIB;
   // poggiata sul piano del cubo, un filo dentro rispetto al fronte
@@ -498,7 +512,7 @@ function homeOf(index, h){
    Se cambia il numero di vani il mobile si ricostruisce. */
 function applyLibrary(opts){
   opts = opts || {};
-  const list = LIB.list(state.sort);
+  const list = lista();
   /* Quante librerie: quelle che servono, piu' il posto per il gioco
      dopo. Cosi' quando i dodici cubi dell'ultima sono pieni ne compare
      una vuota accanto, e si vede che c'e' dove metterlo. */
@@ -565,9 +579,10 @@ function applyLibrary(opts){
     }
   });
 
-  buildProps(used);
+  buildProps(state.q ? null : used);
   state.scrollTo = clamp(state.scrollTo, 0, maxScroll());
   updateRail();
+  updateConta();
 }
 
 /* ===============================================================
@@ -752,7 +767,11 @@ function openLid(){
   });
 }
 
-function unfocus(){
+/* `poi` viene chiamata quando la scatola e' tornata sullo scaffale.
+   Serve a chi deve rifare la disposizione -- cambiare ordine, cercare --
+   e non puo' farlo mentre una scatola e' fuori posto: la sposterebbe
+   sotto i piedi al tween in corso. */
+function unfocus(poi){
   if (state.phase !== 'focus' && state.phase !== 'review') return;
   const box = state.focused;
   state.phase = 'closing';
@@ -796,8 +815,21 @@ function unfocus(){
       state.focused = null;
       state.phase = 'browse';
       document.body.classList.add('browse');
+      if (poi) poi();
     });
   }, .12);
+}
+
+/* Rifa' la disposizione appena si puo': subito se lo scaffale e' fermo,
+   dopo la chiusura se c'e' una scatola aperta. Durante `closing` non si
+   fa niente: ci pensa la chiusura gia' avviata. */
+function ridisponi(){
+  if (state.phase === 'focus' || state.phase === 'review'){
+    unfocus(function(){ applyLibrary({ animate: true }); });
+    return;
+  }
+  if (state.phase === 'closing') return;
+  applyLibrary({ animate: true });
 }
 
 /* --- admin: togli il gioco che si sta guardando ----------------- */
@@ -1116,6 +1148,31 @@ function bindTools(){
     });
   });
 
+  /* La ricerca aspetta un attimo prima di rifare lo scaffale: a ogni
+     tasto premuto vorrebbe dire ricostruire dodici scatole per lettera. */
+  const inp = q('#cerca');
+  let ct = 0;
+  inp.addEventListener('input', function(){
+    clearTimeout(ct);
+    ct = setTimeout(function(){ setQuery(inp.value); }, 180);
+  });
+  inp.addEventListener('keydown', function(e){
+    e.stopPropagation();                       // se no Esc chiude anche altro
+    if (e.key === 'Escape'){ inp.value = ''; setQuery(''); inp.blur(); }
+    if (e.key === 'Enter'){ clearTimeout(ct); setQuery(inp.value); }
+  });
+  // sullo stretto il campo si prende la testata: vuoto, la restituisce
+  inp.addEventListener('blur', function(){
+    if (!inp.value.trim()) document.body.classList.remove('cercando');
+  });
+  q('#cerca-go').addEventListener('click', function(){
+    document.body.classList.add('cercando');
+    inp.focus();
+  });
+  q('#cerca-x').addEventListener('click', function(){
+    inp.value = ''; setQuery(''); inp.focus();
+  });
+
   q('#add').addEventListener('click', openAdd);
   q('#add-x').addEventListener('click', closeAdd);
   q('#add-go').addEventListener('click', doSearch);
@@ -1152,10 +1209,33 @@ function setSort(mode){
     b.classList.toggle('on', b.getAttribute('data-sort') === mode);
   });
   q('#sortmenu').classList.remove('on');
-  // in qualunque fase tranne quelle in cui una scatola e' fuori posto:
-  // li' spostarla sotto i piedi al tween in corso farebbe pasticci
-  const ferma = state.phase === 'focus' || state.phase === 'review' || state.phase === 'closing';
-  if (!ferma) applyLibrary({ animate: true });
+  ridisponi();
+}
+
+/* --- ricerca ------------------------------------------------------
+   Filtrare cambia quali scatole stanno sullo scaffale, non quali sono
+   in evidenza: chi cerca "root" vede una libreria con dentro Root, e
+   basta. Si torna alla prima libreria, se no restando fermi sulla terza
+   ci si ritrova davanti a un mobile vuoto. */
+function setQuery(v){
+  const nuovo = String(v || '').trim();
+  if (nuovo === state.q) return;
+  state.q = nuovo;
+  document.body.classList.toggle('cerca', !!nuovo);
+  state.scrollTo = state.scroll = 0;
+  ridisponi();
+  if (nuovo && !lista().length) flash('nessun gioco per "' + nuovo + '"');
+}
+
+/* Quanti sono. Mentre si cerca dice anche su quanti, se no il numero
+   che cala sembra che i giochi siano spariti. */
+function updateConta(){
+  const tot = LIB.all().length;
+  const el = q('#conta');
+  if (!el) return;
+  el.innerHTML = state.q
+    ? '<b>' + lista().length + '</b> <span>di ' + tot + '</span>'
+    : '<b>' + tot + '</b> <span>' + (tot === 1 ? 'gioco' : 'giochi') + '</span>';
 }
 
 /* --- aggiunta -------------------------------------------------- */
@@ -1365,7 +1445,7 @@ async function addManual(){
 
 // porta lo scaffale del gioco al centro dello schermo
 function goToGame(id){
-  const list = LIB.list(state.sort);
+  const list = lista();
   const i = list.findIndex(function(g){ return g.id === id; });
   if (i < 0) return;
   state.scrollTo = clamp(Math.floor(i / PER_LIB), 0, maxScroll());

@@ -93,6 +93,33 @@ body.ready header{opacity:1; transform:none}
 .tool:hover{color:var(--ink); border-color:var(--amber)}
 .tool b{color:var(--amber); font-weight:500}
 #add{font-size:18px; line-height:1; padding:6px 12px 8px; color:var(--amber)}
+
+/* --- ricerca e contatore ---------------------------------------
+   Su schermo largo il campo sta sempre in vista; sotto gli 880 px
+   diventa una lente, e aprendolo si prende la riga della testata
+   nascondendo marchio e strumenti -- in quello spazio non ci stanno
+   tutti e due, e mentre si cerca serve il campo, non il resto. */
+.cercawrap{position:relative; display:flex; align-items:center}
+#cerca-go{display:none; font-size:14px; padding:6px 11px}
+#cerca{
+  width:clamp(110px,16vw,200px); text-transform:none; letter-spacing:.04em;
+  font-size:12px; color:var(--ink); padding-right:24px;
+}
+#cerca:focus{outline:none; border-color:var(--amber)}
+#cerca::placeholder{
+  color:var(--ink-soft); text-transform:uppercase; letter-spacing:.14em; font-size:11px;
+}
+#cerca-x{
+  position:absolute; right:5px; display:none; border:0; background:none; cursor:pointer;
+  color:var(--ink-soft); font-size:16px; line-height:1; padding:1px 4px;
+}
+body.cerca #cerca-x{display:block}
+#cerca-x:hover{color:var(--rust)}
+/* il contatore non e' un pulsante: dice solo quanti sono */
+#conta{cursor:default; color:var(--ink)}
+#conta:hover{color:var(--ink); border-color:var(--line)}
+#conta b{font-family:var(--ff-display); font-size:15px; letter-spacing:.06em; color:var(--ink)}
+#conta span{color:var(--ink-soft)}
 /* il chip dice chi sei e basta: entrati non e' piu' un pulsante */
 #mode.chip{color:var(--ink)}
 #mode.chip:disabled{cursor:default; opacity:1}
@@ -257,6 +284,15 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   body.ferma .hint{bottom:18px}
   #sort .lbl{display:none}
   .tool{padding:7px 9px; letter-spacing:.08em}
+  #cerca{display:none}
+  #cerca-go{display:inline-flex}
+  #conta span{display:none}
+  body.cercando .brand{display:none}
+  body.cercando .tools, body.cercando .cercawrap{flex:1}
+  body.cercando #cerca{display:block; width:100%}
+  body.cercando #cerca-go{display:none}
+  body.cercando #conta, body.cercando #add, body.cercando .sortwrap,
+  body.cercando #mode, body.cercando #esci{display:none !important}
   #rail{gap:8px}
   .rail-bar{width:min(200px,54vw)}
   #rail-txt{font-size:13px}

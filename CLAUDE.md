@@ -129,6 +129,26 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
   conseguenza, se no il legno si stira.
 
+## Cercare e contare
+
+- `LIB.list(ordine, testo)` è l'unico punto in cui si decide **quali** giochi
+  esistono e in che ordine. In `app.js` ci passa `lista()`: tutto quello che
+  dispone scatole deve chiamare quella, se no la posizione sullo scaffale e
+  quella nell'elenco non coincidono più (`goToGame` sbagliava libreria).
+- Il testo viene **appiattito** prima del confronto — minuscolo, senza segni
+  diacritici — e tutte le parole scritte devono comparire: due parole
+  restringono, non allargano.
+- **Cercare cambia quali scatole ci sono**, non quali sono in evidenza: una
+  ricerca è una libreria con dentro i risultati. Si torna alla prima libreria,
+  se no restando fermi sulla terza ci si ritrova davanti a un mobile vuoto.
+- **Mentre si cerca i cubi vuoti restano vuoti**: riempirli di libri e dadi fa
+  sembrare lo scaffale pieno e i risultati non si distinguono dal contorno.
+- Il contatore dice «N di M» mentre si cerca. Solo «N» e il numero che cala
+  sembrerebbe che i giochi siano spariti.
+- `ridisponi()` esiste perché **non si può rifare la disposizione con una scatola
+  aperta**: la si sposterebbe sotto i piedi al tween in corso. Se c'è, chiude e
+  ridispone dopo, con il seguito passato a `unfocus(poi)`.
+
 ## Luce e colori
 
 La stanza è chiara: emisferica + ambiente fanno il grosso, una direzionale larga
