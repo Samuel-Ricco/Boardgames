@@ -164,17 +164,57 @@ function add(g){
   salvaLocale();
 
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (c && remota){
-    c.from('giochi').insert(aRiga(game)).then(function(r){
-      if (r.error){
-        annulla(game.id);
-        onErrore('non sono riuscito ad aggiungerlo: ' + messaggio(r.error));
-      } else {
-        sync();                            // riallinea creato/ordine col server
-      }
-    });
-  }
+  if (c && remota) mandaAlServer(c, game);
   return game;
+}
+
+/* La copertina di un gioco aggiunto arriva dal proxy come data URL: un
+   centinaio di kilobyte di base64. In localStorage andava bene, in una
+   libreria condivisa no -- gonfierebbe la riga e ogni visitatore se la
+   scaricherebbe dentro il JSON. Va nel bucket `copertine`, e nella
+   colonna ci finisce l'indirizzo.
+
+   Niente upsert: le regole dello storage concedono agli admin insert e
+   delete, non update. Se l'oggetto c'e' gia' si riusa quello che c'e'. */
+async function caricaCopertina(c, id, dataUrl){
+  const path = id + '.jpg';
+  const pubblico = function(){
+    return c.storage.from('copertine').getPublicUrl(path).data.publicUrl;
+  };
+  const blob = await (await fetch(dataUrl)).blob();
+  const r = await c.storage.from('copertine')
+    .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+  if (r.error && !/exists/i.test(r.error.message || '')) throw r.error;
+  return pubblico();
+}
+
+async function mandaAlServer(c, game){
+  try {
+    const riga = aRiga(game);
+
+    // chi l'ha messo sullo scaffale: la colonna c'e' apposta, e con piu'
+    // di un admin e' l'unico modo per sapere chi ha aggiunto cosa
+    const io = AUTH.stato();
+    if (io.id) riga.aggiunto_da = io.id;
+
+    if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
+      try {
+        riga.copertina = await caricaCopertina(c, game.id, riga.copertina);
+        game.cover = riga.copertina;          // anche in memoria, per il prossimo giro
+      } catch(e){
+        // senza copertina il gioco entra lo stesso, con quella disegnata
+        delete riga.copertina;
+        onErrore('copertina non caricata: ' + messaggio(e));
+      }
+    }
+
+    const r = await c.from('giochi').insert(riga);
+    if (r.error) throw r.error;
+    await sync();                             // riallinea creato e ordine col server
+  } catch(e){
+    annulla(game.id);
+    onErrore('non sono riuscito ad aggiungerlo: ' + messaggio(e));
+  }
 }
 
 function remove(id){
@@ -190,6 +230,12 @@ function remove(id){
         all().push(out);
         salvaLocale();
         onErrore('non sono riuscito a toglierlo: ' + messaggio(r.error));
+        return;
+      }
+      // via anche l'immagine, se stava nel bucket: se no resta li' a
+      // occupare spazio per un gioco che non c'e' piu'
+      if (out.cover && out.cover.indexOf('/copertine/') >= 0){
+        c.storage.from('copertine').remove([out.id + '.jpg']);
       }
     });
   }

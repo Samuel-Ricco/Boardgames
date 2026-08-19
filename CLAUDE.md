@@ -172,6 +172,32 @@ in **frazioni di quadro**.
   di generare le texture, se no i titoli escono con il ripiego. Stanno in
   `fonts/`, dichiarati con `@font-face` in cima al CSS.
 
+## Il backend (Supabase)
+
+Progetto `stslddkkzqonauavgxuy`, URL e chiave **publishable** committati in
+`js/config.js` — sono pubbliche per progetto, a proteggere i dati sono le regole
+in `supabase/migrations/`. La chiave `sb_secret_` non deve mai entrare nel repo.
+
+- **Il ruolo lo decide il database.** `AUTH.eAdmin()` chiama `e_admin()` su
+  Postgres, che guarda la tabella `admin` — l'unica senza policy di scrittura,
+  quindi nessuno può promuoversi. Si aggiunge un admin solo dal Table Editor.
+- **`js/store.js` resta l'unico file che sa dove vivono i dati.** `all/list/add/
+  remove` sono rimaste **sincrone**: `sync()` riempie la cache una volta
+  all'avvio e le scritture partono in background, così la scena 3D non sa nemmeno
+  che esiste un database.
+- **Scritture ottimiste**: la scatola compare subito, e se Postgres rifiuta torna
+  indietro con il motivo. Un `42501` non è un guasto, è RLS che fa il suo lavoro.
+- **`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un
+  ruolo può rivolgersi alla tabella, la seconda quali righe ottiene. Le tabelle
+  nuove in `public` non sono più esposte in automatico, quindi ogni tabella nuova
+  vuole il suo `grant`, se no torna `permission denied` e sembra un errore di
+  policy.
+- **Le copertine caricate vanno nel bucket `copertine`**, non nella colonna come
+  data URL: in una libreria condivisa gonfierebbero la riga per tutti. Niente
+  `upsert`, perché sullo storage gli admin hanno insert e delete ma non update.
+- **Tre sorgenti in ordine**: database → copia in `localStorage` → `js/data.js`.
+  L'armadio si apre anche a rete staccata.
+
 ## Stato attuale
 
 - Le **recensioni sono lorem ipsum**, in `js/data.js`. Da riempire.
@@ -182,5 +208,11 @@ in **frazioni di quadro**.
   condizioni dicono di chiamarla da server. Passa tutto da `tools/bgg-proxy.mjs`,
   che gira in locale e tiene lui il token. **Un token approvato ancora non c'è**:
   finché non arriva, la ricerca risponde 401 e resta il modulo a mano.
+- **Login con Google collaudato end-to-end il 2026-08-19**: accesso, ruolo admin
+  letto dal server, inserimento e cancellazione verificati rileggendo il database
+  dall'esterno e non dalla cache del browser. L'admin è `admin@smlrcc.it`.
+- Il passo successivo sul proxy BGG è spostarlo in una *edge function*: il token
+  starebbe sul server, la ricerca funzionerebbe da qualunque browser senza
+  accendere niente, e sarebbe anche ciò che le condizioni di BGG chiedono.
 - Remote: `https://github.com/Samuel-Ricco/Boardgames.git`, branch `main`.
   L'auth passa dal Git Credential Manager, `gh` non è installato.
