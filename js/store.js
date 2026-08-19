@@ -32,7 +32,7 @@ const DA_DB = {
   autore:'designer', editore:'publisher', illustratore:'artist',
   giocatori:'players', durata:'time', eta:'age', peso:'weight',
   voto:'score', tag:'tags', recensione:'review', copertina:'cover',
-  arte:'art', wrap:'wrap', ink:'ink'
+  arte:'art', wrap:'wrap', ink:'ink', posizione:'pos'
 };
 const A_DB = {};
 Object.keys(DA_DB).forEach(function(k){ A_DB[DA_DB[k]] = k; });
@@ -140,7 +140,21 @@ function all(){
   return games;
 }
 
+/* L'ordine manuale e' l'unico che non si calcola: sta in `pos`, denso e
+   contato da zero. Chi non ce l'ha non e' mai stato spostato e va in
+   fondo -- e alla prima mossa manuale lo riceve, insieme a tutti gli
+   altri, nell'ordine in cui era in quel momento sullo schermo. Cosi'
+   passare a "il mio ordine" non rimescola mai niente. */
+function posDi(g){ return (g.pos === null || g.pos === undefined) ? null : g.pos; }
+
 const ORDERS = {
+  mio: function(a,b){
+    const pa = posDi(a), pb = posDi(b);
+    if (pa === null && pb === null) return (a.added||0) - (b.added||0);
+    if (pa === null) return 1;
+    if (pb === null) return -1;
+    return pa - pb;
+  },
   aggiunta: function(a,b){ return (a.added||0) - (b.added||0); },
   nome:     function(a,b){ return String(a.title).localeCompare(String(b.title), 'it'); },
   voto:     function(a,b){ return (parseFloat(b.score)||0) - (parseFloat(a.score)||0); }
@@ -309,6 +323,46 @@ async function mandaModifica(c, g, prima){
   }
 }
 
+/* --- riordinare a mano ------------------------------------------
+   `ids` e' l'ordine nuovo, per intero. Si scrivono solo le righe che
+   cambiano davvero: uno scambio fra due scatole ne tocca due, e non ha
+   senso rispedire al database quaranta posizioni identiche.
+
+   Come per le altre scritture e' ottimista: le scatole si spostano
+   subito e la richiesta parte dietro. Se il database rifiuta, l'ordine
+   resta comunque quello sullo schermo e in `localStorage` -- tornare
+   indietro qui vorrebbe dire far saltare le scatole sotto gli occhi di
+   chi le ha appena messe a posto, per un errore che quasi sempre e'
+   solo mancanza di rete. Lo si dice e basta. */
+function riordina(ids){
+  const per = {};
+  all().forEach(function(g){ per[g.id] = g; });
+
+  const cambiati = [];
+  ids.forEach(function(id, i){
+    const g = per[id];
+    if (!g) return;
+    if (g.pos !== i){ g.pos = i; cambiati.push(g); }
+  });
+  salvaLocale();
+
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (c && remota && cambiati.length) mandaOrdine(c, cambiati);
+  return cambiati.length;
+}
+
+async function mandaOrdine(c, giochi){
+  try {
+    const esiti = await Promise.all(giochi.map(function(g){
+      return c.from('giochi').update({ posizione: g.pos }).eq('id', g.id);
+    }));
+    const ko = esiti.find(function(r){ return r.error; });
+    if (ko) throw ko.error;
+  } catch(e){
+    onErrore('ordine non salvato sul server: ' + messaggio(e));
+  }
+}
+
 function remove(id){
   const i = all().findIndex(function(g){ return g.id === id; });
   if (i < 0) return null;
@@ -347,6 +401,11 @@ function messaggio(err){
   if (err && (err.code === '42501' || /row-level security/i.test(m))){
     return 'il database dice di no, questo account non e\' admin';
   }
+  // 42703: colonna inesistente. Capita una volta sola, quando una
+  // migrazione e' nel repo ma non e' ancora stata applicata al progetto.
+  if (err && (err.code === '42703' || /posizione/.test(m))){
+    return 'manca la colonna `posizione`: applica la migrazione ordine_manuale';
+  }
   return m;
 }
 
@@ -373,7 +432,7 @@ function touched(){
 
 return {
   sync: sync, all: all, list: list, get: get,
-  add: add, update: update, remove: remove,
+  add: add, update: update, remove: remove, riordina: riordina,
   scollega: scollega, reset: reset, esporta: esporta, touched: touched,
   eRemota: function(){ return remota; },
   suErrore: function(fn){ onErrore = fn; },

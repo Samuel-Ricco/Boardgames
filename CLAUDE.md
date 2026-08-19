@@ -129,6 +129,43 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
   conseguenza, se no il legno si stira.
 
+## Ordinare a mano
+
+Quattro ordinamenti: **il mio**, data di aggiunta, nome, voto. I primi tre si
+calcolano, il quarto no — e infatti è l'unico che ha bisogno di una colonna.
+
+- `posizione` sul database (migrazione `ordine_manuale`), `pos` in memoria: il
+  posto sullo scaffale contato da zero, **denso**. Uno scambio fra due scatole
+  tocca due righe, non tutta la collezione, ed è il motivo per cui lo scambio è
+  stato preferito all'inserimento.
+- **Nullo vuol dire «mai spostato»** e va in fondo. Alla prima mossa manuale
+  ricevono tutti una posizione, **nell'ordine in cui erano in quel momento sullo
+  schermo**: chi sposta una scatola stando in ordine alfabetico non si ritrova la
+  libreria rimescolata, si ritrova quello che vedeva più la mossa che ha fatto.
+- Un gioco appena aggiunto non ha posizione, quindi in ordine manuale compare in
+  fondo. È giusto così: è dove lo si è messo.
+
+### Il gesto
+
+- **Si tiene premuto, non si trascina e basta** (`PRESA_MS`, 330 ms). La libreria
+  riempie lo schermo, quindi quasi ogni gesto comincia sopra una scatola: senza
+  la pausa, prendere una scatola e scorrere fra le librerie sarebbero lo stesso
+  movimento e non si potrebbe più fare né l'uno né l'altro.
+- Premere e lasciare **senza muoversi** apre la scatola, anche se la presa era
+  già scattata: chi tiene premuto un attimo di troppo voleva aprirla.
+- **Due piani, non uno.** La scatola in mano sta su un piano davanti al mobile
+  (`PRESA_Z`) così resta sotto al dito senza parallasse; il cubo di destinazione
+  si legge invece sul piano dei cubi, che è dove il dito sta davvero indicando.
+  Con un piano solo, a bordo schermo la scatola è fuori di quasi un terzo.
+- `slotDa(x, y)` è l'inverso di `cubX`/`rigaY`: nessun raycast sui vani.
+- **Lasciarla in un cubo vuoto la manda in fondo**, che è l'altra cosa che si
+  vuole davvero fare. Il segnaposto ambrato (`alone`) ha `depthWrite:false`: è un
+  velo, e senza, la scatola che ci passa davanti veniva ritagliata.
+- **Mentre si cerca non si sposta niente**: l'ordine sullo schermo è un
+  sottoinsieme, e riordinarlo lascerebbe tutti gli altri dove capita.
+- `applyLibrary` salta la scatola in mano. Un `resize` in mezzo a uno spostamento
+  gliela riportava a casa da sotto le dita.
+
 ## Cercare e contare
 
 - `LIB.list(ordine, testo)` è l'unico punto in cui si decide **quali** giochi
@@ -349,6 +386,10 @@ dall'esterno, non dalla cache del browser.
 
 Cosa manca, in ordine di fastidio:
 
+0. **La migrazione `ordine_manuale` non è ancora applicata al progetto.** Finché
+   non lo è, l'ordine manuale funziona sullo schermo e resta in `localStorage`,
+   ma il server lo rifiuta con «manca la colonna posizione» — e allora da un
+   altro dispositivo si vede l'ordine di prima.
 1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito, con *modifica*.
 2. **Il token BGG non è ancora arrivato.** Finché non c'è, la ricerca cade su
    Wikidata: ~4.400 giochi contro 175.000, dati più magri e a volte sbagliati

@@ -120,6 +120,10 @@ body.cerca #cerca-x{display:block}
 #conta:hover{color:var(--ink); border-color:var(--line)}
 #conta b{font-family:var(--ff-display); font-size:15px; letter-spacing:.06em; color:var(--ink)}
 #conta span{color:var(--ink-soft)}
+.hint i{font-style:normal}
+/* mentre si tiene in mano una scatola non si va da nessuna parte:
+   il suggerimento a fondo pagina parla di un gesto che non e' quello */
+body.presa .hint{opacity:0}
 /* il chip dice chi sei e basta: entrati non e' piu' un pulsante */
 #mode.chip{color:var(--ink)}
 #mode.chip:disabled{cursor:default; opacity:1}

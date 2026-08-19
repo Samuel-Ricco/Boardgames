@@ -86,6 +86,7 @@ const state = {
   focusLight: 0,
   px: 0, py: 0, tx: 0, ty: 0,
   q: '',                       // il testo cercato, '' se non si sta cercando
+  presa: null,                 // la scatola che si sta spostando a mano
   libs: 1,                     // quante librerie in fila lungo la parete
   scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
   dragging: false,
@@ -98,7 +99,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const camBase = new THREE.Vector3(0, 8, 26);
 
 let renderer, scene, camera, raycaster, pointer;
-let cabGroup, propGroup, bayLights = [], focusLight, keyLight;
+let cabGroup, propGroup, bayLights = [], focusLight, keyLight, alone;
 let floorMesh, wallMesh;
 let boxes = [];
 let MATS = null;
@@ -271,6 +272,25 @@ function buildRoom(){
     bayLights.push(l);
     scene.add(l);
   }
+
+  alone = makeAlone();
+}
+
+/* Il segnaposto del cubo dove si sta per posare una scatola: una lastra
+   ambrata in fondo al vano. Dentro un mobile di legno chiaro un contorno
+   luminoso non si legge, una macchia di colore si'.
+
+   `depthWrite:false` perche' e' un velo, non un oggetto: senza, la
+   scatola che ci passa davanti veniva ritagliata dal suo z-buffer. */
+function makeAlone(){
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(KAL.cell, KAL.cell),
+    new THREE.MeshBasicMaterial({ color: 0x9a6a15, transparent: true,
+                                  opacity: .24, depthWrite: false })
+  );
+  m.visible = false;
+  scene.add(m);
+  return m;
 }
 
 /* La stanza si allunga con le librerie: se pavimento e parete finissero
@@ -551,6 +571,10 @@ function applyLibrary(opts){
     b.userData.homePos.copy(home);
     b.userData.homeRot.set(0, (i % 2 ? -.03 : .02), 0);
 
+    // quella che si ha in mano sta dove sta il dito: la casa cambia,
+    // ma non si riporta a casa una scatola mentre la si sta spostando
+    if (state.presa && state.presa.box === b) return;
+
     if (fresh){
       // entra dall'alto, come se la stessero posando adesso
       b.position.set(home.x, home.y + 3.2, home.z + 1.4);
@@ -677,6 +701,159 @@ function focusPose(box){
     rot: new THREE.Euler(-.05, .34, .02),
     scale: scale
   };
+}
+
+/* ===============================================================
+   SPOSTARE UNA SCATOLA A MANO
+   ===============================================================
+
+   Si tiene premuto, non si trascina e basta. La libreria riempie lo
+   schermo, quindi quasi ogni gesto comincia sopra una scatola: senza la
+   pausa, prendere una scatola e scorrere fra le librerie sarebbero lo
+   stesso movimento e non si potrebbe piu' fare ne' l'uno ne' l'altro.
+   Un terzo di secondo fermi vuol dire "questa la prendo"; muoversi
+   prima vuol dire "sposto la vista".
+
+   Due scatole si SCAMBIANO di posto. In una griglia di cubi e' il gesto
+   che si legge: questa la metto li', e quella viene qui. Lasciarla in
+   un cubo vuoto invece la manda in fondo, che e' l'altra cosa che si
+   vuole fare davvero.
+
+   Spostare a mano ACCENDE l'ordine manuale se non era gia' acceso, e le
+   posizioni di partenza sono quelle che c'erano sullo schermo in quel
+   momento: passare a "il mio ordine" non rimescola mai niente. */
+
+const PRESA_MS = 330;
+const PRESA_Z = KAL.front + 1.8;      // quanto la scatola viene avanti in mano
+
+/* Da un punto sul piano dei cubi al numero di posto. Il conto e'
+   l'inverso di cubX/rigaY: nessuna ricerca, nessun raycast sui vani. */
+function slotDa(x, y){
+  const l = Math.round(x / PASSO_LIB);
+  if (l < 0 || l >= state.libs) return -1;
+  const c = Math.floor((x - libX(l) + LIB_W/2 - KAL.t) / KAL.passo);
+  const r = Math.floor((KAL.topY - KAL.t - y) / KAL.passo);
+  if (c < 0 || c >= COLS || r < 0 || r >= RIGHE) return -1;
+  return l * PER_LIB + r * COLS + c;
+}
+
+/* Dove punta il dito su un piano verticale a quota z. Ne servono due
+   piani diversi: la scatola sta su quello davanti, cosi' resta sotto al
+   dito senza parallasse, ma il cubo di destinazione si legge su quello
+   dei cubi, che e' dove il dito sta davvero indicando. */
+const pianoP = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const puntoP = new THREE.Vector3();
+function puntoSuZ(z){
+  pianoP.constant = -z;
+  raycaster.setFromCamera(pointer, camera);
+  return raycaster.ray.intersectPlane(pianoP, puntoP) ? puntoP : null;
+}
+
+/* Cercando, l'ordine sullo schermo e' un sottoinsieme: spostarci dentro
+   riordinerebbe solo i risultati e lascerebbe gli altri dove capita. */
+function puoiSpostare(){
+  return (state.dentro || !AUTH.attivo()) && !state.q && state.phase === 'browse';
+}
+
+function iniziaPresa(box){
+  const l = lista();
+  const da = l.findIndex(function(g){ return g.id === box.userData.id; });
+  if (da < 0) return;
+
+  state.presa = { box: box, l: l, da: da, mira: da, mirBox: box };
+  state.dragging = false;
+  state.hover = null;
+  box.userData.busy = true;                 // updateBoxes non ci mette piu' mano
+  document.body.classList.add('presa');
+  document.body.style.cursor = 'grabbing';
+
+  const s0 = box.scale.x;
+  tween(.16, function(p){
+    box.scale.setScalar(lerp(s0, 1.12, easeOut(p)));
+  });
+  box.rotation.set(-.06, .12, .04);
+  muoviPresa();
+}
+
+function muoviPresa(){
+  const p = state.presa;
+  if (!p) return;
+
+  const inMano = puntoSuZ(PRESA_Z);
+  if (inMano) p.box.position.set(inMano.x, inMano.y, PRESA_Z);
+
+  const suiCubi = puntoSuZ(.2);
+  const s = suiCubi ? slotDa(suiCubi.x, suiCubi.y) : -1;
+  p.mira = s;
+  p.mirBox = null;
+  if (s >= 0 && s < p.l.length){
+    const id = p.l[s].id;
+    p.mirBox = boxes.find(function(b){ return b.userData.id === id; }) || null;
+  }
+  segnaAlone(s);
+}
+
+function segnaAlone(s){
+  if (!alone) return;
+  if (s < 0 || s >= state.libs * PER_LIB){ alone.visible = false; return; }
+  const l = Math.floor(s / PER_LIB), k = s % PER_LIB;
+  alone.position.set(cubX(l, k % COLS), rigaY(Math.floor(k / COLS)), -KAL.d/2 + .14);
+  alone.visible = true;
+}
+
+function posaScatola(p){
+  const ids = p.l.map(function(g){ return g.id; });
+  if (p.mira < ids.length){
+    const t = ids[p.da]; ids[p.da] = ids[p.mira]; ids[p.mira] = t;   // si scambiano
+  } else {
+    ids.push(ids.splice(p.da, 1)[0]);                                // cubo vuoto: in fondo
+  }
+
+  const prima = state.sort;
+  p.box.userData.busy = false;          // da qui in poi la muove applyLibrary
+  LIB.riordina(ids);
+
+  if (prima !== 'mio'){
+    setSort('mio');                     // ridispone da solo
+    flash('ordine tuo: da adesso le scatole restano dove le metti');
+  } else {
+    applyLibrary({ animate: true });
+  }
+}
+
+/* `annulla` = non posarla, riportala a casa. `subito` = senza animazione,
+   perche' subito dopo la scatola si apre e un tween a meta' litigherebbe
+   con quello dell'apertura. */
+function finiscePresa(annulla, subito){
+  const p = state.presa;
+  if (!p) return;
+  state.presa = null;
+  if (alone) alone.visible = false;
+  document.body.classList.remove('presa');
+  document.body.style.cursor = '';
+
+  const posabile = !annulla && p.mira >= 0 && p.mira !== p.da;
+  if (posabile){ posaScatola(p); return; }
+
+  const u = p.box.userData;
+  if (subito){
+    p.box.position.copy(u.homePos);
+    p.box.rotation.copy(u.homeRot);
+    p.box.scale.setScalar(1);
+    u.busy = false;
+    return;
+  }
+
+  const p0 = p.box.position.clone(), s0 = p.box.scale.x;
+  const r0 = { x: p.box.rotation.x, y: p.box.rotation.y, z: p.box.rotation.z };
+  tween(.34, function(t){
+    const e = easeOut(t);
+    p.box.position.lerpVectors(p0, u.homePos, e);
+    p.box.rotation.set(lerp(r0.x, u.homeRot.x, e),
+                       lerp(r0.y, u.homeRot.y, e),
+                       lerp(r0.z, u.homeRot.z, e));
+    p.box.scale.setScalar(lerp(s0, 1, e));
+  }, function(){ u.busy = false; });
 }
 
 /* ===============================================================
@@ -979,7 +1156,7 @@ function updateRail(){
 /* --- puntatore -------------------------------------------------- */
 function bindInput(){
   const el = renderer.domElement;
-  let downAt = 0, downX = 0, downY = 0, lastX = 0, moved = 0;
+  let downAt = 0, downX = 0, downY = 0, lastX = 0, moved = 0, presaT = 0;
 
   function norm(e){
     state.tx = (e.clientX / window.innerWidth) * 2 - 1;
@@ -989,6 +1166,9 @@ function bindInput(){
   el.addEventListener('pointermove', function(e){
     norm(e);
     pointer.set(state.tx, state.ty);
+    if (state.presa){ muoviPresa(); return; }
+    // muoversi prima che scatti la presa vuol dire che si sta scorrendo
+    if (Math.abs(e.clientX - downX) > 9 || Math.abs(e.clientY - downY) > 9) clearTimeout(presaT);
     if (state.dragging && state.phase === 'browse'){
       const dx = e.clientX - lastX;
       lastX = e.clientX;
@@ -1009,9 +1189,30 @@ function bindInput(){
     state.dragging = true;
     if (el.setPointerCapture) try { el.setPointerCapture(e.pointerId); } catch(err){}
     norm(e); pointer.set(state.tx, state.ty);
+
+    clearTimeout(presaT);
+    if (puoiSpostare()){
+      const sopra = pick();
+      if (sopra && !sopra.userData.busy){
+        presaT = setTimeout(function(){ iniziaPresa(sopra); }, PRESA_MS);
+      }
+    }
   });
 
   el.addEventListener('pointerup', function(e){
+    clearTimeout(presaT);
+
+    if (state.presa){
+      const fermo = Math.abs(e.clientX - downX) <= 9 && Math.abs(e.clientY - downY) <= 9;
+      const box = state.presa.box;
+      finiscePresa(fermo, fermo);
+      state.dragging = false;
+      // presa e lasciata senza muoverla: era un clic un po' lungo, e chi
+      // lo fa vuole aprire la scatola, non spostarla
+      if (fermo && state.phase === 'browse') focusOn(box);
+      return;
+    }
+
     const wasDrag = moved > 9;
     state.dragging = false;
     if (wasDrag) snapSoon();
@@ -1028,13 +1229,16 @@ function bindInput(){
     }
   });
 
-  el.addEventListener('pointercancel', function(){ state.dragging = false; });
+  el.addEventListener('pointercancel', function(){
+    clearTimeout(presaT); finiscePresa(true); state.dragging = false;
+  });
   el.addEventListener('pointerleave', function(){
+    clearTimeout(presaT); finiscePresa(true);
     state.dragging = false; state.tx = 0; state.ty = 0; state.hover = null;
   });
 
   el.addEventListener('wheel', function(e){
-    if (state.phase !== 'browse') return;
+    if (state.phase !== 'browse' || state.presa) return;
     e.preventDefault();
     // la rotella di un mouse da' deltaY, il trackpad di lato da' deltaX:
     // qui muovono la stessa cosa, quindi si prende quello che si muove
@@ -1043,7 +1247,7 @@ function bindInput(){
   }, { passive: false });
 
   window.addEventListener('keydown', function(e){
-    if (e.key === 'Escape'){ unfocus(); closeAdd(); return; }
+    if (e.key === 'Escape'){ finiscePresa(true); unfocus(); closeAdd(); return; }
     if (state.phase !== 'browse') return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); scrollBy(1); }
     if (e.key === 'ArrowLeft'  || e.key === 'PageUp'){   e.preventDefault(); scrollBy(-1); }
@@ -1201,10 +1405,14 @@ function bindTools(){
   });
 }
 
+/* Nel menu il nome per esteso, sul pulsante quello corto: la testata e'
+   stretta e "ordine di aggiunta" ci stava solo togliendo altro. */
+const ETICHETTE = { mio: 'il mio', aggiunta: 'data', nome: 'nome', voto: 'voto' };
+
 function setSort(mode){
   state.sort = mode;
   try { localStorage.setItem('dado-ordine', mode); } catch(e){}
-  q('#sort-now').textContent = mode;
+  q('#sort-now').textContent = ETICHETTE[mode] || mode;
   qa('#sortmenu button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-sort') === mode);
   });
@@ -1459,7 +1667,10 @@ function updateBoxes(dt){
     const b = boxes[i], u = b.userData;
     if (u.busy){ u.cover.emissiveIntensity = .10; continue; }
 
-    const want = (state.hover === b && state.phase === 'browse') ? 1 : 0;
+    // il cubo di destinazione si annuncia alzando la scatola che ci sta
+    // gia': e' quella che sta per scambiarsi di posto
+    const mirato = !!(state.presa && state.presa.mirBox === b);
+    const want = ((state.hover === b && state.phase === 'browse') || mirato) ? 1 : 0;
     u.hover += (want - u.hover) * Math.min(1, dt * 9);
 
     b.position.set(u.homePos.x, u.homePos.y + u.hover * .10, u.homePos.z + u.hover * .5);
@@ -1515,7 +1726,7 @@ function frame(now){
   if (state.focused) focusLight.position.copy(state.focused.position).add(new THREE.Vector3(1.2, 2.2, 3.4));
   focusLight.intensity = state.focusLight * 1.1;
 
-  if (state.phase === 'browse' && !state.dragging){
+  if (state.phase === 'browse' && !state.dragging && !state.presa){
     const hit = pick();
     if (hit !== state.hover){
       state.hover = hit;
@@ -1619,7 +1830,7 @@ function gate(giaDentro){
 
 async function boot(){
   try { state.sort = localStorage.getItem('dado-ordine') || 'aggiunta'; } catch(e){}
-  q('#sort-now').textContent = state.sort;
+  q('#sort-now').textContent = ETICHETTE[state.sort] || state.sort;
   LIB.suErrore(flash);                    // le scritture rifiutate le racconta il flash
   buildFlatList();
 
