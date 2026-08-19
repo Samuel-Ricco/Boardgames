@@ -597,9 +597,16 @@ settimana senza traffico, e si riattiva a mano dal pannello.
 Funziona ed è collaudato end-to-end sul progetto vero (2026-08-19): accesso con
 Google, ruolo letto dal server, aggiunta, **modifica** (scheda e recensione),
 rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
-`posizione`, **pubblicazione e ritiro** di una recensione nel catalogo. Tutte e
-cinque le migrazioni sono applicate. Verificato rileggendo il database
-dall'esterno, non dalla cache del browser.
+`posizione`, **pubblicazione e ritiro** di una recensione nel catalogo, **nick e
+faccia** salvati sul profilo, le due funzioni di **richiesta amicizia**
+(codice inesistente, proprio codice, email ignota: nessuna crea righe),
+**giocatori salvati** con il rifiuto del doppione, e una **partita** completa di
+partecipanti, posizioni e vincitore. Tutte e sette le migrazioni sono applicate.
+Verificato rileggendo il database dall'esterno, non dalla cache del browser.
+
+Quello che **non** è ancora stato provato con due persone vere: richiesta,
+accettazione e visita a una libreria che sia davvero di qualcun altro. Serve un
+secondo account.
 
 Cosa manca, in ordine di fastidio:
 
