@@ -133,6 +133,40 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
   conseguenza, se no il legno si stira.
 
+## Le librerie sono mobili, non conteggi
+
+Fino alla migrazione `stanza_librerie_gruppi` le librerie erano **calcolate** dal
+numero di giochi (`ceil((n+1)/12)`) e le posizioni erano dense. Adesso sono
+righe in `librerie`: hanno un nome, si creano a mano, e ogni gioco ha
+`libreria` + `posto` (0..11). **I buchi sono permessi**, ed è tutto il punto:
+un cubo vuoto in mezzo allo scaffale è una scelta di chi lo ha arredato.
+
+- `disposizione(list)` decide dove va ogni scatola e ha **due modi**. In ordine
+  manuale la disposizione è un *dato*: (libreria, posto), buchi compresi. Negli
+  altri ordinamenti si riempie in sequenza e i posti non contano — un
+  ordinamento calcolato che rispettasse i buchi non sarebbe più un ordinamento,
+  e tornando a «il mio ordine» si ritrova tutto com'era.
+- Chi non ha ancora un posto va nel **primo cubo libero**, non in fondo: i buchi
+  esistono proprio perché «dopo tutti» non è l'unico posto possibile.
+- `state.libs` è sempre **un mobile in più** di quelli che esistono. Quello di
+  scorta è il gesto con cui se ne comincia un altro: trascinandoci dentro una
+  scatola, la libreria si crea da sola. Chiedere conferma con un modulo quando
+  la scatola è già lì sarebbe una domanda a cui si ha già risposto.
+- **Il bersaglio del trascinamento si cerca per CUBO, non per indice.** Da quando
+  i posti hanno buchi, il quinto della lista non è più il quinto cubo, e
+  `b.userData.cubo` è l'unica cosa che sa dove sta davvero una scatola.
+- Cubo occupato → le due si **scambiano**; cubo libero → la scatola ci va e
+  quello di partenza **resta vuoto**.
+- Chi arriva da un ordine calcolato **fotografa** prima la disposizione che
+  vedeva sullo schermo, poi applica la mossa: si parte da quello che c'era, non
+  da un rimescolamento.
+- **Togliere un mobile non butta via i giochi**: la chiave esterna è
+  `on delete set null`, restano senza posto e rifluiscono nei cubi liberi.
+- Il nome della libreria sta **sul binario in basso**, che è dove uno guarda per
+  sapere dove si trova, ed è anche la porta del pannello dei mobili. Con una
+  libreria sola sparisce la barra ma **non il nome**: se no non ci sarebbe modo
+  di crearne una seconda.
+
 ## Ordinare a mano
 
 Quattro ordinamenti: **il mio**, data di aggiunta, nome, voto. I primi tre si

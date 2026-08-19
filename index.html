@@ -93,10 +93,24 @@
 </aside>
 
 <!-- a che libreria siamo -->
-<div id="rail" aria-hidden="true">
-  <span id="rail-txt">1 / 3</span>
-  <div class="rail-bar"><i id="rail-thumb"></i></div>
+<div id="rail">
+  <button id="rail-nome" type="button" class="dentro-only"
+          title="rinomina, aggiungi o togli una libreria"></button>
+  <span id="rail-txt" aria-hidden="true">1 / 3</span>
+  <div class="rail-bar" aria-hidden="true"><i id="rail-thumb"></i></div>
 </div>
+
+<!-- I MOBILI. Si aprono dal nome della libreria, che e' dove uno guarda
+     per sapere in che scaffale si trova. -->
+<aside id="mobili" aria-hidden="true" aria-label="le tue librerie">
+  <button id="mobili-x" type="button" aria-label="chiudi">&times;</button>
+  <p class="eyebrow">le tue librerie</p>
+  <ul id="mobili-lista"></ul>
+  <p class="st-fondo">
+    <span id="mobili-msg">tieni premuta una scatola per spostarla</span>
+    <button id="mobili-piu" type="button">aggiungi</button>
+  </p>
+</aside>
 
 <p class="hint">
   <span class="wide">clicca una scatola per <em>leggere la recensione</em></span>

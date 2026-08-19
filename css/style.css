@@ -720,14 +720,63 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
   opacity:0; transition:opacity .5s ease; pointer-events:none;
 }
 body.browse #rail{opacity:1}
-/* una libreria sola: non c'e' niente da scorrere */
-body.ferma #rail{opacity:0 !important}
+/* Una libreria sola: non c'e' niente da scorrere, ma il NOME resta --
+   e' anche il modo di aprire i mobili e crearne un altro. */
+body.ferma #rail-txt, body.ferma .rail-bar{display:none}
+body.sez-catalogo #rail, body.sez-profilo #rail{opacity:0 !important}
 body.ferma .hint{bottom:26px}
 body.ferma .hint small{display:none}
 #rail-txt{
   font-family:var(--ff-display); font-size:15px; letter-spacing:.12em;
   color:var(--ink-soft);
 }
+#rail-nome{
+  pointer-events:auto; cursor:pointer; max-width:44vw; overflow:hidden;
+  white-space:nowrap; text-overflow:ellipsis;
+  font-family:var(--ff-display); font-size:17px; letter-spacing:.06em;
+  color:var(--ink); background:none; border:0; border-bottom:1px solid var(--line);
+  padding:2px 2px 3px;
+}
+#rail-nome:hover{color:var(--amber); border-color:var(--amber)}
+body.visita #rail-nome{pointer-events:none; border-bottom-color:transparent}
+
+#mobili{
+  position:fixed; z-index:5; left:50%; bottom:64px; transform:translate(-50%,10px);
+  width:min(360px,92vw); padding:18px 18px 14px;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  opacity:0; visibility:hidden;
+  transition:opacity .28s ease, transform .28s ease, visibility 0s .28s;
+}
+body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); transition-delay:0s}
+#mobili .eyebrow{margin:0 0 12px}
+#mobili-x{
+  position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
+  color:var(--ink-soft); background:none; border:0; padding:4px 6px;
+}
+#mobili-x:hover{color:var(--rust)}
+#mobili-lista{list-style:none; margin:0; padding:0}
+#mobili-lista li{display:flex; align-items:center; gap:8px; margin:0 0 8px}
+#mobili-lista input{
+  flex:1; min-width:0; font-family:var(--ff-text); font-size:13px; color:var(--ink);
+  background:var(--bg); border:1px solid var(--line); padding:8px 10px;
+}
+#mobili-lista input:focus{outline:none; border-color:var(--amber)}
+#mobili-lista .quanti{
+  flex:none; width:26px; text-align:center; font-family:var(--ff-display);
+  font-size:14px; color:var(--ink-soft);
+}
+#mobili-lista button{
+  flex:none; cursor:pointer; font-size:15px; line-height:1; padding:5px 8px;
+  color:var(--ink-soft); background:none; border:1px solid var(--line);
+}
+#mobili-lista button:hover{color:var(--rust); border-color:var(--rust)}
+#mobili-msg{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(44,36,27,.45)}
+#mobili-piu{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; cursor:pointer; color:#fdfaf4;
+  background:var(--amber); border:1px solid var(--amber); padding:8px 12px;
+}
+#mobili-piu:hover{background:var(--ink); border-color:var(--ink)}
 .rail-bar{height:2px; width:min(280px,44vw); background:rgba(44,36,27,.16); position:relative}
 .rail-bar i{position:absolute; top:0; height:2px; background:var(--amber);
   transition:transform .25s ease, width .25s ease}

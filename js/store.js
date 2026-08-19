@@ -32,7 +32,8 @@ const DA_DB = {
   autore:'designer', editore:'publisher', illustratore:'artist',
   giocatori:'players', durata:'time', eta:'age', peso:'weight',
   voto:'score', tag:'tags', recensione:'review', copertina:'cover',
-  arte:'art', wrap:'wrap', ink:'ink', posizione:'pos'
+  arte:'art', wrap:'wrap', ink:'ink', posizione:'pos',
+  libreria:'libreria', posto:'posto'
 };
 const A_DB = {};
 Object.keys(DA_DB).forEach(function(k){ A_DB[DA_DB[k]] = k; });
@@ -164,10 +165,14 @@ async function visita(uid, nick){
                    .order('creato', { ascending: true });
   if (r.error) throw r.error;
   visitata = { id: uid, nick: nick || '', games: (r.data || []).map(daRiga) };
+  await caricaLibrerie(uid);          // i suoi mobili, con i suoi nomi
   return visitata;
 }
 
-function torna(){ visitata = null; }
+function torna(){
+  visitata = null;
+  caricaLibrerie();                   // e si tornano a leggere i propri
+}
 function ospitePresso(){ return visitata; }
 
 /* --- lettura sincrona, quella che usa la scena ------------------- */
@@ -177,20 +182,31 @@ function all(){
   return games;
 }
 
-/* L'ordine manuale e' l'unico che non si calcola: sta in `pos`, denso e
-   contato da zero. Chi non ce l'ha non e' mai stato spostato e va in
-   fondo -- e alla prima mossa manuale lo riceve, insieme a tutti gli
-   altri, nell'ordine in cui era in quel momento sullo schermo. Cosi'
-   passare a "il mio ordine" non rimescola mai niente. */
+/* L'ordine manuale e' l'unico che non si calcola: e' DOVE STA la
+   scatola, cioe' la coppia (libreria, posto). `pos` resta come criterio
+   di scorta per i giochi che un posto non ce l'hanno ancora -- appena
+   aggiunti, o arrivati prima che esistessero le librerie.
+
+   I posti sono espliciti e possono avere buchi: un cubo vuoto in mezzo
+   allo scaffale e' una scelta di chi lo ha arredato, non un errore da
+   compattare. E' la differenza con la numerazione densa di prima. */
 function posDi(g){ return (g.pos === null || g.pos === undefined) ? null : g.pos; }
+
+function ordineDiLibreria(id){
+  if (!id) return 9999;
+  const i = librerie.findIndex(function(L){ return L.id === id; });
+  return i < 0 ? 9999 : i;
+}
 
 const ORDERS = {
   mio: function(a,b){
-    const pa = posDi(a), pb = posDi(b);
-    if (pa === null && pb === null) return (a.added||0) - (b.added||0);
-    if (pa === null) return 1;
-    if (pb === null) return -1;
-    return pa - pb;
+    const la = ordineDiLibreria(a.libreria), lb = ordineDiLibreria(b.libreria);
+    if (la !== lb) return la - lb;
+    const pa = a.posto == null ? 99 : a.posto, pb = b.posto == null ? 99 : b.posto;
+    if (pa !== pb) return pa - pb;
+    const qa = posDi(a), qb = posDi(b);
+    if (qa !== null && qb !== null && qa !== qb) return qa - qb;
+    return (a.added||0) - (b.added||0);
   },
   aggiunta: function(a,b){ return (a.added||0) - (b.added||0); },
   nome:     function(a,b){ return String(a.title).localeCompare(String(b.title), 'it'); },
@@ -365,6 +381,112 @@ async function mandaModifica(c, g, prima){
   }
 }
 
+/* ============================================================
+   LE LIBRERIE
+
+   Sono mobili: hanno un nome, si creano a mano, e ogni gioco sta in un
+   posto preciso di una di esse. Fino a qui erano CALCOLATE dal numero
+   di giochi e le posizioni erano dense -- non c'era modo di dire
+   "questo scaffale e' i party games" ne' di lasciare un cubo libero.
+
+   `librerie` e' l'elenco in ordine, ed e' quello che decide da sinistra
+   a destra lungo la parete: l'indice nell'array E' il numero del
+   mobile.
+   ============================================================ */
+let librerie = [];
+
+function elencoLibrerie(){ return librerie; }
+
+/* IL FILTRO SUL PROPRIETARIO VA SCRITTO, come per i giochi: la lettura
+   e' aperta agli amici, quindi senza `eq` questa query si porterebbe a
+   casa anche i mobili loro. */
+async function caricaLibrerie(chi){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  const di = chi || (AUTH.stato().dentro ? AUTH.stato().id : null);
+  if (!c || !di){ librerie = []; return librerie; }
+  try {
+    const r = await c.from('librerie').select('*').eq('proprietario', di).order('ordine');
+    if (r.error) throw r.error;
+    librerie = r.data || [];
+  } catch(e){
+    librerie = [];
+    onErrore('librerie non lette: ' + messaggio(e));
+  }
+  return librerie;
+}
+
+async function creaLibreria(nome){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const r = await c.from('librerie').insert({
+    proprietario: AUTH.stato().id,
+    nome: String(nome || '').trim() || ('Libreria ' + (librerie.length + 1)),
+    ordine: librerie.length
+  }).select().single();
+  if (r.error) throw r.error;
+  librerie.push(r.data);
+  return r.data;
+}
+
+async function rinominaLibreria(id, nome){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const t = String(nome || '').trim();
+  if (!t) throw new Error('serve un nome');
+  const r = await c.from('librerie').update({ nome: t })
+    .eq('proprietario', AUTH.stato().id).eq('id', id);
+  if (r.error) throw r.error;
+  const L = librerie.find(function(x){ return x.id === id; });
+  if (L) L.nome = t;
+}
+
+/* Togliere un mobile non butta via i giochi: la chiave esterna e'
+   `on delete set null`, quindi restano senza posto e rifluiscono nei
+   cubi liberi delle altre librerie. Cancellare uno scaffale non e'
+   cancellare quello che c'era sopra. */
+async function togliLibreria(id){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  if (librerie.length <= 1) throw new Error('l\'ultima libreria non si toglie');
+  const r = await c.from('librerie').delete()
+    .eq('proprietario', AUTH.stato().id).eq('id', id);
+  if (r.error) throw r.error;
+  librerie = librerie.filter(function(x){ return x.id !== id; });
+  all().forEach(function(g){
+    if (g.libreria === id){ g.libreria = null; g.posto = null; }
+  });
+  salvaLocale();
+}
+
+/* Mettere una scatola in un cubo preciso. `posto` nullo vuol dire
+   "toglila dallo scaffale e lasciala rifluire": serve a chi viene
+   spostato via da uno scambio. */
+function metti(id, libreriaId, posto){
+  if (visitata) return null;
+  const g = get(id);
+  if (!g) return null;
+  g.libreria = libreriaId || null;
+  g.posto = (posto === null || posto === undefined) ? null : posto;
+  salvaLocale();
+  return g;
+}
+
+async function mandaPosti(giochi){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || !remota || visitata) return;
+  try {
+    const esiti = await Promise.all(giochi.map(function(g){
+      return c.from('giochi')
+        .update({ libreria: g.libreria, posto: g.posto })
+        .eq('proprietario', AUTH.stato().id).eq('id', g.id);
+    }));
+    const ko = esiti.find(function(r){ return r.error; });
+    if (ko) throw ko.error;
+  } catch(e){
+    onErrore('posizione non salvata: ' + messaggio(e));
+  }
+}
+
 /* --- riordinare a mano ------------------------------------------
    `ids` e' l'ordine nuovo, per intero. Si scrivono solo le righe che
    cambiano davvero: uno scambio fra due scatole ne tocca due, e non ha
@@ -480,6 +602,9 @@ return {
   add: add, update: update, remove: remove, riordina: riordina,
   scollega: scollega, reset: reset, esporta: esporta, touched: touched,
   visita: visita, torna: torna, ospitePresso: ospitePresso,
+  librerie: elencoLibrerie, caricaLibrerie: caricaLibrerie,
+  creaLibreria: creaLibreria, rinominaLibreria: rinominaLibreria,
+  togliLibreria: togliLibreria, metti: metti, mandaPosti: mandaPosti,
   eRemota: function(){ return remota; },
   suErrore: function(fn){ onErrore = fn; },
   orders: Object.keys(ORDERS)

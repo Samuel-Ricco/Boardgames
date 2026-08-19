@@ -190,10 +190,15 @@ non lo si riscrive ogni volta.
 
 - **Quattro ordinamenti**: il mio, data di aggiunta, nome, voto.
 - **Il mio ordine si fa a mano**: si tiene premuta una scatola per un terzo di
-  secondo, la si porta su un altro cubo e le due si scambiano di posto.
-  Lasciandola in un cubo vuoto va in fondo. Serve la pausa perché la libreria
-  riempie lo schermo: senza, prendere una scatola e scorrere fra le librerie
-  sarebbero lo stesso gesto.
+  secondo e la si porta dove si vuole. Su un cubo occupato le due si scambiano;
+  su un cubo libero ci va, e quello da cui è partita **resta vuoto** — lasciare
+  un buco è una scelta, non un errore da compattare. Trascinandola nel mobile
+  vuoto in fondo, una libreria nuova si crea da sola. Serve la pausa perché la
+  libreria riempie lo schermo: senza, prendere una scatola e scorrere fra le
+  librerie sarebbero lo stesso gesto.
+- **Le librerie hanno un nome**, si creano e si tolgono dal nome in basso.
+  Toglierne una non butta via i giochi: restano senza posto e rifluiscono nei
+  cubi liberi delle altre.
 - **La ricerca non evidenzia, ricostruisce**: cercare «root» lascia sullo
   scaffale Root e basta, e i cubi vuoti restano vuoti.
 - Il **contatore** in alto dice quanti sono, e mentre si cerca «N di M».

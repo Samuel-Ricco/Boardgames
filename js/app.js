@@ -705,16 +705,71 @@ function homeOf(index, h){
 /* Rifa' la scena a partire dalla libreria. Le scatole gia' presenti
    non si ricreano: scivolano al posto nuovo, cosi' riordinare si vede.
    Se cambia il numero di vani il mobile si ricostruisce. */
+/* DOVE VA OGNI SCATOLA.
+
+   Due modi, e la differenza e' tutta qui.
+
+   In ORDINE MANUALE la disposizione e' un dato: ogni gioco ha la sua
+   libreria e il suo posto (0..11), e i cubi lasciati vuoti restano
+   vuoti. E' cosi' che si arreda uno scaffale vero, e senza questo
+   "lascia libero il cubo in mezzo" non si poteva nemmeno dire.
+
+   Negli altri ordinamenti -- nome, voto, data -- i posti non contano:
+   si riempie in sequenza dal primo mobile in poi. E' una scelta: un
+   ordinamento calcolato che rispettasse i buchi non sarebbe piu' un
+   ordinamento, e tornando a "il mio ordine" si ritrova tutto com'era.
+
+   Chi non ha ancora un posto -- appena aggiunto, o rimasto orfano
+   perche' la sua libreria e' stata tolta -- va nel primo cubo libero.
+   Non in fondo: in fondo vuol dire "dopo tutti", e i buchi esistono
+   proprio perche' "dopo tutti" non e' l'unico posto possibile. */
+function disposizione(list){
+  const manuale = state.sort === 'mio' && !state.q && LIB.librerie().length > 0;
+  const posti = new Array(list.length).fill(-1);
+
+  if (!manuale){
+    for (let i = 0; i < list.length; i++) posti[i] = i;
+    return { posti: posti, libs: Math.max(1, Math.ceil((list.length + 1) / PER_LIB)) };
+  }
+
+  const ordine = {};
+  LIB.librerie().forEach(function(L, i){ ordine[L.id] = i; });
+
+  const presi = new Set();
+  list.forEach(function(g, i){
+    const l = ordine[g.libreria];
+    if (l === undefined || g.posto === null || g.posto === undefined) return;
+    const cubo = l * PER_LIB + g.posto;
+    if (presi.has(cubo)) return;          // due sullo stesso cubo: il secondo rifluisce
+    presi.add(cubo);
+    posti[i] = cubo;
+  });
+
+  let libero = 0;
+  for (let i = 0; i < list.length; i++){
+    if (posti[i] >= 0) continue;
+    while (presi.has(libero)) libero++;
+    presi.add(libero);
+    posti[i] = libero;
+  }
+
+  const ultimo = posti.reduce(function(m, x){ return Math.max(m, x); }, -1);
+  return {
+    posti: posti,
+    // sempre un mobile in piu' di quelli che servono: e' li' che si
+    // trascina una scatola per cominciarne uno nuovo
+    libs: Math.max(LIB.librerie().length + 1, Math.floor(ultimo / PER_LIB) + 2)
+  };
+}
+
 function applyLibrary(opts){
   opts = opts || {};
   const list = lista();
-  /* Quante librerie: quelle che servono, piu' il posto per il gioco
-     dopo. Cosi' quando i dodici cubi dell'ultima sono pieni ne compare
-     una vuota accanto, e si vede che c'e' dove metterlo. */
-  const libs = Math.max(1, Math.ceil((list.length + 1) / PER_LIB));
+  const disp = disposizione(list);
+  const posti = disp.posti;
 
-  if (libs !== state.libs || !cabGroup){
-    state.libs = libs;
+  if (disp.libs !== state.libs || !cabGroup){
+    state.libs = disp.libs;
     buildCabinet();
   }
 
@@ -740,11 +795,13 @@ function applyLibrary(opts){
     } else {
       b.userData.game = game;
     }
-    used.add(i);
+    const cubo = posti[i];
+    used.add(cubo);
+    b.userData.cubo = cubo;
 
-    const home = homeOf(i, b.userData.h);
+    const home = homeOf(cubo, b.userData.h);
     b.userData.homePos.copy(home);
-    b.userData.homeRot.set(0, (i % 2 ? -.03 : .02), 0);
+    b.userData.homeRot.set(0, (cubo % 2 ? -.03 : .02), 0);
 
     // quella che si ha in mano sta dove sta il dito: la casa cambia,
     // ma non si riporta a casa una scatola mentre la si sta spostando
@@ -962,11 +1019,12 @@ function muoviPresa(){
   const suiCubi = puntoSuZ(.2);
   const s = suiCubi ? slotDa(suiCubi.x, suiCubi.y) : -1;
   p.mira = s;
-  p.mirBox = null;
-  if (s >= 0 && s < p.l.length){
-    const id = p.l[s].id;
-    p.mirBox = boxes.find(function(b){ return b.userData.id === id; }) || null;
-  }
+  /* Chi c'e' gia' in quel cubo, se c'e'. Si cerca PER CUBO e non per
+     indice nella lista: da quando i posti sono espliciti e possono
+     avere buchi, il quinto della lista non e' piu' il quinto cubo. */
+  p.mirBox = (s < 0) ? null : (boxes.find(function(b){
+    return b.userData.cubo === s && b !== p.box;
+  }) || null);
   segnaAlone(s);
 }
 
@@ -978,24 +1036,78 @@ function segnaAlone(s){
   alone.visible = true;
 }
 
+/* Posare la scatola nel cubo mirato.
+
+   Se il cubo e' occupato le due si scambiano; se e' libero la scatola
+   ci va e basta, LASCIANDO IL BUCO da cui e' partita. E' la differenza
+   con la numerazione densa di prima, ed e' il motivo per cui i posti
+   sono espliciti: un cubo vuoto in mezzo allo scaffale e' una scelta.
+
+   Se si sta trascinando mentre l'ordine e' calcolato, si passa
+   all'ordine manuale e si fotografa PRIMA la disposizione che si aveva
+   sullo schermo: cosi' la mossa parte da quello che si vedeva, non da
+   un rimescolamento. */
 function posaScatola(p){
-  const ids = p.l.map(function(g){ return g.id; });
-  if (p.mira < ids.length){
-    const t = ids[p.da]; ids[p.da] = ids[p.mira]; ids[p.mira] = t;   // si scambiano
-  } else {
-    ids.push(ids.splice(p.da, 1)[0]);                                // cubo vuoto: in fondo
-  }
-
   const prima = state.sort;
-  p.box.userData.busy = false;          // da qui in poi la muove applyLibrary
-  LIB.riordina(ids);
+  if (!LIB.librerie().length){ flash('nessuna libreria: non so dove metterla'); return; }
 
-  if (prima !== 'mio'){
-    setSort('mio');                     // ridispone da solo
-    flash('ordine tuo: da adesso le scatole restano dove le metti');
-  } else {
-    applyLibrary({ animate: true });
+  const l = Math.floor(p.mira / PER_LIB);
+  const posto = p.mira % PER_LIB;
+  const mobile = LIB.librerie()[l];
+  const mio = p.l[p.da];
+
+  p.box.userData.busy = false;          // da qui in poi la muove applyLibrary
+
+  /* Chi arriva da un ordine calcolato porta con se' la disposizione che
+     aveva sullo schermo: la mossa parte da quello che si vedeva, non da
+     un rimescolamento. */
+  const fotografa = function(){
+    if (prima === 'mio') return [];
+    return p.l.map(function(g, i){
+      const L = LIB.librerie()[Math.floor(i / PER_LIB)];
+      return L ? LIB.metti(g.id, L.id, i % PER_LIB) : null;
+    }).filter(Boolean);
+  };
+
+  const concludi = function(tocchi){
+    LIB.mandaPosti(tocchi.filter(Boolean));
+    if (prima !== 'mio'){
+      setSort('mio');                   // ridispone da solo
+      flash('ordine tuo: da adesso le scatole restano dove le metti');
+    } else {
+      applyLibrary({ animate: true });
+    }
+  };
+
+  if (!mobile){
+    /* Trascinata nel mobile di scorta, quello vuoto in fondo: e' il
+       gesto con cui se ne comincia uno nuovo. Chiedere conferma con un
+       modulo quando la scatola e' gia' li' sarebbe una domanda a cui si
+       ha gia' risposto. */
+    const tocchi = fotografa();
+    LIB.creaLibreria('').then(function(L){
+      tocchi.push(LIB.metti(mio.id, L.id, posto));
+      disegnaMobili();
+      concludi(tocchi);
+      flash('libreria nuova: ' + L.nome);
+    }).catch(function(e){
+      flash('libreria non creata: ' + e.message);
+      applyLibrary({ animate: true });
+    });
+    return;
   }
+
+  const tocchi = fotografa();
+  // da dove parte, DOPO la fotografia: e' li' che la scatola si vedeva
+  const daLib = mio.libreria, daPosto = mio.posto;
+  const altro = p.mirBox ? LIB.get(p.mirBox.userData.id) : null;
+
+  tocchi.push(LIB.metti(mio.id, mobile.id, posto));
+  // se il cubo era occupato le due si scambiano; se era libero, quello
+  // da cui parte resta vuoto -- ed e' esattamente il punto
+  if (altro && altro.id !== mio.id) tocchi.push(LIB.metti(altro.id, daLib, daPosto));
+
+  concludi(tocchi);
 }
 
 /* `annulla` = non posarla, riportala a casa. `subito` = senza animazione,
@@ -1009,7 +1121,9 @@ function finiscePresa(annulla, subito){
   document.body.classList.remove('presa');
   document.body.style.cursor = '';
 
-  const posabile = !annulla && p.mira >= 0 && p.mira !== p.da;
+  // il cubo di partenza e' quello, non l'indice nella lista
+  const partenza = p.box.userData.cubo;
+  const posabile = !annulla && p.mira >= 0 && p.mira !== partenza;
   if (posabile){ posaScatola(p); return; }
 
   const u = p.box.userData;
@@ -1328,6 +1442,11 @@ function scrollBy(d){
   snapSoon();
 }
 function updateRail(){
+  // il nome del mobile che si sta guardando: e' anche la porta dei mobili
+  const L = LIB.librerie()[Math.round(state.scroll)];
+  const nome = q('#rail-nome');
+  if (nome) nome.textContent = L ? L.nome : 'nuova libreria';
+
   const max = maxScroll();
   if (!max) return;                       // niente da scorrere: il binario e' nascosto dal CSS
   const n = max + 1;
@@ -1433,7 +1552,7 @@ function bindInput(){
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
       finiscePresa(true); chiudiMia(); chiudiPartita(); chiudiElenco();
-      chiudiArreda(); unfocus(); closeAdd(); return;
+      chiudiArreda(); chiudiMobili(); unfocus(); closeAdd(); return;
     }
     if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
       e.preventDefault(); tornaACasa(); return;
@@ -1910,10 +2029,10 @@ async function addManual(){
 
 // porta lo scaffale del gioco al centro dello schermo
 function goToGame(id){
-  const list = lista();
-  const i = list.findIndex(function(g){ return g.id === id; });
-  if (i < 0) return;
-  state.scrollTo = clamp(Math.floor(i / PER_LIB), 0, maxScroll());
+  const b = boxes.find(function(x){ return x.userData.id === id; });
+  const cubo = b && b.userData.cubo !== undefined ? b.userData.cubo : -1;
+  if (cubo < 0) return;
+  state.scrollTo = clamp(Math.floor(cubo / PER_LIB), 0, maxScroll());
 }
 
 /* ===============================================================
@@ -2170,6 +2289,95 @@ function bindCatalogo(){
       return;
     }
     apriRiga(li);
+  });
+}
+
+/* ===============================================================
+   I MOBILI
+   ===============================================================
+
+   Una libreria e' un mobile con un nome: si crea, si rinomina, si
+   toglie. Toglierla non butta via i giochi -- la chiave esterna e'
+   `on delete set null`, quindi restano senza posto e rifluiscono nei
+   cubi liberi delle altre. Cancellare uno scaffale non e' cancellare
+   quello che c'era sopra.
+
+   Ci si arriva dal NOME in basso, che e' dove uno guarda per sapere in
+   che libreria si trova. */
+
+function disegnaMobili(){
+  const el = q('#mobili-lista');
+  if (!el) return;
+  const l = LIB.librerie();
+  const quanti = {};
+  LIB.all().forEach(function(g){
+    if (g.libreria) quanti[g.libreria] = (quanti[g.libreria] || 0) + 1;
+  });
+
+  el.innerHTML = l.map(function(L){
+    return '<li data-id="' + esc(L.id) + '">' +
+      '<input type="text" value="' + esc(L.nome) + '" maxlength="30" ' +
+        'aria-label="nome della libreria">' +
+      '<span class="quanti">' + (quanti[L.id] || 0) + '</span>' +
+      (l.length > 1 ? '<button type="button" data-fa="via" aria-label="togli">&times;</button>' : '') +
+    '</li>';
+  }).join('');
+  updateRail();
+}
+
+function apriMobili(){
+  if (LIB.ospitePresso()) return;        // i mobili di un altro non si toccano
+  disegnaMobili();
+  document.body.classList.add('mobili');
+  q('#mobili').setAttribute('aria-hidden', 'false');
+}
+
+function chiudiMobili(){
+  document.body.classList.remove('mobili');
+  q('#mobili').setAttribute('aria-hidden', 'true');
+}
+
+function bindMobili(){
+  q('#rail-nome').addEventListener('click', function(){
+    if (document.body.classList.contains('mobili')) chiudiMobili();
+    else apriMobili();
+  });
+  q('#mobili-x').addEventListener('click', chiudiMobili);
+
+  q('#mobili-piu').addEventListener('click', function(){
+    LIB.creaLibreria('').then(function(L){
+      disegnaMobili();
+      applyLibrary({ animate: true });
+      state.scrollTo = clamp(LIB.librerie().length - 1, 0, maxScroll());
+      flash('libreria nuova: ' + L.nome);
+    }).catch(function(e){ flash('non creata: ' + e.message); });
+  });
+
+  // rinomina quando si esce dal campo o si preme invio: salvare a ogni
+  // tasto vorrebbe dire una scrittura per lettera
+  q('#mobili-lista').addEventListener('change', function(e){
+    if (e.target.tagName !== 'INPUT') return;
+    const id = e.target.closest('li').getAttribute('data-id');
+    LIB.rinominaLibreria(id, e.target.value)
+      .then(function(){ updateRail(); })
+      .catch(function(err){ flash('non rinominata: ' + err.message); disegnaMobili(); });
+  });
+  q('#mobili-lista').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.blur();
+  });
+
+  q('#mobili-lista').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-fa="via"]');
+    if (!b) return;
+    const id = b.closest('li').getAttribute('data-id');
+    b.disabled = true;
+    LIB.togliLibreria(id).then(function(){
+      disegnaMobili();
+      state.scrollTo = clamp(state.scrollTo, 0, maxScroll());
+      applyLibrary({ animate: true });
+      flash('libreria tolta: i giochi sono rifluiti nei cubi liberi');
+    }).catch(function(err){ b.disabled = false; flash('non tolta: ' + err.message); });
   });
 }
 
@@ -2600,6 +2808,7 @@ function bindProfilo(){
 
   q('#pro-rinomina').addEventListener('click', function(){ apriNick(true); });
   q('#vis-torna').addEventListener('click', tornaACasa);
+  q('#mobili').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   q('#conta').addEventListener('click', function(){
     if (document.body.classList.contains('elenco')) chiudiElenco();
@@ -2918,6 +3127,7 @@ async function visitaLibreria(id, nick){
   }
   document.body.classList.add('visita');
   chiudiArreda();
+  chiudiMobili();
   q('#vis-chi').textContent = chi;
   q('#visita').setAttribute('aria-hidden', 'false');
 
@@ -2949,6 +3159,7 @@ async function tornaACasa(){
   q('#visita').setAttribute('aria-hidden', 'true');
   STANZA.daProfilo();
   applicaStanza();
+  disegnaMobili();
   state.scrollTo = state.scroll = 0;
   await loadCovers();
   applyLibrary({});
@@ -3323,6 +3534,7 @@ async function boot(){
   // quali immagini servono
   setProg(.40, 'apro la libreria');
   const lib = await LIB.sync();
+  await LIB.caricaLibrerie();     // i mobili prima delle scatole: decidono dove vanno
   buildFlatList();
   setProg(.56, 'stampo le copertine');
   await loadCovers();
@@ -3333,6 +3545,7 @@ async function boot(){
   bindInput();
   bindTools();
   bindStanza();
+  bindMobili();
   setSort(state.sort);
   requestAnimationFrame(frame);
   setProg(1, 'ci siamo');
