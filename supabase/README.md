@@ -15,21 +15,48 @@ perché richiede un account mio.
 
 Ci mette un paio di minuti a partire.
 
-## 2. Lo schema
+## 2. Lo schema, tramite l'integrazione GitHub
 
-Pannello → **SQL Editor** → New query → incolla tutto `schema.sql` → Run.
+Lo schema **non si incolla a mano**: sta in `supabase/migrations/` e lo applica
+Supabase da solo a ogni merge su `main`. La struttura di questa cartella è quella
+che si aspetta lui, generata con `supabase init`.
 
-Crea le tabelle `giochi`, `profili`, `admin`, le regole di accesso, il bucket
-delle copertine, e mette dentro Root e Scythe così l'armadio non è vuoto.
+```
+supabase/
+  config.toml                          impostazioni del progetto
+  migrations/
+    20260819120018_schema_iniziale.sql  tabelle, regole, permessi, i due giochi
+  README.md                            questo file
+```
 
-Due avvertenze oneste, perché quello schema **non l'ho potuto eseguire contro un
-database vero** — non ho un Postgres qui:
+### Come impostare l'integrazione
 
-- se l'ultima sezione, quella delle policy su `storage.objects`, dà errore di
-  permessi, non è grave: quelle tre regole si rifanno a mano da *Storage →
-  Policies*, con lo stesso senso (lettura a tutti, scrittura solo agli admin);
-- se qualcos'altro si lamenta, mandami il messaggio e lo correggo. Il resto del
-  file è SQL ordinario e le policy sono scritte per essere rilanciabili.
+Pannello → *Project Settings* → **Integrations** → GitHub:
+
+| campo | valore | perché |
+|---|---|---|
+| **GitHub repository** | `Samuel-Ricco/Boardgames` | il repo del sito |
+| **Working directory** | `.` | la cartella `supabase/` sta nella radice del repo, non in una sottocartella |
+| **Deploy to production** | acceso | è il punto dell'integrazione |
+| **Production branch name** | `main` | il ramo su cui lavoriamo |
+| **Automatic branching** | spento | serve il piano Pro, e per un progetto solo non cambia niente |
+
+Poi **Enable integration**. Da lì in avanti ogni migrazione nuova che finisce su
+`main` viene applicata al database di produzione.
+
+### Aggiungere una migrazione, in futuro
+
+Un file nuovo in `supabase/migrations/`, chiamato `AAAAMMGGhhmmss_cosa-fa.sql`.
+Mai modificare una migrazione già applicata: se ne scrive un'altra che corregge.
+
+### Se qualcosa si lamenta
+
+Quel file **non l'ho eseguito contro un database vero** — qui non ho un Postgres.
+È SQL ordinario e le policy sono scritte per essere rilanciabili, ma se il primo
+deploy fallisce mandami il messaggio. Il pezzo più a rischio è quello delle
+policy su `storage.objects`: se mancano i permessi, quelle tre regole si rifanno
+a mano da *Storage → Policies*, con lo stesso senso (lettura a tutti, scrittura
+solo agli admin).
 
 ## 3. L'accesso con Google
 
@@ -73,7 +100,7 @@ Servono due pannelli, uno di Google e uno di Supabase, e vanno incastrati.
 - **anon public key** — quella lunga marcata `anon` / `public`
 
 **Sono pubbliche per progetto e vanno nel JavaScript**: è il modo in cui
-Supabase è pensato per funzionare, e le regole scritte in `schema.sql` sono
+Supabase è pensato per funzionare, e le regole scritte nella migrazione sono
 quello che davvero protegge i dati. Finiranno in `js/config.js`, committato.
 
 **La chiave `service_role` non me la dare e non deve uscire dal pannello**:

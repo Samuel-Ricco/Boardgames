@@ -1,13 +1,20 @@
 -- ============================================================
---  il dado e' trap -- schema del database
+--  il dado e' trap -- schema iniziale
 --
---  Da incollare tutto insieme nel SQL Editor di Supabase, una volta
---  sola, su un progetto nuovo. E' idempotente: rilanciarlo non rompe
---  niente.
+--  Lo applica da solo l'integrazione GitHub di Supabase a ogni merge
+--  su main. Si puo' anche incollare a mano nel SQL Editor: e'
+--  idempotente, rilanciarlo non rompe niente.
 --
 --  La regola che tiene in piedi tutto: il client chiede, il database
 --  decide. Il pulsante "togli dall'armadio" puo' anche comparire a
 --  chiunque -- se chi lo preme non e' admin, e' Postgres a dire di no.
+--
+--  Attenzione ai due permessi diversi, che servono tutti e due:
+--  GRANT dice se un ruolo puo' toccare la tabella, RLS dice quali
+--  righe puo' vedere. Le tabelle nuove in `public` non sono piu'
+--  esposte in automatico ai ruoli dell'API, quindi senza i GRANT in
+--  fondo a questo file le policy non basterebbero: ogni query
+--  tornerebbe "permission denied" pur essendo scritta giusta.
 -- ============================================================
 
 
@@ -217,6 +224,29 @@ values
    ],
    'scythe', '#3f4239', '#f1e2bd', now() + interval '1 second')
 on conflict (id) do nothing;
+
+
+-- ------------------------------------------------------------
+--  6. PERMESSI SULL'API
+--
+--  Le policy dicono QUALI RIGHE; questi GRANT dicono se il ruolo puo'
+--  rivolgersi alla tabella. Senza, PostgREST risponde "permission
+--  denied for table" e sembra un errore nelle policy quando invece
+--  non ci e' nemmeno arrivato.
+--
+--  `anon` e' chi guarda senza account, `authenticated` chi ha fatto
+--  accesso. Nessuno dei due puo' fare piu' di quanto le policy
+--  concedano: qui si apre la porta, di la' si controlla il biglietto.
+-- ------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+
+grant select on public.giochi to anon, authenticated;
+grant insert, update, delete on public.giochi to authenticated;
+
+grant select on public.admin to authenticated;
+grant select, update on public.profili to authenticated;
+
+grant execute on function public.e_admin() to anon, authenticated;
 
 
 -- ============================================================
