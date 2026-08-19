@@ -987,6 +987,14 @@ function bindInput(){
   });
 
   q('#close').addEventListener('click', function(e){ e.stopPropagation(); unfocus(); });
+  q('#edit').addEventListener('click', function(e){
+    e.stopPropagation();
+    const g = state.focused && state.focused.userData.game;
+    if (!g) return;
+    unfocus();                     // la scatola torna a posto e il modulo prende la scena
+    apriModifica(g);
+  });
+
   armaBottone(q('#del'),
     '<span aria-hidden="true">&#9003;</span> togli dall\'armadio',
     'sicuro? tocca ancora', removeFocused);
@@ -1015,14 +1023,18 @@ function pick(){
    database, e i pulsanti compaiono di conseguenza. Se anche comparissero
    a chi non ha diritto, a rifiutare sarebbe comunque Postgres: qui si
    decide cosa mostrare, non cosa e' permesso. */
+/* Chi e' entrato comanda sulla PROPRIA collezione, admin o no: sono le
+   regole del database a garantirlo, riga per riga. `admin` non da'
+   nessun potere in piu', resta solo come etichetta per vedere come si
+   comporta l'accesso. */
 function setMode(st){
   state.mode = st.admin ? 'admin' : 'utente';
   state.dentro = !!st.dentro;
   document.body.classList.toggle('admin', !!st.admin);
+  document.body.classList.toggle('dentro', !!st.dentro || !AUTH.attivo());
   const chip = q('#mode');
   if (!AUTH.attivo()){
-    // nessun backend configurato: si ricade sul comportamento locale
-    chip.textContent = state.mode;
+    chip.textContent = state.mode;          // senza backend resta l'interruttore locale
   } else {
     chip.textContent = st.dentro ? (st.admin ? 'admin' : 'esci') : 'entra';
     chip.title = st.dentro ? 'esci da questo account' : 'entra con Google';
@@ -1038,9 +1050,12 @@ function bindTools(){
       return;
     }
     if (AUTH.stato().dentro){
+      // Uscire non e' cambiare un'etichetta: la collezione di prima non
+      // e' piu' tua, e la schermata da cui si riparte e' l'accesso.
       await AUTH.esci();
-      setMode(AUTH.stato());
-      flash('sei uscito');
+      LIB.scollega();
+      location.reload();
+      return;
     } else {
       try { await AUTH.entra(); }        // porta su Google e poi torna qui
       catch(e){ flash('accesso non riuscito: ' + e.message); }
@@ -1106,6 +1121,8 @@ function setSort(mode){
 
 /* --- aggiunta -------------------------------------------------- */
 function openAdd(){
+  chiudiModifica();
+  q('#m-review').value = '';
   q('#addlayer').classList.add('on');
   q('#addlayer').setAttribute('aria-hidden','false');
   q('#add-q').focus();
@@ -1134,6 +1151,7 @@ function openAdd(){
 function closeAdd(){
   q('#addlayer').classList.remove('on');
   q('#addlayer').setAttribute('aria-hidden','true');
+  chiudiModifica();
 }
 function msgAdd(html, kind){
   const el = q('#add-msg');
@@ -1143,6 +1161,40 @@ function msgAdd(html, kind){
 
 // la voce scelta dalla ricerca, in attesa di essere confermata
 let inAttesa = null;
+// se valorizzato, il modulo sta correggendo quel gioco invece di crearne uno
+let inModifica = null;
+
+/* Apre il modulo gia' pieno su un gioco che c'e' gia'. La ricerca resta
+   nascosta: qui non si cerca niente, si corregge quello che si ha. */
+function apriModifica(game){
+  inModifica = game.id;
+  inAttesa = null;
+  q('#addlayer').classList.add('on', 'correzione');
+  q('#addlayer').classList.add('correzione');
+  q('#addlayer').setAttribute('aria-hidden','false');
+  q('#add-h').textContent = 'Correggi la scheda';
+  q('#m-go').textContent = 'salva le modifiche';
+
+  const set = function(sel, v){ q(sel).value = v == null ? '' : String(v); };
+  set('#m-title', game.title);       set('#m-bgg', game.bgg);
+  set('#m-designer', game.designer); set('#m-publisher', game.publisher);
+  set('#m-year', game.year);         set('#m-players', game.players);
+  set('#m-time', game.time);         set('#m-score', game.score);
+  set('#m-review', (game.review || []).join(String.fromCharCode(10,10)));
+  q('#m-file').value = '';
+  q('#add-man').open = true;
+  q('#add-res').innerHTML = '';
+  msgAdd('Le modifiche vanno nella <b>tua</b> collezione. Lascia vuoto il campo ' +
+         'copertina per tenere quella che c&#39;&egrave; gi&agrave;.', '');
+  q('#m-title').focus();
+}
+
+function chiudiModifica(){
+  inModifica = null;
+  q('#addlayer').classList.remove('correzione');
+  q('#add-h').innerHTML = 'Aggiungi all&rsquo;armadio';
+  q('#m-go').textContent = 'metti sullo scaffale';
+}
 
 async function doSearch(){
   const q0 = q('#add-q').value.trim();
@@ -1208,6 +1260,18 @@ async function scegli(voce, btn){
 async function addManual(){
   const title = q('#m-title').value.trim();
   if (!title){ q('#m-title').focus(); return; }
+
+  // una riga vuota separa un capoverso: e' il modo in cui si scrive un
+  // testo, non serve insegnare niente a chi lo compila
+  const testo = q('#m-review').value.trim();
+  const NL = String.fromCharCode(10), CR = String.fromCharCode(13);
+  const capoversi = testo
+    ? testo.split(CR).join('')                  // fine riga alla Windows
+           .split(NL + NL)                      // riga vuota = capoverso nuovo
+           .map(function(t){ return t.split(NL).join(' ').trim(); })
+           .filter(Boolean)
+    : null;
+
   const g = {
     title: title,
     bgg: parseInt(q('#m-bgg').value, 10) || 0,
@@ -1219,6 +1283,7 @@ async function addManual(){
     score: q('#m-score').value.trim(),
     art: 'generic'
   };
+  if (capoversi) g.review = capoversi;
 
   /* La copertina: prima il file scelto a mano, che vince sempre --
      e' quello che l'admin ha voluto. Se non c'e', quella della fonte.
@@ -1239,14 +1304,24 @@ async function addManual(){
     b.disabled = false; b.textContent = prima;
   }
 
-  const added = LIB.add(g);
+  let game;
+  if (inModifica){
+    game = LIB.update(inModifica, g);
+    chiudiModifica();
+  } else {
+    game = LIB.add(g);
+  }
+
   inAttesa = null;
   qa('#add-man input').forEach(function(i){ i.value = ''; });   // svuota anche il file
+  q('#m-review').value = '';
   closeAdd();
-  await loadCovers();
+  await loadCovers(true);
   applyLibrary({ animate: true });
-  goToGame(added.id);
-  flash('"' + added.title + '" e sullo scaffale');
+  if (game){
+    goToGame(game.id);
+    flash('"' + game.title + '" salvato');
+  }
 }
 
 // porta lo scaffale del gioco al centro dello schermo
@@ -1344,9 +1419,12 @@ function buildFlatList(){
 
 // Le copertine. Se una non arriva non e' un errore: la scatola usa
 // quella disegnata e il sito va avanti.
-function loadCovers(){
+function loadCovers(forza){
   return Promise.all(LIB.all().map(function(g){
     return new Promise(function(done){
+      // `forza` serve dopo una modifica: la copertina puo' essere
+      // cambiata e quella vecchia e' ancora attaccata al gioco
+      if (forza && g.img && g.img.src !== g.cover) g.img = null;
       // non basta che `img` esista: da una libreria vecchia puo' arrivare
       // un oggetto vuoto, e va ricaricata l'immagine per davvero
       if (!g.cover || (g.img && g.img.naturalWidth)) return done();
@@ -1460,10 +1538,12 @@ async function boot(){
   document.body.classList.add('ready');
   intro();
 
-  // Se il backend c'e' ma non ha risposto, meglio dirlo: quello che si
-  // sta guardando e' l'ultima copia locale, non la libreria vera.
-  if (AUTH.attivo() && !lib.remota){
-    flash('libreria offline: mostro l\'ultima copia salvata');
+  // Un armadio vuoto non e' un guasto: e' una collezione appena nata, e
+  // va detto, se no sembra che il sito non abbia caricato niente.
+  if (lib.vuota){
+    flash('la tua collezione e vuota: premi + per il primo gioco');
+  } else if (AUTH.attivo() && lib.dentro !== false && !lib.remota){
+    flash('collezione offline: mostro l\'ultima copia salvata');
   }
 }
 

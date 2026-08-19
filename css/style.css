@@ -110,9 +110,11 @@ body.admin #mode.chip{background:var(--rust); color:#fff; border-color:var(--rus
 #sortmenu button.on{color:var(--amber)}
 #sortmenu button.on::after{content:' \2022'}
 
-/* elementi che esistono solo per l'admin */
-.admin-only{display:none !important}
-body.admin .admin-only{display:inline-flex !important}
+/* Gli strumenti di modifica valgono per chiunque sia entrato: la
+   collezione e' sua. `admin` non da' piu' poteri in piu', resta solo
+   per vedere come si comporta l'accesso -- e si legge nel chip. */
+.dentro-only{display:none !important}
+body.dentro .dentro-only{display:inline-flex !important}
 
 /* --- a che scaffale siamo -------------------------------------- */
 #rail{
@@ -253,6 +255,13 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   padding:7px 11px; align-items:center; gap:6px;
 }
 #del:hover{background:var(--rust); color:#fff; border-color:var(--rust)}
+#edit{
+  font-family:var(--ff-text); font-size:11px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
+  color:var(--amber); background:none; border:1px solid var(--line);
+  padding:7px 11px; align-items:center; gap:6px;
+}
+#edit:hover{background:var(--amber); color:#20150c; border-color:var(--amber)}
 /* armato: il secondo clic esegue davvero */
 #del.armed, .add-foot button.armed{background:var(--rust); color:#fff; border-color:var(--rust)}
 #del.armed{animation:pulse 1s steps(2) infinite}
@@ -274,6 +283,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .gate-q{margin:14px 0 30px; font-size:12px; letter-spacing:.26em;
   text-transform:uppercase; color:var(--ink-soft)}
 .gate-pick{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.gate-pick.uno{grid-template-columns:1fr; max-width:420px; margin:0 auto}
 @media (max-width:560px){ .gate-pick{grid-template-columns:1fr} }
 .gate-pick button{
   font-family:var(--ff-text); text-align:left; cursor:pointer;
@@ -347,6 +357,12 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 #add-res button span{font-size:12px; flex:none}
 #add-res button:disabled{opacity:.6; cursor:default}
 
+/* in correzione non si cerca niente: si sistema quello che si ha gia' */
+#addlayer.correzione .add-search,
+#addlayer.correzione #add-res,
+#addlayer.correzione #add-man summary{display:none}
+#addlayer.correzione #add-man{border-top:0; padding-top:0}
+
 #add-man{margin:18px 0 0; border-top:1px solid var(--line); padding-top:14px}
 #add-man summary{cursor:pointer; font-size:11px; letter-spacing:.16em;
   text-transform:uppercase; color:var(--ink-soft)}
@@ -364,6 +380,13 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .add-form input:focus{outline:none; border-color:var(--amber)}
 .add-form button{grid-column:1/-1; margin-top:6px}
 .add-form label.wide{grid-column:1/-1}
+.add-form textarea{
+  min-width:0; width:100%; resize:vertical; min-height:120px;
+  font-family:var(--ff-text); font-size:14px; line-height:1.6; color:var(--ink);
+  background:rgba(246,236,221,.05); border:1px solid var(--line); padding:10px;
+}
+.add-form textarea:focus{outline:none; border-color:var(--amber)}
+.add-form textarea::placeholder{color:rgba(246,236,221,.3)}
 .add-form input[type=file]{
   padding:7px 9px; font-size:12px; cursor:pointer; color:var(--ink-soft);
 }

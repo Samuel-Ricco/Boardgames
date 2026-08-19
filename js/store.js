@@ -96,23 +96,42 @@ function salvaLocale(){
   catch(e){ /* quota piena o storage negato: si continua in memoria */ }
 }
 
-/* --- lettura dal database --------------------------------------- */
+/* --- lettura dal database ----------------------------------------
+   La collezione e' di chi ha fatto accesso: le regole del database
+   filtrano da sole, qui non serve nessun `where`.
+
+   Una collezione **vuota e' una risposta valida**, non un guasto: chi
+   entra per la prima volta ha l'armadio vuoto e va mostrato vuoto. Solo
+   se la lettura fallisce si ripiega sulla copia locale. Confonderle
+   vorrebbe dire far comparire i giochi di esempio nell'armadio di uno
+   che non ne ha ancora messo nessuno. */
 async function sync(){
-  games = daLocale();                       // qualcosa da mostrare subito
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c) return { remota: false };
+  if (!c || !AUTH.stato().dentro){
+    games = daLocale();
+    remota = false;
+    return { remota: false, dentro: false };
+  }
 
   try {
     const r = await c.from('giochi').select('*').order('creato', { ascending: true });
     if (r.error) throw r.error;
     games = (r.data || []).map(daRiga);
     remota = true;
-    salvaLocale();                          // copia per la prossima volta offline
-    return { remota: true, quanti: games.length };
+    salvaLocale();                          // copia per quando manca la rete
+    return { remota: true, quanti: games.length, vuota: games.length === 0 };
   } catch(e){
+    games = daLocale();
     remota = false;
     return { remota: false, errore: e.message || String(e) };
   }
+}
+
+// svuota tutto: si esce, e la collezione di prima non deve restare in giro
+function scollega(){
+  games = [];
+  remota = false;
+  try { localStorage.removeItem(KEY); } catch(e){}
 }
 
 /* --- lettura sincrona, quella che usa la scena ------------------- */
@@ -177,7 +196,9 @@ function add(g){
    Niente upsert: le regole dello storage concedono agli admin insert e
    delete, non update. Se l'oggetto c'e' gia' si riusa quello che c'e'. */
 async function caricaCopertina(c, id, dataUrl){
-  const path = id + '.jpg';
+  // una cartella a testa: con le collezioni separate due persone che
+  // aggiungono Root scriverebbero tutte e due su root.jpg
+  const path = (AUTH.stato().id || 'anonimo') + '/' + id + '.jpg';
   const pubblico = function(){
     return c.storage.from('copertine').getPublicUrl(path).data.publicUrl;
   };
@@ -192,10 +213,10 @@ async function mandaAlServer(c, game){
   try {
     const riga = aRiga(game);
 
-    // chi l'ha messo sullo scaffale: la colonna c'e' apposta, e con piu'
-    // di un admin e' l'unico modo per sapere chi ha aggiunto cosa
+    // di chi e' la riga: senza questo le regole rifiutano l'inserimento,
+    // e giustamente -- una riga senza proprietario non e' di nessuno
     const io = AUTH.stato();
-    if (io.id) riga.aggiunto_da = io.id;
+    if (io.id){ riga.proprietario = io.id; riga.aggiunto_da = io.id; }
 
     if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
       try {
@@ -217,6 +238,51 @@ async function mandaAlServer(c, game){
   }
 }
 
+/* --- correggere un gioco gia' sullo scaffale ---------------------
+   Stessa filosofia dell'aggiunta: la scatola cambia subito, la
+   richiesta parte dietro, e se il database rifiuta si torna a com'era.
+   `patch` contiene solo i campi toccati. */
+function update(id, patch){
+  const g = get(id);
+  if (!g) return null;
+  const prima = Object.assign({}, g);
+
+  Object.keys(patch).forEach(function(k){
+    if (patch[k] !== undefined) g[k] = patch[k];
+  });
+  salvaLocale();
+
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (c && remota) mandaModifica(c, g, prima);
+  return g;
+}
+
+async function mandaModifica(c, g, prima){
+  try {
+    const riga = aRiga(g);
+    delete riga.id;                     // la chiave non si tocca
+    delete riga.proprietario;
+
+    if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
+      try {
+        riga.copertina = await caricaCopertina(c, g.id, riga.copertina);
+        g.cover = riga.copertina;
+      } catch(e){
+        delete riga.copertina;
+        onErrore('copertina non caricata: ' + messaggio(e));
+      }
+    }
+
+    const r = await c.from('giochi').update(riga).eq('id', g.id);
+    if (r.error) throw r.error;
+    salvaLocale();
+  } catch(e){
+    Object.keys(prima).forEach(function(k){ g[k] = prima[k]; });
+    salvaLocale();
+    onErrore('modifica non salvata: ' + messaggio(e));
+  }
+}
+
 function remove(id){
   const i = all().findIndex(function(g){ return g.id === id; });
   if (i < 0) return null;
@@ -235,7 +301,7 @@ function remove(id){
       // via anche l'immagine, se stava nel bucket: se no resta li' a
       // occupare spazio per un gioco che non c'e' piu'
       if (out.cover && out.cover.indexOf('/copertine/') >= 0){
-        c.storage.from('copertine').remove([out.id + '.jpg']);
+        c.storage.from('copertine').remove([(AUTH.stato().id || 'anonimo') + '/' + out.id + '.jpg']);
       }
     });
   }
@@ -280,8 +346,9 @@ function touched(){
 }
 
 return {
-  sync: sync, all: all, list: list, get: get, add: add, remove: remove,
-  reset: reset, esporta: esporta, touched: touched,
+  sync: sync, all: all, list: list, get: get,
+  add: add, update: update, remove: remove,
+  scollega: scollega, reset: reset, esporta: esporta, touched: touched,
   eRemota: function(){ return remota; },
   suErrore: function(fn){ onErrore = fn; },
   orders: Object.keys(ORDERS)

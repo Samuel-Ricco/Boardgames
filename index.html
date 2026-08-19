@@ -24,7 +24,7 @@
   </div>
 
   <div class="tools">
-    <button id="add" type="button" class="tool admin-only" title="aggiungi un gioco">+</button>
+    <button id="add" type="button" class="tool dentro-only" title="aggiungi un gioco">+</button>
     <div class="sortwrap">
       <button id="sort" type="button" class="tool" aria-haspopup="true" aria-expanded="false">
         <span class="lbl">ordina:</span> <b id="sort-now">aggiunta</b>
@@ -64,7 +64,10 @@
     <div class="tags" id="p-tags"></div>
     <p class="pan-foot">
       <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
-      <button id="del" type="button" class="admin-only" title="togli questo gioco dall'armadio">
+      <button id="edit" type="button" class="dentro-only" title="correggi la scheda e scrivi la recensione">
+        <span aria-hidden="true">&#9998;</span> modifica
+      </button>
+      <button id="del" type="button" class="dentro-only" title="togli questo gioco dall'armadio">
         <span aria-hidden="true">&#9003;</span> togli dall'armadio
       </button>
     </p>
@@ -76,20 +79,16 @@
   <div class="gate-in">
     <b class="gate-logo">il dado <i>&egrave;</i> trap</b>
     <p class="gate-q">Chi apre l&rsquo;armadio?</p>
-    <div class="gate-pick">
+    <div class="gate-pick uno">
       <button type="button" data-gate="entra">
-        <b>Entra</b>
-        <span>Con il tuo account Google. Se il database ti riconosce come admin,
-          puoi aggiungere giochi e toglierli.</span>
-      </button>
-      <button type="button" data-gate="ospite">
-        <b>Guarda e basta</b>
-        <span>Sfogli gli scaffali e leggi le recensioni. Nessun account.</span>
+        <b>Entra con Google</b>
+        <span>La tua collezione ti aspetta: i giochi che aggiungi restano tuoi
+          e li rivedi da qualsiasi dispositivo.</span>
       </button>
     </div>
-    <p class="gate-note" id="gate-note">Chi &egrave; admin lo decide il database, non
-      questa schermata: se non lo sei, i pulsanti per modificare non compaiono &mdash; e
-      se comparissero, sarebbe comunque il server a rifiutare.</p>
+    <p class="gate-note" id="gate-note">Ogni account ha il suo armadio, e lo vede
+      solo lui: sono le regole del database a garantirlo, non questa schermata.
+      Sfogliare senza accedere arriver&agrave; pi&ugrave; avanti, con i giochi del momento.</p>
   </div>
 </div>
 
@@ -137,6 +136,9 @@
         <label>giocatori <input id="m-players" type="text" placeholder="2-4" autocomplete="off"></label>
         <label>durata <input id="m-time" type="text" placeholder="60-90" autocomplete="off"></label>
         <label>voto <input id="m-score" type="text" placeholder="8.0" autocomplete="off"></label>
+        <label class="wide">recensione
+          <textarea id="m-review" rows="7" placeholder="Scrivi qui. Una riga vuota separa un capoverso dall&rsquo;altro."></textarea>
+        </label>
         <label class="wide">copertina
           <input id="m-file" type="file" accept="image/*">
           <small id="m-file-nota">dal press kit dell&rsquo;editore, se ce l&rsquo;hai: Wikidata le copertine non le ha</small>
