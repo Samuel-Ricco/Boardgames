@@ -97,8 +97,17 @@ function salvaLocale(){
 }
 
 /* --- lettura dal database ----------------------------------------
-   La collezione e' di chi ha fatto accesso: le regole del database
-   filtrano da sole, qui non serve nessun `where`.
+   IL FILTRO SUL PROPRIETARIO VA SCRITTO, sempre, anche se sembra
+   ridondante. Per un po' non c'era: le regole del database dicevano
+   `proprietario = auth.uid()` e bastavano. Poi la lettura si e' aperta
+   agli amici -- che e' quello che serviva per andare a guardare le
+   loro librerie -- e questa query, che non chiedeva niente, ha
+   cominciato a portarsi a casa anche i giochi loro. Dieci giochi
+   diventati ventitre, mescolati, nella collezione di chi era entrato.
+
+   La lezione: una query che si affida alle policy per delimitare i
+   dati e' corretta finche' le policy non cambiano, e le policy
+   cambiano. Chi legge deve dire cosa vuole.
 
    Una collezione **vuota e' una risposta valida**, non un guasto: chi
    entra per la prima volta ha la libreria vuota e va mostrata vuota. Solo
@@ -114,7 +123,9 @@ async function sync(){
   }
 
   try {
-    const r = await c.from('giochi').select('*').order('creato', { ascending: true });
+    const r = await c.from('giochi').select('*')
+      .eq('proprietario', AUTH.stato().id)
+      .order('creato', { ascending: true });
     if (r.error) throw r.error;
     games = (r.data || []).map(daRiga);
     remota = true;
@@ -341,7 +352,10 @@ async function mandaModifica(c, g, prima){
       }
     }
 
-    const r = await c.from('giochi').update(riga).eq('id', g.id);
+    // lo slug e' unico DENTRO una collezione, non nel mondo: senza il
+    // proprietario questa update parla di tutte le righe con quell'id
+    const r = await c.from('giochi').update(riga)
+      .eq('proprietario', AUTH.stato().id).eq('id', g.id);
     if (r.error) throw r.error;
     salvaLocale();
   } catch(e){
@@ -383,7 +397,8 @@ function riordina(ids){
 async function mandaOrdine(c, giochi){
   try {
     const esiti = await Promise.all(giochi.map(function(g){
-      return c.from('giochi').update({ posizione: g.pos }).eq('id', g.id);
+      return c.from('giochi').update({ posizione: g.pos })
+              .eq('proprietario', AUTH.stato().id).eq('id', g.id);
     }));
     const ko = esiti.find(function(r){ return r.error; });
     if (ko) throw ko.error;
@@ -401,7 +416,7 @@ function remove(id){
 
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (c && remota){
-    c.from('giochi').delete().eq('id', id).then(function(r){
+    c.from('giochi').delete().eq('proprietario', AUTH.stato().id).eq('id', id).then(function(r){
       if (r.error){
         all().push(out);
         salvaLocale();

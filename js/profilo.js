@@ -7,9 +7,14 @@
 
    `nick` e `codice` fanno due mestieri diversi apposta: il nick ti fa
    RICONOSCERE, e lo vede chiunque ti incontri; il codice ti fa TROVARE,
-   e lo dai a chi vuoi tu. Per questo il codice non esce mai dal
-   profilo di qualcun altro: nelle regole del database la lettura del
-   profilo altrui non lo comprende.
+   e lo dai a chi vuoi tu.
+
+   Il codice non esce dalla riga del profilo, e non perche' lo dica una
+   policy: le policy filtrano le RIGHE, non le colonne. Serve un GRANT
+   per colonna (migrazione codice_riservato), e il proprio si legge da
+   `mio_codice()`. Nella prima versione questo era sbagliato e il codice
+   di un amico si leggeva: chi se lo prendeva poteva farsi accettare da
+   chiunque lo avesse fra gli amici.
 
    Le richieste di amicizia passano da due funzioni sul server e non da
    un insert diretto, perche' tutte e due devono cercare una persona in
@@ -60,23 +65,37 @@ async function carica(){
   const c = cli();
   if (!c || !AUTH.stato().dentro){ io = null; return null; }
   try {
-    const r = await c.from('profili').select('*').eq('id', AUTH.stato().id).single();
+    /* Le colonne si elencano, non si chiede `*`. Due motivi, e tutti e
+       due si sono fatti sentire:
+
+       - `codice` non e' piu' leggibile da `authenticated` (migrazione
+         codice_riservato), quindi `select *` fallirebbe per tutti;
+       - `select *` su una tabella a cui mancano delle colonne non si
+         lamenta, torna quelle che ci sono. Il sito vedeva un profilo
+         senza nick, lo chiedeva, e il salvataggio falliva su una
+         colonna inesistente: una finestra che non si poteva chiudere. */
+    const r = await c.from('profili').select('id,nome,nick,avatar,creato')
+                     .eq('id', AUTH.stato().id).single();
     if (r.error) throw r.error;
 
-    /* `select *` su una tabella a cui mancano delle colonne non si
-       lamenta: torna le colonne che ci sono. Senza questo controllo il
-       sito vedeva un profilo senza nick, lo chiedeva, e il salvataggio
-       falliva su una colonna inesistente -- cioe' una finestra che non
-       si puo' chiudere. Meglio accorgersene qui e dirlo una volta. */
-    const riga = r.data || {};
-    if (!('nick' in riga) || !('codice' in riga)){
-      io = null;
-      guaio = 'manca la migrazione profili_e_amici';
-      return io;
-    }
-
-    io = normalizza(riga);
+    io = normalizza(r.data || {});
     guaio = '';
+
+    /* Il proprio codice arriva da una funzione, non dalla riga: dalla
+       riga non uscirebbe piu' -- ed e' esattamente quello che si vuole,
+       perche' dalla riga di un AMICO usciva.
+
+       Se la funzione non c'e' ancora, il profilo resta buono lo stesso:
+       manca il codice e si dice quello. Buttare via nick e faccia
+       perche' manca un codice sarebbe sproporzionato. */
+    try {
+      const cod = await c.rpc('mio_codice');
+      if (cod.error) throw cod.error;
+      io.codice = cod.data || '';
+    } catch(e2){
+      io.codice = '';
+      guaio = 'manca la migrazione codice_riservato: il codice amico non si legge';
+    }
   } catch(e){
     io = null;
     guaio = (e && (e.code === '42703' || e.code === '42P01'))

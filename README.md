@@ -127,8 +127,10 @@ compare nemmeno: sarebbe una promessa che il sito non può mantenere.
 
 **Il profilo** ha un nick, una faccia e un codice amico. Il nick si sceglie al
 primo accesso e ti fa riconoscere; il codice ti fa trovare, e lo dai a chi vuoi
-tu — non compare mai nel profilo che vedono gli altri. La faccia è un meeple
-disegnato su canvas: niente immagini da caricare, e ce n'è una dal primo secondo.
+tu. Gli altri non lo vedono: la colonna non è leggibile e il proprio si chiede
+al server con una funzione apposta — le regole per riga non bastavano, perché
+aprono la riga intera. La faccia è un meeple disegnato su canvas: niente immagini
+da caricare, e ce n'è una dal primo secondo.
 
 **Gli amici** si chiedono col loro codice, oppure per email. La ricerca per
 indirizzo non esiste apposta: confermerebbe a chiunque provi che quell'email ha
@@ -265,6 +267,7 @@ pubbliche per progetto, e a proteggere i dati sono le regole in
 20260819190000_recensioni_pubbliche.sql   le recensioni del sito, lette da tutti
 20260819200000_profili_e_amici.sql        nick, faccia, codice amico, amicizie
 20260819210000_partite.sql                giocatori salvati, partite, partecipanti
+20260819220000_codice_riservato.sql       il codice amico non esce dalla riga
 ```
 
 **`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un

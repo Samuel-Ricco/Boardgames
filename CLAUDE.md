@@ -294,8 +294,17 @@ La prima parte del sito che non parla di giochi ma di chi li gioca.
 
 - **`nick` e `codice` fanno due mestieri diversi apposta.** Il nick ti fa
   *riconoscere* e lo vede chiunque ti incontri; il codice ti fa *trovare* e lo
-  dai a chi vuoi tu. Per questo il codice non esce mai dal profilo di qualcun
-  altro: la policy di lettura altrui non lo comprende.
+  dai a chi vuoi tu.
+- **RLS filtra le righe, non le colonne.** Questo è costato un difetto vero:
+  leggere il profilo di un amico — che serve, per il nick e la faccia — apriva
+  la riga *intera*, codice compreso, e chi se lo prendeva poteva farsi accettare
+  da chiunque lo avesse fra gli amici. In Postgres i permessi sulle colonne
+  stanno nei **GRANT**: un `grant select` sulla tabella vale per tutte e non si
+  buca, va tolto e rifatto elencando le colonne (migrazione `codice_riservato`).
+  Conseguenza permanente: **`select *` su `profili` fallisce**, le colonne si
+  elencano, e il proprio codice arriva da `mio_codice()`.
+  Vale per ogni colonna futura che debba restare privata dentro una riga
+  altrimenti condivisa.
 - **Codice amico, non ricerca per email.** Cercare qualcuno per indirizzo vuol
   dire che il server conferma «sì, questa email ha un account qui» a chiunque
   provi: è enumerazione di account. L'invito per email resta, ma passa da una
@@ -349,6 +358,21 @@ ha vinto — che di un gioco da tavolo è la metà più interessante.
   Cambia solo se il gioco arriva già scritto.
 - La classifica conta **sui nomi**, non sui giocatori salvati: se no cancellare
   un giocatore cancellerebbe anche le sue vittorie.
+
+## Una query che si fida delle policy è corretta finché le policy non cambiano
+
+`LIB.sync()` leggeva `giochi` **senza `where`**, con un commento che spiegava
+perché non serviva: le regole del database dicevano `proprietario = auth.uid()`.
+Era vero. Poi la lettura si è aperta agli amici — che è esattamente ciò che
+serviva per andare a guardare le loro librerie — e quella query ha cominciato a
+portarsi a casa anche i giochi loro: dieci diventati ventitré, mescolati nella
+collezione di chi era entrato, e salvati così anche in `localStorage`.
+
+**Chi legge deve dire cosa vuole.** Ora `sync()` filtra sul proprietario, e per
+lo stesso motivo `update` e `delete` dicono `proprietario` oltre a `id`: lo slug
+è unico dentro una collezione, non nel mondo, e due persone possono avere tutte
+e due `root`. Le policy li fermerebbero comunque — ma una query che dipende da
+una policy per essere giusta è una trappola armata per la prossima migrazione.
 
 ## In casa di un amico
 

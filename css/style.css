@@ -389,11 +389,28 @@ body.sez-profilo #profilo{display:block}
 }
 #lab-annulla:hover{color:var(--ink); border-color:var(--amber)}
 
-.pro-blocco{margin:34px 0 0; padding-top:24px; border-top:1px solid var(--line)}
-.pro-blocco h3{
-  margin:0 0 14px; font-family:var(--ff-display); font-weight:400;
-  font-size:26px; letter-spacing:.04em; color:var(--ink);
+.pro-blocco{margin:0; border-top:1px solid var(--line)}
+.pro-blocco:first-of-type{margin-top:34px}
+.pro-blocco h3{margin:0}
+/* Il titolo E' il pulsante: tutta la riga si preme, non una freccetta
+   di dodici pixel. */
+.pro-tit{
+  width:100%; display:flex; align-items:center; gap:12px; cursor:pointer;
+  font-family:var(--ff-display); font-weight:400; font-size:26px;
+  letter-spacing:.04em; color:var(--ink); text-align:left;
+  background:none; border:0; padding:20px 0;
 }
+.pro-tit:hover{color:var(--amber)}
+.pro-tit .quanti{
+  font-family:var(--ff-text); font-size:11px; font-weight:500; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.pro-tit::after{
+  content:'+'; margin-left:auto; font-size:24px; line-height:1; color:var(--ink-soft);
+}
+.pro-tit[aria-expanded="true"]::after{content:'\2013'}
+.pro-dentro{padding:0 0 24px}
+.pro-dentro[hidden]{display:none}
 .pro-msg{margin:0 0 14px; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
 .pro-msg.warn{color:var(--rust)}
 .pro-msg b{color:var(--ink); font-weight:500}
@@ -438,12 +455,44 @@ body.sez-profilo #profilo{display:block}
   color:var(--ink); font-weight:500;
   border-bottom:2px solid var(--amber); padding-bottom:1px;
 }
+/* Un gruppo per gioco: "a Root abbiamo giocato tre volte e vince
+   sempre Giulia" dice quello che uno vuole sapere; un elenco di serate
+   in ordine di data non dice niente. */
+.gio-gruppo{margin:0 0 22px}
+.gio-gruppo:last-child{margin-bottom:0}
+.gio-gioco{
+  display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px; margin:0 0 4px;
+}
+.gio-gioco b{
+  font-family:var(--ff-display); font-weight:400; font-size:21px;
+  letter-spacing:.04em; color:var(--ink);
+}
+.gio-gioco span{
+  font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-soft);
+}
+.gio-gioco .vinto{color:var(--amber)}
+
 /* nel pannello della recensione lo spazio e' meno e il fondo e' chiaro */
 #p-giocate{margin:22px 0 0; padding-top:16px; border-top:1px solid var(--line)}
 #p-giocate:empty{display:none}
 #p-giocate .eyebrow{margin:0 0 8px}
 
 /* --- l'editor della partita --------------------------------------- */
+#mialayer{
+  position:fixed; inset:0; z-index:9; display:flex; align-items:center;
+  justify-content:center; padding:20px; background:rgba(90,74,50,.42);
+  opacity:0; visibility:hidden; transition:opacity .3s ease, visibility 0s .3s;
+}
+#mialayer.on{opacity:1; visibility:visible; transition:opacity .3s ease, visibility 0s}
+.mia-nota{margin:0 0 16px; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
+.mia-nota b{color:var(--ink); font-weight:500}
+#mia-salva{
+  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:#fdfaf4;
+  background:var(--amber); border:1px solid var(--amber); padding:11px 18px;
+}
+#mia-salva:hover{background:var(--ink); border-color:var(--ink)}
+
 #partitalayer{
   position:fixed; inset:0; z-index:9; display:flex; align-items:center;
   justify-content:center; padding:20px; background:rgba(90,74,50,.42);
@@ -741,7 +790,25 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   .add-form{grid-template-columns:1fr}
 }
 
-.pan-foot{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:20px 0 0}
+/* Il piede non scorre col testo: sta appiccicato in fondo al pannello.
+   Con una recensione lunga finiva sotto il bordo e i pulsanti non si
+   vedevano affatto -- e non c'era niente che dicesse di scorrere. */
+.pan-foot{
+  flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+  margin:0; padding:12px clamp(20px,2.4vw,30px);
+  border-top:1px solid var(--line); background:rgba(253,250,244,.7);
+  opacity:0; transition:opacity .4s ease .5s;
+}
+body.review .pan-foot{opacity:1}
+.pan-link{margin:20px 0 0}
+/* con quattro pulsanti in fila le etichette lunghe non ci stanno */
+.pan-foot button{font-size:10px; letter-spacing:.1em; padding:9px 10px}
+#p-mia{
+  font-family:var(--ff-text); font-weight:700; text-transform:uppercase;
+  cursor:pointer; color:#fdfaf4; background:var(--amber); border:1px solid var(--amber);
+}
+#p-mia:hover{background:var(--ink); border-color:var(--ink)}
+body.visita #p-mia{display:none !important}
 #del{
   font-family:var(--ff-text); font-size:11px; font-weight:700;
   letter-spacing:.14em; text-transform:uppercase; cursor:pointer;

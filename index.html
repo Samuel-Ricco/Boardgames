@@ -79,7 +79,7 @@
 <aside id="panel" role="dialog" aria-modal="false" aria-labelledby="p-title" aria-hidden="true">
   <button id="close" type="button">chiudi &times;</button>
   <div class="pan-scroll">
-    <p class="eyebrow">la recensione</p>
+    <p class="eyebrow" id="p-eyebrow">la recensione</p>
     <h2 id="p-title"></h2>
     <p class="byline" id="p-by"></p>
     <ul class="specs" id="p-specs"></ul>
@@ -87,19 +87,28 @@
     <div class="body" id="p-body"></div>
     <div class="tags" id="p-tags"></div>
     <div class="giocate" id="p-giocate"></div>
-    <p class="pan-foot">
+    <p class="pan-link">
       <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
-      <button id="edit" type="button" class="dentro-only" title="correggi la scheda e scrivi la recensione">
-        <span aria-hidden="true">&#9998;</span> modifica
-      </button>
-      <button id="p-segna" type="button" class="dentro-only" title="segna una partita a questo gioco">
-        <span aria-hidden="true">&#9860;</span> segna una partita
-      </button>
-      <button id="del" type="button" class="dentro-only" title="togli questo gioco dalla libreria">
-        <span aria-hidden="true">&#9003;</span> togli dalla libreria
-      </button>
     </p>
   </div>
+
+  <!-- Il piede sta FUORI dal testo che scorre: una recensione lunga lo
+       spingeva sotto il bordo del pannello e i pulsanti non si vedevano
+       piu'. Inchiodato qui, ci sono sempre. -->
+  <p class="pan-foot">
+    <button id="p-mia" type="button" class="dentro-only" title="scrivi cosa ne pensi tu">
+      <span aria-hidden="true">&#9998;</span> la tua recensione
+    </button>
+    <button id="p-segna" type="button" class="dentro-only" title="segna una partita a questo gioco">
+      <span aria-hidden="true">&#9860;</span> partita
+    </button>
+    <button id="edit" type="button" class="dentro-only" title="correggi la scheda">
+      scheda
+    </button>
+    <button id="del" type="button" class="dentro-only" title="togli questo gioco dalla libreria">
+      <span aria-hidden="true">&#9003;</span> togli
+    </button>
+  </p>
 </aside>
 
 <!-- Su schermo stretto le sezioni stanno in basso, dove arriva il
@@ -182,42 +191,54 @@
       </p>
     </div>
 
+    <!-- Tre cassetti. Aperti tutti insieme il profilo diventava una
+         pagina lunghissima in cui la cosa che cercavi era sempre in
+         fondo; e quale sia aperto se lo ricorda. -->
     <section class="pro-blocco">
-      <h3>Amici</h3>
-      <p id="pro-amici-msg" class="pro-msg"></p>
+      <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-amici">
+        Amici <span class="quanti" id="conta-amici"></span></button></h3>
+      <div class="pro-dentro" id="blocco-amici" hidden>
+        <p id="pro-amici-msg" class="pro-msg"></p>
 
-      <ul id="pro-richieste" class="pro-gente"></ul>
-      <ul id="pro-amici" class="pro-gente"></ul>
-      <ul id="pro-attesa" class="pro-gente"></ul>
+        <ul id="pro-richieste" class="pro-gente"></ul>
+        <ul id="pro-amici" class="pro-gente"></ul>
+        <ul id="pro-attesa" class="pro-gente"></ul>
 
-      <div class="pro-aggiungi">
-        <input id="ami-q" type="text" placeholder="codice amico, o email"
-               autocomplete="off" spellcheck="false" aria-label="codice amico o email">
-        <button id="ami-go" type="button">chiedi</button>
-      </div>
-      <p id="ami-msg" class="pro-msg"></p>
-    </section>
-
-    <section class="pro-blocco">
-      <h3>Giocatori</h3>
-      <p class="pro-msg">I nomi che usi per segnare le partite. Al tavolo c&rsquo;&egrave;
-        quasi sempre qualcuno che sul sito non c&rsquo;&egrave;: qui ci sta lo stesso.</p>
-      <ul id="pro-giocatori" class="pro-gente"></ul>
-      <p id="gio-msg" class="pro-msg"></p>
-      <div class="pro-aggiungi">
-        <input id="gio-nuovo" type="text" placeholder="un nome" autocomplete="off"
-               maxlength="40" aria-label="nome del giocatore">
-        <button id="gio-piu" type="button">aggiungi</button>
+        <div class="pro-aggiungi">
+          <input id="ami-q" type="text" placeholder="codice amico, o email"
+                 autocomplete="off" spellcheck="false" aria-label="codice amico o email">
+          <button id="ami-go" type="button">chiedi</button>
+        </div>
+        <p id="ami-msg" class="pro-msg"></p>
       </div>
     </section>
 
     <section class="pro-blocco">
-      <h3>Partite</h3>
-      <p id="par-msg" class="pro-msg"></p>
-      <ul id="pro-partite" class="giocate"></ul>
-      <p class="pro-fondo">
-        <button id="par-nuova" type="button" class="pro-lin">segna una partita</button>
-      </p>
+      <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-giocatori">
+        Giocatori <span class="quanti" id="conta-giocatori"></span></button></h3>
+      <div class="pro-dentro" id="blocco-giocatori" hidden>
+        <p class="pro-msg">I nomi che usi per segnare le partite. Al tavolo c&rsquo;&egrave;
+          quasi sempre qualcuno che sul sito non c&rsquo;&egrave;: qui ci sta lo stesso.</p>
+        <ul id="pro-giocatori" class="pro-gente"></ul>
+        <p id="gio-msg" class="pro-msg"></p>
+        <div class="pro-aggiungi">
+          <input id="gio-nuovo" type="text" placeholder="un nome" autocomplete="off"
+                 maxlength="40" aria-label="nome del giocatore">
+          <button id="gio-piu" type="button">aggiungi</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pro-blocco">
+      <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-partite">
+        Partite <span class="quanti" id="conta-partite"></span></button></h3>
+      <div class="pro-dentro" id="blocco-partite" hidden>
+        <p id="par-msg" class="pro-msg"></p>
+        <div id="pro-partite"></div>
+        <p class="pro-fondo">
+          <button id="par-nuova" type="button" class="pro-lin">segna una partita</button>
+        </p>
+      </div>
     </section>
 
   </div>
@@ -327,6 +348,34 @@
       <span id="add-dove">Le modifiche restano su questo browser.</span>
       <button id="exp" type="button">esporta js/data.js</button>
       <button id="rst" type="button">ripristina</button>
+    </p>
+  </div>
+</div>
+
+<!-- LA TUA RECENSIONE. Un modulo suo, corto, raggiungibile con un
+     tasto dalla scatola aperta: scrivere due righe su un gioco non deve
+     voler dire aprire il modulo con dentro anche editore, anno e id
+     BGG. E' il testo che i tuoi amici leggono quando aprono quel gioco
+     nella tua libreria. -->
+<div id="mialayer" aria-hidden="true">
+  <div class="add-card" role="dialog" aria-labelledby="mia-h">
+    <button id="mia-x" type="button">chiudi &times;</button>
+    <p class="eyebrow">quello che ne pensi tu</p>
+    <h2 id="mia-h">La tua recensione</h2>
+    <p class="mia-nota">La leggono i tuoi amici quando aprono <b id="mia-gioco"></b>
+      nella tua libreria. Poche righe bastano.</p>
+
+    <div class="add-form">
+      <label>voto <input id="mia-voto" type="text" inputmode="decimal"
+                         placeholder="8.0" autocomplete="off"></label>
+      <label class="wide">recensione
+        <textarea id="mia-testo" rows="7"
+          placeholder="Com&rsquo;&egrave;? A chi lo consiglieresti? Una riga vuota separa un capoverso."></textarea>
+      </label>
+    </div>
+
+    <p class="add-foot">
+      <button id="mia-salva" type="button">salva</button>
     </p>
   </div>
 </div>

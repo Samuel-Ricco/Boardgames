@@ -1077,6 +1077,11 @@ function showPanel(game){
     link.style.display = 'none';
   }
 
+  // in casa di un amico la recensione non e' tua, e va detto
+  const dove = LIB.ospitePresso();
+  q('#p-eyebrow').textContent = dove && dove.nick
+    ? 'la recensione di ' + dove.nick : 'la recensione';
+
   disegnaGiocate(game);
 
   const panel = q('#panel');
@@ -1251,7 +1256,9 @@ function bindInput(){
   }, { passive: false });
 
   window.addEventListener('keydown', function(e){
-    if (e.key === 'Escape'){ finiscePresa(true); unfocus(); closeAdd(); chiudiPartita(); return; }
+    if (e.key === 'Escape'){
+      finiscePresa(true); chiudiMia(); chiudiPartita(); unfocus(); closeAdd(); return;
+    }
     if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
       e.preventDefault(); tornaACasa(); return;
     }
@@ -1270,8 +1277,8 @@ function bindInput(){
   });
 
   armaBottone(q('#del'),
-    '<span aria-hidden="true">&#9003;</span> togli dalla libreria',
-    'sicuro? tocca ancora', removeFocused);
+    '<span aria-hidden="true">&#9003;</span> togli',
+    'sicuro?', removeFocused);
   q('#panel').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   let rt;
@@ -1594,20 +1601,60 @@ async function scegli(voce, btn){
   }
 }
 
+/* Una riga vuota separa un capoverso: e' il modo in cui si scrive un
+   testo, e non serve insegnare niente a chi lo compila. */
+function capoversi(testo){
+  const t = String(testo || '').trim();
+  if (!t) return null;
+  const NL = String.fromCharCode(10), CR = String.fromCharCode(13);
+  return t.split(CR).join('')                   // fine riga alla Windows
+          .split(NL + NL)                       // riga vuota = capoverso nuovo
+          .map(function(x){ return x.split(NL).join(' ').trim(); })
+          .filter(Boolean);
+}
+
+/* --- la tua recensione ------------------------------------------
+   Un modulo suo, corto. Scrivere due righe su un gioco non deve voler
+   dire aprire quello con dentro anche editore, anno e id BGG -- ed e'
+   il testo che i tuoi amici leggono aprendo quel gioco da te. */
+function apriMia(){
+  const g = state.focused && state.focused.userData.game;
+  if (!g || LIB.ospitePresso()) return;
+  q('#mia-gioco').textContent = g.title;
+  q('#mia-voto').value = g.score || '';
+  q('#mia-testo').value = (g.review || []).join(String.fromCharCode(10, 10));
+  q('#mialayer').classList.add('on');
+  q('#mialayer').setAttribute('aria-hidden', 'false');
+  setTimeout(function(){ q('#mia-testo').focus(); }, 60);
+}
+
+function chiudiMia(){
+  q('#mialayer').classList.remove('on');
+  q('#mialayer').setAttribute('aria-hidden', 'true');
+}
+
+function salvaMia(){
+  const box = state.focused;
+  const g = box && box.userData.game;
+  if (!g) return;
+  const patch = { score: q('#mia-voto').value.trim() };
+  const testo = capoversi(q('#mia-testo').value);
+  if (testo) patch.review = testo;
+
+  const nuovo = LIB.update(g.id, patch);
+  chiudiMia();
+  if (nuovo){
+    box.userData.game = nuovo;
+    showPanel(nuovo);              // il pannello dietro mostra subito quello che hai scritto
+    flash('recensione salvata');
+  }
+}
+
 async function addManual(){
   const title = q('#m-title').value.trim();
   if (!title){ q('#m-title').focus(); return; }
 
-  // una riga vuota separa un capoverso: e' il modo in cui si scrive un
-  // testo, non serve insegnare niente a chi lo compila
-  const testo = q('#m-review').value.trim();
-  const NL = String.fromCharCode(10), CR = String.fromCharCode(13);
-  const capoversi = testo
-    ? testo.split(CR).join('')                  // fine riga alla Windows
-           .split(NL + NL)                      // riga vuota = capoverso nuovo
-           .map(function(t){ return t.split(NL).join(' ').trim(); })
-           .filter(Boolean)
-    : null;
+  const testi = capoversi(q('#m-review').value);
 
   const g = {
     title: title,
@@ -1620,7 +1667,7 @@ async function addManual(){
     score: q('#m-score').value.trim(),
     art: 'generic'
   };
-  if (capoversi) g.review = capoversi;
+  if (testi) g.review = testi;
 
   /* La copertina: prima il file scelto a mano, che vince sempre --
      e' quello che l'admin ha voluto. Se non c'e', quella della fonte.
@@ -1737,6 +1784,10 @@ function catMsg(html, kind){
    il pollice. Sono le stesse voci e chiamano la stessa funzione --
    cambia il posto, non il significato. */
 function setSezione(s){
+  /* Con una scatola aperta, cambiare sezione la lasciava aperta dietro
+     l'elenco: tornando indietro ci si ritrovava un pannello a meta'
+     schermo di cui non si ricordava piu' il perche'. */
+  if (s !== 'collezione' && (state.phase === 'focus' || state.phase === 'review')) unfocus();
   state.sezione = s;
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
   document.body.classList.toggle('sez-profilo',  s === 'profilo');
@@ -2068,8 +2119,9 @@ function disegnaAmici(){
     '<button type="button" class="no" data-fa="togli">ritira</button>',
     'richiesta mandata');
 
-  if (PROFILO.problema()){ proMsg('#pro-amici-msg', esc(PROFILO.problema()), true); return; }
   const n = PROFILO.amici().length;
+  quanti('#conta-amici', n + PROFILO.daAccettare().length);
+  if (PROFILO.problema()){ proMsg('#pro-amici-msg', esc(PROFILO.problema()), true); return; }
   proMsg('#pro-amici-msg', n
     ? '<b>' + n + '</b> ' + (n === 1 ? 'amico' : 'amici') + '.'
     : 'Nessun amico, per ora. Passagli il tuo codice, o chiedi il loro.');
@@ -2133,7 +2185,30 @@ async function salvaNickDaModulo(){
   b.disabled = false;
 }
 
+/* I tre cassetti del profilo. Aperti tutti insieme la pagina diventava
+   lunghissima e la cosa che cercavi era sempre in fondo; quale sia
+   aperto se lo ricorda, se no ogni giro ricomincia da chiuso. */
+function bindBlocchi(){
+  qa('.pro-tit').forEach(function(b){
+    const box = document.getElementById(b.getAttribute('aria-controls'));
+    if (!box) return;
+    const chiave = 'dado-cassetto-' + box.id;
+    let aperto = false;
+    try { aperto = localStorage.getItem(chiave) === '1'; } catch(e){}
+
+    const metti = function(v){
+      aperto = v;
+      b.setAttribute('aria-expanded', v ? 'true' : 'false');
+      box.hidden = !v;
+      try { localStorage.setItem(chiave, v ? '1' : '0'); } catch(e){}
+    };
+    metti(aperto);
+    b.addEventListener('click', function(){ metti(!aperto); });
+  });
+}
+
 function bindProfilo(){
+  bindBlocchi();
   qa('#sezioni button, #tabbar button').forEach(function(b){
     b.addEventListener('click', function(){ setSezione(b.getAttribute('data-sez')); });
   });
@@ -2272,24 +2347,62 @@ function disegnaGiocate(game){
     : '';
 }
 
+/* Chi vince di piu' in questo gruppo di partite. A parita' non si
+   nomina nessuno: dire "vince Tizio" quando hanno vinto in due sarebbe
+   semplicemente falso. */
+function vinceDi(partite){
+  const per = {};
+  partite.forEach(function(p){
+    (p.chi || []).forEach(function(x){
+      if (x.vincitore) per[x.nome] = (per[x.nome] || 0) + 1;
+    });
+  });
+  const ordine = Object.keys(per).sort(function(a, b){ return per[b] - per[a]; });
+  if (!ordine.length) return '';
+  const primo = per[ordine[0]];
+  if (ordine.length > 1 && per[ordine[1]] === primo) return 'nessuno stacca gli altri';
+  return 'vince ' + ordine[0] + (primo > 1 ? ' (' + primo + ')' : '');
+}
+
+/* Raggruppate per gioco. Un elenco di serate in ordine di data non dice
+   niente; "a Root avete giocato tre volte e vince sempre Giulia" e'
+   quello che uno vuole sapere aprendo questa sezione. */
 function disegnaPartite(){
   const el = q('#pro-partite');
   if (!el) return;
   const tutte = PARTITE.tutte();
-  el.innerHTML = tutte.map(function(p){ return rigaGiocata(p, true); }).join('');
 
+  const gruppi = [], per = {};
+  tutte.forEach(function(p){
+    const k = p.bgg ? 'b' + p.bgg : 't' + p.titolo;
+    if (!per[k]){ per[k] = { titolo: p.titolo, partite: [] }; gruppi.push(per[k]); }
+    per[k].partite.push(p);
+  });
+
+  el.innerHTML = gruppi.map(function(g){
+    const n = g.partite.length;
+    const chi = vinceDi(g.partite);
+    return '<div class="gio-gruppo">' +
+      '<p class="gio-gioco"><b>' + esc(g.titolo) + '</b>' +
+      '<span>' + n + (n === 1 ? ' partita' : ' partite') +
+      (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span></p>' +
+      '<ul class="giocate">' +
+        g.partite.map(function(p){ return rigaGiocata(p, false); }).join('') +
+      '</ul></div>';
+  }).join('');
+
+  quanti('#conta-partite', tutte.length);
   if (PARTITE.problema()){ proMsg('#par-msg', esc(PARTITE.problema()), true); return; }
-  if (!tutte.length){
-    proMsg('#par-msg', 'Nessuna partita segnata. Si segna da qui, oppure dalla scatola ' +
-                       'del gioco appena finito.');
-    return;
-  }
-  // chi vince di piu': due righe, non una classifica intera
-  const cl = PARTITE.classifica().slice(0, 3).map(function(x){
-    return '<b>' + esc(x.nome) + '</b> ' + x.vinte + '/' + x.partite;
-  }).join(' &middot; ');
-  proMsg('#par-msg', tutte.length + (tutte.length === 1 ? ' partita' : ' partite') +
-                     '. ' + cl);
+  proMsg('#par-msg', tutte.length ? ''
+    : 'Nessuna partita segnata. Si segna da qui, oppure dalla scatola del gioco ' +
+      'appena finito.');
+}
+
+/* Il numero accanto al titolo del cassetto: quello che si vuole sapere
+   senza aprirlo. */
+function quanti(sel, n){
+  const el = q(sel);
+  if (el) el.textContent = n ? String(n) : '';
 }
 
 function disegnaGiocatori(){
@@ -2304,6 +2417,7 @@ function disegnaGiocatori(){
     '</li>';
   }).join('');
 
+  quanti('#conta-giocatori', g.length);
   if (PARTITE.problema()){ proMsg('#gio-msg', esc(PARTITE.problema()), true); return; }
   // gli amici che non sono ancora al tavolo: proporli evita di riscriverli
   const da = PARTITE.amiciDaAggiungere();
@@ -2409,6 +2523,8 @@ async function salvaPartita(){
    cosa che questo sito sa fare bene. */
 async function visitaLibreria(id, nick){
   const chi = nick || 'un amico';
+  // una scatola tua aperta non ha senso davanti allo scaffale di un altro
+  if (state.phase === 'focus' || state.phase === 'review') unfocus();
   flash('apro la libreria di ' + chi);
   try {
     await LIB.visita(id, nick);
@@ -2433,6 +2549,10 @@ async function visitaLibreria(id, nick){
 
 async function tornaACasa(){
   if (!LIB.ospitePresso()) return;
+  /* Il pannello restava aperto su un gioco che un attimo dopo non era
+     piu' sullo scaffale: si tornava a casa con addosso la recensione di
+     qualcun altro. */
+  if (state.phase === 'focus' || state.phase === 'review') unfocus();
   LIB.torna();
   document.body.classList.remove('visita');
   q('#visita').setAttribute('aria-hidden', 'true');
@@ -2493,6 +2613,17 @@ function bindPartite(){
 
   /* Dalla scatola aperta: il gioco arriva gia' scritto, ed e' il punto
      -- appena finito di giocare non si ha voglia di ricercarlo. */
+  q('#p-mia').addEventListener('click', function(e){
+    e.stopPropagation();
+    apriMia();
+  });
+  q('#mia-x').addEventListener('click', chiudiMia);
+  q('#mia-salva').addEventListener('click', salvaMia);
+  qa('#mialayer input, #mialayer textarea').forEach(function(i){
+    i.addEventListener('keydown', function(e){ e.stopPropagation(); });
+  });
+  q('#mialayer').addEventListener('pointerup', function(e){ e.stopPropagation(); });
+
   q('#p-segna').addEventListener('click', function(e){
     e.stopPropagation();
     const g = state.focused && state.focused.userData.game;
