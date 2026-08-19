@@ -537,6 +537,33 @@ body.sez-profilo #profilo{display:block}
 #nick-msg{margin:14px 0 0; min-height:18px; font-size:12.5px; color:var(--rust)}
 #nick-msg.ok{color:var(--ink-soft)}
 
+/* --- in casa di un amico ---------------------------------------- */
+#visita{
+  position:fixed; z-index:4; left:50%; top:0; transform:translate(-50%,-100%);
+  display:flex; align-items:center; gap:14px;
+  background:var(--card); border:1px solid var(--line); border-top:0;
+  padding:9px 10px 9px 16px; box-shadow:var(--shadow);
+  transition:transform .4s ease;
+}
+/* scende SOTTO la testata: a 390 px, centrato in alto, finiva sopra gli
+   strumenti -- ed e' una condizione della schermata, non un avviso che
+   deve coprire quello che c'e' gia' */
+body.visita #visita{transform:translate(-50%,84px)}
+#visita span{font-size:12px; color:var(--ink-soft)}
+#visita b{font-weight:500; color:var(--ink)}
+#vis-torna{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:none; border:1px solid var(--line); padding:7px 10px;
+}
+#vis-torna:hover{color:var(--amber); border-color:var(--amber)}
+
+/* in casa d'altri si guarda e basta: via tutto quello che modifica */
+body.visita #add,
+body.visita #edit,
+body.visita #del,
+body.visita #p-segna{display:none !important}
+
 /* --- a che libreria siamo --------------------------------------
    Il binario e' orizzontale e sta in basso perche' orizzontale e' il
    movimento: le librerie sono in fila lungo la parete, non impilate. */
@@ -692,6 +719,10 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   #rail{bottom:calc(58px + env(safe-area-inset-bottom))}
   .hint{bottom:calc(106px + env(safe-area-inset-bottom))}
   body.ferma .hint{bottom:calc(70px + env(safe-area-inset-bottom))}
+
+  body.visita #visita{transform:translate(-50%,80px)}
+  #visita{padding:8px 8px 8px 13px; gap:10px}
+  #visita span{font-size:11px}
 
   .pro-testa{gap:18px}
   #pro-avatar{width:92px; height:92px}

@@ -350,6 +350,27 @@ ha vinto — che di un gioco da tavolo è la metà più interessante.
 - La classifica conta **sui nomi**, non sui giocatori salvati: se no cancellare
   un giocatore cancellerebbe anche le sue vittorie.
 
+## In casa di un amico
+
+Guardare la libreria di un amico è **la stessa scena**, gli stessi gesti, la
+stessa recensione che si apre: cambia solo che non si tocca niente. Farne una
+schermata a parte avrebbe voluto dire rifare da capo l'unica cosa che questo
+sito sa fare bene.
+
+- `LIB.visita(uid)` tiene la sua collezione in un posto suo (`visitata`) invece
+  di sovrascrivere la tua: tornare a casa è immediato e non serve rileggere.
+- **`salvaLocale()` continua a serializzare `games`, non `all()`.** Se guardasse
+  `all()` finirebbe in `localStorage` la libreria di un altro, e al giro dopo
+  sarebbe la tua.
+- `add`, `update`, `remove`, `riordina` escono subito se si è in visita. Non
+  servirebbe — le policy di scrittura chiedono comunque `proprietario =
+  auth.uid()` — ma un'interfaccia che ci prova e poi si scusa è peggio di una
+  che non ci prova.
+- `body.visita` toglie `+`, *modifica*, *togli* e *segna una partita*, e
+  `puoiSpostare()` diventa falsa: in casa d'altri si guarda e basta.
+- Il cartello scende **sotto** la testata (84 px, 80 su schermo stretto): a
+  390 px, centrato in alto, finiva sopra gli strumenti.
+
 ## Le tre sezioni
 
 `collezione` | `catalogo` | `profilo`, in `state.sezione`. Due navigazioni che

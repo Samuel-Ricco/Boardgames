@@ -141,6 +141,17 @@ scrittura — quindi nessun account può promuovere sé stesso o altri. Sulla
 collezione personale l'admin non ha nessun potere in più; quello che può fare è
 **pubblicare una recensione nel catalogo**, che è uno solo e parla per il sito.
 
+## La libreria di un amico
+
+Dal profilo, accanto a ogni amico, c'è **la sua libreria**: si apre nella stessa
+scena in tre dimensioni, con gli stessi gesti e le stesse recensioni che si
+aprono cliccando una scatola. Cambia solo che non si tocca niente — via il `+`,
+via *modifica* e *togli*, e le scatole non si spostano.
+
+A permetterlo sono le regole del database, non l'interfaccia: la lettura di
+`giochi` è aperta agli amici, la scrittura continua a chiedere che la riga sia
+tua.
+
 ## Le partite
 
 Una collezione dice cosa hai; le partite dicono cosa hai giocato, con chi e chi

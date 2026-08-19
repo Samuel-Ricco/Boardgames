@@ -753,7 +753,8 @@ function puntoSuZ(z){
 /* Cercando, l'ordine sullo schermo e' un sottoinsieme: spostarci dentro
    riordinerebbe solo i risultati e lascerebbe gli altri dove capita. */
 function puoiSpostare(){
-  return (state.dentro || !AUTH.attivo()) && !state.q && state.phase === 'browse';
+  return (state.dentro || !AUTH.attivo()) && !state.q
+         && !LIB.ospitePresso() && state.phase === 'browse';
 }
 
 function iniziaPresa(box){
@@ -1251,6 +1252,9 @@ function bindInput(){
 
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ finiscePresa(true); unfocus(); closeAdd(); chiudiPartita(); return; }
+    if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
+      e.preventDefault(); tornaACasa(); return;
+    }
     if (state.phase !== 'browse') return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); scrollBy(1); }
     if (e.key === 'ArrowLeft'  || e.key === 'PageUp'){   e.preventDefault(); scrollBy(-1); }
@@ -2057,6 +2061,7 @@ function disegnaAmici(){
     'ti ha chiesto l\'amicizia');
 
   elenco('#pro-amici', PROFILO.amici(),
+    '<button type="button" data-fa="libreria">la sua libreria</button>' +
     '<button type="button" class="no" data-fa="togli">togli</button>', '');
 
   elenco('#pro-attesa', PROFILO.inAttesa(),
@@ -2162,6 +2167,7 @@ function bindProfilo(){
   });
 
   q('#pro-rinomina').addEventListener('click', function(){ apriNick(true); });
+  q('#vis-torna').addEventListener('click', tornaACasa);
 
   /* Uscire sta anche qui perche' su schermo stretto la testata non ha
      piu' posto per dirlo. E' lo stesso gesto del pulsante in alto: la
@@ -2193,6 +2199,12 @@ function bindProfilo(){
       const fa = b.getAttribute('data-fa');
       b.disabled = true;
       try {
+        if (fa === 'libreria'){
+          const a = PROFILO.amici().find(function(x){ return x.id === id; });
+          b.disabled = false;
+          await visitaLibreria(id, a && (a.profilo.nick || a.profilo.nome));
+          return;
+        }
         if (fa === 'accetta') await PROFILO.accetta(id);
         if (fa === 'togli')   await PROFILO.togli(id);
         disegnaAmici();
@@ -2388,6 +2400,45 @@ async function salvaPartita(){
     q('#pa-msg').textContent = 'non salvata: ' + e.message;
   }
   b.disabled = false;
+}
+
+/* --- la libreria di un amico -------------------------------------
+   La stessa scena, gli stessi gesti, la stessa recensione che si apre:
+   cambia solo che non si tocca niente. Fare una schermata a parte per
+   guardare una collezione avrebbe voluto dire rifare da capo l'unica
+   cosa che questo sito sa fare bene. */
+async function visitaLibreria(id, nick){
+  const chi = nick || 'un amico';
+  flash('apro la libreria di ' + chi);
+  try {
+    await LIB.visita(id, nick);
+  } catch(e){
+    flash('non riesco ad aprirla: ' + e.message);
+    return;
+  }
+  document.body.classList.add('visita');
+  q('#vis-chi').textContent = chi;
+  q('#visita').setAttribute('aria-hidden', 'false');
+
+  // la ricerca era sulla tua libreria: qui non vuol dire piu' niente
+  state.q = ''; q('#cerca').value = '';
+  document.body.classList.remove('cerca');
+  state.scrollTo = state.scroll = 0;
+
+  setSezione('collezione');
+  await loadCovers();
+  applyLibrary({});
+  if (!LIB.all().length) flash('la libreria di ' + chi + ' e\' ancora vuota');
+}
+
+async function tornaACasa(){
+  if (!LIB.ospitePresso()) return;
+  LIB.torna();
+  document.body.classList.remove('visita');
+  q('#visita').setAttribute('aria-hidden', 'true');
+  state.scrollTo = state.scroll = 0;
+  await loadCovers();
+  applyLibrary({});
 }
 
 function bindPartite(){

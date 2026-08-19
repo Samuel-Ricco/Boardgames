@@ -134,8 +134,34 @@ function scollega(){
   try { localStorage.removeItem(KEY); } catch(e){}
 }
 
+/* --- guardare la libreria di un amico ---------------------------
+   Si legge e basta: le regole del database lo permettono (`sono_amico`)
+   e le policy di scrittura continuano a chiedere `proprietario =
+   auth.uid()`, quindi anche volendo non si potrebbe toccare niente.
+
+   La sua collezione sta in un posto suo invece di sovrascrivere la
+   propria: tornare a casa e' immediato e non serve rileggere niente.
+   E `salvaLocale()` continua a serializzare `games`, cioe' la tua --
+   se guardasse `all()` finirebbe in `localStorage` la libreria di un
+   altro, e al giro dopo sarebbe la tua. */
+let visitata = null;             // { id, nick, games } oppure null
+
+async function visita(uid, nick){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c) throw new Error('senza backend non c\'e\' nessuno da visitare');
+  const r = await c.from('giochi').select('*').eq('proprietario', uid)
+                   .order('creato', { ascending: true });
+  if (r.error) throw r.error;
+  visitata = { id: uid, nick: nick || '', games: (r.data || []).map(daRiga) };
+  return visitata;
+}
+
+function torna(){ visitata = null; }
+function ospitePresso(){ return visitata; }
+
 /* --- lettura sincrona, quella che usa la scena ------------------- */
 function all(){
+  if (visitata) return visitata.games;
   if (!games) games = daLocale();
   return games;
 }
@@ -209,6 +235,7 @@ function makeId(title){
    dice perche'. Meglio questo che un'interfaccia che si blocca a ogni
    clic aspettando un giro di rete. */
 function add(g){
+  if (visitata) return null;         // in casa d'altri si guarda e basta
   const next = all().reduce(function(m, x){ return Math.max(m, x.added || 0); }, 0) + 1;
   const game = Object.assign({
     id: '', sub: '', year: '', designer: '', publisher: '',
@@ -283,6 +310,7 @@ async function mandaAlServer(c, game){
    richiesta parte dietro, e se il database rifiuta si torna a com'era.
    `patch` contiene solo i campi toccati. */
 function update(id, patch){
+  if (visitata) return null;
   const g = get(id);
   if (!g) return null;
   const prima = Object.assign({}, g);
@@ -335,6 +363,7 @@ async function mandaModifica(c, g, prima){
    chi le ha appena messe a posto, per un errore che quasi sempre e'
    solo mancanza di rete. Lo si dice e basta. */
 function riordina(ids){
+  if (visitata) return 0;
   const per = {};
   all().forEach(function(g){ per[g.id] = g; });
 
@@ -364,6 +393,7 @@ async function mandaOrdine(c, giochi){
 }
 
 function remove(id){
+  if (visitata) return null;
   const i = all().findIndex(function(g){ return g.id === id; });
   if (i < 0) return null;
   const out = games.splice(i, 1)[0];
@@ -434,6 +464,7 @@ return {
   sync: sync, all: all, list: list, get: get,
   add: add, update: update, remove: remove, riordina: riordina,
   scollega: scollega, reset: reset, esporta: esporta, touched: touched,
+  visita: visita, torna: torna, ospitePresso: ospitePresso,
   eRemota: function(){ return remota; },
   suErrore: function(fn){ onErrore = fn; },
   orders: Object.keys(ORDERS)
