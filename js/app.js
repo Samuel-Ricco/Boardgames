@@ -1109,18 +1109,25 @@ function openAdd(){
   q('#addlayer').classList.add('on');
   q('#addlayer').setAttribute('aria-hidden','false');
   q('#add-q').focus();
-  BGG.ping().then(function(s){
-    if (!s.su){
-      msgAdd('Il proxy non risponde. La ricerca su BGG passa da l&igrave;: ' +
-             'apri un terminale nella cartella del sito e lancia <code>node tools/bgg-proxy.mjs</code>. ' +
-             'Senza, resta il modulo qui sotto.', 'warn');
-      q('#add-man').open = true;
-    } else if (!s.token){
-      msgAdd('Il proxy gira ma non ha il token: BGG risponder&agrave; 401. ' +
-             'Metti BGG_TOKEN nell\'ambiente e rilancialo.', 'warn');
-      q('#add-man').open = true;
+
+  // dove finiscono le modifiche cambia se c'e' il database dietro
+  const dove = q('#add-dove'), esporta = q('#exp'), ripristina = q('#rst');
+  if (LIB.eRemota()){
+    dove.textContent = 'Le modifiche vanno nel database, le vedono tutti.';
+    esporta.style.display = ripristina.style.display = 'none';
+  } else {
+    dove.textContent = 'Le modifiche restano su questo browser.';
+    esporta.style.display = ripristina.style.display = '';
+  }
+
+  CATALOGO.fonte(true).then(function(f){
+    if (f === 'bgg'){
+      msgAdd('Ricerca su <b>BoardGameGeek</b>, dal proxy locale.', '');
     } else {
-      msgAdd('', '');
+      msgAdd('Il token BGG non c&#39;&egrave; ancora, quindi cerco su <b>Wikidata</b>: ' +
+             'circa 4.400 giochi invece di 175.000, e l&#39;immagine &egrave; spesso una foto ' +
+             'del gioco allestito e non la scatola. <b>Controlla i campi prima di salvare</b> ' +
+             '&mdash; l&#39;editore &egrave; quello che sbaglia pi&ugrave; spesso.', 'warn');
     }
   });
 }
@@ -1134,59 +1141,71 @@ function msgAdd(html, kind){
   el.className = 'add-msg' + (kind ? ' ' + kind : '');
 }
 
+// la voce scelta dalla ricerca, in attesa di essere confermata
+let inAttesa = null;
+
 async function doSearch(){
   const q0 = q('#add-q').value.trim();
   if (!q0) return;
   msgAdd('cerco&hellip;', '');
   q('#add-res').innerHTML = '';
   try {
-    const hits = await BGG.cerca(q0);
-    if (!hits.length){ msgAdd('Nessun risultato.', ''); return; }
-    msgAdd('', '');
-    q('#add-res').innerHTML = hits.map(function(h){
-      return '<li><button type="button" data-id="' + h.id + '">' +
+    const hits = await CATALOGO.cerca(q0);
+    if (!hits.length){
+      msgAdd('Nessun risultato. Se il gioco &egrave; recente o poco noto pu&ograve; ' +
+             'semplicemente non essere su Wikidata: scrivilo a mano qui sotto.', '');
+      q('#add-man').open = true;
+      return;
+    }
+    msgAdd('Scegline uno: riempie il modulo, non lo mette subito sullo scaffale.', '');
+    q('#add-res').innerHTML = hits.map(function(h, i){
+      return '<li><button type="button" data-i="' + i + '">' +
              '<b>' + esc(h.title) + '</b>' +
-             (h.year ? '<span>' + h.year + '</span>' : '') + '</button></li>';
+             '<span>' + esc([h.year, h.designer].filter(Boolean).join(' &middot; ')) + '</span>' +
+             '</button></li>';
     }).join('');
     qa('#add-res button').forEach(function(b){
-      b.addEventListener('click', function(){ addFromBGG(b.getAttribute('data-id'), b); });
+      b.addEventListener('click', function(){
+        scegli(hits[parseInt(b.getAttribute('data-i'), 10)], b);
+      });
     });
   } catch(e){
-    // il 401 e' il caso normale finche' non c'e' un token approvato:
-    // vale la pena distinguerlo da un proxy spento
-    const noToken = /401/.test(e.message);
-    msgAdd(noToken
-      ? 'BGG ha risposto <b>401</b>: il token manca o non &egrave; ancora stato approvato. ' +
-        'Registra l\'applicazione su <code>boardgamegeek.com/applications</code>, ' +
-        'metti il token in BGG_TOKEN e rilancia il proxy. Intanto puoi scriverlo a mano.'
-      : 'Ricerca non riuscita: ' + esc(e.message) +
-        '. Se il proxy non &egrave; acceso, usa il modulo qui sotto.', 'warn');
+    msgAdd('Ricerca non riuscita: ' + esc(e.message) +
+           '. Puoi scrivere il gioco a mano qui sotto.', 'warn');
     q('#add-man').open = true;
   }
 }
 
-async function addFromBGG(id, btn){
+/* Un risultato non finisce sullo scaffale da solo: riempie il modulo.
+   Con Wikidata i dati vanno guardati prima di fidarsi, e anche con BGG
+   un controllo prima di salvare non ha mai fatto male. */
+async function scegli(voce, btn){
   btn.disabled = true;
-  const old = btn.innerHTML;
-  btn.innerHTML = '<b>lo prendo&hellip;</b>';
+  const prima = btn.innerHTML;
+  btn.innerHTML = '<b>prendo la scheda&hellip;</b>';
   try {
-    const g = await BGG.scheda(id);
-    try { g.cover = await BGG.copertina(id); } catch(e){ /* senza copertina si disegna */ }
-    delete g.image;
-    g.art = 'generic';
-    const added = LIB.add(g);
-    closeAdd();
-    await loadCovers();
-    applyLibrary({ animate: true });
-    goToGame(added.id);
-    flash('"' + added.title + '" e sullo scaffale');
+    const g = await CATALOGO.dettagli(voce);
+    inAttesa = g;
+    const set = function(sel, v){ q(sel).value = v == null ? '' : String(v); };
+    set('#m-title', g.title);      set('#m-bgg', g.bgg);
+    set('#m-designer', g.designer); set('#m-publisher', g.publisher);
+    set('#m-year', g.year);        set('#m-players', g.players);
+    set('#m-time', g.time);        set('#m-score', g.score);
+    q('#add-man').open = true;
+    q('#add-res').innerHTML = '';
+    msgAdd('Scheda da <b>' + esc(g.fonte === 'bgg' ? 'BoardGameGeek' : 'Wikidata') + '</b>. ' +
+           'Correggi quello che serve, poi metti sullo scaffale.' +
+           (g.immagine ? ' L&#39;immagine la scarico al salvataggio.'
+                       : ' Nessuna immagine: user&ograve; la copertina disegnata.'), '');
+    q('#m-title').focus();
   } catch(e){
-    btn.disabled = false; btn.innerHTML = old;
-    msgAdd('Non sono riuscito a prenderlo: ' + esc(e.message), 'warn');
+    msgAdd('Non sono riuscito a prendere la scheda: ' + esc(e.message), 'warn');
+  } finally {
+    btn.disabled = false; btn.innerHTML = prima;
   }
 }
 
-function addManual(){
+async function addManual(){
   const title = q('#m-title').value.trim();
   if (!title){ q('#m-title').focus(); return; }
   const g = {
@@ -1200,9 +1219,23 @@ function addManual(){
     score: q('#m-score').value.trim(),
     art: 'generic'
   };
+
+  // la copertina si scarica solo adesso: se si cambia idea a meta'
+  // ricerca, non si e' scaricato niente per niente
+  if (inAttesa && inAttesa.immagine && inAttesa.title === title){
+    const b = q('#m-go');
+    const prima = b.textContent;
+    b.disabled = true; b.textContent = 'scarico la copertina...';
+    try { g.cover = await CATALOGO.copertina(inAttesa); }
+    catch(e){ flash('copertina non presa: uso quella disegnata'); }
+    b.disabled = false; b.textContent = prima;
+  }
+
   const added = LIB.add(g);
+  inAttesa = null;
   qa('#add-man input').forEach(function(i){ i.value = ''; });
   closeAdd();
+  await loadCovers();
   applyLibrary({ animate: true });
   goToGame(added.id);
   flash('"' + added.title + '" e sullo scaffale');

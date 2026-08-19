@@ -8,14 +8,18 @@ la recensione. Niente build, niente dipendenze da installare.
 index.html            markup
 css/style.css         stile
 js/data.js            i giochi committati: il seme della libreria
-js/store.js           libreria viva in localStorage, ordinamenti, export
+js/config.js          url e chiave pubblica di Supabase
+js/auth.js            accesso con Google, e "sono admin?"
+js/store.js           la libreria: database, copia locale, ordinamenti
 js/bgg.js             ricerca BGG (passa dal proxy locale)
+js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             grafica generata su canvas
 js/app.js             scena 3D e interazione
 img/                  le copertine vere delle scatole
 fonts/                Bebas Neue e Inter in locale
-vendor/three.min.js   three.js r152, committato
-tools/bgg-*.mjs       scarico dati BGG e proxy per la ricerca admin
+vendor/                three.js r152 e supabase-js, committati
+supabase/migrations/   lo schema del database
+tools/bgg-*.mjs        scarico dati BGG e proxy per la ricerca admin
 ```
 
 **Niente risorse esterne, mai.** three.js, font e copertine sono nel repo: il
@@ -72,9 +76,11 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
 
 ## Admin
 
-- Non è protetto e non deve fingere di esserlo: su un sito statico non c'è dove
-  tenere una password. Sta scritto nella schermata iniziale.
-- Le modifiche vivono in `localStorage`; per pubblicarle c'è `esporta js/data.js`.
+- **Il ruolo lo decide il database**, non l'interfaccia: `e_admin()` su Postgres.
+  Senza backend configurato resta l'interruttore locale di prima, che però non
+  protegge niente ed è dichiarato tale nella schermata iniziale.
+- Con Supabase le modifiche vanno nel database e le vedono tutti; senza, restano
+  in `localStorage` e si pubblicano con `esporta js/data.js`.
 - **Mai salvare `img` nella libreria**: è l'immagine decodificata, in JSON diventa
   `{}` e al ricaricamento sembra una copertina valida senza esserlo. Le proporzioni
   della scatola finivano a NaN e le scatole sparivano dalla scena. `save()` lo
@@ -203,6 +209,19 @@ in `supabase/migrations/`. La chiave `sb_secret_` non deve mai entrare nel repo.
 - Le **recensioni sono lorem ipsum**, in `js/data.js`. Da riempire.
 - Nel repo ci sono due giochi, Root e Scythe, con le copertine vere. Tre per
   scaffale; l'armadio cresce da solo aggiungendone.
+- **Il catalogo ha due fonti** (`js/catalogo.js`) e si sceglie da sola: BGG via
+  proxy quando c'è il token, **Wikidata** altrimenti. Quando il token arriverà non
+  c'è niente da cambiare, il proxy risponde e la fonte cambia da sé.
+  Wikidata: ~4.400 giochi contro 175.000, dati più magri e a volte sbagliati
+  (l'editore è spesso il distributore locale), e l'immagine è quasi sempre una
+  **foto del gioco allestito**, non la scatola. Per questo un risultato **riempie
+  il modulo** invece di finire dritto sullo scaffale.
+- **Le immagini di Wikimedia vanno chieste all'API di Commons** (`imageinfo` con
+  `iiurlwidth`), mai costruite a mano né prese da `Special:FilePath`: quello
+  risponde con un **redirect**, e in una richiesta CORS ogni passaggio della
+  catena deve avere l'header — l'intermedio non ce l'ha e il browser blocca.
+  Con `curl` non si vede, perché curl guarda solo la risposta finale. In più le
+  larghezze sono un elenco fisso: 900 dà `400`, l'API arrotonda a 960.
 - **L'API di BGG non si chiama dal browser**, ed è una scelta: dal 2025 richiede
   registrazione, token `Authorization: Bearer` (senza, è `401` secco) e le
   condizioni dicono di chiamarla da server. Passa tutto da `tools/bgg-proxy.mjs`,
