@@ -26,6 +26,7 @@
   <nav id="sezioni" aria-label="sezioni del sito">
     <button type="button" data-sez="collezione" class="on">collezione</button>
     <button type="button" data-sez="catalogo">catalogo</button>
+    <button type="button" data-sez="profilo" class="dentro-only">profilo</button>
   </nav>
 
   <div class="tools">
@@ -89,6 +90,19 @@
   </div>
 </aside>
 
+<!-- Su schermo stretto le sezioni stanno in basso, dove arriva il
+     pollice, e non in una testata gia' piena di strumenti. Sono le
+     stesse tre voci di sopra e chiamano la stessa funzione: cambia il
+     posto, non il significato. -->
+<nav id="tabbar" aria-label="sezioni del sito">
+  <button type="button" data-sez="collezione" class="on">
+    <b>&#9638;</b><span>libreria</span></button>
+  <button type="button" data-sez="catalogo">
+    <b>&#9776;</b><span>catalogo</span></button>
+  <button type="button" data-sez="profilo" class="dentro-only">
+    <canvas id="tab-faccia" width="44" height="44" aria-hidden="true"></canvas><span>profilo</span></button>
+</nav>
+
 <!-- IL CATALOGO: elenco piatto, una riga per gioco.
      Fuori dalla scena 3D apposta. La libreria in tre dimensioni e' la
      tua collezione, una cosa che si guarda; il catalogo sono migliaia
@@ -114,6 +128,84 @@
     </div>
   </div>
 </section>
+
+<!-- IL PROFILO: chi gioca, non cosa si gioca. -->
+<section id="profilo" aria-hidden="true" aria-label="il tuo profilo">
+  <div class="pro-in">
+
+    <div class="pro-testa">
+      <div class="pro-faccia">
+        <canvas id="pro-avatar" width="160" height="160" aria-hidden="true"></canvas>
+        <button id="pro-cambia" type="button">cambia faccia</button>
+      </div>
+      <div class="pro-chi">
+        <p class="eyebrow">il tuo profilo</p>
+        <h2 id="pro-nick">&nbsp;</h2>
+        <p class="pro-mail" id="pro-mail"></p>
+        <p class="pro-cod">
+          <span>codice amico</span>
+          <b id="pro-codice">&mdash;</b>
+          <button id="pro-copia" type="button">copia</button>
+        </p>
+        <p class="pro-nota">Dallo a chi vuoi che ti trovi. Non compare mai
+          nel profilo che vedono gli altri.</p>
+        <p class="pro-fondo">
+          <button id="pro-rinomina" type="button" class="pro-lin">cambia nick</button>
+          <button id="pro-esci" type="button" class="pro-lin esci">esci dall&rsquo;account</button>
+        </p>
+      </div>
+    </div>
+
+    <!-- costruttore del meeple: si apre da "cambia faccia" -->
+    <div id="pro-faccia-lab" hidden>
+      <h3>La tua faccia</h3>
+      <p class="pro-lab-nota">Un meeple: scegli il colore, il fondo, e il dado
+        in filigrana se ti va.</p>
+      <p class="pro-lab-riga"><span>meeple</span><span id="lab-corpi" class="pastiglie"></span></p>
+      <p class="pro-lab-riga"><span>fondo</span><span id="lab-fondi" class="pastiglie"></span></p>
+      <p class="pro-lab-riga"><span>dado</span><span id="lab-segni" class="pastiglie"></span></p>
+      <p class="pro-lab-fondo">
+        <button id="lab-salva" type="button">salva la faccia</button>
+        <button id="lab-annulla" type="button" class="chiaro">lascia perdere</button>
+      </p>
+    </div>
+
+    <section class="pro-blocco">
+      <h3>Amici</h3>
+      <p id="pro-amici-msg" class="pro-msg"></p>
+
+      <ul id="pro-richieste" class="pro-gente"></ul>
+      <ul id="pro-amici" class="pro-gente"></ul>
+      <ul id="pro-attesa" class="pro-gente"></ul>
+
+      <div class="pro-aggiungi">
+        <input id="ami-q" type="text" placeholder="codice amico, o email"
+               autocomplete="off" spellcheck="false" aria-label="codice amico o email">
+        <button id="ami-go" type="button">chiedi</button>
+      </div>
+      <p id="ami-msg" class="pro-msg"></p>
+    </section>
+
+  </div>
+</section>
+
+<!-- Scelta del nick al primo accesso. Viene prima di tutto il resto:
+     senza, l'utente non e' trovabile da nessuno e il profilo e' un
+     modulo vuoto che nessuno compilerebbe mai. -->
+<div id="nick" aria-hidden="true">
+  <div class="nick-in">
+    <p class="eyebrow">ancora una cosa</p>
+    <h2>Come ti chiamiamo?</h2>
+    <p class="nick-nota">Il nick e' come ti vedono gli amici. Si cambia quando
+      vuoi dal profilo.</p>
+    <div class="nick-riga">
+      <input id="nick-q" type="text" maxlength="20" autocomplete="off"
+             spellcheck="false" aria-label="il tuo nick">
+      <button id="nick-ok" type="button">avanti</button>
+    </div>
+    <p id="nick-msg"></p>
+  </div>
+</div>
 
 <!-- schermata iniziale: chi sei -->
 <div id="gate">
@@ -219,6 +311,7 @@
 <script src="js/auth.js"></script>
 <script src="js/store.js"></script>
 <script src="js/recensioni.js"></script>
+<script src="js/profilo.js"></script>
 <script src="js/bgg.js"></script>
 <script src="js/catalogo.js"></script>
 <script src="js/art.js"></script>

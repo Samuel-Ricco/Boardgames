@@ -76,6 +76,9 @@ function stato(){
     dentro: !!u,
     admin: admin,
     nome: u ? (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name) || u.email) : null,
+    // l'indirizzo per esteso: nel profilo si mostra a chi e' entrato,
+    // perche' e' anche il modo in cui un amico puo' invitarlo
+    email: u ? (u.email || '') : '',
     id: u ? u.id : null
   };
 }

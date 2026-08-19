@@ -598,8 +598,73 @@ function dieMaterials(body, pip){
   });
 }
 
+/* --- la faccia del profilo ---------------------------------------
+   Un meeple su un fondo, disegnato qui come tutto il resto: niente
+   immagini caricate, niente bucket, niente moderazione. Chi entra ha
+   una faccia dal primo secondo e puo' cambiarla, ma non puo' metterci
+   dentro qualunque cosa -- che per un sito con degli amici dentro e'
+   una semplificazione, non una rinuncia.
+
+   La sagoma e' la stessa del meeple 3D in app.js, con la testa
+   disegnata come cerchio a parte invece che con l'arco: a novantasei
+   pixel non si distingue, e si evita di ragionare sull'orientamento
+   dell'arco in un sistema con la y capovolta. */
+function sagomaMeeple(x, s, cx, cy){
+  const p = function(px, py){ x.lineTo(cx + px*s, cy - py*s); };
+  x.beginPath();
+  x.moveTo(cx - 0.50*s, cy + 0.90*s);
+  p(-0.34,-0.05); p(-0.95, 0.12); p(-0.95, 0.42);
+  p(-0.40, 0.36); p(-0.42, 0.62);
+  p( 0.42, 0.62);
+  p( 0.40, 0.36); p( 0.95, 0.42); p( 0.95, 0.12);
+  p( 0.34,-0.05); p( 0.50,-0.90);
+  x.closePath();
+  x.fill();
+  x.beginPath();
+  x.arc(cx, cy - 0.78*s, 0.42*s, 0, Math.PI*2);
+  x.fill();
+}
+
+// i puntini di un dado, in filigrana dietro al meeple
+function filigranaDado(x, n, S){
+  if (!n) return;
+  const POS = {
+    1:[[1,1]], 2:[[0,0],[2,2]], 3:[[0,0],[1,1],[2,2]],
+    4:[[0,0],[2,0],[0,2],[2,2]], 5:[[0,0],[2,0],[1,1],[0,2],[2,2]],
+    6:[[0,0],[2,0],[0,1],[2,1],[0,2],[2,2]]
+  }[n] || [];
+  const passo = S * .26, marg = S * .22, r = S * .052;
+  x.globalAlpha = .16;
+  POS.forEach(function(p){
+    x.beginPath();
+    x.arc(marg + p[0]*passo, marg + p[1]*passo, r, 0, Math.PI*2);
+    x.fill();
+  });
+  x.globalAlpha = 1;
+}
+
+function avatar(av, S){
+  S = S || 160;
+  av = av || {};
+  const cx = cnv(S, S), c = cx[0], x = cx[1];
+
+  x.fillStyle = av.fondo || '#efe3cb';
+  x.fillRect(0, 0, S, S);
+
+  x.fillStyle = av.corpo || '#c1552c';
+  filigranaDado(x, av.segno || 0, S);
+
+  // il meeple non e' centrato sul quadrato ma un filo piu' in basso:
+  // la testa tonda tira l'occhio in alto e cosi' torna in mezzo
+  sagomaMeeple(x, S * .40, S/2, S * .56);
+
+  grain(x, S, S, 8);
+  return c;
+}
+
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
+  avatar: avatar,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,
   spine: spine, cardboard: cardboard, inside: inside,

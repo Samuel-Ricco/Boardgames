@@ -1726,14 +1726,21 @@ function catMsg(html, kind){
   el.className = kind || '';
 }
 
+/* Tre sezioni e due navigazioni che le comandano: quella nella testata
+   sugli schermi larghi, quella in basso su quelli stretti, dove arriva
+   il pollice. Sono le stesse voci e chiamano la stessa funzione --
+   cambia il posto, non il significato. */
 function setSezione(s){
   state.sezione = s;
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
-  qa('#sezioni button').forEach(function(b){
+  document.body.classList.toggle('sez-profilo',  s === 'profilo');
+  qa('#sezioni button, #tabbar button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-sez') === s);
   });
   q('#catalogo').setAttribute('aria-hidden', s === 'catalogo' ? 'false' : 'true');
+  q('#profilo').setAttribute('aria-hidden',  s === 'profilo'  ? 'false' : 'true');
   if (s === 'catalogo' && !catVoci.length && !catCarico) catSfoglia(true);
+  if (s === 'profilo') apriProfilo();
 }
 
 /* Sfogliare: il catalogo si apre su un elenco, non su un campo vuoto.
@@ -1907,9 +1914,6 @@ async function mettiInLibreria(v, btn){
 }
 
 function bindCatalogo(){
-  qa('#sezioni button').forEach(function(b){
-    b.addEventListener('click', function(){ setSezione(b.getAttribute('data-sez')); });
-  });
   q('#cat-go').addEventListener('click', catCerca);
   q('#cat-q').addEventListener('keydown', function(e){
     e.stopPropagation();
@@ -1932,6 +1936,260 @@ function bindCatalogo(){
       return;
     }
     apriRiga(li);
+  });
+}
+
+/* ===============================================================
+   IL PROFILO
+   ===============================================================
+
+   La prima parte del sito che non parla di giochi, ma di chi li gioca:
+   un nick, una faccia, un codice per essere trovati, e delle persone.
+
+   La faccia e' un meeple disegnato su canvas come tutto il resto del
+   sito. Niente immagini caricate: nessun bucket, nessuna moderazione,
+   e una faccia c'e' fin dal primo secondo. Per un sito con degli amici
+   dentro e' una semplificazione, non una rinuncia. */
+
+let labAvatar = null;              // la faccia in prova nel laboratorio
+
+function disegnaFaccia(el, av, lato){
+  if (!el) return;
+  const c = ART.avatar(av, lato || 160);
+  el.width = c.width; el.height = c.height;
+  el.getContext('2d').drawImage(c, 0, 0);
+}
+
+function apriProfilo(){
+  if (!PROFILO.mio()){
+    proMsg('#pro-amici-msg', esc(PROFILO.problema() || 'profilo non disponibile'), true);
+    return;
+  }
+  disegnaProfilo();
+  PROFILO.caricaAmici().then(disegnaAmici);
+}
+
+function proMsg(sel, html, male){
+  const el = q(sel);
+  el.innerHTML = html;
+  el.className = 'pro-msg' + (male ? ' warn' : '');
+}
+
+function disegnaProfilo(){
+  const p = PROFILO.mio();
+  if (!p) return;
+  q('#pro-nick').textContent = p.nick || p.nome || 'senza nome';
+  q('#pro-mail').textContent = AUTH.stato().email || p.nome || '';
+  // il codice si legge a gruppi di quattro: si detta al telefono
+  q('#pro-codice').textContent = p.codice
+    ? p.codice.replace(/(.{4})(.{4})/, '$1 $2') : '--';
+  disegnaFaccia(q('#pro-avatar'), p.avatar, 160);
+  disegnaFaccia(q('#tab-faccia'), p.avatar, 44);
+}
+
+/* --- il laboratorio della faccia ------------------------------- */
+function apriLab(){
+  const p = PROFILO.mio();
+  if (!p) return;
+  labAvatar = Object.assign({ corpo: PROFILO.CORPI[0], fondo: PROFILO.FONDI[0], segno: 0 }, p.avatar);
+  q('#pro-faccia-lab').hidden = false;
+  disegnaPastiglie();
+}
+
+function chiudiLab(){
+  q('#pro-faccia-lab').hidden = true;
+  labAvatar = null;
+  disegnaProfilo();                 // torna quella salvata, se la prova non e' piaciuta
+}
+
+function disegnaPastiglie(){
+  const gruppo = function(sel, valori, campo, testo){
+    q(sel).innerHTML = valori.map(function(v){
+      const scelto = String(labAvatar[campo]) === String(v) ? ' class="on"' : '';
+      const stile = testo ? '' : ' style="background:' + esc(v) + '"';
+      return '<button type="button" data-v="' + esc(v) + '"' + scelto + stile + '>' +
+             (testo ? (v || '&mdash;') : '') + '</button>';
+    }).join('');
+    qa(sel + ' button').forEach(function(b){
+      b.addEventListener('click', function(){
+        const v = b.getAttribute('data-v');
+        labAvatar[campo] = testo ? (parseInt(v, 10) || 0) : v;
+        disegnaPastiglie();
+      });
+    });
+  };
+  gruppo('#lab-corpi', PROFILO.CORPI, 'corpo', false);
+  gruppo('#lab-fondi', PROFILO.FONDI, 'fondo', false);
+  gruppo('#lab-segni', [0,1,2,3,4,5,6], 'segno', true);
+  // l'anteprima e' la faccia grande in cima: si prova sul posto vero
+  disegnaFaccia(q('#pro-avatar'), labAvatar, 160);
+}
+
+/* --- gli amici -------------------------------------------------- */
+function disegnaAmici(){
+  const elenco = function(sel, gente, azioni, etichetta){
+    q(sel).innerHTML = gente.map(function(x){
+      return '<li data-id="' + esc(x.id) + '">' +
+        '<canvas width="40" height="40" aria-hidden="true"></canvas>' +
+        '<span class="chi"><b>' + esc(x.profilo.nick || x.profilo.nome || 'senza nome') + '</b>' +
+        (etichetta ? '<span>' + etichetta + '</span>' : '') + '</span>' +
+        '<span class="fa">' + azioni + '</span></li>';
+    }).join('');
+    qa(sel + ' li').forEach(function(li, i){
+      disegnaFaccia(li.querySelector('canvas'), gente[i].profilo.avatar, 40);
+    });
+  };
+
+  elenco('#pro-richieste', PROFILO.daAccettare(),
+    '<button type="button" class="si" data-fa="accetta">accetta</button>' +
+    '<button type="button" class="no" data-fa="togli">no</button>',
+    'ti ha chiesto l\'amicizia');
+
+  elenco('#pro-amici', PROFILO.amici(),
+    '<button type="button" class="no" data-fa="togli">togli</button>', '');
+
+  elenco('#pro-attesa', PROFILO.inAttesa(),
+    '<button type="button" class="no" data-fa="togli">ritira</button>',
+    'richiesta mandata');
+
+  if (PROFILO.problema()){ proMsg('#pro-amici-msg', esc(PROFILO.problema()), true); return; }
+  const n = PROFILO.amici().length;
+  proMsg('#pro-amici-msg', n
+    ? '<b>' + n + '</b> ' + (n === 1 ? 'amico' : 'amici') + '.'
+    : 'Nessun amico, per ora. Passagli il tuo codice, o chiedi il loro.');
+}
+
+/* Una casella sola per il codice e per l'email: chi incolla qualcosa
+   non vuole prima dichiarare che cosa sta incollando. Se c'e' una
+   chiocciola e' un indirizzo, se no e' un codice. */
+async function chiediAmico(){
+  const v = q('#ami-q').value.trim();
+  if (!v) return;
+  const b = q('#ami-go');
+  b.disabled = true;
+  proMsg('#ami-msg', 'chiedo&hellip;');
+  try {
+    const r = v.indexOf('@') > 0 ? await PROFILO.chiediPerEmail(v)
+                                 : await PROFILO.chiediPerCodice(v);
+    proMsg('#ami-msg', esc(r.testo), r.esito === 'nessuno' || r.esito === 'te stesso');
+    if (r.esito === 'chiesta' || r.esito === 'inviata') q('#ami-q').value = '';
+    disegnaAmici();
+  } catch(e){
+    proMsg('#ami-msg', 'non riuscito: ' + esc(e.message), true);
+  }
+  b.disabled = false;
+}
+
+/* --- il nick ----------------------------------------------------
+   Si sceglie al primo accesso e prima di tutto il resto: senza nick
+   non sei trovabile da nessuno, e il profilo diventa un modulo vuoto
+   che nessuno compilerebbe mai. */
+function suggerisciNick(p){
+  const n = (p && p.nome) || '';
+  return n.split(' ')[0].replace(/[^\w \-.']/g, '').slice(0, 20);
+}
+
+function apriNick(cambio){
+  const p = PROFILO.mio();
+  if (!p) return;
+  q('#nick-q').value = cambio ? (p.nick || '') : suggerisciNick(p);
+  q('#nick-msg').textContent = '';
+  q('#nick').classList.add('on');
+  q('#nick').setAttribute('aria-hidden', 'false');
+  setTimeout(function(){ q('#nick-q').focus(); q('#nick-q').select(); }, 60);
+}
+
+async function salvaNickDaModulo(){
+  const msg = q('#nick-msg'), b = q('#nick-ok');
+  b.disabled = true;
+  msg.className = 'ok';
+  msg.textContent = 'un attimo\u2026';
+  try {
+    await PROFILO.salvaNick(q('#nick-q').value);
+    q('#nick').classList.remove('on');
+    q('#nick').setAttribute('aria-hidden', 'true');
+    disegnaProfilo();
+    flash('ciao, ' + PROFILO.mio().nick);
+  } catch(e){
+    msg.className = '';
+    msg.textContent = e.message;
+  }
+  b.disabled = false;
+}
+
+function bindProfilo(){
+  qa('#sezioni button, #tabbar button').forEach(function(b){
+    b.addEventListener('click', function(){ setSezione(b.getAttribute('data-sez')); });
+  });
+
+  q('#pro-cambia').addEventListener('click', apriLab);
+  q('#lab-annulla').addEventListener('click', chiudiLab);
+  q('#lab-salva').addEventListener('click', async function(){
+    const av = labAvatar;
+    try { await PROFILO.salvaAvatar(av); flash('faccia salvata'); }
+    catch(e){ flash('faccia non salvata: ' + e.message); }
+    chiudiLab();
+  });
+
+  q('#pro-copia').addEventListener('click', function(){
+    const cod = (PROFILO.mio() || {}).codice || '';
+    if (!cod) return;
+    const aMano = function(){
+      // senza appunti resta selezionarlo: copiare e' un gesto che
+      // l'utente sa fare, trovare il testo da copiare e' il problema
+      const r = document.createRange();
+      r.selectNodeContents(q('#pro-codice'));
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(r);
+      flash('selezionato: copialo tu');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(cod)
+        .then(function(){ flash('codice copiato'); })
+        .catch(aMano);
+    } else aMano();
+  });
+
+  q('#pro-rinomina').addEventListener('click', function(){ apriNick(true); });
+
+  /* Uscire sta anche qui perche' su schermo stretto la testata non ha
+     piu' posto per dirlo. E' lo stesso gesto del pulsante in alto: la
+     collezione di prima non e' piu' tua e si riparte dall'accesso. */
+  armaBottone(q('#pro-esci'), 'esci dall\u2019account', 'sicuro? tocca ancora', async function(){
+    await AUTH.esci();
+    LIB.scollega();
+    location.reload();
+  });
+
+  q('#ami-go').addEventListener('click', chiediAmico);
+  q('#ami-q').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter') chiediAmico();
+  });
+
+  q('#nick-ok').addEventListener('click', salvaNickDaModulo);
+  q('#nick-q').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter') salvaNickDaModulo();
+  });
+
+  // un ascoltatore per elenco: le righe si rifanno a ogni cambiamento
+  ['#pro-richieste', '#pro-amici', '#pro-attesa'].forEach(function(sel){
+    q(sel).addEventListener('click', async function(e){
+      const b = e.target.closest('button[data-fa]');
+      if (!b) return;
+      const id = b.closest('li').getAttribute('data-id');
+      const fa = b.getAttribute('data-fa');
+      b.disabled = true;
+      try {
+        if (fa === 'accetta') await PROFILO.accetta(id);
+        if (fa === 'togli')   await PROFILO.togli(id);
+        disegnaAmici();
+      } catch(err){
+        b.disabled = false;
+        flash('non riuscito: ' + err.message);
+      }
+    });
   });
 }
 
@@ -1966,11 +2224,11 @@ function frame(now){
 
   stepAnims(dt);
 
-  /* Nel catalogo la scena e' coperta da un elenco. Il ciclo non si
-     ferma -- non si e' mai fermato -- ma non si disegna quello che
-     nessuno vede, e soprattutto non si fa un raycast per fotogramma
-     mentre l'utente sta scorrendo tutt'altro. */
-  if (state.sezione === 'catalogo') return;
+  /* Fuori dalla libreria la scena e' coperta da una pagina piatta. Il
+     ciclo non si ferma -- non si e' mai fermato -- ma non si disegna
+     quello che nessuno vede, e soprattutto non si fa un raycast per
+     fotogramma mentre l'utente sta scorrendo tutt'altro. */
+  if (state.sezione !== 'collezione') return;
 
   if (state.phase === 'browse'){
     const before = Math.round(state.scroll);
@@ -2126,7 +2384,9 @@ async function boot(){
   const t0 = performance.now();
   setMode(chi);
   bindCatalogo();
+  bindProfilo();            // e' anche chi collega le due navigazioni
   RECE.carica();            // parte per conto suo: la aspetta solo il catalogo
+  await PROFILO.carica();   // questo invece serve subito: puo' chiedere il nick
 
   /* L'ospite va dritto al catalogo. Non e' una scorciatoia: non ha
      nessuna collezione, quindi non c'e' niente da costruire in tre
@@ -2197,6 +2457,11 @@ async function boot(){
   await wait(Math.max(0, 1400 - (performance.now() - t0)));
   document.body.classList.add('ready');
   intro();
+  disegnaProfilo();
+
+  // Primo accesso: il nick prima di tutto. La scena intanto ha finito
+  // di caricare dietro, cosi' chi lo sceglie trova gia' la libreria.
+  if (PROFILO.serveNick()) apriNick(false);
 
   // Un armadio vuoto non e' un guasto: e' una collezione appena nata, e
   // va detto, se no sembra che il sito non abbia caricato niente.

@@ -118,6 +118,16 @@ sulla propria collezione — aggiunge, corregge, toglie, riordina.
 si leggono le recensioni, che sono pubbliche apposta. La voce «collezione» non
 compare nemmeno: sarebbe una promessa che il sito non può mantenere.
 
+**Il profilo** ha un nick, una faccia e un codice amico. Il nick si sceglie al
+primo accesso e ti fa riconoscere; il codice ti fa trovare, e lo dai a chi vuoi
+tu — non compare mai nel profilo che vedono gli altri. La faccia è un meeple
+disegnato su canvas: niente immagini da caricare, e ce n'è una dal primo secondo.
+
+**Gli amici** si chiedono col loro codice, oppure per email. La ricerca per
+indirizzo non esiste apposta: confermerebbe a chiunque provi che quell'email ha
+un account qui. L'invito per email c'è, ma il sito risponde sempre allo stesso
+modo, esista o no l'indirizzo. Chi accetta è solo chi ha ricevuto la richiesta.
+
 **Admin** è una terza cosa, e non si sceglie: si legge. `e_admin()` su Postgres
 guarda la tabella `admin`, che è l'unica del progetto senza nessuna regola di
 scrittura — quindi nessun account può promuovere sé stesso o altri. Sulla
@@ -220,6 +230,7 @@ pubbliche per progetto, e a proteggere i dati sono le regole in
 20260819135317_collezioni_personali.sql   una libreria per account
 20260819180000_ordine_manuale.sql         la colonna `posizione`
 20260819190000_recensioni_pubbliche.sql   le recensioni del sito, lette da tutti
+20260819200000_profili_e_amici.sql        nick, faccia, codice amico, amicizie
 ```
 
 **`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un

@@ -186,12 +186,12 @@ body.ospite #sezioni [data-sez="collezione"]{display:none}
 /* Nel catalogo gli strumenti della collezione non servono, e alcuni
    sarebbero proprio sbagliati: il campo di ricerca e' un altro, e il
    contatore conta i giochi tuoi. */
-body.sez-catalogo .cercawrap,
-body.sez-catalogo #conta,
-body.sez-catalogo #add,
-body.sez-catalogo .sortwrap{display:none !important}
-body.sez-catalogo #rail,
-body.sez-catalogo .hint{opacity:0 !important}
+body.sez-catalogo .cercawrap, body.sez-profilo .cercawrap,
+body.sez-catalogo #conta,     body.sez-profilo #conta,
+body.sez-catalogo #add,       body.sez-profilo #add,
+body.sez-catalogo .sortwrap,  body.sez-profilo .sortwrap{display:none !important}
+body.sez-catalogo #rail, body.sez-profilo #rail,
+body.sez-catalogo .hint, body.sez-profilo .hint{opacity:0 !important}
 
 /* --- il catalogo ------------------------------------------------
    Sta sopra la scena (z2) ma sotto la testata (z3): la barra in alto
@@ -290,6 +290,161 @@ body.sez-catalogo #catalogo{display:block}
 #cat-piu:hover{color:var(--ink); border-color:var(--amber)}
 #cat-piu:disabled{cursor:default; opacity:.5}
 .cat-fondo.finito #cat-piu{display:none}
+
+/* --- le sezioni in basso, su schermo stretto --------------------
+   Dove arriva il pollice, e non in una testata gia' piena di
+   strumenti. Niente icone inventate: il sito non ha un linguaggio di
+   icone e aggiungerlo qui stonerebbe. L'unica figura e' la faccia del
+   profilo, che e' gia' la figura di quella persona. */
+#tabbar{
+  display:none; position:fixed; z-index:6; left:0; right:0; bottom:0;
+  background:var(--card); border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+#tabbar button{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-family:var(--ff-text); font-size:9px; font-weight:700;
+  letter-spacing:.16em; text-transform:uppercase; cursor:pointer;
+  color:var(--ink-soft); background:none; border:0; border-top:2px solid transparent;
+  padding:9px 4px 10px; margin-top:-1px;
+}
+#tabbar button b{font-size:15px; line-height:1; font-weight:400}
+#tabbar button canvas{width:15px; height:15px; display:block}
+#tabbar button.on{color:var(--ink); border-top-color:var(--amber)}
+#tabbar button.on canvas{outline:1px solid var(--amber)}
+
+/* --- il profilo -------------------------------------------------- */
+#profilo{
+  position:fixed; inset:0; z-index:2; display:none;
+  overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+  background:rgba(230,221,208,.975);
+}
+body.sez-profilo #profilo{display:block}
+.pro-in{max-width:760px; margin:0 auto; padding:96px clamp(16px,4vw,40px) 80px}
+
+.pro-testa{display:flex; gap:26px; align-items:flex-start}
+.pro-faccia{flex:none; display:flex; flex-direction:column; align-items:center; gap:8px}
+#pro-avatar{
+  width:120px; height:120px; display:block;
+  border:1px solid var(--line); box-shadow:var(--shadow);
+}
+#pro-cambia, .pro-lin{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:none; border:0; border-bottom:1px solid var(--line); padding:3px 0;
+}
+#pro-cambia:hover, .pro-lin:hover{color:var(--amber); border-color:var(--amber)}
+.pro-fondo{display:flex; flex-wrap:wrap; gap:18px; margin:0}
+.pro-lin.esci:hover{color:var(--rust); border-color:var(--rust)}
+.pro-chi{min-width:0}
+#pro-nick{
+  margin:0; font-family:var(--ff-display); font-weight:400;
+  font-size:clamp(30px,5vw,44px); letter-spacing:.03em; line-height:1; color:var(--ink);
+}
+.pro-mail{margin:6px 0 0; font-size:13px; color:var(--ink-soft); overflow-wrap:anywhere}
+.pro-cod{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:16px 0 0}
+.pro-cod span{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.pro-cod b{
+  font-family:var(--ff-display); font-size:24px; letter-spacing:.22em; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); padding:4px 12px 2px;
+}
+#pro-copia{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:var(--card); border:1px solid var(--line); padding:7px 11px;
+}
+#pro-copia:hover{color:var(--ink); border-color:var(--amber)}
+.pro-nota{margin:9px 0 14px; font-size:11.5px; line-height:1.6; color:rgba(44,36,27,.5); max-width:44ch}
+
+/* il laboratorio della faccia */
+#pro-faccia-lab{
+  margin:26px 0 0; padding:20px clamp(14px,2.4vw,22px);
+  background:var(--card); border:1px solid var(--line);
+}
+#pro-faccia-lab h3{margin:0 0 4px}
+.pro-lab-nota{margin:0 0 16px; font-size:12.5px; color:var(--ink-soft)}
+.pro-lab-riga{display:flex; align-items:center; gap:14px; margin:0 0 12px}
+.pro-lab-riga>span:first-child{
+  flex:none; width:56px; font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.pastiglie{display:flex; flex-wrap:wrap; gap:7px}
+.pastiglie button{
+  width:28px; height:28px; cursor:pointer; border:1px solid var(--line); padding:0;
+  font-family:var(--ff-display); font-size:15px; line-height:26px; color:var(--ink);
+  background:var(--card);
+}
+.pastiglie button.on{outline:2px solid var(--amber); outline-offset:1px}
+.pro-lab-fondo{display:flex; gap:10px; margin:18px 0 0}
+#lab-salva, #ami-go, #nick-ok{
+  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:#fdfaf4;
+  background:var(--amber); border:1px solid var(--amber); padding:11px 18px;
+}
+#lab-salva:hover, #ami-go:hover, #nick-ok:hover{background:var(--ink); border-color:var(--ink)}
+#lab-annulla{
+  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:var(--card); border:1px solid var(--line); padding:11px 18px;
+}
+#lab-annulla:hover{color:var(--ink); border-color:var(--amber)}
+
+.pro-blocco{margin:34px 0 0; padding-top:24px; border-top:1px solid var(--line)}
+.pro-blocco h3{
+  margin:0 0 14px; font-family:var(--ff-display); font-weight:400;
+  font-size:26px; letter-spacing:.04em; color:var(--ink);
+}
+.pro-msg{margin:0 0 14px; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
+.pro-msg.warn{color:var(--rust)}
+.pro-msg b{color:var(--ink); font-weight:500}
+
+.pro-gente{list-style:none; margin:0; padding:0}
+.pro-gente:empty{display:none}
+.pro-gente li{
+  display:flex; align-items:center; gap:14px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+}
+.pro-gente canvas{width:40px; height:40px; flex:none; border:1px solid var(--line)}
+.pro-gente .chi{flex:1; min-width:0}
+.pro-gente .chi b{display:block; font-size:14px; font-weight:500; color:var(--ink)}
+.pro-gente .chi span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft)}
+.pro-gente .fa{display:flex; gap:7px; flex:none}
+.pro-gente button{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; cursor:pointer; white-space:nowrap;
+  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:7px 10px;
+}
+.pro-gente button:hover{color:var(--ink); border-color:var(--amber)}
+.pro-gente button.si{color:var(--amber); border-color:rgba(154,106,21,.5)}
+.pro-gente button.no:hover{color:var(--rust); border-color:var(--rust)}
+
+.pro-aggiungi{display:flex; gap:8px; margin:18px 0 0}
+#ami-q{
+  flex:1; min-width:0; font-family:var(--ff-text); font-size:14px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); padding:11px 13px;
+}
+#ami-q:focus{outline:none; border-color:var(--amber)}
+
+/* --- scelta del nick -------------------------------------------- */
+#nick{
+  position:fixed; inset:0; z-index:11; display:none; background:var(--bg);
+  align-items:center; justify-content:center; padding:24px;
+}
+#nick.on{display:flex}
+.nick-in{max-width:460px; width:100%; text-align:center}
+.nick-in h2{
+  margin:6px 0 10px; font-family:var(--ff-display); font-weight:400;
+  font-size:clamp(30px,6vw,44px); letter-spacing:.03em; color:var(--ink);
+}
+.nick-nota{margin:0 0 22px; font-size:13px; line-height:1.6; color:var(--ink-soft)}
+.nick-riga{display:flex; gap:8px}
+#nick-q{
+  flex:1; min-width:0; font-family:var(--ff-text); font-size:16px; color:var(--ink);
+  background:var(--card); border:1px solid var(--line); padding:13px 14px; text-align:center;
+}
+#nick-q:focus{outline:none; border-color:var(--amber)}
+#nick-msg{margin:14px 0 0; min-height:18px; font-size:12.5px; color:var(--rust)}
+#nick-msg.ok{color:var(--ink-soft)}
 
 /* --- a che libreria siamo --------------------------------------
    Il binario e' orizzontale e sta in basso perche' orizzontale e' il
@@ -432,8 +587,24 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   body.cercando #cerca-go{display:none}
   body.cercando #conta, body.cercando #add, body.cercando .sortwrap,
   body.cercando #mode, body.cercando #esci{display:none !important}
-  body.cercando #sezioni{display:none}
-  #sezioni button{padding:8px 6px 6px; letter-spacing:.1em; font-size:10px}
+  /* le sezioni passano dalla testata alla barra in basso */
+  #sezioni{display:none}
+  #tabbar{display:flex}
+
+  /* Chi sei e come si esce se ne vanno dalla testata: adesso hanno una
+     sezione loro, e a 390 px il marchio andava a capo su quattro righe
+     per fare posto a due etichette. */
+  #mode, #esci{display:none !important}
+  .brand b{white-space:nowrap}
+  /* il contenuto non deve finire sotto la barra */
+  .cat-in, .pro-in{padding-bottom:104px}
+  #rail{bottom:calc(58px + env(safe-area-inset-bottom))}
+  .hint{bottom:calc(106px + env(safe-area-inset-bottom))}
+  body.ferma .hint{bottom:calc(70px + env(safe-area-inset-bottom))}
+
+  .pro-testa{gap:18px}
+  #pro-avatar{width:92px; height:92px}
+  .pro-cod b{font-size:20px; letter-spacing:.16em}
 
   /* la colonna dei pulsanti a destra non ci sta: vanno sotto la scheda */
   .cat-in{padding-top:88px}

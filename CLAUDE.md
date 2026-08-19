@@ -35,6 +35,7 @@ js/config.js          url e chiave pubblica di Supabase
 js/auth.js            accesso con Google, e "sono admin?"
 js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
 js/recensioni.js      le recensioni del sito: pubbliche, lette anche dall'ospite
+js/profilo.js         nick, faccia, codice amico, amicizie
 js/bgg.js             ricerca BGG (passa dal proxy locale)
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             grafica generata su canvas
@@ -285,6 +286,52 @@ account e non ha nessuna collezione.
   pubblicare è un'altra cosa dall'averlo.
 - Tutto degrada in silenzio: senza tabella, `di()` risponde `null` e il catalogo
   dice «non ancora recensito», che è vero e non è un guasto.
+
+## Profilo e amici
+
+La prima parte del sito che non parla di giochi ma di chi li gioca.
+
+- **`nick` e `codice` fanno due mestieri diversi apposta.** Il nick ti fa
+  *riconoscere* e lo vede chiunque ti incontri; il codice ti fa *trovare* e lo
+  dai a chi vuoi tu. Per questo il codice non esce mai dal profilo di qualcun
+  altro: la policy di lettura altrui non lo comprende.
+- **Codice amico, non ricerca per email.** Cercare qualcuno per indirizzo vuol
+  dire che il server conferma «sì, questa email ha un account qui» a chiunque
+  provi: è enumerazione di account. L'invito per email resta, ma passa da una
+  funzione che risponde **sempre** `inviata`, esista o no l'indirizzo — se
+  dicesse la verità sarebbe di nuovo lo stesso problema.
+- L'alfabeto del codice salta `0/O` e `1/I/L`: un codice si detta e si ricopia a
+  mano, e quelle coppie si sbagliano sempre.
+- **Le richieste passano da due funzioni `security definer`** e non da un insert
+  diretto, perché tutte e due devono cercare una persona in una tabella che chi
+  chiede non ha il diritto di leggere.
+- `sono_amico()` è `security definer` per un motivo preciso: le policy di
+  `amicizie` non possono chiamare una funzione che legge `amicizie` passando
+  dalle policy: sarebbe ricorsione, e Postgres se ne accorge solo a runtime.
+- **Accetta solo il destinatario** (`with check (destinatario = auth.uid())`): se
+  potesse il richiedente, accettarsi da soli sarebbe due righe di codice.
+  Rifiutare, ritirare e sciogliere sono lo stesso gesto — la riga sparisce.
+- **La faccia è un meeple disegnato su canvas**, come tutto il resto del sito.
+  Niente immagini caricate: nessun bucket, nessuna moderazione, e una faccia c'è
+  dal primo secondo. Quella di partenza esce dall'uuid, così due persone non si
+  ritrovano identiche appena entrate.
+- **`select *` su una tabella cui mancano colonne non si lamenta**: torna quelle
+  che ci sono. Senza il controllo `'nick' in riga`, il sito vedeva un profilo
+  senza nick, lo chiedeva, e il salvataggio falliva su una colonna inesistente —
+  cioè una finestra che non si può chiudere. Vale per ogni migrazione futura.
+
+## Le tre sezioni
+
+`collezione` | `catalogo` | `profilo`, in `state.sezione`. Due navigazioni che
+comandano le stesse voci: nella testata sugli schermi larghi, **in basso** sotto
+gli 880 px, dove arriva il pollice.
+
+- Fuori dalla libreria il ciclo di rendering continua ma **non disegna** e non fa
+  raycast: `if (state.sezione !== 'collezione') return;`.
+- Sotto gli 880 px **chi sei ed esci spariscono dalla testata** e vivono nel
+  profilo: a 390 px il marchio andava a capo su quattro righe per far posto a due
+  etichette. `.brand b` ha `white-space:nowrap` perché è meglio che stringa
+  piuttosto che spezzarsi.
 
 ## L'ospite
 
