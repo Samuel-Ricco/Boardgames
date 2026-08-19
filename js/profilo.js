@@ -56,6 +56,7 @@ function normalizza(r){
     nick: r.nick || '',
     nome: r.nome || '',
     avatar: r.avatar || avatarDa(r.id),
+    stanza: r.stanza || null,
     codice: r.codice || ''
   };
 }
@@ -74,8 +75,18 @@ async function carica(){
          lamenta, torna quelle che ci sono. Il sito vedeva un profilo
          senza nick, lo chiedeva, e il salvataggio falliva su una
          colonna inesistente: una finestra che non si poteva chiudere. */
-    const r = await c.from('profili').select('id,nome,nick,avatar,creato')
-                     .eq('id', AUTH.stato().id).single();
+    /* Si chiede tutto, e se una colonna non c'e' ancora si richiede
+       senza. PostgREST su una colonna inesistente risponde 42703 e
+       butta via l'intera lettura: senza questo, aggiungere una colonna
+       in una migrazione non ancora applicata spegne il profilo per
+       intero invece di togliergli una riga. Vale per ogni colonna che
+       verra' dopo. */
+    let r = await c.from('profili').select('id,nome,nick,avatar,stanza,creato')
+                   .eq('id', AUTH.stato().id).single();
+    if (r.error && r.error.code === '42703'){
+      r = await c.from('profili').select('id,nome,nick,avatar,creato')
+                 .eq('id', AUTH.stato().id).single();
+    }
     if (r.error) throw r.error;
 
     io = normalizza(r.data || {});
@@ -166,7 +177,12 @@ async function caricaAmici(){
     });
     let per = {};
     if (altri.length){
-      const p = await c.from('profili').select('id,nick,nome,avatar').in('id', altri);
+      // `stanza` serve a far vedere la libreria di un amico com'e' da lui;
+      // se la colonna non c'e' ancora, se ne fa a meno
+      let p = await c.from('profili').select('id,nick,nome,avatar,stanza').in('id', altri);
+      if (p.error && p.error.code === '42703'){
+        p = await c.from('profili').select('id,nick,nome,avatar').in('id', altri);
+      }
       if (p.error) throw p.error;
       (p.data || []).forEach(function(x){ per[x.id] = normalizza(x); });
     }

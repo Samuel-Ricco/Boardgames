@@ -651,6 +651,66 @@ body.visita #p-segna{display:none !important}
   .cat-azioni button{padding:7px 9px}
 }
 
+/* --- arredare la stanza -----------------------------------------
+   Il pannello sta in un angolo e non copre la scena: scegliere un
+   colore guardando un'anteprima grande come un francobollo non e'
+   scegliere, e' indovinare. */
+#stanza-apri{
+  position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
+  font-size:17px; line-height:1; cursor:pointer; color:var(--ink-soft);
+  background:var(--card); border:1px solid var(--line); padding:8px 11px 10px;
+  opacity:0; transition:opacity .5s ease;
+}
+body.browse #stanza-apri{opacity:1}
+#stanza-apri:hover{color:var(--amber); border-color:var(--amber)}
+/* solo nella libreria, e non in casa d'altri */
+body.sez-catalogo #stanza-apri, body.sez-profilo #stanza-apri,
+body.visita #stanza-apri, body.elenco #stanza-apri,
+body.review #stanza-apri, body.arreda #stanza-apri{display:none}
+
+#stanza{
+  position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
+  width:min(310px,88vw); padding:18px 18px 14px;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  opacity:0; visibility:hidden; transform:translateY(10px);
+  transition:opacity .28s ease, transform .28s ease, visibility 0s .28s;
+}
+body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-delay:0s}
+#stanza .eyebrow{margin:0 0 14px}
+#stanza-x{
+  position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
+  color:var(--ink-soft); background:none; border:0; padding:4px 6px;
+}
+#stanza-x:hover{color:var(--rust)}
+.st-riga{display:flex; align-items:center; gap:12px; margin:0 0 11px}
+.st-riga.alto{align-items:flex-start}
+.st-riga>span:first-child{
+  flex:none; width:66px; font-size:10px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.st-riga.luce b{
+  flex:none; width:38px; text-align:right; font-family:var(--ff-display);
+  font-size:14px; color:var(--ink);
+}
+#st-luce{flex:1; min-width:0; accent-color:var(--amber)}
+.pastiglie.testo button{
+  width:auto; height:auto; padding:5px 8px; font-family:var(--ff-text);
+  font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-soft); line-height:1.2;
+}
+.pastiglie.testo button.on{color:var(--ink)}
+.st-fondo{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin:16px 0 0; padding-top:12px; border-top:1px solid var(--line);
+}
+#st-msg{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(44,36,27,.45)}
+#st-reset{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:none; border:1px solid var(--line); padding:7px 10px;
+}
+#st-reset:hover{color:var(--rust); border-color:var(--rust)}
+
 /* --- a che libreria siamo --------------------------------------
    Il binario e' orizzontale e sta in basso perche' orizzontale e' il
    movimento: le librerie sono in fila lungo la parete, non impilate. */
@@ -815,6 +875,12 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   body.visita #visita{transform:translate(-50%,80px)}
   #visita{padding:8px 8px 8px 13px; gap:10px}
   #visita span{font-size:11px}
+
+  #stanza-apri{bottom:calc(66px + env(safe-area-inset-bottom))}
+  #stanza{
+    left:0; right:0; bottom:calc(50px + env(safe-area-inset-bottom));
+    width:auto; border-left:0; border-right:0; border-bottom:0;
+  }
 
   .pro-testa{gap:18px}
   #pro-avatar{width:92px; height:92px}

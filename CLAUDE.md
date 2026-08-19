@@ -37,6 +37,7 @@ js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
 js/recensioni.js      le recensioni del sito: pubbliche, lette anche dall'ospite
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
+js/stanza.js          luce, colori e arredi scelti da chi ci abita
 js/bgg.js             ricerca BGG (passa dal proxy locale)
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             grafica generata su canvas
@@ -439,6 +440,67 @@ Per **provare la strada dell'ospite senza sloggare l'utente**: si parcheggia la
 chiave `sb-<progetto>-auth-token` di `localStorage` in un'altra chiave, si
 ricarica, si prova, e poi la si rimette. `AUTH.esci()` no — quello invalida il
 refresh token sul server e tocca rifare l'accesso da Google.
+
+## Arredare la stanza
+
+`profili.stanza` (jsonb): luce, tre colori, uno stile di arredo. Sta nel profilo
+e non in `localStorage` perche' te la porti fra dispositivi e perche' **un amico
+che viene a guardare la tua libreria la vede com'e' da te** — `stanza` e' fra le
+colonne che gli amici leggono.
+
+- **`js/stanza.js` non sa niente di three.js**: tiene i valori e le tavolozze,
+  li traduce `app.js`. Cosi' la stanza si legge anche senza WebGL.
+- **Le tavolozze sono chiuse.** Un selettore di colore libero dava scaffali
+  fucsia su muri verde acido: sei tinte per superficie, che stanno insieme, e
+  ognuna e' un legno o un intonaco che esiste.
+- **Da una tinta sola escono le tre di un legno** (`legno()`): la base, la vena
+  scurita, il riflesso verso il bianco. Sceglierne tre a mano per essenza voleva
+  dire diciotto colori da tenere in accordo.
+- **Il cursore della luce non moltiplica tutto per lo stesso numero**, che
+  sarebbe un filtro grigio davanti alla scena. La finestra cala piu' in fretta
+  (`l^1.35`) perche' al buio e' la prima ad andarsene ed e' quella che fa le
+  ombre; il rimbalzo cala piano (`l^0.60`) perche' una stanza in penombra non e'
+  nera; l'esposizione compensa **un filo** (`l^-0.20`) come fa l'occhio — se
+  compensasse tutto, muovere il cursore non si vedrebbe.
+- **Sfondo e nebbia sono tinte piatte che nessuna luce tocca**: vanno scurite a
+  mano insieme al resto, se no la stanza si abbuia e la parete in fondo resta
+  accesa come a mezzogiorno.
+- Il cursore chiama solo `applicaLuce()`; colori e arredi chiamano
+  `applicaStanza()`, che rifa' materiali, mobile e contorno. Ricostruire a ogni
+  pixel di trascinamento farebbe singhiozzare tutto.
+- **Il pannello sta in un angolo e non copre la scena**: scegliere un colore
+  guardando un'anteprima grande come un francobollo e' indovinare. E si salva da
+  solo dopo una pausa: un pulsante «salva» dove ogni clic si vede gia' applicato
+  e' una domanda a cui l'utente ha gia' risposto.
+
+## I cinque arredi
+
+`arrLibri`, `arrScatole`, `arrDadi`, `arrPiante`, `arrCornici`, piu' `misto` e
+`niente`. Ognuno riceve gruppo, seme ripetibile e il punto `(x, y)` su cui
+appoggiare — che sia il fondo di un cubo o **il cielo del mobile**: un mobile
+vero ha sempre qualcosa sopra, ed e' anche quello che fa capire dove finisce.
+
+- Le foglie delle piante sono sfere schiacciate, non un modello: a quella
+  distanza contano sagoma e colore, e una pianta fatta bene costerebbe piu'
+  triangoli di tutto il mobile.
+- I quadri nelle cornici sono astratti apposta (`ART.quadro`): qualunque
+  soggetto riconoscibile, a quattro centimetri sullo schermo, e' una macchia.
+- `niente` non e' un ripiego: chi lascia i vuoti apposta non vuole che glieli
+  riempiamo noi.
+
+## Aggiungere una colonna a `profili` e' un'operazione in tre punti
+
+Costata due volte nella stessa sessione, e la seconda con la lezione gia' scritta:
+
+1. la migrazione deve **rifare i GRANT per colonna** — dopo `codice_riservato` i
+   permessi su `profili` sono per colonna, e una colonna nuova senza grant non
+   si legge e non si scrive senza che nessuno lo dica;
+2. il client deve **chiedere la colonna e sapersene fare a meno**: PostgREST su
+   una colonna inesistente risponde `42703` e butta via l'intera lettura, quindi
+   una migrazione non ancora applicata spegne il profilo per intero invece di
+   togliergli una riga. `carica()` riprova senza;
+3. il messaggio d'errore va **tradotto in quale migrazione manca**: «could not
+   find the 'stanza' column in the schema cache» non dice a nessuno cosa fare.
 
 ## Luce e colori
 

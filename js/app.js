@@ -101,6 +101,7 @@ const camBase = new THREE.Vector3(0, 8, 26);
 
 let renderer, scene, camera, raycaster, pointer;
 let cabGroup, propGroup, bayLights = [], focusLight, keyLight, alone;
+let hemiLight, ambLight, fillLight;
 let floorMesh, wallMesh;
 let boxes = [];
 let MATS = null;
@@ -180,15 +181,40 @@ function makeWoodMat(o){
    se no a questa luminosita' il legno sembra finto invecchiato.
    `orizz` e' per i ripiani, con la venatura girata di 90 gradi: e' cosi'
    che si vede sul mobile vero, e senza si nota che e' tutta uguale. */
+/* Da una tinta sola alle tre che servono a un legno: la base, la vena
+   scura e il riflesso chiaro. Sceglierne tre a mano per ogni essenza
+   voleva dire diciotto colori da tenere in accordo; qui la vena e' la
+   base scurita e il riflesso e' la base verso il bianco, che e' come
+   funziona il legno vero. */
+const esa = c => '#' + c.getHexString();
+
+function legno(tinta, o){
+  const c = new THREE.Color(tinta);
+  return makeWoodMat(Object.assign({
+    base:  esa(c),
+    dark:  esa(c.clone().multiplyScalar(.74)),
+    light: esa(c.clone().lerp(new THREE.Color(0xffffff), .32))
+  }, o));
+}
+
 function makeMats(){
+  const t = STANZA.corrente().scaffali;
+  const c = new THREE.Color(t);
   MATS = {
-    vert: makeWoodMat({ base:'#c9b085', dark:'#9c7f52', light:'#e8d8b6',
-                        lines:220, knots:2, rough:.70, bump:.05, rot: Math.PI/2 }),
-    orizz: makeWoodMat({ base:'#cdb489', dark:'#a08356', light:'#ebdcba',
-                         lines:220, knots:2, rough:.70, bump:.05 }),
-    fondo: makeWoodMat({ base:'#bda283', dark:'#94795a', light:'#d8c5a4',
-                         lines:160, knots:1, rough:.86, bump:.02 })
+    vert:  legno(t, { lines:220, knots:2, rough:.70, bump:.05, rot: Math.PI/2 }),
+    // i ripiani un filo piu' chiari dei montanti, e con la vena girata:
+    // e' cosi' che si vede su un mobile vero
+    orizz: legno(esa(c.clone().lerp(new THREE.Color(0xffffff), .05)),
+                 { lines:220, knots:2, rough:.70, bump:.05 }),
+    // lo schienale sta in ombra: parte gia' piu' scuro
+    fondo: legno(esa(c.clone().multiplyScalar(.88)),
+                 { lines:160, knots:1, rough:.86, bump:.02 })
   };
+}
+
+function legnoPavimento(){
+  return legno(STANZA.corrente().pavimento,
+               { lines:180, knots:1, repeat:[1,13], rough:.72, bump:.012 });
 }
 
 function slab(w, h, d, mat, x, y, z){
@@ -206,6 +232,7 @@ const SFONDO = 0xe6ddd0;
 
 function buildRoom(){
   scene = new THREE.Scene();
+  // il valore vero lo mette applicaLuce(): qui basta non partire da nero
   scene.background = new THREE.Color(SFONDO);
   scene.fog = new THREE.Fog(SFONDO, 40, 120);
 
@@ -213,10 +240,7 @@ function buildRoom(){
      fino a coprire tutta la fila di librerie. La quota invece e' fissa:
      il mobile non si allunga piu' verso il basso, quindi la stanza non
      ha piu' bisogno di scendere con lui. */
-  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 240), makeWoodMat({
-    base:'#cbbba4', dark:'#a8967c', light:'#e3d7c3',
-    lines: 180, knots: 1, repeat:[1,13], rough:.72, bump:.012
-  }));
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 240), legnoPavimento());
   floorMesh.rotation.x = -Math.PI/2;
   floorMesh.position.y = SUOLO;
   floorMesh.receiveShadow = true;
@@ -226,7 +250,8 @@ function buildRoom(){
   // mobile ci si stampa sopra come una lastra
   wallMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 400),
-    new THREE.MeshStandardMaterial({ color: 0xe9e2d7, roughness: .98, metalness: 0 })
+    new THREE.MeshStandardMaterial({ color: new THREE.Color(STANZA.corrente().muro),
+                                     roughness: .98, metalness: 0 })
   );
   wallMesh.position.set(0, CENTRO_Y, -KAL.d/2 - .06);
   wallMesh.receiveShadow = true;
@@ -234,8 +259,9 @@ function buildRoom(){
 
   // il cielo chiaro sopra e il rimbalzo caldo del pavimento sotto:
   // e' quello che fa sembrare la stanza illuminata da una finestra
-  scene.add(new THREE.HemisphereLight(0xf7f2e8, 0xcbb89a, .52));
-  scene.add(new THREE.AmbientLight(0xfff6e8, .20));
+  hemiLight = new THREE.HemisphereLight(0xf7f2e8, 0xcbb89a, .52);
+  ambLight  = new THREE.AmbientLight(0xfff6e8, .20);
+  scene.add(hemiLight, ambLight);
 
   // luce di finestra: larga, morbida, quasi frontale. Di lato
   // allungherebbe l'ombra della libreria sulla parete.
@@ -254,9 +280,9 @@ function buildRoom(){
   scene.add(key, key.target);
 
   // riempimento da destra, senza ombre: schiarisce dentro i cubi
-  const fill = new THREE.DirectionalLight(0xffeedd, .22);
-  fill.position.set(16, 8, 18);
-  scene.add(fill);
+  fillLight = new THREE.DirectionalLight(0xffeedd, .22);
+  fillLight.position.set(16, 8, 18);
+  scene.add(fillLight);
 
   focusLight = new THREE.PointLight(0xfff1dd, 0, 26, 1.6);
   scene.add(focusLight);
@@ -292,6 +318,59 @@ function makeAlone(){
   m.visible = false;
   scene.add(m);
   return m;
+}
+
+/* La luce della stanza.
+
+   Il cursore NON moltiplica tutto per lo stesso numero: sarebbe un
+   filtro grigio davanti alla scena, non una stanza piu' buia. Ogni
+   sorgente si comporta come si comporta davvero:
+
+   - la finestra (`key`) cala piu' in fretta di tutto: al tramonto e'
+     la prima ad andarsene, ed e' quella che fa le ombre;
+   - il rimbalzo (`amb`) cala molto piano: una stanza in penombra non
+     e' nera, e' piena di luce riflessa dalle pareti;
+   - l'esposizione compensa un filo, come fa l'occhio, che si abitua
+     ma non del tutto -- se compensasse tutto, muovere il cursore non
+     si vedrebbe.
+
+   Sfondo e nebbia sono tinte piatte che nessuna luce tocca: vanno
+   scurite a mano, se no la stanza si abbuia e la parete in fondo resta
+   accesa come a mezzogiorno. */
+function applicaLuce(){
+  const l = STANZA.corrente().luce;
+  if (hemiLight) hemiLight.intensity = .52 * Math.pow(l, 1.05);
+  if (ambLight)  ambLight.intensity  = .20 * Math.pow(l, .60);
+  if (keyLight)  keyLight.intensity  = .95 * Math.pow(l, 1.35);
+  if (fillLight) fillLight.intensity = .22 * Math.pow(l, 1.10);
+  if (renderer)  renderer.toneMappingExposure = .90 * Math.pow(l, -.20);
+
+  const f = new THREE.Color(STANZA.corrente().muro)
+    .multiplyScalar(.42 + .58 * Math.min(1.25, l));
+  if (scene){
+    scene.background = f;
+    if (scene.fog) scene.fog.color = f.clone();
+  }
+}
+
+/* Tutto il resto: colori delle superfici e arredi. Ricostruisce
+   materiali, mobile e contorno, quindi si chiama a ogni CLIC, non a
+   ogni movimento del cursore della luce. */
+function applicaStanza(){
+  if (!scene) return;
+  applicaLuce();
+  if (wallMesh) wallMesh.material.color.set(new THREE.Color(STANZA.corrente().muro));
+  if (floorMesh){
+    const vecchio = floorMesh.material;
+    floorMesh.material = legnoPavimento();
+    if (vecchio){
+      ['map','bumpMap'].forEach(function(k){ if (vecchio[k]) vecchio[k].dispose(); });
+      vecchio.dispose();
+    }
+  }
+  makeMats();
+  buildCabinet();              // rimette anche scala e ripetizione del pavimento
+  applyLibrary({});            // e con essa gli arredi nello stile scelto
 }
 
 /* La stanza si allunga con le librerie: se pavimento e parete finissero
@@ -436,6 +515,146 @@ function makeMeeple(col, s){
 
 // Riempie i posti vuoti: uno scaffale spoglio sembra un errore, non
 // un armadio che aspetta altri giochi.
+/* ============================================================
+   I CINQUE ARREDI
+
+   Un cubo vuoto e' un buco; un cubo con dentro qualcosa e' uno
+   scaffale. Sono cinque stili diversi e si sceglie il proprio dal
+   menu della stanza -- piu' il misto, che li mescola come faceva
+   prima, e il niente, che non e' un ripiego: chi lascia i vuoti
+   apposta non vuole che glieli riempiamo noi.
+
+   Ognuno riceve il gruppo, un seme ripetibile e il punto (x, y) dove
+   appoggiare: y e' il piano su cui posare, che sia il fondo di un cubo
+   o il cielo del mobile.
+   ============================================================ */
+
+function arrScatole(g, seed, x, y){
+  const n = 2 + Math.floor(srnd(seed+1)*2);
+  for (let i = 0; i < n; i++){
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(2.5, .52, 2.5),
+      new THREE.MeshStandardMaterial({
+        map: ART.toTex(ART.coverGeneric(Math.floor(srnd(seed+i*3)*5))), roughness: .7
+      })
+    );
+    m.position.set(x + (srnd(seed+i)-.5)*.24, y + .26 + i*.52, -.1);
+    m.rotation.y = (srnd(seed+i*2)-.5)*.16;
+    m.castShadow = true; m.receiveShadow = true;
+    g.add(m);
+  }
+}
+
+function arrLibri(g, seed, x, y){
+  const n = 4 + Math.floor(srnd(seed+2)*2);
+  for (let i = 0; i < n; i++){
+    const w = .38 + srnd(seed+i*7)*.16, h = 1.9 + srnd(seed+i*11)*.7;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.5), thinSpine(seed+i));
+    m.position.set(x - 1.15 + i*.56, y + h/2, -.1);
+    m.rotation.y = (srnd(seed+i)-.5)*.06;
+    m.castShadow = true; m.receiveShadow = true;
+    g.add(m);
+  }
+}
+
+function arrDadi(g, seed, x, y){
+  const cols = [['#efe3cb','#2a1a0f'], ['#c1552c','#f6e6c8'], ['#3f4f63','#f6e6c8']];
+  for (let i = 0; i < 3; i++){
+    const s = .58;
+    const d = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), ART.dieMaterials(cols[i][0], cols[i][1]));
+    d.position.set(x - .75 + i*.62, y + s/2, .2 + (i%2)*.4);
+    d.rotation.y = srnd(seed+i*13) * Math.PI;
+    d.castShadow = true; d.receiveShadow = true;
+    g.add(d);
+  }
+  const d20 = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(.62, 0),
+    new THREE.MeshStandardMaterial({ color: 0xb98a3a, roughness: .38, metalness: .7, flatShading: true })
+  );
+  d20.position.set(x + .95, y + .52, .35);
+  d20.rotation.set(.4, srnd(seed+4)*3, .2);
+  d20.castShadow = true; d20.receiveShadow = true;
+  g.add(d20);
+  const m1 = makeMeeple(0xd8552c, .42), m2 = makeMeeple(0xe8c05f, .36);
+  m1.position.set(x + .15, y + .45, .55);
+  m2.position.set(x + .55, y + .40, .8); m2.rotation.y = -.5;
+  g.add(m1, m2);
+}
+
+/* Le foglie sono sfere schiacciate e non un modello vero: a questa
+   distanza contano la sagoma e il colore, e una pianta fatta bene
+   costerebbe piu' triangoli di tutto il resto del mobile. */
+function arrPiante(g, seed, x, y){
+  const h = .5 + srnd(seed)*.22;
+  const vaso = new THREE.Mesh(
+    new THREE.CylinderGeometry(.38, .28, h, 14),
+    new THREE.MeshStandardMaterial({ color: 0xb2643f, roughness: .88 })
+  );
+  vaso.position.set(x, y + h/2, .05);
+  vaso.castShadow = true; vaso.receiveShadow = true;
+  g.add(vaso);
+
+  const verde = new THREE.MeshStandardMaterial({
+    color: srnd(seed+9) < .5 ? 0x4f7a4a : 0x5f8a52, roughness: .76
+  });
+  const n = 6 + Math.floor(srnd(seed+1)*4);
+  for (let i = 0; i < n; i++){
+    const lung = .55 + srnd(seed + i*3)*.75;
+    const f = new THREE.Mesh(new THREE.SphereGeometry(.17, 7, 5), verde);
+    f.scale.set(.55, lung/.34, .4);
+    const ang = (i / n) * Math.PI * 2 + srnd(seed+i)*.7;
+    const fuori = .25 + srnd(seed+i*2)*.5;
+    f.position.set(x + Math.cos(ang)*fuori*.7, y + h + lung*.42, .05 + Math.sin(ang)*fuori*.5);
+    f.rotation.set(Math.sin(ang)*fuori, 0, -Math.cos(ang)*fuori);
+    f.castShadow = true;
+    g.add(f);
+  }
+}
+
+function arrCornici(g, seed, x, y){
+  const n = 1 + Math.floor(srnd(seed)*2);
+  for (let i = 0; i < n; i++){
+    const w = .95 + srnd(seed+i)*.5;
+    const h = w * (1 + srnd(seed+i*3)*.35);
+    const tela  = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.quadro(seed + i*5)), roughness: .72 });
+    const bordo = new THREE.MeshStandardMaterial({ color: 0x6b5540, roughness: .74 });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, .08),
+                             [bordo, bordo, bordo, bordo, tela, bordo]);
+    // appoggiate all'indietro, come si appoggia una cornice a un muro
+    m.position.set(x - .45 + i*.85 + (srnd(seed+i*11)-.5)*.2, y + h/2, -.55 + i*.4);
+    m.rotation.set(-.14, (srnd(seed+i*7)-.5)*.45, 0);
+    m.castShadow = true; m.receiveShadow = true;
+    g.add(m);
+  }
+}
+
+const ARREDI = {
+  giochi: arrScatole, libri: arrLibri, dadi: arrDadi,
+  piante: arrPiante, cornici: arrCornici
+};
+const ARREDI_MISTI = ['giochi', 'libri', 'dadi', 'piante', 'cornici'];
+
+function riempiCubo(g, stile, seed, x, y){
+  if (stile === 'niente') return;
+  const quale = (stile === 'misto')
+    ? ARREDI_MISTI[Math.floor(srnd(seed + 91) * ARREDI_MISTI.length) % ARREDI_MISTI.length]
+    : stile;
+  const fn = ARREDI[quale];
+  if (fn) fn(g, seed, x, y);
+}
+
+/* Sopra il mobile. Un mobile vero ha sempre qualcosa sopra, ed e'
+   anche quello che fa capire dove finisce: senza, il cielo della
+   libreria e' solo un bordo netto contro il muro. */
+function arrediSopra(g, stile, l){
+  if (stile === 'niente') return;
+  for (let i = 0; i < COLS; i++){
+    const seed = 700 + l * 31 + i * 7;
+    if (srnd(seed) < .34) continue;
+    riempiCubo(g, stile, seed, cubX(l, i), KAL.topY);
+  }
+}
+
 function buildProps(used){
   killGroup(propGroup, true);
   const g = new THREE.Group();
@@ -446,63 +665,18 @@ function buildProps(used){
      contorno. */
   if (!used){ propGroup = g; scene.add(g); return; }
 
+  const stile = STANZA.corrente().arredo;
+
   for (let l = 0; l < state.libs; l++){
+    arrediSopra(g, stile, l);
     for (let k = 0; k < PER_LIB; k++){
       const posto = l * PER_LIB + k;
       if (used.has(posto)) continue;
       const seed = posto * 17 + 3;
-      const r = srnd(seed);
-      if (r < .34) continue;                       // qualche posto resta vuoto
-      const x = cubX(l, k % COLS);
-      const y = rigaY(Math.floor(k / COLS)) - KAL.cell/2;   // il piano del cubo
-
-      if (r < .58){                                // pila di scatole coricate
-        const n = 2 + Math.floor(srnd(seed+1)*2);
-        for (let i = 0; i < n; i++){
-          const m = new THREE.Mesh(
-            new THREE.BoxGeometry(2.5, .52, 2.5),
-            new THREE.MeshStandardMaterial({
-              map: ART.toTex(ART.coverGeneric(Math.floor(srnd(seed+i*3)*5))), roughness: .7
-            })
-          );
-          m.position.set(x + (srnd(seed+i)-.5)*.24, y + .26 + i*.52, -.1);
-          m.rotation.y = (srnd(seed+i*2)-.5)*.16;
-          m.castShadow = true; m.receiveShadow = true;
-          g.add(m);
-        }
-      } else if (r < .84){                         // fila di dorsi
-        const n = 4 + Math.floor(srnd(seed+2)*2);
-        for (let i = 0; i < n; i++){
-          const w = .38 + srnd(seed+i*7)*.16, h = 1.9 + srnd(seed+i*11)*.7;
-          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.5), thinSpine(seed+i));
-          m.position.set(x - 1.15 + i*.56, y + h/2, -.1);
-          m.rotation.y = (srnd(seed+i)-.5)*.06;
-          m.castShadow = true; m.receiveShadow = true;
-          g.add(m);
-        }
-      } else {                                     // dadi e meeple
-        const cols = [['#efe3cb','#2a1a0f'], ['#c1552c','#f6e6c8'], ['#3f4f63','#f6e6c8']];
-        for (let i = 0; i < 3; i++){
-          const s = .58;
-          const d = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), ART.dieMaterials(cols[i][0], cols[i][1]));
-          d.position.set(x - .75 + i*.62, y + s/2, .2 + (i%2)*.4);
-          d.rotation.y = srnd(seed+i*13) * Math.PI;
-          d.castShadow = true; d.receiveShadow = true;
-          g.add(d);
-        }
-        const d20 = new THREE.Mesh(
-          new THREE.IcosahedronGeometry(.62, 0),
-          new THREE.MeshStandardMaterial({ color: 0xb98a3a, roughness: .38, metalness: .7, flatShading: true })
-        );
-        d20.position.set(x + .95, y + .52, .35);
-        d20.rotation.set(.4, srnd(seed+4)*3, .2);
-        d20.castShadow = true; d20.receiveShadow = true;
-        g.add(d20);
-        const m1 = makeMeeple(0xd8552c, .42), m2 = makeMeeple(0xe8c05f, .36);
-        m1.position.set(x + .15, y + .45, .55);
-        m2.position.set(x + .55, y + .40, .8); m2.rotation.y = -.5;
-        g.add(m1, m2);
-      }
+      if (srnd(seed) < .34) continue;              // qualche posto resta vuoto
+      riempiCubo(g, stile, seed,
+                 cubX(l, k % COLS),
+                 rigaY(Math.floor(k / COLS)) - KAL.cell/2);
     }
   }
 
@@ -1259,7 +1433,7 @@ function bindInput(){
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
       finiscePresa(true); chiudiMia(); chiudiPartita(); chiudiElenco();
-      unfocus(); closeAdd(); return;
+      chiudiArreda(); unfocus(); closeAdd(); return;
     }
     if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
       e.preventDefault(); tornaACasa(); return;
@@ -2000,6 +2174,98 @@ function bindCatalogo(){
 }
 
 /* ===============================================================
+   ARREDARE LA STANZA
+   ===============================================================
+
+   Il pannello sta in un angolo e non copre la scena: scegliere un
+   colore guardando un'anteprima grande come un francobollo non e'
+   scegliere, e' indovinare. Si vede subito quello che si sta facendo.
+
+   Si salva da solo dopo una pausa. Un pulsante "salva" su un pannello
+   dove ogni clic si vede gia' applicato e' una domanda a cui l'utente
+   ha gia' risposto. */
+
+let salvaStanzaT = 0;
+
+function salvaStanzaTraPoco(){
+  clearTimeout(salvaStanzaT);
+  q('#st-msg').textContent = 'sto salvando';
+  salvaStanzaT = setTimeout(function(){
+    STANZA.salva()
+      .then(function(){ q('#st-msg').textContent = 'salvata'; })
+      .catch(function(e){ q('#st-msg').textContent = 'non salvata: ' + e.message; });
+  }, 700);
+}
+
+function disegnaStanza(){
+  const cur = STANZA.corrente();
+  q('#st-luce').value = cur.luce;
+  q('#st-luce-n').textContent = Math.round(cur.luce * 100) + '%';
+
+  const gruppo = function(sel, lista, campo, testo){
+    q(sel).innerHTML = lista.map(function(x){
+      const on = cur[campo] === x.v ? ' class="on"' : '';
+      const stile = testo ? '' : ' style="background:' + esc(x.v) + '"';
+      return '<button type="button" data-v="' + esc(x.v) + '" title="' + esc(x.n) + '"' +
+             on + stile + '>' + (testo ? esc(x.n) : '') + '</button>';
+    }).join('');
+  };
+  gruppo('#st-scaffali',  STANZA.LEGNI,     'scaffali',  false);
+  gruppo('#st-muro',      STANZA.MURI,      'muro',      false);
+  gruppo('#st-pavimento', STANZA.PAVIMENTI, 'pavimento', false);
+  gruppo('#st-arredo',    STANZA.ARREDI,    'arredo',    true);
+}
+
+function apriArreda(){
+  if (LIB.ospitePresso()) return;          // in casa d'altri non si arreda
+  disegnaStanza();
+  document.body.classList.add('arreda');
+  q('#stanza').setAttribute('aria-hidden', 'false');
+  q('#st-msg').textContent = 'si salva da solo';
+}
+
+function chiudiArreda(){
+  document.body.classList.remove('arreda');
+  q('#stanza').setAttribute('aria-hidden', 'true');
+}
+
+function bindStanza(){
+  q('#stanza-apri').addEventListener('click', apriArreda);
+  q('#stanza-x').addEventListener('click', chiudiArreda);
+
+  /* Il cursore della luce chiama solo applicaLuce(): e' un cambio di
+     intensita', non di materiali, e ricostruire il mobile a ogni
+     pixel di trascinamento lo farebbe singhiozzare. */
+  q('#st-luce').addEventListener('input', function(){
+    STANZA.cambia({ luce: parseFloat(q('#st-luce').value) });
+    q('#st-luce-n').textContent = Math.round(STANZA.corrente().luce * 100) + '%';
+    applicaLuce();
+    salvaStanzaTraPoco();
+  });
+
+  [['#st-scaffali','scaffali'], ['#st-muro','muro'],
+   ['#st-pavimento','pavimento'], ['#st-arredo','arredo']].forEach(function(par){
+    q(par[0]).addEventListener('click', function(e){
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      const patch = {};
+      patch[par[1]] = b.getAttribute('data-v');
+      STANZA.cambia(patch);
+      disegnaStanza();
+      applicaStanza();
+      salvaStanzaTraPoco();
+    });
+  });
+
+  armaBottone(q('#st-reset'), 'com\u2019era', 'sicuro?', function(){
+    STANZA.cambia(STANZA.DEFAULT);
+    disegnaStanza();
+    applicaStanza();
+    salvaStanzaTraPoco();
+  });
+}
+
+/* ===============================================================
    LA MIA LIBRERIA COME ELENCO
    ===============================================================
 
@@ -2651,8 +2917,15 @@ async function visitaLibreria(id, nick){
     return;
   }
   document.body.classList.add('visita');
+  chiudiArreda();
   q('#vis-chi').textContent = chi;
   q('#visita').setAttribute('aria-hidden', 'false');
+
+  /* La sua stanza, non la tua: una collezione si guarda com'e' a casa
+     di chi ce l'ha. `stanza` e' fra le colonne che gli amici leggono. */
+  const suo = PROFILO.amici().find(function(x){ return x.id === id; });
+  STANZA.daAltri(suo && suo.profilo ? suo.profilo.stanza : null);
+  applicaStanza();
 
   // la ricerca era sulla tua libreria: qui non vuol dire piu' niente
   state.q = ''; q('#cerca').value = '';
@@ -2674,6 +2947,8 @@ async function tornaACasa(){
   LIB.torna();
   document.body.classList.remove('visita');
   q('#visita').setAttribute('aria-hidden', 'true');
+  STANZA.daProfilo();
+  applicaStanza();
   state.scrollTo = state.scroll = 0;
   await loadCovers();
   applyLibrary({});
@@ -3035,8 +3310,12 @@ async function boot(){
   // setTimeout e non requestAnimationFrame: a pagina nascosta i frame
   // non arrivano affatto e il caricamento resterebbe li'.
   await wait(20); setProg(.28, 'monto la stanza');
+  // luce e colori PRIMA dei materiali: se no si costruisce il mobile due
+  // volte, una con le tinte di serie e una con le tue
+  STANZA.daProfilo();
   makeMats();
   buildRoom();
+  applicaLuce();
   // prima le misure dello schermo: decidono quante scatole per scaffale,
   // e quindi quanto viene alto l'armadio che sto per costruire
   layout();
@@ -3053,6 +3332,7 @@ async function boot(){
 
   bindInput();
   bindTools();
+  bindStanza();
   setSort(state.sort);
   requestAnimationFrame(frame);
   setProg(1, 'ci siamo');

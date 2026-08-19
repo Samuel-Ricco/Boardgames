@@ -662,9 +662,52 @@ function avatar(av, S){
   return c;
 }
 
+/* Un quadretto da mettere nelle cornici sugli scaffali. Astratto
+   apposta: qualunque soggetto riconoscibile, a quattro centimetri di
+   altezza sullo schermo, diventa una macchia sporca. Forme piatte nei
+   colori della stanza si leggono anche piccole. */
+function quadro(seed){
+  const S = 256, cx = cnv(S, S), c = cx[0], x = cx[1];
+  const rnd = function(n){
+    const v = Math.sin((seed + n) * 127.1 + 311.7) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  const FONDI = ['#efe3cb', '#e2d3b6', '#d8ddd6', '#e6d9d0'];
+  const TINTE = ['#c1552c', '#9a6a15', '#3f4f63', '#4d5a48', '#6a3a3a', '#57406a'];
+
+  x.fillStyle = FONDI[Math.floor(rnd(1) * FONDI.length) % FONDI.length];
+  x.fillRect(0, 0, S, S);
+
+  const modo = Math.floor(rnd(2) * 3);
+  for (let i = 0; i < 3 + Math.floor(rnd(3) * 3); i++){
+    x.fillStyle = TINTE[Math.floor(rnd(10 + i) * TINTE.length) % TINTE.length];
+    x.globalAlpha = .55 + rnd(20 + i) * .4;
+    if (modo === 0){                       // colline sovrapposte
+      x.beginPath();
+      x.moveTo(0, S);
+      x.lineTo(0, S * (.4 + rnd(30 + i) * .4));
+      x.quadraticCurveTo(S / 2, S * (.15 + rnd(40 + i) * .5), S, S * (.35 + rnd(50 + i) * .45));
+      x.lineTo(S, S);
+      x.closePath();
+      x.fill();
+    } else if (modo === 1){                // rettangoli
+      const w = S * (.15 + rnd(30 + i) * .4), h = S * (.15 + rnd(40 + i) * .5);
+      x.fillRect(rnd(50 + i) * (S - w), rnd(60 + i) * (S - h), w, h);
+    } else {                               // cerchi
+      x.beginPath();
+      x.arc(S * (.2 + rnd(30 + i) * .6), S * (.2 + rnd(40 + i) * .6),
+            S * (.08 + rnd(50 + i) * .18), 0, Math.PI * 2);
+      x.fill();
+    }
+  }
+  x.globalAlpha = 1;
+  grain(x, S, S, 10);
+  return c;
+}
+
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
-  avatar: avatar,
+  avatar: avatar, quadro: quadro,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,
   spine: spine, cardboard: cardboard, inside: inside,

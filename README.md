@@ -29,6 +29,7 @@ js/store.js           la collezione: database, copia locale, ordinamenti, ricerc
 js/recensioni.js      le recensioni del sito, pubbliche, lette da chiunque
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
+js/stanza.js          luce, colori e arredi della stanza
 js/bgg.js             ricerca su BGG, attraverso il proxy locale
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             legno, cartone, dadi, copertine di ripiego
@@ -154,6 +155,22 @@ A permetterlo sono le regole del database, non l'interfaccia: la lettura di
 `giochi` è aperta agli amici, la scrittura continua a chiedere che la riga sia
 tua.
 
+## Arredare la stanza
+
+Dal pulsante in basso a sinistra: un cursore per la luce e tre tavolozze per
+scaffali, muro e pavimento, piu' cinque stili di arredo per i cubi vuoti e per
+il ripiano sopra il mobile — libri, scatole, dadi e meeple, piante, cornici.
+Piu' «un po' di tutto» e «niente».
+
+Il pannello sta in un angolo e non copre la scena: si sceglie e si vede subito.
+Si salva da solo. E la stanza segue il profilo, non il browser: la ritrovi da un
+altro dispositivo, e un amico che viene a guardare la tua libreria la vede
+com'e' da te.
+
+La luce non e' un filtro grigio davanti alla scena: la finestra cala piu' in
+fretta della luce riflessa, e l'esposizione compensa solo un poco — come fa
+l'occhio, che si abitua ma non del tutto.
+
 ## Le partite
 
 Una collezione dice cosa hai; le partite dicono cosa hai giocato, con chi e chi
@@ -268,6 +285,7 @@ pubbliche per progetto, e a proteggere i dati sono le regole in
 20260819200000_profili_e_amici.sql        nick, faccia, codice amico, amicizie
 20260819210000_partite.sql                giocatori salvati, partite, partecipanti
 20260819220000_codice_riservato.sql       il codice amico non esce dalla riga
+20260820100000_stanza_librerie_gruppi.sql stanza arredabile, librerie con nome, gruppi
 ```
 
 **`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un
