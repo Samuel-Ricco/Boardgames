@@ -233,6 +233,14 @@ campo vuoto: chi arriva senza sapere cosa cercare deve avere qualcosa da guardar
 - `ORDER BY DESC(?n) ?g`, con lo spareggio. Senza, a parità di sitelinks l'ordine
   non è garantito e sfogliando una pagina dopo l'altra gli stessi giochi
   ricomparivano.
+- **Una richiesta nuova supera quella in corso**, non aspetta e non viene
+  ignorata (`catGiro`). Le query a Wikidata durano un paio di secondi buoni, e in
+  quel tempo si fa in fretta a premere «cerca» — è il primo gesto di chiunque
+  apra il catalogo sapendo già cosa vuole. Prima quella ricerca spariva nel
+  vuoto. Ogni richiesta prende un numero e la risposta controlla di essere ancora
+  l'ultima chiesta, se no si butta via da sola. L'unica eccezione è «altri
+  giochi»: due clic salterebbero una pagina, e infatti il pulsante intanto è
+  spento.
 - **Un ritentativo sui 5xx, e uno solo.** WDQS è pubblico e sotto carico chiude
   con 502 anche query che un secondo dopo funzionano — è capitato in prova.
   Insistere di più non aiuta, e in un elenco che si sfoglia aspettare mezzo
@@ -490,21 +498,13 @@ settimana senza traffico, e si riattiva a mano dal pannello.
 
 Funziona ed è collaudato end-to-end sul progetto vero (2026-08-19): accesso con
 Google, ruolo letto dal server, aggiunta, **modifica** (scheda e recensione),
-rimozione, copertine caricate nel bucket. Verificato rileggendo il database
+rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
+`posizione`, **pubblicazione e ritiro** di una recensione nel catalogo. Tutte e
+cinque le migrazioni sono applicate. Verificato rileggendo il database
 dall'esterno, non dalla cache del browser.
 
 Cosa manca, in ordine di fastidio:
 
-0. **Due migrazioni sono nel repo ma non applicate al progetto.** Sono l'unica
-   cosa che separa quello che si vede dal funzionare per intero:
-   - `ordine_manuale` → finché manca, l'ordine manuale funziona sullo schermo e
-     resta in `localStorage`, ma il server lo rifiuta con «manca la colonna
-     posizione», e da un altro dispositivo si vede l'ordine di prima;
-   - `recensioni_pubbliche` → finché manca, il catalogo si sfoglia e si cerca ma
-     **nessuna recensione si legge**, e il messaggio in cima lo dice.
-
-   Si applicano dallo SQL Editor del progetto, in ordine di nome. Entrambe sono
-   idempotenti (`if not exists`, `drop policy if exists`).
 1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito con *modifica*, e
    da lì si pubblicano nel catalogo con la casella in fondo al modulo.
 2. **Il token BGG non è ancora arrivato.** Finché non c'è, la ricerca cade su

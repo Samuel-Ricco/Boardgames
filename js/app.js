@@ -1708,6 +1708,18 @@ function goToGame(id){
 const CAT_PAG = 24;
 let catVoci = [], catOffset = 0, catFine = false, catCarico = false;
 
+/* Il numero del giro. Le query a Wikidata sono lente -- un paio di
+   secondi buoni -- e in quel tempo si fa in fretta a premere "cerca":
+   e' il primo gesto di chiunque apra il catalogo e sappia gia' cosa
+   vuole. Prima quella ricerca veniva semplicemente ignorata, e il
+   catalogo restava li' a mostrare l'elenco di partenza.
+
+   Adesso ogni richiesta prende un numero, e quando una risposta torna
+   controlla di essere ancora l'ultima chiesta: se non lo e', si butta
+   via da sola senza toccare niente. Una richiesta nuova non aspetta
+   quella vecchia, la supera. */
+let catGiro = 0;
+
 function catMsg(html, kind){
   const el = q('#cat-msg');
   el.innerHTML = html;
@@ -1728,13 +1740,18 @@ function setSezione(s){
    Chi arriva senza sapere cosa cercare deve avere qualcosa da
    guardare, se no il catalogo e' una promessa e basta. */
 async function catSfoglia(daCapo){
-  if (catCarico) return;
+  // "altri giochi" premuto due volte salterebbe una pagina: quello si
+  // aspetta, ed e' il motivo per cui il pulsante intanto e' spento
+  if (!daCapo && catCarico) return;
+
+  const mio = ++catGiro;
   catCarico = true;
   if (daCapo){ catVoci = []; catOffset = 0; catFine = false; q('#cat-list').innerHTML = ''; }
   q('#cat-piu').disabled = true;
   catMsg(catVoci.length ? 'prendo altri giochi&hellip;' : 'apro il catalogo&hellip;');
   try {
     const voci = await CATALOGO.sfoglia(catOffset, CAT_PAG);
+    if (mio !== catGiro) return;          // intanto e' stato chiesto altro
     const da = catVoci.length;
     catOffset += CAT_PAG;
     catFine = voci.length < CAT_PAG;
@@ -1742,23 +1759,29 @@ async function catSfoglia(daCapo){
     disegnaCatalogo(da);
     catNota();
   } catch(e){
+    if (mio !== catGiro) return;          // errore di una richiesta superata: non riguarda piu'
     catMsg('Il catalogo non risponde: ' + esc(e.message) +
            '. Wikidata a volte impiega troppo e chiude la richiesta: riprova.', 'warn');
   } finally {
-    catCarico = false;
-    q('#cat-piu').disabled = false;
+    if (mio === catGiro){
+      catCarico = false;
+      q('#cat-piu').disabled = false;
+    }
   }
 }
 
 async function catCerca(){
   const t = q('#cat-q').value.trim();
   if (!t){ catSfoglia(true); return; }
-  if (catCarico) return;
+
+  const mio = ++catGiro;
   catCarico = true;
   catMsg('cerco&hellip;');
   q('#cat-list').innerHTML = '';
   try {
-    catVoci = await CATALOGO.cerca(t);
+    const voci = await CATALOGO.cerca(t);
+    if (mio !== catGiro) return;
+    catVoci = voci;
     catFine = true;                       // la ricerca da' quello che da', non si pagina
     disegnaCatalogo(0);
     if (!catVoci.length){
@@ -1767,9 +1790,10 @@ async function catCerca(){
              'semplicemente non esserci.');
     } else catNota();
   } catch(e){
+    if (mio !== catGiro) return;
     catMsg('Ricerca non riuscita: ' + esc(e.message), 'warn');
   } finally {
-    catCarico = false;
+    if (mio === catGiro) catCarico = false;
   }
 }
 
