@@ -35,11 +35,28 @@ async function fonte(rileggi){
 }
 
 /* --- Wikidata --------------------------------------------------- */
-function query(sparql){
+/* Un ritentativo, e uno solo, sui 5xx.
+
+   Il servizio di query di Wikidata e' pubblico e gratuito, e quando e'
+   carico chiude la richiesta con 502 o 504 anche su una query che un
+   secondo dopo funziona benissimo. Non e' un guasto nostro e non e'
+   niente che l'utente possa fare: quello che puo' fare il sito e'
+   riprovare una volta invece di dire subito "non ha funzionato".
+
+   Due tentativi, non di piu': se e' giu' davvero, insistere non aiuta
+   -- e in un elenco che si sfoglia, aspettare mezzo minuto per un
+   errore e' peggio che leggerlo subito. */
+function query(sparql, secondoGiro){
   const url = SPARQL + '?query=' + encodeURIComponent(sparql) + '&format=json';
   return fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } })
     .then(function(r){
-      if (!r.ok) throw new Error('Wikidata HTTP ' + r.status);
+      if (!r.ok){
+        if (r.status >= 500 && !secondoGiro){
+          return new Promise(function(res){ setTimeout(res, 900); })
+            .then(function(){ return query(sparql, true); });
+        }
+        throw new Error('Wikidata HTTP ' + r.status);
+      }
       return r.json();
     });
 }
@@ -99,6 +116,94 @@ function daWikidata(b){
 async function cercaWikidata(q){
   const r = await query(sparqlCerca(q));
   return (r.results.bindings || []).map(daWikidata);
+}
+
+/* --- sfogliare, che non e' cercare -------------------------------
+   Il catalogo si apre su un elenco, non su un campo vuoto: chi arriva
+   senza sapere cosa cercare deve avere qualcosa da guardare.
+
+   L'ordine e' il numero di edizioni linguistiche della voce
+   (`wikibase:sitelinks`): e' l'unico segnale di notorieta' che Wikidata
+   offra, e in cima mette i classici -- scacchi, Monopoly, backgammon --
+   perche' e' davvero quello che il mondo conosce. Quando arrivera' il
+   token, la classifica diventera' quella di BGG, che e' la classifica
+   che un sito di recensioni vuole davvero.
+
+   L'id BGG (P2339) e' RICHIESTO, non opzionale. Serve a puntare la
+   scheda vera, ma soprattutto tiene fuori quello che Wikidata classifica
+   sotto "gioco da tavolo" senza esserlo: restano 3.429 titoli sui 4.445.
+
+   `ORDER BY DESC(?n) ?g` con il secondo criterio di spareggio: senza,
+   a parita' di sitelinks l'ordine non e' garantito e sfogliando una
+   pagina dopo l'altra gli stessi giochi ricomparivano. */
+function sparqlSfoglia(offset, limit){
+  return [
+    'SELECT DISTINCT ?g ?n WHERE {',
+    '  ?g wdt:P31/wdt:P279* ' + GIOCO_DA_TAVOLO + ' .',
+    '  ?g wdt:P2339 ?bgg .',
+    '  ?g wikibase:sitelinks ?n .',
+    '} ORDER BY DESC(?n) ?g LIMIT ' + limit + ' OFFSET ' + offset
+  ].join('\n');
+}
+
+/* I dettagli di una manciata di identificativi gia' scelti.
+   Due query invece di una perche' prendere elenco ordinato e dettagli
+   insieme vuol dire mettere dieci OPTIONAL dentro una ORDER BY su
+   migliaia di righe: il servizio ci mette troppo, o va in timeout. */
+function sparqlDettagli(ids){
+  return [
+    'SELECT ?g ?nome ?anno ?bgg',
+    '  (SAMPLE(?autoreL) AS ?autore)',
+    '  (GROUP_CONCAT(DISTINCT ?editoreL; separator=" / ") AS ?editori)',
+    '  (SAMPLE(?min) AS ?minp) (SAMPLE(?max) AS ?maxp)',
+    '  (SAMPLE(?dur) AS ?durata) (SAMPLE(?img) AS ?immagine)',
+    'WHERE {',
+    '  VALUES ?g { ' + ids.map(function(i){ return 'wd:' + i; }).join(' ') + ' }',
+    '  ?g rdfs:label ?nome . FILTER(LANG(?nome) = "en")',
+    '  OPTIONAL { ?g wdt:P577 ?d . BIND(YEAR(?d) AS ?anno) }',
+    '  OPTIONAL { ?g wdt:P178 ?a . ?a rdfs:label ?autoreL . FILTER(LANG(?autoreL) = "en") }',
+    '  OPTIONAL { ?g wdt:P123 ?e . ?e rdfs:label ?editoreL . FILTER(LANG(?editoreL) = "en") }',
+    '  OPTIONAL { ?g wdt:P1872 ?min }',
+    '  OPTIONAL { ?g wdt:P1873 ?max }',
+    '  OPTIONAL { ?g wdt:P2047 ?dur }',
+    '  OPTIONAL { ?g wdt:P18 ?img }',
+    '  OPTIONAL { ?g wdt:P2339 ?bgg }',
+    '} GROUP BY ?g ?nome ?anno ?bgg'
+  ].join('\n');
+}
+
+async function sfoglia(offset, limit){
+  const f = await fonte();
+  if (f === 'bgg'){
+    // col token qui ci andra' la classifica di BGG, che e' quello che
+    // questo elenco vuole essere davvero. Finche' non c'e', Wikidata.
+  }
+  const r = await query(sparqlSfoglia(offset || 0, limit || 24));
+  const ids = (r.results.bindings || []).map(function(b){
+    return val(b, 'g').split('/').pop();
+  });
+  if (!ids.length) return [];
+
+  const d = await query(sparqlDettagli(ids));
+  const per = {};
+  (d.results.bindings || []).forEach(function(b){
+    per[val(b, 'g').split('/').pop()] = daWikidata(b);
+  });
+  // l'ordine buono e' quello della prima query: la seconda non lo tiene
+  return ids.map(function(i){ return per[i]; }).filter(Boolean);
+}
+
+/* La miniatura per l'ELENCO, che e' un caso diverso dalla copertina.
+   Qui l'immagine finisce in un <img> e basta: il redirect di
+   Special:FilePath va benissimo, perche' non e' una richiesta CORS e
+   non deve entrare in nessuna texture. Il giro dall'API di Commons
+   serve solo quando l'immagine va letta davvero, cioe' quando il gioco
+   entra in libreria -- ed e' quello che fa copertina(). */
+function miniaturaElenco(fileUrl, larghezza){
+  if (!fileUrl) return '';
+  const nome = decodeURIComponent(String(fileUrl).split('/').pop());
+  return 'https://commons.wikimedia.org/wiki/Special:FilePath/' +
+         encodeURIComponent(nome) + '?width=' + (larghezza || 240);
 }
 
 /* --- ricerca, qualunque sia la fonte ---------------------------- */
@@ -201,6 +306,6 @@ async function daFile(file){
   finally { URL.revokeObjectURL(url); }
 }
 
-return { fonte: fonte, cerca: cerca, dettagli: dettagli,
-         copertina: copertina, daFile: daFile };
+return { fonte: fonte, cerca: cerca, dettagli: dettagli, sfoglia: sfoglia,
+         copertina: copertina, daFile: daFile, miniaturaElenco: miniaturaElenco };
 })();

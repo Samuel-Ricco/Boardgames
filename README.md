@@ -1,8 +1,15 @@
 # il dado è trap
 
-Un armadio di giochi da tavolo in 3D. Le ante si aprono da sole all'avvio, le
-scatole stanno sulle mensole, e cliccandone una questa esce dall'armadio, si apre
-e mostra la recensione.
+Un sito di recensioni di giochi da tavolo che **è** una libreria in 3D. Una
+KALLAX: cubi da 33 centimetri, una scatola per cubo, e cliccandone una la scatola
+esce dallo scaffale, si apre e mostra la recensione.
+
+Il sito ha due metà:
+
+- **la mia collezione** — la libreria in tre dimensioni, tua, che si costruisce
+  aggiungendo giochi;
+- **il catalogo** — migliaia di titoli in un elenco piatto, da sfogliare e
+  cercare, con le recensioni di questo sito. Si legge **anche senza account**.
 
 Niente build, niente bundler, niente dipendenze da installare: si apre con un
 server statico qualsiasi.
@@ -10,28 +17,37 @@ server statico qualsiasi.
 ```
 index.html            markup e struttura
 css/style.css         stile dell'interfaccia
+js/config.js          url e chiave pubblica di Supabase
 js/data.js            i giochi committati: il seme della libreria
-js/store.js           la libreria viva (localStorage) e l'ordinamento
+js/auth.js            accesso con Google, e la domanda "sono admin?"
+js/store.js           la collezione: database, copia locale, ordinamenti, ricerca
+js/recensioni.js      le recensioni del sito, pubbliche, lette da chiunque
 js/bgg.js             ricerca su BGG, attraverso il proxy locale
+js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             legno, cartone, dadi, copertine di ripiego
-js/app.js             scena 3D, animazioni, interazione
+js/app.js             scena 3D, catalogo, animazioni, interazione
 img/                  le copertine delle scatole
 fonts/                Bebas Neue e Inter, sottoinsieme latino
-vendor/three.min.js   three.js r152, committato nel repo
+vendor/               three.js r152 e supabase-js, committati nel repo
+supabase/migrations/  lo schema del database
 tools/bgg-lib.mjs     il poco che serve per parlare con la XML API
 tools/bgg-fetch.mjs   scarico una tantum, da riga di comando
-tools/bgg-proxy.mjs   proxy locale per la ricerca in modalita' admin
+tools/bgg-proxy.mjs   proxy locale per la ricerca su BGG
 ```
 
-**Non c'è una sola risorsa esterna.** three.js, i font e le copertine stanno nel
-repo: staccata la rete, il sito continua a funzionare identico. È una scelta, non
-una svista — l'unica cosa che va in rete sono i link "scheda su BoardGameGeek",
-che sono link e non risorse.
+**Il sito non carica una sola risorsa esterna.** three.js, supabase-js, i font e
+le copertine stanno nel repo: staccata la rete, la libreria si apre lo stesso,
+con l'ultima copia salvata. È una scelta, non una svista.
+
+L'eccezione è il **catalogo**, e non poteva essere altrimenti: le schede arrivano
+da Wikidata e le miniature da Wikimedia Commons. Un catalogo di migliaia di
+giochi non si committa in un repo, e senza rete semplicemente non c'è — mentre la
+tua libreria continua a esserci.
 
 ## Farlo girare
 
-Serve un server statico: aprendo `index.html` come file i percorsi relativi
-non risolvono.
+Serve un server statico: aprendo `index.html` come file i percorsi relativi non
+risolvono e tutte le immagini si rompono.
 
 ```bash
 python -m http.server 8124
@@ -39,89 +55,120 @@ python -m http.server 8124
 
 Poi `http://localhost:8124`. C'è già un `.claude/launch.json` con la stessa cosa.
 
-## Come è fatto
+**La porta 8124 non è casuale**: è l'unica autorizzata nei Redirect URLs del
+progetto Supabase, e su un'altra l'accesso con Google parte, arriva a Google e
+non riesce a tornare indietro. E non può essere la **8125**, che è del proxy BGG.
+
+## Com'è fatta la libreria
 
 **Tutte le superfici tranne le copertine sono generate da codice**: legno,
 cartone, dorsi, facce dei dadi, l'interno della scatola sono disegnati su canvas
 2D all'avvio e passati a three.js come texture.
 
-**Le copertine sono quelle vere**, in `img/`, e da loro escono anche le
-proporzioni della scatola: la larghezza è fissa, l'altezza viene dall'aspetto
-dell'immagine, così Root resta bassa e larga com'è davvero e l'immagine non va
-stirata. Se una copertina non si carica, la scatola ripiega su
-un'illustrazione disegnata a mano (`coverRoot`, `coverScythe` in `js/art.js`) e
-il sito va avanti lo stesso.
+**Le copertine sono quelle vere**, e da loro escono anche le proporzioni della
+scatola: la larghezza è fissa, l'altezza viene dall'aspetto dell'immagine, così
+Root resta bassa e larga com'è davvero e l'immagine non va stirata. Se una
+copertina non arriva, la scatola ripiega sull'illustrazione disegnata e il sito
+va avanti.
+
+**Una libreria è sempre 3 × 4.** Dodici cubi, dodici giochi, su qualunque
+schermo. Non cambia col formato e non si allunga con la collezione: finiti i
+dodici posti se ne mette accanto un'altra identica, e **si scorre in orizzontale**
+per andarci — rotella, trascinamento o frecce, con l'aggancio al mobile più
+vicino quando ci si ferma.
+
+Tre colonne su uno schermo verticale hanno un prezzo, ed è scelto: il mobile è
+più alto che largo, quindi su un telefono sopra e sotto avanza stanza. È il
+rapporto fra le due misure, e vale meno di una griglia che si riconfigura da sola
+mentre giri il telefono in mano.
+
+**L'inquadratura si calcola, non è fissa.** Una schermata è un mobile intero, e
+la distanza della camera esce dall'ingombro della libreria e dal formato dello
+schermo. La posizione della scatola in primo piano è espressa in frazioni di
+quadro — a sinistra quando il pannello si apre di lato, in alto quando sale dal
+basso — e le frazioni ricalcano il breakpoint del CSS (880 px), così 3D e
+interfaccia si muovono insieme.
 
 **Le fasi** stanno in `state.phase`:
 
 | fase | cosa succede |
 |---|---|
-| `load` | si sceglie la modalità, gira il dado, la scena si costruisce a pezzi |
-| `intro` | le ante ruotano sui cardini e la camera entra fino a inquadrare uno scaffale |
-| `browse` | si scorre fra gli scaffali; la scatola sotto il cursore si sporge |
-| `focus` | la scatola esce dall'armadio e viene in primo piano |
-| `review` | il coperchio si alza e il pannello si apre come un'anta |
+| `load` | si sceglie chi sei, gira il dado, la scena si costruisce a pezzi |
+| `intro` | la camera si avvicina dalla stanza alla prima libreria |
+| `browse` | si scorre fra le librerie; la scatola sotto il cursore si sporge |
+| `focus` | la scatola esce dallo scaffale e viene in primo piano |
+| `review` | il coperchio si alza e il pannello si apre di lato |
 
-Il ciclo di rendering non si ferma mai: le fasi cambiano cosa viene animato,
-non se animare.
-
-**L'armadio non ha un'altezza fissa.** I vani si contano dai giochi in libreria
-(tre per scaffale, più uno di scorta) e la camera scorre da uno all'altro con
-rotella, trascinamento o frecce, agganciandosi allo scaffale più vicino quando ci
-si ferma. Aggiungere giochi lo fa crescere verso il basso; il primo gioco
-dell'ordinamento sta sempre in cima.
-
-**L'inquadratura si calcola, non è fissa.** In navigazione la camera sta dentro
-il mobile e inquadra le scatole, non i fianchi: tenerli nel quadro vorrebbe dire
-stare così lontani da vedere mezzo armadio invece dello scaffale. La posizione
-della scatola in primo piano è espressa in frazioni di quadro — a sinistra quando
-il pannello si apre di lato, in alto quando sale dal basso — e le frazioni
-ricalcano il breakpoint del CSS (880 px), così 3D e interfaccia si muovono
-insieme.
+Il ciclo di rendering non si ferma mai: le fasi cambiano cosa viene animato, non
+se animare. Nel catalogo il ciclo continua a girare ma non disegna, perché sotto
+l'elenco non c'è niente da vedere.
 
 **Senza WebGL** il sito resta leggibile: `#flat` mostra le stesse recensioni in
 piano, e la costruzione della scena è dentro un `try`.
 
-## Le due modalità
+## Chi entra, e cosa può fare
 
-All'apertura il sito chiede chi sei. **Utente** sfoglia e legge. **Admin** può
-aggiungere giochi con il `+` in alto a destra e toglierli dal pulsante che compare
-nella recensione (due tocchi, il primo arma e il secondo esegue). In alto a destra,
-per entrambe le modalità, c'è l'ordinamento: aggiunta, nome, voto.
+All'apertura il sito chiede chi sei, e ci sono due strade.
 
-**La modalità admin non è protetta, ed è una scelta dichiarata**: su un sito
-statico non esiste un posto sicuro dove tenere una password, e fingere un login
-sarebbe peggio che non averlo. Chiunque può scegliere Admin, ma quello che fa
-resta **solo nel suo browser**: la libreria vive in `localStorage`, il sito
-pubblico continua a mostrare quella committata in `js/data.js`.
+**Entra con Google.** Ogni account ha la sua libreria e la vede solo lui: a
+garantirlo sono le regole del database, non l'interfaccia. Chi è entrato comanda
+sulla propria collezione — aggiunge, corregge, toglie, riordina.
 
-Per pubblicare davvero una modifica: `esporta js/data.js` nella scheda di
-aggiunta scarica il file aggiornato, che va messo al posto di `js/data.js` e
-committato. `ripristina` butta via le modifiche locali e torna a quella del repo.
+**Guarda il catalogo.** Senza account, senza libreria. Si sfoglia il catalogo e
+si leggono le recensioni, che sono pubbliche apposta. La voce «collezione» non
+compare nemmeno: sarebbe una promessa che il sito non può mantenere.
+
+**Admin** è una terza cosa, e non si sceglie: si legge. `e_admin()` su Postgres
+guarda la tabella `admin`, che è l'unica del progetto senza nessuna regola di
+scrittura — quindi nessun account può promuovere sé stesso o altri. Sulla
+collezione personale l'admin non ha nessun potere in più; quello che può fare è
+**pubblicare una recensione nel catalogo**, che è uno solo e parla per il sito.
+
+## Ordinare, cercare, contare
+
+- **Quattro ordinamenti**: il mio, data di aggiunta, nome, voto.
+- **Il mio ordine si fa a mano**: si tiene premuta una scatola per un terzo di
+  secondo, la si porta su un altro cubo e le due si scambiano di posto.
+  Lasciandola in un cubo vuoto va in fondo. Serve la pausa perché la libreria
+  riempie lo schermo: senza, prendere una scatola e scorrere fra le librerie
+  sarebbero lo stesso gesto.
+- **La ricerca non evidenzia, ricostruisce**: cercare «root» lascia sullo
+  scaffale Root e basta, e i cubi vuoti restano vuoti.
+- Il **contatore** in alto dice quanti sono, e mentre si cerca «N di M».
 
 ## Aggiungere un gioco
 
-Da admin, col `+`. La ricerca su BoardGameGeek passa dal proxy locale (vedi sotto);
-senza proxy resta il modulo a mano, che chiede solo il titolo.
+Dal `+` in alto, o dal pulsante **in libreria** su una riga del catalogo.
 
-A mano nel codice, basta una voce in `GAMES` dentro `js/data.js`. I campi che contano:
+La ricerca cerca su BoardGameGeek se il proxy locale è acceso e ha un token, se
+no su Wikidata. In tutti e due i casi **un risultato riempie il modulo, non va
+dritto sullo scaffale**: con Wikidata i dati vanno guardati prima di fidarsi —
+l'editore è spesso il distributore locale.
 
-- `cover`: percorso dell'immagine della scatola in `img/`. Va bene un'immagine
-  qualsiasi purché sia la copertina intera, senza bordi: le proporzioni della
-  scatola nella scena escono da lì.
-- `artist`: chi ha disegnato la copertina, finisce nel credito sotto al titolo.
-- `art`: il ripiego disegnato a mano se l'immagine non c'è.
-- `slot`: la posizione sul ripiano di mezzo, da sinistra.
-- `wrap` e `ink`: i colori dei bordi della scatola e del titolo sul dorso.
-- `review`: un array di capoversi. **Adesso è lorem ipsum**, da sostituire.
+La **copertina** si sceglie con il campo file, e vince sempre su quella della
+fonte. È quasi sempre necessario: Wikimedia Commons accetta solo licenze libere e
+la grafica di una scatola è protetta, quindi su 4.445 giochi solo 597 hanno
+un'immagine, e sono foto di partite sul tavolo. La fonte giusta è il press kit
+dell'editore.
 
-Il ripiano di mezzo tiene due scatole grandi. Per metterne di più va allargato
-l'armadio (`CAB.w` in `js/app.js`) o aggiunto un secondo ripiano ai giochi.
+## Il catalogo
+
+Un elenco piatto, fuori dalla scena 3D apposta: la libreria in tre dimensioni è
+la tua collezione, una cosa da guardare; il catalogo sono migliaia di titoli da
+scorrere, e per quello un elenco batte qualunque mobile. Una riga per gioco,
+copertina a sinistra e scheda a destra; cliccando, la recensione si apre **dentro
+la riga**, perché una finestra sopra un elenco fa perdere il posto in cui si era.
+
+Le **schede** arrivano da fuori. Oggi da Wikidata: circa 3.400 giochi da tavolo
+con un id BoardGameGeek, ordinati per numero di edizioni linguistiche della voce,
+che è l'unico segnale di notorietà che Wikidata offra. Quando arriverà il token
+BGG la classifica diventerà la sua, e nell'interfaccia non cambierà niente.
+
+Le **recensioni** invece sono nostre: stanno nella tabella `recensioni` su
+Supabase, la chiave è l'id BGG, le scrivono gli admin e le legge chiunque. È
+quello che rende sensato entrare da ospite.
 
 ## I dati da BoardGameGeek
-
-I numeri delle schede (giocatori, durata, età, peso) sono quelli pubblici di BGG,
-copiati a mano. **Non vengono chiesti all'API dal browser, ed è voluto.**
 
 Dal 2025 la XML API di BGG richiede registrazione e autorizzazione: senza header
 `Authorization: Bearer <token>` risponde `401 Unauthorized`. Il token si ottiene
@@ -140,14 +187,13 @@ risposta può richiedere una settimana o più. Le condizioni dicono anche che:
 Per questo le chiamate non partono mai dalla pagina pubblica. Ci sono due strade,
 tutte e due locali e tutte e due con il token solo in `BGG_TOKEN`.
 
-**Una tantum, da riga di comando.** Stampa la scheda già formattata da incollare
-in `js/data.js`:
+**Una tantum, da riga di comando.** Stampa la scheda già formattata:
 
 ```bash
 node tools/bgg-fetch.mjs 237182 169786
 ```
 
-**La ricerca in modalità admin**, che ha bisogno di un interlocutore vivo:
+**Il proxy, per la ricerca dal sito:**
 
 ```bash
 node tools/bgg-proxy.mjs
@@ -157,12 +203,32 @@ Sta in ascolto su `:8125` e fa le tre cose che il browser non può fare da solo:
 mette l'header `Authorization`, rimette gli header CORS sulle risposte, e
 rilancia l'immagine di copertina — che su `cf.geekdo-images.com` arriva **senza
 CORS**, quindi come texture WebGL da un altro dominio sarebbe inutilizzabile.
-La copertina scaricata viene ridisegnata su canvas a larghezza contenuta e
-tenuta nella libreria come data URL, così resta anche a proxy spento.
 
-Senza token il proxy parte lo stesso e lo dice; la ricerca risponde `401` e
-l'interfaccia lo spiega invece di limitarsi a fallire. Finché il token non c'è,
-i giochi si scrivono a mano: sono quattro numeri per gioco.
+Senza token il proxy parte lo stesso e lo dice; la ricerca cade su Wikidata e
+l'interfaccia spiega cosa si sta guardando, invece di limitarsi a funzionare
+peggio.
+
+## Il database
+
+Supabase. URL e chiave **publishable** stanno committati in `js/config.js`: sono
+pubbliche per progetto, e a proteggere i dati sono le regole in
+`supabase/migrations/`. La chiave `sb_secret_` non deve mai entrare nel repo.
+
+```
+20260819120018_schema_iniziale.sql        admin, profili, giochi, bucket copertine
+20260819123907_copertine_locali.sql       le copertine committate
+20260819135317_collezioni_personali.sql   una libreria per account
+20260819180000_ordine_manuale.sql         la colonna `posizione`
+20260819190000_recensioni_pubbliche.sql   le recensioni del sito, lette da tutti
+```
+
+**`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un
+ruolo può rivolgersi alla tabella, la seconda quali righe ottiene. Ogni tabella
+nuova vuole il suo `grant`, se no torna `permission denied` e sembra un errore di
+policy.
+
+Il piano gratuito **mette in pausa il progetto** dopo circa una settimana senza
+traffico, e si riattiva a mano dal pannello.
 
 ## Crediti
 
@@ -172,17 +238,18 @@ Le copertine sono degli editori, usate qui per parlare dei giochi:
 - *Scythe* — illustrazioni di Jakub Rozalski, © Stonemaier Games
 
 Il credito compare sotto al titolo in ogni recensione. Se un editore chiede di
-toglierla, basta cancellare il campo `cover` dalla sua voce in `js/data.js`: la
-scatola torna a usare la copertina disegnata e non si rompe niente.
+toglierla, basta cancellare il campo `cover` dalla sua voce: la scatola torna a
+usare la copertina disegnata e non si rompe niente.
 
 I font sono Bebas Neue e Inter, licenza SIL Open Font. three.js è MIT.
 
 ## Rimasto da fare
 
-- le **recensioni vere** al posto del lorem ipsum in `js/data.js`;
-- un **token BGG approvato**, senza il quale la ricerca dell'admin resta a 401;
+- le **recensioni vere** al posto del lorem ipsum;
+- un **token BGG approvato**, senza il quale il catalogo resta su Wikidata;
+- una **edge function** su Supabase al posto del proxy locale: il token starebbe
+  sul server, la ricerca funzionerebbe da qualunque browser senza accendere
+  niente, ed è anche ciò che le condizioni di BGG chiedono;
 - il logo **"Powered by BGG"** nel piede, obbligatorio quando si usa l'API;
-- le copertine dei giochi aggiunti da admin vivono come data URL dentro
-  `localStorage`: all'export diventano `img/<id>.jpg`, e l'immagine va salvata
-  lì a mano;
-- un dominio, se il sito deve andare online.
+- su telefono la scatola è larga 90 px: si riconosce la copertina, non si legge
+  il titolo. È il prezzo delle tre colonne.

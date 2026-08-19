@@ -85,6 +85,7 @@ const state = {
   bayLight: 0,
   focusLight: 0,
   px: 0, py: 0, tx: 0, ty: 0,
+  sezione: 'collezione',       // 'collezione' (la libreria 3D) o 'catalogo'
   q: '',                       // il testo cercato, '' se non si sta cercando
   presa: null,                 // la scatola che si sta spostando a mano
   libs: 1,                     // quante librerie in fila lungo la parete
@@ -1039,7 +1040,7 @@ function removeFocused(){
     applyLibrary({ animate: true });
     state.phase = 'browse';
     document.body.classList.add('browse');
-    flash('"' + game.title + '" tolto dall\'armadio');
+    flash('"' + game.title + '" tolto dalla libreria');
   });
 }
 
@@ -1263,7 +1264,7 @@ function bindInput(){
   });
 
   armaBottone(q('#del'),
-    '<span aria-hidden="true">&#9003;</span> togli dall\'armadio',
+    '<span aria-hidden="true">&#9003;</span> togli dalla libreria',
     'sicuro? tocca ancora', removeFocused);
   q('#panel').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
@@ -1450,6 +1451,7 @@ function updateConta(){
 function openAdd(){
   chiudiModifica();
   q('#m-review').value = '';
+  q('#m-pub').checked = false;
   q('#addlayer').classList.add('on');
   q('#addlayer').setAttribute('aria-hidden','false');
   q('#add-q').focus();
@@ -1508,6 +1510,8 @@ function apriModifica(game){
   set('#m-year', game.year);         set('#m-players', game.players);
   set('#m-time', game.time);         set('#m-score', game.score);
   set('#m-review', (game.review || []).join(String.fromCharCode(10,10)));
+  // gia' pubblicata? la casella dice lo stato, non un desiderio
+  q('#m-pub').checked = !!RECE.di(game.bgg);
   q('#m-file').value = '';
   q('#add-man').open = true;
   q('#add-res').innerHTML = '';
@@ -1519,7 +1523,7 @@ function apriModifica(game){
 function chiudiModifica(){
   inModifica = null;
   q('#addlayer').classList.remove('correzione');
-  q('#add-h').innerHTML = 'Aggiungi all&rsquo;armadio';
+  q('#add-h').innerHTML = 'Aggiungi alla libreria';
   q('#m-go').textContent = 'metti sullo scaffale';
 }
 
@@ -1639,8 +1643,32 @@ async function addManual(){
     game = LIB.add(g);
   }
 
+  /* Il catalogo. Pubblicare vuol dire che quella recensione esce dalla
+     collezione di chi l'ha scritta e diventa quella del sito: la legge
+     chiunque, anche senza account. Togliere la spunta la ritira.
+
+     Va dopo il salvataggio in libreria, non prima: si pubblica quello
+     che si e' scritto, non quello che si sta per scrivere. E se il
+     database dice di no il gioco resta comunque sullo scaffale --
+     pubblicare e' un'altra cosa dall'averlo. */
+  if (game && q('#m-pub')){
+    const vuole = q('#m-pub').checked;
+    const eraPubblicata = !!RECE.di(game.bgg);
+    if (vuole && game.bgg){
+      RECE.pubblica(game)
+        .then(function(){ flash('recensione pubblicata nel catalogo'); })
+        .catch(function(e){ flash('non pubblicata: ' + e.message); });
+    } else if (vuole && !game.bgg){
+      flash('senza id BGG non si pubblica: e\' la chiave della recensione');
+    } else if (!vuole && eraPubblicata){
+      RECE.togli(game.bgg)
+        .then(function(){ flash('recensione tolta dal catalogo'); })
+        .catch(function(e){ flash('non tolta: ' + e.message); });
+    }
+  }
+
   inAttesa = null;
-  qa('#add-man input').forEach(function(i){ i.value = ''; });   // svuota anche il file
+  qa('#add-man input[type="text"], #add-man input[type="file"]').forEach(function(i){ i.value = ''; });
   q('#m-review').value = '';
   closeAdd();
   await loadCovers(true);
@@ -1657,6 +1685,230 @@ function goToGame(id){
   const i = list.findIndex(function(g){ return g.id === id; });
   if (i < 0) return;
   state.scrollTo = clamp(Math.floor(i / PER_LIB), 0, maxScroll());
+}
+
+/* ===============================================================
+   IL CATALOGO
+   ===============================================================
+
+   Il sito ha due meta'. La prima e' la tua libreria: dodici cubi per
+   mobile, in tre dimensioni, una cosa da guardare. La seconda e' il
+   catalogo, che sono migliaia di titoli da scorrere -- e per quello un
+   elenco piatto batte qualunque mobile. Una riga per gioco: copertina
+   a sinistra, scheda a destra, e cliccando si apre la recensione.
+
+   Le due meta' non sono due pagine: sono due modi di guardare, e la
+   testata resta la stessa. Il catalogo sta a z2, sopra la scena e
+   sotto la barra in alto.
+
+   Le SCHEDE arrivano da fuori (Wikidata oggi, BGG quando ci sara' il
+   token). Le RECENSIONI sono nostre e stanno su Supabase, leggibili da
+   chiunque: e' quello che rende sensato entrare da ospite. */
+
+const CAT_PAG = 24;
+let catVoci = [], catOffset = 0, catFine = false, catCarico = false;
+
+function catMsg(html, kind){
+  const el = q('#cat-msg');
+  el.innerHTML = html;
+  el.className = kind || '';
+}
+
+function setSezione(s){
+  state.sezione = s;
+  document.body.classList.toggle('sez-catalogo', s === 'catalogo');
+  qa('#sezioni button').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-sez') === s);
+  });
+  q('#catalogo').setAttribute('aria-hidden', s === 'catalogo' ? 'false' : 'true');
+  if (s === 'catalogo' && !catVoci.length && !catCarico) catSfoglia(true);
+}
+
+/* Sfogliare: il catalogo si apre su un elenco, non su un campo vuoto.
+   Chi arriva senza sapere cosa cercare deve avere qualcosa da
+   guardare, se no il catalogo e' una promessa e basta. */
+async function catSfoglia(daCapo){
+  if (catCarico) return;
+  catCarico = true;
+  if (daCapo){ catVoci = []; catOffset = 0; catFine = false; q('#cat-list').innerHTML = ''; }
+  q('#cat-piu').disabled = true;
+  catMsg(catVoci.length ? 'prendo altri giochi&hellip;' : 'apro il catalogo&hellip;');
+  try {
+    const voci = await CATALOGO.sfoglia(catOffset, CAT_PAG);
+    const da = catVoci.length;
+    catOffset += CAT_PAG;
+    catFine = voci.length < CAT_PAG;
+    catVoci = catVoci.concat(voci);
+    disegnaCatalogo(da);
+    catNota();
+  } catch(e){
+    catMsg('Il catalogo non risponde: ' + esc(e.message) +
+           '. Wikidata a volte impiega troppo e chiude la richiesta: riprova.', 'warn');
+  } finally {
+    catCarico = false;
+    q('#cat-piu').disabled = false;
+  }
+}
+
+async function catCerca(){
+  const t = q('#cat-q').value.trim();
+  if (!t){ catSfoglia(true); return; }
+  if (catCarico) return;
+  catCarico = true;
+  catMsg('cerco&hellip;');
+  q('#cat-list').innerHTML = '';
+  try {
+    catVoci = await CATALOGO.cerca(t);
+    catFine = true;                       // la ricerca da' quello che da', non si pagina
+    disegnaCatalogo(0);
+    if (!catVoci.length){
+      catMsg('Nessun gioco per <b>' + esc(t) + '</b>. Su Wikidata i giochi da tavolo ' +
+             'con un id BGG sono circa 3.400: se e\' recente o poco noto pu&ograve; ' +
+             'semplicemente non esserci.');
+    } else catNota();
+  } catch(e){
+    catMsg('Ricerca non riuscita: ' + esc(e.message), 'warn');
+  } finally {
+    catCarico = false;
+  }
+}
+
+/* Da dove arrivano le schede e quante recensioni ci sono. Non e' un
+   dettaglio da nascondere: con Wikidata i dati sono magri e a volte
+   sbagliati, e chi legge ha diritto di sapere cosa sta guardando. */
+async function catNota(){
+  const f = await CATALOGO.fonte();
+  const guaio = RECE.problema();
+  const n = RECE.quante();
+  const fonte = f === 'bgg'
+    ? 'Schede da <b>BoardGameGeek</b>.'
+    : 'Schede da <b>Wikidata</b>: circa 3.400 giochi con id BGG, dati pi&ugrave; ' +
+      'magri e quasi mai la copertina vera della scatola.';
+  catMsg(fonte + ' ' + (guaio
+    ? '<b>Le recensioni non si leggono:</b> ' + esc(guaio) + '.'
+    : n + (n === 1 ? ' gioco recensito' : ' giochi recensiti') + ' su questo sito.'));
+}
+
+function disegnaCatalogo(da){
+  const ul = q('#cat-list');
+  const html = catVoci.slice(da).map(function(v, k){ return rigaCatalogo(v, da + k); }).join('');
+  if (da) ul.insertAdjacentHTML('beforeend', html);
+  else ul.innerHTML = html;
+  q('.cat-fondo').classList.toggle('finito', catFine);
+}
+
+function rigaCatalogo(v, i){
+  const rec = RECE.di(v.bgg);
+  const img = CATALOGO.miniaturaElenco(v.immagine, 200);
+  const gia = !!v.bgg && LIB.all().some(function(g){ return String(g.bgg) === String(v.bgg); });
+  const chi = [v.designer, v.publisher].filter(Boolean).map(esc).join(' &middot; ');
+  const spec = [[v.players, 'giocatori'], [v.time, 'minuti'], [v.year, 'anno']]
+    .filter(function(x){ return x[0]; })
+    .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
+
+  return '<li data-i="' + i + '">' +
+    '<div class="cat-cop">' + (img
+      ? '<img src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+      : '<span class="senza">?</span>') + '</div>' +
+    '<div class="cat-dati">' +
+      '<h3>' + esc(v.title) + (rec ? '<i class="bollo">recensito</i>' : '') + '</h3>' +
+      (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
+      (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
+    '</div>' +
+    '<div class="cat-azioni">' +
+      '<button type="button" class="apri">' + (rec ? 'recensione' : 'scheda') + '</button>' +
+      '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') + '>' +
+        (gia ? 'ce l\'hai' : 'in libreria') + '</button>' +
+    '</div>' +
+    '<div class="cat-rec"></div>' +
+  '</li>';
+}
+
+/* La recensione si apre DENTRO la riga. Una finestra sopra un elenco
+   fa perdere il posto in cui si era, e in un catalogo il posto in cui
+   si era e' meta' di quello che si sta facendo. */
+function apriRiga(li){
+  const v = catVoci[parseInt(li.getAttribute('data-i'), 10)];
+  if (!v) return;
+  const rec = RECE.di(v.bgg);
+  const aperta = li.classList.toggle('aperta');
+  li.querySelector('.apri').textContent =
+    aperta ? 'chiudi' : (rec ? 'recensione' : 'scheda');
+  if (!aperta) return;
+
+  const link = v.bgg
+    ? '<p><a class="bgg" href="https://boardgamegeek.com/boardgame/' + esc(v.bgg) +
+      '/" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a></p>'
+    : '';
+  li.querySelector('.cat-rec').innerHTML = rec
+    ? (rec.score ? '<p class="voto">' + esc(rec.score) + '<i>/10</i></p>' : '') +
+      (rec.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('') + link
+    : '<p class="vuoto">Non ancora recensito qui. La scheda arriva dalla fonte, ' +
+      'la recensione la scriviamo noi.</p>' + link;
+}
+
+/* Dal catalogo allo scaffale. Passa dalla stessa strada del modulo di
+   aggiunta -- scheda completa, poi copertina -- perche' e' la stessa
+   cosa: cambia solo da dove si e' partiti. */
+async function mettiInLibreria(v, btn){
+  btn.disabled = true;
+  const prima = btn.textContent;
+  try {
+    btn.textContent = 'prendo la scheda...';
+    const g = await CATALOGO.dettagli(v);
+    const gioco = {
+      title: g.title, bgg: parseInt(g.bgg, 10) || 0,
+      designer: g.designer || '', publisher: g.publisher || '',
+      year: g.year || '', players: g.players || '', time: g.time || '',
+      score: g.score || '', art: 'generic'
+    };
+    if (g.immagine){
+      btn.textContent = 'scarico la copertina...';
+      // se non arriva non e' un errore: si usa la copertina disegnata
+      try { gioco.cover = await CATALOGO.copertina(g); } catch(err){}
+    }
+    const messo = LIB.add(gioco);
+    if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare
+      await loadCovers(true);
+      applyLibrary({ animate: true });
+      goToGame(messo.id);
+    }
+    btn.textContent = 'ce l\'hai';
+    flash('"' + messo.title + '" e\' sullo scaffale');
+  } catch(e){
+    btn.disabled = false;
+    btn.textContent = prima;
+    flash('non aggiunto: ' + e.message);
+  }
+}
+
+function bindCatalogo(){
+  qa('#sezioni button').forEach(function(b){
+    b.addEventListener('click', function(){ setSezione(b.getAttribute('data-sez')); });
+  });
+  q('#cat-go').addEventListener('click', catCerca);
+  q('#cat-q').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter') catCerca();
+  });
+  q('#cat-tutti').addEventListener('click', function(){
+    q('#cat-q').value = '';
+    catSfoglia(true);
+  });
+  q('#cat-piu').addEventListener('click', function(){ catSfoglia(false); });
+
+  // un ascoltatore solo sull'elenco: le righe si rifanno di continuo e
+  // attaccarne uno per riga vorrebbe dire rimetterli a ogni pagina
+  q('#cat-list').addEventListener('click', function(e){
+    const li = e.target.closest('li[data-i]');
+    if (!li) return;
+    const metti = e.target.closest('.metti');
+    if (metti){
+      mettiInLibreria(catVoci[parseInt(li.getAttribute('data-i'), 10)], metti);
+      return;
+    }
+    apriRiga(li);
+  });
 }
 
 /* ===============================================================
@@ -1689,6 +1941,12 @@ function frame(now){
   last = now;
 
   stepAnims(dt);
+
+  /* Nel catalogo la scena e' coperta da un elenco. Il ciclo non si
+     ferma -- non si e' mai fermato -- ma non si disegna quello che
+     nessuno vede, e soprattutto non si fa un raycast per fotogramma
+     mentre l'utente sta scorrendo tutt'altro. */
+  if (state.sezione === 'catalogo') return;
 
   if (state.phase === 'browse'){
     const before = Math.round(state.scroll);
@@ -1801,15 +2059,19 @@ function fallbackFlat(){
 /* Il cancello viene prima di tutto. Chi torna da Google ha gia' una
    sessione: in quel caso non si richiede niente e si tira dritto, se no
    il giro dell'accesso ricomincerebbe a ogni ritorno. */
+/* Risponde con la scelta: 'entra' o 'ospite'. Serve a boot(), perche'
+   le due strade sono diverse davvero -- un ospite non ha nessuna
+   libreria, quindi non c'e' nessuna scena 3D da costruire. */
 function gate(giaDentro){
   if (giaDentro){
     q('#gate').classList.add('gone');
-    return Promise.resolve();
+    return Promise.resolve('entra');
   }
   return new Promise(function(res){
     qa('#gate [data-gate]').forEach(function(b){
       b.addEventListener('click', async function(){
-        if (b.getAttribute('data-gate') === 'entra' && AUTH.attivo()){
+        const scelta = b.getAttribute('data-gate');
+        if (scelta === 'entra' && AUTH.attivo()){
           b.disabled = true;
           try {
             await AUTH.entra();      // se ne va su Google: la pagina viene lasciata
@@ -1817,12 +2079,12 @@ function gate(giaDentro){
           } catch(e){
             b.disabled = false;
             q('#gate-note').textContent = 'Accesso non riuscito: ' + e.message +
-              ' -- puoi comunque guardare senza account.';
+              ' -- puoi comunque guardare il catalogo.';
             return;
           }
         }
         q('#gate').classList.add('gone');
-        res();
+        res(scelta);
       });
     });
   });
@@ -1836,9 +2098,26 @@ async function boot(){
 
   // Chi torna da Google ha gia' la sessione: si salta il cancello.
   const chi = await AUTH.init();
-  await gate(chi.dentro);
+  const scelta = await gate(chi.dentro);
   const t0 = performance.now();
   setMode(chi);
+  bindCatalogo();
+  RECE.carica();            // parte per conto suo: la aspetta solo il catalogo
+
+  /* L'ospite va dritto al catalogo. Non e' una scorciatoia: non ha
+     nessuna collezione, quindi non c'e' niente da costruire in tre
+     dimensioni. Montare la scena per coprirla subito dopo sarebbe
+     mezzo secondo di lavoro buttato, e un mobile che non e' di
+     nessuno in mezzo allo schermo. */
+  if (scelta === 'ospite'){
+    document.body.classList.add('ospite');
+    LIB.scollega();
+    bindTools();
+    setSezione('catalogo');
+    setProg(1, 'ci siamo');
+    document.body.classList.add('ready');
+    return;
+  }
 
   if (typeof THREE === 'undefined'){ fallbackFlat(); return; }
 

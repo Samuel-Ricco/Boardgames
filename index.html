@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>il dado &egrave; trap &mdash; recensioni di giochi da tavolo</title>
-<meta name="description" content="Un armadio di giochi da tavolo in 3D: apri le ante, scorri gli scaffali, prendi una scatola, leggi la recensione.">
+<meta name="description" content="Una libreria di giochi da tavolo in 3D: scorri gli scaffali, prendi una scatola, leggi la recensione. E un catalogo da sfogliare senza account.">
 <meta name="theme-color" content="#e6ddd0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f6ecdd'/%3E%3Cg fill='%232a1a0f'%3E%3Ccircle cx='10' cy='10' r='3'/%3E%3Ccircle cx='22' cy='10' r='3'/%3E%3Ccircle cx='16' cy='16' r='3'/%3E%3Ccircle cx='10' cy='22' r='3'/%3E%3Ccircle cx='22' cy='22' r='3'/%3E%3C/g%3E%3C/svg%3E">
 
@@ -22,6 +22,11 @@
     <b>il dado <i>&egrave;</i> trap</b>
     <span>recensioni di giochi da tavolo</span>
   </div>
+
+  <nav id="sezioni" aria-label="sezioni del sito">
+    <button type="button" data-sez="collezione" class="on">collezione</button>
+    <button type="button" data-sez="catalogo">catalogo</button>
+  </nav>
 
   <div class="tools">
     <div class="cercawrap">
@@ -77,28 +82,58 @@
       <button id="edit" type="button" class="dentro-only" title="correggi la scheda e scrivi la recensione">
         <span aria-hidden="true">&#9998;</span> modifica
       </button>
-      <button id="del" type="button" class="dentro-only" title="togli questo gioco dall'armadio">
-        <span aria-hidden="true">&#9003;</span> togli dall'armadio
+      <button id="del" type="button" class="dentro-only" title="togli questo gioco dalla libreria">
+        <span aria-hidden="true">&#9003;</span> togli dalla libreria
       </button>
     </p>
   </div>
 </aside>
 
+<!-- IL CATALOGO: elenco piatto, una riga per gioco.
+     Fuori dalla scena 3D apposta. La libreria in tre dimensioni e' la
+     tua collezione, una cosa che si guarda; il catalogo sono migliaia
+     di titoli da scorrere, e per quello un elenco batte qualunque
+     mobile. Cliccando una riga si apre la recensione, se c'e'. -->
+<section id="catalogo" aria-hidden="true" aria-label="catalogo dei giochi">
+  <div class="cat-in">
+    <div class="cat-testa">
+      <p class="eyebrow">il catalogo</p>
+      <div class="cat-cerca">
+        <input id="cat-q" type="text" placeholder="cerca un gioco&hellip;"
+               autocomplete="off" spellcheck="false" aria-label="cerca nel catalogo">
+        <button id="cat-go" type="button">cerca</button>
+        <button id="cat-tutti" type="button" class="chiaro">tutti</button>
+      </div>
+      <p id="cat-msg"></p>
+    </div>
+
+    <ol id="cat-list"></ol>
+
+    <div class="cat-fondo">
+      <button id="cat-piu" type="button">altri giochi</button>
+    </div>
+  </div>
+</section>
+
 <!-- schermata iniziale: chi sei -->
 <div id="gate">
   <div class="gate-in">
     <b class="gate-logo">il dado <i>&egrave;</i> trap</b>
-    <p class="gate-q">Chi apre l&rsquo;armadio?</p>
-    <div class="gate-pick uno">
+    <p class="gate-q">Chi apre la libreria?</p>
+    <div class="gate-pick">
       <button type="button" data-gate="entra">
         <b>Entra con Google</b>
-        <span>La tua collezione ti aspetta: i giochi che aggiungi restano tuoi
+        <span>La tua libreria ti aspetta: i giochi che aggiungi restano tuoi
           e li rivedi da qualsiasi dispositivo.</span>
       </button>
+      <button type="button" data-gate="ospite" class="last">
+        <b>Guarda il catalogo</b>
+        <span>Le recensioni si leggono senza account. Niente libreria, per&ograve;:
+          quella comincia quando entri.</span>
+      </button>
     </div>
-    <p class="gate-note" id="gate-note">Ogni account ha il suo armadio, e lo vede
-      solo lui: sono le regole del database a garantirlo, non questa schermata.
-      Sfogliare senza accedere arriver&agrave; pi&ugrave; avanti, con i giochi del momento.</p>
+    <p class="gate-note" id="gate-note">Ogni account ha la sua libreria, e la vede
+      solo lui: sono le regole del database a garantirlo, non questa schermata.</p>
   </div>
 </div>
 
@@ -126,7 +161,7 @@
   <div class="add-card" role="dialog" aria-labelledby="add-h">
     <button id="add-x" type="button">chiudi &times;</button>
     <p class="eyebrow">nuovo gioco</p>
-    <h2 id="add-h">Aggiungi all&rsquo;armadio</h2>
+    <h2 id="add-h">Aggiungi alla libreria</h2>
 
     <div class="add-search">
       <input id="add-q" type="text" placeholder="cerca su BoardGameGeek&hellip;" autocomplete="off" spellcheck="false">
@@ -149,6 +184,11 @@
         <label class="wide">recensione
           <textarea id="m-review" rows="7" placeholder="Scrivi qui. Una riga vuota separa un capoverso dall&rsquo;altro."></textarea>
         </label>
+        <label class="wide riga" id="m-pub-riga">
+          <input id="m-pub" type="checkbox">
+          <span>pubblica la recensione nel <b>catalogo</b>, dove la legge chiunque
+            <small>serve l&rsquo;id BGG: &egrave; la chiave con cui il catalogo la ritrova</small></span>
+        </label>
         <label class="wide">copertina
           <input id="m-file" type="file" accept="image/*">
           <small id="m-file-nota">dal press kit dell&rsquo;editore, se ce l&rsquo;hai: Wikidata le copertine non le ha</small>
@@ -168,7 +208,7 @@
 <!-- senza WebGL il sito resta leggibile: stesse recensioni, in piano -->
 <div id="flat">
   <h1>il dado &egrave; trap</h1>
-  <p class="lead">L'armadio in 3D non parte su questo dispositivo, ma le recensioni sono tutte qui.</p>
+  <p class="lead">La libreria in 3D non parte su questo dispositivo, ma le recensioni sono tutte qui.</p>
   <div id="flat-list"></div>
 </div>
 
@@ -178,6 +218,7 @@
 <script src="js/data.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/store.js"></script>
+<script src="js/recensioni.js"></script>
 <script src="js/bgg.js"></script>
 <script src="js/catalogo.js"></script>
 <script src="js/art.js"></script>

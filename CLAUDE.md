@@ -33,7 +33,8 @@ css/style.css         stile
 js/data.js            i giochi committati: il seme della libreria
 js/config.js          url e chiave pubblica di Supabase
 js/auth.js            accesso con Google, e "sono admin?"
-js/store.js           la libreria: database, copia locale, ordinamenti
+js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
+js/recensioni.js      le recensioni del sito: pubbliche, lette anche dall'ospite
 js/bgg.js             ricerca BGG (passa dal proxy locale)
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             grafica generata su canvas
@@ -185,6 +186,114 @@ calcolano, il quarto no — e infatti è l'unico che ha bisogno di una colonna.
 - `ridisponi()` esiste perché **non si può rifare la disposizione con una scatola
   aperta**: la si sposterebbe sotto i piedi al tween in corso. Se c'è, chiude e
   ridispone dopo, con il seguito passato a `unfocus(poi)`.
+
+## Le due sezioni
+
+`state.sezione`: `collezione` (la libreria 3D) o `catalogo`. Non sono due pagine,
+sono due modi di guardare: la testata resta la stessa e cambia solo cosa c'è
+sotto. Il catalogo sta a **z2** — sopra la scena, sotto la barra in alto.
+
+- Nel catalogo il ciclo di rendering **continua a girare ma non disegna**
+  (`if (state.sezione === 'catalogo') return;` dopo `stepAnims`). Il ciclo non si
+  è mai fermato e non si ferma adesso; quello che si evita è disegnare una scena
+  coperta, e soprattutto fare un raycast per fotogramma mentre l'utente sta
+  scorrendo tutt'altro.
+- Nel catalogo spariscono gli strumenti della collezione: il campo di ricerca è
+  un altro e il contatore conta i giochi tuoi.
+
+## Il catalogo
+
+Un **elenco piatto**, fuori dalla scena 3D apposta. La libreria in tre dimensioni
+è la tua collezione, una cosa da guardare; il catalogo sono migliaia di titoli da
+scorrere, e per quello un elenco batte qualunque mobile.
+
+- La recensione si apre **dentro la riga**, non in una finestra sopra: in un
+  catalogo il posto in cui si era è metà di quello che si sta facendo.
+- **Un solo ascoltatore** sull'elenco, con `closest()`: le righe si rifanno a ogni
+  pagina e attaccarne uno per riga vorrebbe dire rimetterli ogni volta.
+- Le pagine si **aggiungono in coda** (`insertAdjacentHTML`), non si ridisegna
+  tutto: rifare l'`innerHTML` fa ricominciare il caricamento di tutte le
+  miniature già a schermo.
+
+### Sfogliare, che non è cercare
+
+`CATALOGO.sfoglia(offset, limite)`. Il catalogo si apre su un elenco, non su un
+campo vuoto: chi arriva senza sapere cosa cercare deve avere qualcosa da guardare.
+
+- L'ordine è `wikibase:sitelinks`, il numero di edizioni linguistiche della voce:
+  è l'unico segnale di notorietà che Wikidata offra. In cima mette i classici —
+  scacchi, Monopoly, backgammon — perché è davvero quello che il mondo conosce.
+- **L'id BGG (P2339) è richiesto, non opzionale.** Serve a puntare la scheda vera,
+  ma soprattutto tiene fuori quello che Wikidata classifica sotto «gioco da
+  tavolo» senza esserlo: restano **3.429** titoli sui 4.445.
+- **Due query, non una.** Prendere elenco ordinato e dettagli insieme vuol dire
+  mettere dieci `OPTIONAL` dentro una `ORDER BY` su migliaia di righe: il servizio
+  ci mette troppo o va in timeout. Prima gli identificativi (~1,2 s), poi i
+  dettagli di quei ventiquattro.
+- `ORDER BY DESC(?n) ?g`, con lo spareggio. Senza, a parità di sitelinks l'ordine
+  non è garantito e sfogliando una pagina dopo l'altra gli stessi giochi
+  ricomparivano.
+- **Un ritentativo sui 5xx, e uno solo.** WDQS è pubblico e sotto carico chiude
+  con 502 anche query che un secondo dopo funzionano — è capitato in prova.
+  Insistere di più non aiuta, e in un elenco che si sfoglia aspettare mezzo
+  minuto per un errore è peggio che leggerlo subito.
+
+### Le miniature sono un caso diverso dalle copertine
+
+Nell'elenco l'immagine finisce in un `<img>` e basta, quindi **`Special:FilePath`
+va benissimo**: il redirect non dà fastidio perché non è una richiesta CORS e non
+deve entrare in nessuna texture. Il giro dall'API di Commons serve solo quando
+l'immagine va *letta* davvero, cioè quando il gioco entra in libreria — ed è
+quello che continua a fare `copertina()`.
+
+È anche l'unica deroga a «niente risorse esterne, mai», ed è dichiarata nel
+README: un catalogo di migliaia di giochi non si committa, e senza rete non c'è —
+mentre la libreria continua a esserci.
+
+## Le recensioni sono del gioco, non della tua copia
+
+`js/recensioni.js` + tabella `recensioni`. Prima la recensione era una colonna
+della riga in `giochi`, cioè una proprietà della **copia** di quel gioco dentro
+una collezione personale. Va bene per gli appunti; non va bene per un sito di
+recensioni, dove la recensione è del gioco e la legge chiunque — anche chi non ha
+account e non ha nessuna collezione.
+
+- **La chiave è l'id BGG.** È l'unico identificativo di un gioco da tavolo su cui
+  il mondo si sia messo d'accordo, ed è quel numero a tenere insieme il catalogo
+  (che viene da fuori) e le recensioni (che sono nostre). Un gioco senza id BGG
+  non si pubblica, e l'interfaccia lo dice.
+- **Non si copia la scheda del gioco.** Autore, editore, durata arrivano dalla
+  fonte quando la riga viene mostrata: copiarli vorrebbe dire tenerli aggiornati
+  a mano per sempre.
+- **Una lettura sola per sessione**, in una mappa `bgg -> recensione`, perché il
+  catalogo le interroga una riga per volta mentre scorre. `di()` è sincrona
+  apposta.
+- Qui `admin` conta **davvero**: sulle collezioni personali non dà nessun potere
+  in più (ognuno comanda sulla sua), ma il catalogo è uno solo e le recensioni
+  sono la voce del sito.
+- Si pubblica dalla casella nel modulo di modifica, **dopo** il salvataggio in
+  libreria: si pubblica quello che si è scritto, non quello che si sta per
+  scrivere. Se il database dice di no il gioco resta comunque sullo scaffale —
+  pubblicare è un'altra cosa dall'averlo.
+- Tutto degrada in silenzio: senza tabella, `di()` risponde `null` e il catalogo
+  dice «non ancora recensito», che è vero e non è un guasto.
+
+## L'ospite
+
+Il cancello risponde `'entra'` o `'ospite'`, e `boot()` prende due strade diverse
+davvero: **per l'ospite non si costruisce nessuna scena 3D**. Non è una
+scorciatoia — non ha nessuna collezione, quindi non c'è niente da costruire, e
+montare la libreria per coprirla subito dopo sarebbe mezzo secondo di lavoro
+buttato e un mobile che non è di nessuno in mezzo allo schermo.
+
+`body.ospite` nasconde la voce «collezione» dalla navigazione: portare a una
+libreria vuota sarebbe una promessa che il sito non può mantenere. Il chip in
+alto a destra dice «entra» e funziona.
+
+Per **provare la strada dell'ospite senza sloggare l'utente**: si parcheggia la
+chiave `sb-<progetto>-auth-token` di `localStorage` in un'altra chiave, si
+ricarica, si prova, e poi la si rimette. `AUTH.esci()` no — quello invalida il
+refresh token sul server e tocca rifare l'accesso da Google.
 
 ## Luce e colori
 
@@ -386,11 +495,18 @@ dall'esterno, non dalla cache del browser.
 
 Cosa manca, in ordine di fastidio:
 
-0. **La migrazione `ordine_manuale` non è ancora applicata al progetto.** Finché
-   non lo è, l'ordine manuale funziona sullo schermo e resta in `localStorage`,
-   ma il server lo rifiuta con «manca la colonna posizione» — e allora da un
-   altro dispositivo si vede l'ordine di prima.
-1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito, con *modifica*.
+0. **Due migrazioni sono nel repo ma non applicate al progetto.** Sono l'unica
+   cosa che separa quello che si vede dal funzionare per intero:
+   - `ordine_manuale` → finché manca, l'ordine manuale funziona sullo schermo e
+     resta in `localStorage`, ma il server lo rifiuta con «manca la colonna
+     posizione», e da un altro dispositivo si vede l'ordine di prima;
+   - `recensioni_pubbliche` → finché manca, il catalogo si sfoglia e si cerca ma
+     **nessuna recensione si legge**, e il messaggio in cima lo dice.
+
+   Si applicano dallo SQL Editor del progetto, in ordine di nome. Entrambe sono
+   idempotenti (`if not exists`, `drop policy if exists`).
+1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito con *modifica*, e
+   da lì si pubblicano nel catalogo con la casella in fondo al modulo.
 2. **Il token BGG non è ancora arrivato.** Finché non c'è, la ricerca cade su
    Wikidata: ~4.400 giochi contro 175.000, dati più magri e a volte sbagliati
    (l'editore è spesso il distributore locale). Per questo un risultato **riempie
@@ -401,8 +517,9 @@ Cosa manca, in ordine di fastidio:
    di partite sul tavolo. Per le copertine c'è il **campo file** nel modulo, che
    vince sempre sull'immagine della fonte — la fonte giusta è il press kit
    dell'editore.
-4. **L'ingresso come ospite è stato tolto**: tornerà quando avrà i giochi del
-   momento da mostrare. Oggi il sito è un muro di login per chi non ha un account.
+4. **L'ordine del catalogo è quello di Wikidata**, cioè i classici in cima:
+   scacchi, backgammon, Monopoly. Non è la classifica che un sito di recensioni
+   vuole — quella è la lista di BGG, e arriva col token.
 5. Su telefono la scatola è **90 px di larghezza**: si riconosce la copertina ma
    non si legge il titolo. È il prezzo delle tre colonne; se dà fastidio,
    l'alternativa è tornare a due.

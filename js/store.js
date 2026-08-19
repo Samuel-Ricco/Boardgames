@@ -4,7 +4,7 @@
    Tre sorgenti, in ordine di autorita':
      1. Supabase, se configurato e raggiungibile -- e' la verita';
      2. localStorage, copia dell'ultima lettura riuscita, cosi'
-        l'armadio si apre anche senza rete;
+        la libreria si apre anche senza rete;
      3. l'array GAMES di js/data.js, committato nel repo, per la
         primissima visita e per quando non c'e' backend.
 
@@ -101,9 +101,9 @@ function salvaLocale(){
    filtrano da sole, qui non serve nessun `where`.
 
    Una collezione **vuota e' una risposta valida**, non un guasto: chi
-   entra per la prima volta ha l'armadio vuoto e va mostrato vuoto. Solo
+   entra per la prima volta ha la libreria vuota e va mostrata vuota. Solo
    se la lettura fallisce si ripiega sulla copia locale. Confonderle
-   vorrebbe dire far comparire i giochi di esempio nell'armadio di uno
+   vorrebbe dire far comparire i giochi di esempio nella libreria di uno
    che non ne ha ancora messo nessuno. */
 async function sync(){
   const c = AUTH.attivo() ? AUTH.client() : null;
