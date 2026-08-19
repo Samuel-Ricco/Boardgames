@@ -125,26 +125,29 @@ body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--rust)}
 .dentro-only{display:none !important}
 body.dentro .dentro-only{display:inline-flex !important}
 
-/* --- a che scaffale siamo -------------------------------------- */
+/* --- a che libreria siamo --------------------------------------
+   Il binario e' orizzontale e sta in basso perche' orizzontale e' il
+   movimento: le librerie sono in fila lungo la parete, non impilate. */
 #rail{
-  position:fixed; z-index:3; left:clamp(12px,2.4vw,28px); top:50%;
-  transform:translateY(-50%); display:flex; align-items:center; gap:10px;
+  position:fixed; z-index:3; left:50%; bottom:24px;
+  transform:translateX(-50%); display:flex; align-items:center; gap:12px;
   opacity:0; transition:opacity .5s ease; pointer-events:none;
 }
 body.browse #rail{opacity:1}
-/* la libreria ci sta tutta nel quadro: non c'e' niente da scorrere */
+/* una libreria sola: non c'e' niente da scorrere */
 body.ferma #rail{opacity:0 !important}
+body.ferma .hint{bottom:26px}
 body.ferma .hint small{display:none}
 #rail-txt{
   font-family:var(--ff-display); font-size:15px; letter-spacing:.12em;
-  color:var(--ink-soft); writing-mode:vertical-rl;
+  color:var(--ink-soft);
 }
-.rail-bar{width:2px; height:min(210px,32vh); background:rgba(44,36,27,.16); position:relative}
-.rail-bar i{position:absolute; left:0; width:2px; background:var(--amber);
-  transition:transform .25s ease, height .25s ease}
+.rail-bar{height:2px; width:min(280px,44vw); background:rgba(44,36,27,.16); position:relative}
+.rail-bar i{position:absolute; top:0; height:2px; background:var(--amber);
+  transition:transform .25s ease, width .25s ease}
 
 .hint{
-  position:fixed; z-index:3; left:50%; bottom:26px;
+  position:fixed; z-index:3; left:50%; bottom:72px;
   transform:translateX(-50%) translateY(8px);
   margin:0; padding:0 16px; text-align:center;
   font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft);
@@ -248,13 +251,14 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   .specs{grid-template-columns:repeat(2,1fr)}
   /* il suggerimento su una riga sola: a capo tre volte era illeggibile,
      e su schermo stretto il testo lungo non ci sta comunque */
-  .hint{font-size:11px; letter-spacing:.1em; bottom:18px}
+  .hint{font-size:11px; letter-spacing:.1em; bottom:56px}
   .hint small, .hint .wide{display:none}
   .hint .narrow{display:inline}
+  body.ferma .hint{bottom:18px}
   #sort .lbl{display:none}
   .tool{padding:7px 9px; letter-spacing:.08em}
-  #rail{left:8px}
-  .rail-bar{height:22vh}
+  #rail{gap:8px}
+  .rail-bar{width:min(200px,54vw)}
   #rail-txt{font-size:13px}
   .add-form{grid-template-columns:1fr}
 }

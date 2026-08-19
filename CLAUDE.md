@@ -24,7 +24,8 @@ vede ancora l'armadio.
 
 Server locale: `python -m http.server 8124 --directory <cartella>`. **La porta
 8124 non è casuale**: è l'unica autorizzata nei Redirect URLs di Supabase, e su
-altre porte il login parte, va su Google e non riesce a tornare indietro.
+altre porte il login parte, va su Google e non riesce a tornare indietro. E non
+puo' essere la **8125**, che e' del proxy BGG: si pesterebbero i piedi.
 
 ```
 index.html            markup
@@ -90,26 +91,43 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
 - Misure di una KALLAX vera: **cubo da 33 cm, montanti da 3.8, profondità 39**.
   Il cubo da 33 e la scatola da 30 è il motivo per cui mezzo mondo ci tiene i
   giochi da tavolo: ci entra esatta, 1.5 cm di aria per lato.
-- **Una scatola per cubo.** Le colonne sono **quattro in orizzontale, tre
-  altrimenti**, e sotto le tre non si scende: con una sola il mobile non sembrava
-  più una libreria, solo una pila di scatole.
-- **Tre colonne su un telefono hanno una conseguenza inevitabile.** Una fila da
-  tre è larga 11.4 e alta 3.3: per farla entrare in larghezza su uno schermo
-  verticale la camera arretra tanto che nel quadro finiscono sette file. Non è un
-  difetto correggibile, è il rapporto fra le due misure — quindi quando ci sta
-  tutto si inquadra **la libreria intera** (`state.tuttaVisibile`), si spegne lo
-  scorrimento e si nasconde il binario, invece di far muovere una barra che non
-  muove niente. Con abbastanza giochi lo scorrimento torna da solo.
-- `maxScroll()` è l'ultima fila su cui ha senso fermarsi: `righe − file visibili`,
-  non `righe − 1`. Con l'altra formula si scorreva fin dentro il vuoto.
-- Le file: `max(4, ceil(n/cols) + 1)`. Quella di scorta serve a far capire che
-  continua.
+- **Una scatola per cubo, e una libreria è sempre 3 × 4**: dodici cubi, dodici
+  giochi (`COLS`, `RIGHE`, `PER_LIB`). Non cambia col formato dello schermo e non
+  si allunga con la collezione — è un mobile vero, e un mobile vero non cresce.
+- **Finiti i dodici posti si mette accanto un'altra libreria identica**, e ci si
+  arriva **scorrendo in orizzontale**. La collezione cresce lungo la parete
+  invece che verso il basso, e ogni schermata inquadra un mobile intero: niente
+  file tagliate a metà, e nessun numero di colonne che cambia sotto le mani a chi
+  gira il telefono.
+- Quante librerie: `max(1, ceil((n + 1) / 12))`. Il `+ 1` fa comparire una
+  libreria vuota accanto quando l'ultima è piena, così si vede che c'è dove
+  mettere il prossimo gioco.
+- `PASSO_LIB` = larghezza del mobile (11.42) + `STACCO` (2.6). Attaccate
+  sembrerebbero un unico mobile lungo e lo scorrimento non si leggerebbe: è
+  l'aria in mezzo a dire «questa è un'altra libreria».
+- **Tre colonne su schermo verticale hanno un prezzo, ed è scelto.** Il mobile è
+  più alto che largo (11.4 × 15.1): per far stare la larghezza su un telefono la
+  camera arretra e sopra e sotto avanza stanza. È il rapporto fra le due misure,
+  non un difetto — e vale meno di una griglia che si riconfigura da sola.
+- Con **una libreria sola** non c'è niente da scorrere: `state.tuttaVisibile`
+  mette `body.ferma`, che nasconde il binario e fa scendere il suggerimento a
+  fondo pagina.
 - **Il mobile si costruisce a montanti e ripiani passanti**, non a cubi separati:
   stessi pixel, un quarto dei triangoli e nessuna giunzione visibile.
-- **Niente ante**: l'ingresso è un solo avvicinamento, dalla libreria intera alla
-  prima fila.
+- **Niente ante**: l'ingresso è un solo avvicinamento, dalla stanza alla prima
+  libreria.
 - Gli oggetti di contorno riempiono i cubi vuoti con un rumore **ripetibile**
-  (`srnd`), se no a ogni riordino saltavano da un cubo all'altro.
+  (`srnd`), se no a ogni riordino saltavano da un cubo all'altro. Il seme è
+  l'indice **assoluto** del posto, così i cubi vuoti della terza libreria non
+  copiano quelli della prima.
+- **Le luci seguono la camera.** Le quattro luci di fila e la direzionale si
+  spostano in x a ogni frame, invece di essercene un gruppo per libreria: le
+  librerie possono diventare tante. Ma soprattutto il riquadro d'ombra della
+  direzionale è largo quanto una libreria — lasciato fermo all'origine, dalla
+  seconda in poi le ombre sparivano di colpo.
+- **La stanza si allunga con le librerie** (`stanzaLarga()`): pavimento e parete
+  sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
+  conseguenza, se no il legno si stira.
 
 ## Luce e colori
 
@@ -154,26 +172,30 @@ Serve anche a misurare la luce invece di indovinarla.
 - Le conferme sono **in due tempi sul bottone**, non `window.confirm`: quello
   blocca il rendering, e una finestra di sistema in mezzo a una scena 3D stona.
 
-## La libreria è ancorata in alto
+## In verticale non si muove più niente
 
-`KAL.topY` è una **costante**: il cielo della prima fila sta sempre alla stessa
-quota e le file in più crescono **verso il basso**, portandosi dietro il pavimento
-(`groundY()`). Di conseguenza l'avvicinamento iniziale inquadra sempre la stessa
-facciata di quattro file (`FACCIATA`), qualunque sia la lunghezza della
-collezione: `state.distFar` e `state.introY` non guardano `state.righe` **apposta**.
+`KAL.topY` è una costante e le file sono quattro e basta, quindi `SUOLO` viene
+zero per costruzione e il pavimento ci resta. Con questo se n'è andato tutto il
+codice che faceva scendere stanza e mobile insieme mentre la collezione si
+allungava: `groundY()`, `FACCIATA`, il `floorMesh.position.y` dentro
+`buildCabinet`.
 
-Ancorandola in basso — com'era all'inizio — aggiungere giochi allungava il mobile
-verso l'alto, l'intro doveva allontanarsi per farcelo stare, e la libreria
-rimpiccioliva a ogni gioco aggiunto.
+Vale la pena ricordarsi perché c'era. Ancorata **in basso**, com'era all'inizio,
+aggiungere giochi allungava la libreria verso l'alto, l'intro doveva allontanarsi
+per farcela stare, e il mobile rimpiccioliva a ogni gioco aggiunto. Ancorandola
+in alto il problema spariva ma restava il pavimento che scendeva. Col formato
+fisso non c'è più né l'uno né l'altro.
 
 ## Il responsive è geometrico, non solo CSS
 
-`state.cols` **dipende dal rapporto d'aspetto**, come le colonne di una griglia:
-quattro in orizzontale, tre altrimenti. Se cambia a `resize`, `layout()` richiama
-`applyLibrary()`: cambia il numero di file e le scatole scivolano al posto nuovo.
+Il mobile **non si adatta più allo schermo**: è lo schermo a farsi indietro
+finché i dodici cubi ci stanno tutti. `layout()` calcola `state.distShelf` dal
+vincolo più stretto fra altezza e larghezza, con un margine che si stringe sui
+formati alti e stretti — lì comanda la larghezza, e ogni decimo di margine si
+paga in stanza vuota sopra e sotto il mobile.
 
-Il resto — perché tre è il minimo, e perché su telefono si finisce per inquadrare
-tutta la libreria — sta sopra, in «Libreria a cubi».
+Resta responsive quello che deve esserlo: `state.side` (il pannello di lato sopra
+gli 880 px, dal basso sotto) e le frazioni di quadro di `focusPose()`.
 
 ## Inquadratura (la parte che è costata di più)
 
@@ -183,6 +205,10 @@ formato dello schermo, e la posizione della scatola in primo piano è espressa i
 
 - La misura si prende sul **fronte del mobile** (`z = KAL.front`), non sul suo
   centro: è quello il piano che deve stare nello schermo.
+- La camera si muove **solo in orizzontale**: `camXFor(s) = s * PASSO_LIB`, e la
+  quota è la costante `CENTRO_Y`. Anche `focusPose()` lavora in coordinate della
+  libreria corrente — se no la scatola usciva davanti alla prima mentre si stava
+  guardando la terza.
 - `focusPose()` prende il **vincolo più stretto fra altezza e larghezza**: con la
   sola altezza, su una finestra stretta la scatola usciva dal quadro a sinistra.
 - **La scatola aperta sta a una z fissa davanti al mobile** (`FOCUS_Z`) ed è la

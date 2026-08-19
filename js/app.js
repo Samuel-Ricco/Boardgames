@@ -28,41 +28,52 @@ KAL.passo = KAL.cell + KAL.t;             // da un cubo al successivo
 
 const BOX = { w: 3.0, h: 3.0, t: 0.84, lid: 0.55 };
 
-/* Quante colonne di cubi: quattro in orizzontale, tre altrimenti.
+/* UNA LIBRERIA E' SEMPRE LA STESSA: tre colonne per quattro file,
+   dodici cubi, dodici giochi. Non cambia col formato dello schermo e
+   non si allunga con la collezione -- e' un mobile vero, e un mobile
+   vero non cresce.
 
-   Sotto le tre non si scende: con una sola colonna il mobile non
-   sembrava piu' una libreria, solo una pila di scatole.
+   Quando i dodici posti finiscono si mette accanto un'altra libreria
+   identica, e ci si arriva scorrendo in orizzontale. La collezione
+   cresce lungo la parete invece che verso il basso, e ogni schermata
+   inquadra un mobile intero: niente file tagliate a meta', nessun
+   numero di colonne che cambia sotto le mani a chi gira il telefono.
 
-   Tre colonne su un telefono hanno pero' una conseguenza inevitabile.
-   Una fila da tre e' larga 11.4 e alta 3.3: per farla entrare in
-   larghezza su uno schermo verticale la camera deve arretrare tanto
-   che nel quadro ci finiscono sette file. Non e' un difetto da
-   correggere, e' il rapporto fra le due misure -- e allora, quando ci
-   sta tutto, tanto vale inquadrare la libreria intera e spegnere lo
-   scorrimento invece di fingere che ci sia qualcosa da scorrere. */
-function colonnePer(aspect){
-  return aspect >= 1.35 ? 4 : 3;
-}
+   Tre colonne su schermo verticale hanno un prezzo, ed e' scelto: il
+   mobile e' piu' alto che largo (11.4 x 15.1), quindi per far stare la
+   larghezza su un telefono la camera arretra e sopra e sotto avanza
+   stanza. Meglio quella che una griglia che si riconfigura da sola. */
+const COLS = 3;                            // colonne di cubi
+const RIGHE = 4;                           // file di cubi
+const PER_LIB = COLS * RIGHE;              // dodici giochi per libreria
 
-/* La libreria e' ancorata in ALTO, non in basso.
-   Il cielo della prima fila sta a una quota fissa e le file in piu'
-   crescono verso il basso, portandosi dietro il pavimento. Cosi'
-   aggiungere giochi non cambia di una virgola quello che si vede
-   nell'animazione di apertura: la facciata inquadrata all'inizio e'
-   sempre la stessa, quattro file, e il resto continua fuori dal
-   quadro. Ancorandola in basso, il mobile si allungherebbe verso
-   l'alto e l'intro dovrebbe allontanarsi per farcelo stare. */
-const FACCIATA = 4;                       // file mostrate nell'intro
-KAL.topY = FACCIATA * KAL.passo + KAL.t;
+/* Lo stacco fra un mobile e il successivo. Attaccate sembrerebbero un
+   unico mobile lungo e lo scorrimento non si leggerebbe: e' l'aria in
+   mezzo a dire "questa e' un'altra libreria". */
+const STACCO = 2.6;
 
-// riga 0 = quella in cima; cresce verso il basso
-const rigaY   = r => KAL.topY - KAL.t - KAL.cell/2 - r * KAL.passo;
 const grigliaH = r => r * KAL.cell + (r + 1) * KAL.t;
 const grigliaW = c => c * KAL.cell + (c + 1) * KAL.t;
-// colonna 0 = quella a sinistra
-const colonnaX = (c, cols) => -grigliaW(cols)/2 + KAL.t + KAL.cell/2 + c * KAL.passo;
-// quota del pavimento: scende insieme alla libreria
-const groundY  = r => KAL.topY - grigliaH(r);
+
+const LIB_W = grigliaW(COLS);              // 11.42: la larghezza di un mobile
+const LIB_H = grigliaH(RIGHE);             // 15.10: la sua altezza
+const PASSO_LIB = LIB_W + STACCO;          // da una libreria alla successiva
+
+/* La libreria resta ancorata in alto come prima -- il cielo della
+   prima fila a quota fissa -- ma ora che le file sono quattro e basta
+   non si muove piu' niente: il pavimento sta a zero e ci resta. Con
+   questo se n'e' andato tutto il codice che faceva scendere stanza e
+   mobile insieme mentre la collezione si allungava. */
+KAL.topY = RIGHE * KAL.passo + KAL.t;
+const SUOLO = KAL.topY - LIB_H;            // zero, per costruzione
+const CENTRO_Y = (KAL.topY + SUOLO) / 2;   // la mezzeria del mobile
+
+// riga 0 = quella in cima; cresce verso il basso
+const rigaY = r => KAL.topY - KAL.t - KAL.cell/2 - r * KAL.passo;
+// il centro della libreria numero `l`: la prima e' a zero
+const libX  = l => l * PASSO_LIB;
+// colonna 0 = quella a sinistra, dentro la libreria `l`
+const cubX  = (l, c) => libX(l) - LIB_W/2 + KAL.t + KAL.cell/2 + c * KAL.passo;
 
 /* --- stato ---------------------------------------------------- */
 const state = {
@@ -74,12 +85,11 @@ const state = {
   bayLight: 0,
   focusLight: 0,
   px: 0, py: 0, tx: 0, ty: 0,
-  righe: 4,
-  scroll: 0, scrollTo: 0,      // 0 = fila in cima
+  libs: 1,                     // quante librerie in fila lungo la parete
+  scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
   dragging: false,
-  distShelf: 22, distFar: 30, introY: 8,
-  side: true,                  // il pannello si apre di lato (schermo largo)
-  cols: 4                      // riempita da layout(), dipende dal formato
+  distShelf: 26, distFar: 42,
+  side: true                   // il pannello si apre di lato (schermo largo)
 };
 
 const FOV = 38;
@@ -87,7 +97,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const camBase = new THREE.Vector3(0, 8, 26);
 
 let renderer, scene, camera, raycaster, pointer;
-let cabGroup, propGroup, bayLights = [], focusLight;
+let cabGroup, propGroup, bayLights = [], focusLight, keyLight;
 let floorMesh, wallMesh;
 let boxes = [];
 let MATS = null;
@@ -196,25 +206,26 @@ function buildRoom(){
   scene.background = new THREE.Color(SFONDO);
   scene.fog = new THREE.Fog(SFONDO, 40, 120);
 
-  // Il pavimento non sta a quota zero: sta sotto la libreria, e la
-  // libreria scende man mano che si allunga. Altrimenti, con molte file,
-  // la camera scorrendo verso il basso finirebbe sotto il pavimento e se
-  // lo troverebbe davanti a tagliare la scena.
-  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(240,240), makeWoodMat({
+  /* Pavimento e parete sono larghi 1 e vengono stirati da stanzaLarga()
+     fino a coprire tutta la fila di librerie. La quota invece e' fissa:
+     il mobile non si allunga piu' verso il basso, quindi la stanza non
+     ha piu' bisogno di scendere con lui. */
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 240), makeWoodMat({
     base:'#cbbba4', dark:'#a8967c', light:'#e3d7c3',
-    lines: 180, knots: 1, repeat:[13,13], rough:.72, bump:.012
+    lines: 180, knots: 1, repeat:[1,13], rough:.72, bump:.012
   }));
   floorMesh.rotation.x = -Math.PI/2;
+  floorMesh.position.y = SUOLO;
   floorMesh.receiveShadow = true;
   scene.add(floorMesh);
 
   // parete quasi a contatto con lo schienale: staccata, l'ombra del
   // mobile ci si stampa sopra come una lastra
   wallMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(240, 400),
+    new THREE.PlaneGeometry(1, 400),
     new THREE.MeshStandardMaterial({ color: 0xe9e2d7, roughness: .98, metalness: 0 })
   );
-  wallMesh.position.set(0, 0, -KAL.d/2 - .06);
+  wallMesh.position.set(0, CENTRO_Y, -KAL.d/2 - .06);
   wallMesh.receiveShadow = true;
   scene.add(wallMesh);
 
@@ -225,7 +236,7 @@ function buildRoom(){
 
   // luce di finestra: larga, morbida, quasi frontale. Di lato
   // allungherebbe l'ombra della libreria sulla parete.
-  const key = new THREE.DirectionalLight(0xfff4e2, .95);
+  const key = keyLight = new THREE.DirectionalLight(0xfff4e2, .95);
   key.position.set(-9, 22, 26);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -246,6 +257,32 @@ function buildRoom(){
 
   focusLight = new THREE.PointLight(0xfff1dd, 0, 26, 1.6);
   scene.add(focusLight);
+
+  /* Una luce per fila, appena davanti al bordo dei cubi: serve poco --
+     la stanza e' gia' chiara -- ma e' quello che fa risaltare le
+     copertine dentro al cubo, dove la luce di finestra non arriva mai
+     del tutto. Sono quattro e SEGUONO LA CAMERA invece di essercene un
+     gruppo per ogni libreria: le librerie possono diventare tante, e
+     accenderle tutte vorrebbe dire pagare luci che nessuno vede. */
+  for (let r = 0; r < RIGHE; r++){
+    const l = new THREE.PointLight(0xfff0da, 0, 8, 1.9);
+    l.position.set(0, rigaY(r) + KAL.cell * .34, KAL.front + .5);
+    bayLights.push(l);
+    scene.add(l);
+  }
+}
+
+/* La stanza si allunga con le librerie: se pavimento e parete finissero
+   prima dell'ultimo mobile si vedrebbe il bordo del mondo. La
+   ripetizione della venatura segue la scala, se no il legno si stira. */
+function stanzaLarga(libs){
+  const corsa = (libs - 1) * PASSO_LIB;      // da centro a centro, primo-ultimo
+  const L = Math.max(240, corsa + LIB_W + 160);
+  floorMesh.scale.x = L; floorMesh.position.x = corsa / 2;
+  wallMesh.scale.x  = L; wallMesh.position.x  = corsa / 2;
+  [floorMesh.material.map, floorMesh.material.bumpMap].forEach(function(t){
+    if (t) t.repeat.x = L / 18.5;
+  });
 }
 
 /* --- la libreria a cubi, alta quanto servono le file ------------
@@ -255,43 +292,31 @@ function buildRoom(){
    pixel ma con quattro volte i triangoli e le giunzioni visibili. */
 function buildCabinet(){
   killGroup(cabGroup, false);
-  bayLights.length = 0;
 
-  const righe = state.righe, cols = state.cols;
-  const W = grigliaW(cols), H = grigliaH(righe), T = KAL.t, D = KAL.d;
-  const cima = KAL.topY, fondo = groundY(righe);
+  const W = LIB_W, H = LIB_H, T = KAL.t, D = KAL.d;
+  const cima = KAL.topY, fondo = SUOLO;
   const g = new THREE.Group();
 
-  // stanza e mobile scendono insieme
-  floorMesh.position.y = fondo;
-  wallMesh.position.y = fondo + H/2;
+  // tante librerie identiche quante ne servono, in fila lungo la parete
+  for (let l = 0; l < state.libs; l++){
+    const ox = libX(l);
 
-  // montanti: due esterni e uno per ogni divisione interna
-  for (let c = 0; c <= cols; c++){
-    const x = -W/2 + T/2 + c * KAL.passo;
-    g.add(slab(T, H, D, MATS.vert, x, fondo + H/2, 0));
+    // montanti: due esterni e uno per ogni divisione interna
+    for (let c = 0; c <= COLS; c++){
+      g.add(slab(T, H, D, MATS.vert, ox - W/2 + T/2 + c * KAL.passo, fondo + H/2, 0));
+    }
+
+    // ripiani: cielo, fondo e uno per ogni divisione
+    for (let r = 0; r <= RIGHE; r++){
+      g.add(slab(W - T*2, T, D, MATS.orizz, ox, cima - T/2 - r * KAL.passo, 0));
+    }
+
+    // schienale sottile e arretrato: senza, i cubi si aprono sulla
+    // parete e le scatole perdono il loro sfondo
+    g.add(slab(W - T*2, H - T*2, .10, MATS.fondo, ox, fondo + H/2, -D/2 + .07));
   }
 
-  // ripiani: cielo, fondo e uno per ogni divisione
-  for (let r = 0; r <= righe; r++){
-    const y = cima - T/2 - r * KAL.passo;
-    g.add(slab(W - T*2, T, D, MATS.orizz, 0, y, 0));
-  }
-
-  // schienale sottile e arretrato: senza, i cubi si aprono sulla parete
-  // e le scatole perdono il loro sfondo
-  g.add(slab(W - T*2, H - T*2, .10, MATS.fondo, 0, fondo + H/2, -D/2 + .07));
-
-  /* Una luce per fila, appena davanti al bordo. Serve poco: la stanza e'
-     gia' chiara, questa fa solo risaltare le copertine dentro al cubo,
-     dove la luce di finestra non arriva mai del tutto. */
-  for (let r = 0; r < righe; r++){
-    const l = new THREE.PointLight(0xfff0da, 0, 8, 1.9);
-    l.position.set(0, rigaY(r) + KAL.cell * .34, KAL.front + .5);
-    bayLights.push(l);
-    g.add(l);
-  }
-
+  stanzaLarga(state.libs);
   cabGroup = g;
   scene.add(g);
 }
@@ -393,14 +418,15 @@ function buildProps(used){
   killGroup(propGroup, true);
   const g = new THREE.Group();
 
-  for (let page = 0; page < state.righe; page++){
-    const y = rigaY(page) - KAL.cell/2;      // il piano del cubo
-    for (let slot = 0; slot < state.cols; slot++){
-      if (used.has(page * state.cols + slot)) continue;
-      const seed = page * 17 + slot * 5 + 3;
+  for (let l = 0; l < state.libs; l++){
+    for (let k = 0; k < PER_LIB; k++){
+      const posto = l * PER_LIB + k;
+      if (used.has(posto)) continue;
+      const seed = posto * 17 + 3;
       const r = srnd(seed);
       if (r < .34) continue;                       // qualche posto resta vuoto
-      const x = colonnaX(slot, state.cols);
+      const x = cubX(l, k % COLS);
+      const y = rigaY(Math.floor(k / COLS)) - KAL.cell/2;   // il piano del cubo
 
       if (r < .58){                                // pila di scatole coricate
         const n = 2 + Math.floor(srnd(seed+1)*2);
@@ -461,9 +487,10 @@ function buildProps(used){
    =============================================================== */
 
 function homeOf(index, h){
-  const page = Math.floor(index / state.cols), slot = index % state.cols;
+  const l = Math.floor(index / PER_LIB), k = index % PER_LIB;
   // poggiata sul piano del cubo, un filo dentro rispetto al fronte
-  return new THREE.Vector3(colonnaX(slot, state.cols), rigaY(page) - KAL.cell/2 + h/2, .2);
+  return new THREE.Vector3(cubX(l, k % COLS),
+                           rigaY(Math.floor(k / COLS)) - KAL.cell/2 + h/2, .2);
 }
 
 /* Rifa' la scena a partire dalla libreria. Le scatole gia' presenti
@@ -472,10 +499,13 @@ function homeOf(index, h){
 function applyLibrary(opts){
   opts = opts || {};
   const list = LIB.list(state.sort);
-  const bays = Math.max(FACCIATA, Math.ceil(list.length / state.cols) + 1);
+  /* Quante librerie: quelle che servono, piu' il posto per il gioco
+     dopo. Cosi' quando i dodici cubi dell'ultima sono pieni ne compare
+     una vuota accanto, e si vede che c'e' dove metterlo. */
+  const libs = Math.max(1, Math.ceil((list.length + 1) / PER_LIB));
 
-  if (bays !== state.righe || !cabGroup){
-    state.righe = bays;
+  if (libs !== state.libs || !cabGroup){
+    state.libs = libs;
     buildCabinet();
   }
 
@@ -549,43 +579,31 @@ function layout(){
   const aspect = w / h;
   state.side = w >= 880;
 
-  // le colonne dello scaffale cambiano col formato: se cambiano, la
-  // libreria va ridisposta prima di ricalcolare le distanze
-  const cols = colonnePer(aspect);
-  const cambiato = cols !== state.cols;
-  state.cols = cols;
-
   const half = THREE.MathUtils.degToRad(FOV) / 2, tan = Math.tan(half);
-  const tall = aspect < .8;
 
-  // Navigazione: una fila di cubi riempie lo schermo. Le colonne sono
-  // gia' scelte in base al formato, quindi la fila ci sta per intero e
-  // conviene inquadrarla tutta, montanti compresi -- e' quella la
-  // griglia che si deve leggere.
-  const bw = grigliaW(state.cols)/2 + .25;   // margine stretto: il mobile riempie la larghezza
-  const bh = (KAL.cell + 1.7) / 2;
+  /* Una schermata, una libreria intera. Il mobile non si adatta piu'
+     allo schermo: e' lo schermo a farsi indietro finche' i dodici cubi
+     ci stanno tutti, in verticale come in orizzontale.
+
+     Il margine si stringe sui formati alti e stretti: li' comanda la
+     larghezza, e ogni decimo di margine si paga in stanza vuota sopra e
+     sotto il mobile. */
+  const marg = aspect < .8 ? .3 : .9;
+  const bw = LIB_W/2 + marg;
+  const bh = LIB_H/2 + marg;
   state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
 
-  /* Quante file finiscono davvero nel quadro a quella distanza. Su
-     schermo verticale sono parecchie, e se sono piu' di quante ne
-     esistono non c'e' niente da scorrere: si inquadra tutta la
-     libreria e si spegne lo scorrimento, invece di far muovere una
-     barra che non muove niente. */
-  const vh = 2 * (state.distShelf - .2) * tan;
-  state.righeVisibili = vh / KAL.passo;
-  state.tuttaVisibile = state.righeVisibili >= state.righe;
+  /* Con una libreria sola non c'e' niente da scorrere: via il binario,
+     invece di far muovere una barra che non muove niente. */
+  state.tuttaVisibile = state.libs <= 1;
   document.body.classList.toggle('ferma', state.tuttaVisibile);
 
-  // Intro: sempre la stessa facciata, quattro file, comunque sia lunga
-  // la collezione. Non guarda state.righe apposta -- se lo guardasse,
-  // aggiungere giochi farebbe rimpicciolire la libreria nell'avvicinamento
-  // e l'effetto "poi continua" si perderebbe.
-  const cima = KAL.topY + .5;
-  const fondo = KAL.topY - grigliaH(FACCIATA) - .5;
-  const fitH = (cima - fondo) + 1.6;
-  const fitW = (grigliaW(state.cols) + (tall ? 1.6 : 4.0)) / 2;
-  state.distFar = KAL.front + Math.max((fitH/2) / tan, fitW / (tan * aspect));
-  state.introY = (cima + fondo) / 2;
+  /* Intro: si parte abbastanza indietro da vedere la stanza e un pezzo
+     della libreria accanto, e ci si avvicina alla prima. Le misure sono
+     multipli del mobile, non numeri fissi, cosi' l'avvicinamento e'
+     sempre lo stesso su qualunque schermo. */
+  const fw = LIB_W * 1.9 / 2, fh = LIB_H * 1.42 / 2;
+  state.distFar = KAL.front + Math.max(fh / tan, fw / (tan * aspect));
 
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
@@ -594,22 +612,17 @@ function layout(){
 
   if (state.phase === 'browse') camBase.z = state.distShelf;
 
-  if (cambiato && state.phase !== 'load') applyLibrary({ animate: true });
   reposeFocused();          // una scatola aperta va rimessa a posto sul quadro nuovo
 }
 
-/* Dove guarda la camera. Se la libreria ci sta tutta si punta al suo
-   centro e la fila corrente non conta piu'; se no si centra sul cubo,
-   che la scatola riempie quasi per intero. */
-function camYFor(s){
-  if (state.tuttaVisibile) return (KAL.topY + groundY(state.righe)) / 2;
-  return rigaY(s);
-}
+/* Dove guarda la camera. In verticale non si muove piu': la libreria e'
+   sempre alta quattro file e sta sempre alla stessa quota. In
+   orizzontale segue la libreria su cui si e' fermi. */
+const camXFor = s => s * PASSO_LIB;
 
-// L'ultima fila su cui ha senso fermarsi: oltre, si vedrebbe solo vuoto
+// L'ultima libreria: oltre ci sarebbe solo parete
 function maxScroll(){
-  if (state.tuttaVisibile) return 0;
-  return Math.max(0, state.righe - Math.floor(state.righeVisibili));
+  return Math.max(0, state.libs - 1);
 }
 
 // Quanto davanti al mobile viene tenuta la scatola aperta. Deve stare
@@ -640,10 +653,12 @@ function focusPose(box){
   const d = Math.max(fitH / (2 * fh * tan), fitW / (2 * fw * tan * camera.aspect));
 
   const vh = 2 * d * tan, vw = vh * camera.aspect;
-  const y = camYFor(state.scrollTo);
+  // tutto in coordinate della libreria corrente: e' quella che si sta
+  // guardando, e la scatola deve uscire davanti a lei
+  const x = camXFor(state.scrollTo);
   return {
-    pos: new THREE.Vector3(offX * vw, y + offY * vh, FOCUS_Z),
-    cam: new THREE.Vector3(0, y, FOCUS_Z + d),
+    pos: new THREE.Vector3(x + offX * vw, CENTRO_Y + offY * vh, FOCUS_Z),
+    cam: new THREE.Vector3(x, CENTRO_Y, FOCUS_Z + d),
     rot: new THREE.Euler(-.05, .34, .02),
     scale: scale
   };
@@ -658,8 +673,8 @@ function focusPose(box){
 function intro(){
   state.phase = 'intro';
   state.scroll = state.scrollTo = 0;
-  const from = new THREE.Vector3(0, state.introY, state.distFar);
-  const to   = new THREE.Vector3(0, camYFor(0), state.distShelf);
+  const from = new THREE.Vector3(0, CENTRO_Y, state.distFar);
+  const to   = new THREE.Vector3(0, CENTRO_Y, state.distShelf);
   camBase.copy(from);
 
   tween(1.4, function(p){ state.bayLight = p; }, null, .9);
@@ -762,7 +777,7 @@ function unfocus(){
     const r0 = { x: box.rotation.x, y: box.rotation.y, z: box.rotation.z };
     const s0 = box.scale.x;
     const cam0 = camBase.clone();
-    const camTo = new THREE.Vector3(0, camYFor(state.scrollTo), state.distShelf);
+    const camTo = new THREE.Vector3(camXFor(state.scrollTo), CENTRO_Y, state.distShelf);
 
     tween(.8, function(p){
       const e = easeInOut(p);
@@ -797,7 +812,7 @@ function removeFocused(){
 
   const p0 = box.position.clone();
   const cam0 = camBase.clone();
-  const camTo = new THREE.Vector3(0, camYFor(state.scrollTo), state.distShelf);
+  const camTo = new THREE.Vector3(camXFor(state.scrollTo), CENTRO_Y, state.distShelf);
   tween(.5, function(p){
     const e = easeInOut(p);
     box.position.set(p0.x, p0.y - e * 2.2, p0.z + e * 1.2);
@@ -925,14 +940,14 @@ function updateRail(){
   const n = max + 1;
   q('#rail-txt').textContent = (Math.round(state.scroll) + 1) + ' / ' + n;
   const t = state.scroll / max;
-  q('#rail-thumb').style.transform = 'translateY(' + (t * (100 * max)) + '%)';
-  q('#rail-thumb').style.height = (100 / n) + '%';
+  q('#rail-thumb').style.transform = 'translateX(' + (t * (100 * max)) + '%)';
+  q('#rail-thumb').style.width = (100 / n) + '%';
 }
 
 /* --- puntatore -------------------------------------------------- */
 function bindInput(){
   const el = renderer.domElement;
-  let downAt = 0, downX = 0, downY = 0, lastY = 0, moved = 0;
+  let downAt = 0, downX = 0, downY = 0, lastX = 0, moved = 0;
 
   function norm(e){
     state.tx = (e.clientX / window.innerWidth) * 2 - 1;
@@ -943,13 +958,14 @@ function bindInput(){
     norm(e);
     pointer.set(state.tx, state.ty);
     if (state.dragging && state.phase === 'browse'){
-      const dy = e.clientY - lastY;
-      lastY = e.clientY;
-      moved += Math.abs(dy);
-      // quanti scaffali vale un pixel, a questa distanza di camera
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      moved += Math.abs(dx);
+      // quante librerie vale un pixel, a questa distanza di camera
       const vh = 2 * state.distShelf * Math.tan(THREE.MathUtils.degToRad(FOV)/2);
+      const vw = vh * camera.aspect;
       state.scrollTo = clamp(
-        state.scrollTo - (dy * vh / window.innerHeight) / KAL.passo,
+        state.scrollTo - (dx * vw / window.innerWidth) / PASSO_LIB,
         0, maxScroll()
       );
     }
@@ -957,7 +973,7 @@ function bindInput(){
 
   el.addEventListener('pointerdown', function(e){
     downAt = performance.now(); downX = e.clientX; downY = e.clientY;
-    lastY = e.clientY; moved = 0;
+    lastX = e.clientX; moved = 0;
     state.dragging = true;
     if (el.setPointerCapture) try { el.setPointerCapture(e.pointerId); } catch(err){}
     norm(e); pointer.set(state.tx, state.ty);
@@ -988,14 +1004,17 @@ function bindInput(){
   el.addEventListener('wheel', function(e){
     if (state.phase !== 'browse') return;
     e.preventDefault();
-    scrollBy(e.deltaY * .0022);
+    // la rotella di un mouse da' deltaY, il trackpad di lato da' deltaX:
+    // qui muovono la stessa cosa, quindi si prende quello che si muove
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    scrollBy(d * .0022);
   }, { passive: false });
 
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ unfocus(); closeAdd(); return; }
     if (state.phase !== 'browse') return;
-    if (e.key === 'ArrowDown' || e.key === 'PageDown'){ e.preventDefault(); scrollBy(1); }
-    if (e.key === 'ArrowUp'   || e.key === 'PageUp'){   e.preventDefault(); scrollBy(-1); }
+    if (e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); scrollBy(1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'PageUp'){   e.preventDefault(); scrollBy(-1); }
   });
 
   q('#close').addEventListener('click', function(e){ e.stopPropagation(); unfocus(); });
@@ -1349,7 +1368,7 @@ function goToGame(id){
   const list = LIB.list(state.sort);
   const i = list.findIndex(function(g){ return g.id === id; });
   if (i < 0) return;
-  state.scrollTo = clamp(Math.floor(i / state.cols), 0, maxScroll());
+  state.scrollTo = clamp(Math.floor(i / PER_LIB), 0, maxScroll());
 }
 
 /* ===============================================================
@@ -1383,7 +1402,7 @@ function frame(now){
   if (state.phase === 'browse'){
     const before = Math.round(state.scroll);
     state.scroll += (state.scrollTo - state.scroll) * Math.min(1, dt * 7);
-    camBase.set(0, camYFor(state.scroll), state.distShelf);
+    camBase.set(camXFor(state.scroll), CENTRO_Y, state.distShelf);
     if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)) updateRail();
   }
 
@@ -1396,9 +1415,22 @@ function frame(now){
     camBase.y + state.py * .5 * sway,
     camBase.z
   );
-  camera.lookAt(0, camBase.y, 0);
+  camera.lookAt(camBase.x, camBase.y, 0);
 
-  for (let i = 0; i < bayLights.length; i++) bayLights[i].intensity = state.bayLight * .30;
+  /* Luci al seguito. Le librerie possono essere tante e tenerne accese e
+     ombreggiate anche quelle fuori dal quadro si paga senza vedersi; ma
+     soprattutto il riquadro d'ombra della direzionale e' largo quanto
+     una libreria e basta -- lasciato fermo all'origine, dalla seconda in
+     poi le ombre sparivano di colpo. */
+  for (let i = 0; i < bayLights.length; i++){
+    bayLights[i].intensity = state.bayLight * .30;
+    bayLights[i].position.x = camBase.x;
+  }
+  if (keyLight){
+    keyLight.position.x = camBase.x - 9;
+    keyLight.target.position.x = camBase.x;
+    keyLight.target.updateMatrixWorld();
+  }
 
   if (state.focused) focusLight.position.copy(state.focused.position).add(new THREE.Vector3(1.2, 2.2, 3.4));
   focusLight.intensity = state.focusLight * 1.1;
