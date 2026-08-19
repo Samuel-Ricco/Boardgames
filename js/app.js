@@ -1035,9 +1035,17 @@ function setMode(st){
   const chip = q('#mode');
   if (!AUTH.attivo()){
     chip.textContent = state.mode;          // senza backend resta l'interruttore locale
+    chip.title = 'cambia modalita';
+  } else if (st.dentro){
+    // il chip dice CHI sei, non fa niente: uscire ha un tasto suo, se no
+    // e' un pulsante che cambia significato a seconda dello stato
+    chip.textContent = st.admin ? 'admin' : 'utente';
+    chip.title = (st.nome || '') + (st.admin ? ' -- admin' : '');
+    chip.disabled = true;
   } else {
-    chip.textContent = st.dentro ? (st.admin ? 'admin' : 'esci') : 'entra';
-    chip.title = st.dentro ? 'esci da questo account' : 'entra con Google';
+    chip.textContent = 'entra';
+    chip.title = 'entra con Google';
+    chip.disabled = false;
   }
 }
 
@@ -1049,17 +1057,17 @@ function bindTools(){
       flash(state.mode === 'admin' ? 'modalita admin' : 'modalita utente');
       return;
     }
-    if (AUTH.stato().dentro){
-      // Uscire non e' cambiare un'etichetta: la collezione di prima non
-      // e' piu' tua, e la schermata da cui si riparte e' l'accesso.
-      await AUTH.esci();
-      LIB.scollega();
-      location.reload();
-      return;
-    } else {
-      try { await AUTH.entra(); }        // porta su Google e poi torna qui
-      catch(e){ flash('accesso non riuscito: ' + e.message); }
-    }
+    if (AUTH.stato().dentro) return;     // qui dentro il chip e' solo un'etichetta
+    try { await AUTH.entra(); }          // porta su Google e poi torna qui
+    catch(e){ flash('accesso non riuscito: ' + e.message); }
+  });
+
+  // Uscire non e' cambiare un'etichetta: la collezione di prima non e'
+  // piu' tua, e la schermata da cui si riparte e' l'accesso.
+  q('#esci').addEventListener('click', async function(){
+    await AUTH.esci();
+    LIB.scollega();
+    location.reload();
   });
 
   const menu = q('#sortmenu'), btn = q('#sort');
@@ -1429,6 +1437,21 @@ function loadCovers(forza){
       // un oggetto vuoto, e va ricaricata l'immagine per davvero
       if (!g.cover || (g.img && g.img.naturalWidth)) return done();
       const im = new Image();
+
+      /* Le copertine caricate stanno su Supabase, cioe' su un altro
+         dominio, e finiscono in una texture WebGL: senza crossOrigin
+         l'immagine si carica benissimo in un <img> ma la texture resta
+         vuota, perche' il contesto la considera contaminata.
+
+         Si notava solo uscendo e rientrando: appena aggiunto un gioco
+         `cover` e' ancora un data URL e il problema non esiste, mentre
+         al rientro torna dal database come indirizzo esterno.
+
+         Va messo PRIMA di src, se no non conta piu' niente. */
+      if (/^https?:\/\//.test(g.cover) && g.cover.indexOf(location.origin + '/') !== 0){
+        im.crossOrigin = 'anonymous';
+      }
+
       im.onload = function(){ if (im.naturalWidth) g.img = im; done(); };
       im.onerror = function(){ done(); };
       im.src = g.cover;

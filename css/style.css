@@ -90,8 +90,14 @@ body.ready header{opacity:1; transform:none}
 .tool:hover{color:var(--ink); border-color:var(--amber)}
 .tool b{color:var(--amber); font-weight:500}
 #add{font-size:18px; line-height:1; padding:6px 12px 8px; color:var(--amber)}
+/* il chip dice chi sei e basta: entrati non e' piu' un pulsante */
 #mode.chip{color:var(--ink)}
+#mode.chip:disabled{cursor:default; opacity:1}
+#mode.chip:disabled:hover{color:var(--ink); border-color:var(--line)}
 body.admin #mode.chip{background:var(--rust); color:#fff; border-color:var(--rust)}
+body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--rust)}
+#esci{color:var(--ink-soft)}
+#esci:hover{color:var(--rust); border-color:var(--rust)}
 
 .sortwrap{position:relative}
 #sortmenu{

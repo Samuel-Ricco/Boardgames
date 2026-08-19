@@ -102,6 +102,14 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   protegge niente ed è dichiarato tale nella schermata iniziale.
 - Con Supabase le modifiche vanno nel database e le vedono tutti; senza, restano
   in `localStorage` e si pubblicano con `esporta js/data.js`.
+- **`crossOrigin='anonymous'` sulle copertine di un altro dominio**, e prima di
+  `src`. Quelle caricate stanno su Supabase e finiscono in una texture WebGL:
+  senza, l'immagine si carica benissimo in un `<img>` ma la texture resta vuota
+  con `SecurityError: ... contains cross-origin data`. Si vedeva **solo uscendo e
+  rientrando**, perché appena aggiunto un gioco `cover` è ancora un data URL e il
+  problema non esiste. Per verificarlo: disegnare l'immagine su un canvas e
+  chiamare `getImageData` — se è contaminata lancia, ed è lo stesso controllo che
+  fa WebGL.
 - **Mai salvare `img` nella libreria**: è l'immagine decodificata, in JSON diventa
   `{}` e al ricaricamento sembra una copertina valida senza esserlo. Le proporzioni
   della scatola finivano a NaN e le scatole sparivano dalla scena. `save()` lo
