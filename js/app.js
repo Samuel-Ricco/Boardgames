@@ -1011,17 +1011,40 @@ function pick(){
    INTERFACCIA: modalita', ordinamento, aggiunta
    =============================================================== */
 
-function setMode(m){
-  state.mode = m;
-  document.body.classList.toggle('admin', m === 'admin');
-  q('#mode').textContent = m;
-  try { localStorage.setItem('dado-modo', m); } catch(e){}
+/* Il ruolo non si sceglie: si legge. `admin` arriva da e_admin() sul
+   database, e i pulsanti compaiono di conseguenza. Se anche comparissero
+   a chi non ha diritto, a rifiutare sarebbe comunque Postgres: qui si
+   decide cosa mostrare, non cosa e' permesso. */
+function setMode(st){
+  state.mode = st.admin ? 'admin' : 'utente';
+  state.dentro = !!st.dentro;
+  document.body.classList.toggle('admin', !!st.admin);
+  const chip = q('#mode');
+  if (!AUTH.attivo()){
+    // nessun backend configurato: si ricade sul comportamento locale
+    chip.textContent = state.mode;
+  } else {
+    chip.textContent = st.dentro ? (st.admin ? 'admin' : 'esci') : 'entra';
+    chip.title = st.dentro ? 'esci da questo account' : 'entra con Google';
+  }
 }
 
 function bindTools(){
-  q('#mode').addEventListener('click', function(){
-    setMode(state.mode === 'admin' ? 'utente' : 'admin');
-    flash(state.mode === 'admin' ? 'modalita admin' : 'modalita utente');
+  q('#mode').addEventListener('click', async function(){
+    if (!AUTH.attivo()){
+      // senza database resta l'interruttore locale di prima
+      setMode({ dentro: false, admin: state.mode !== 'admin' });
+      flash(state.mode === 'admin' ? 'modalita admin' : 'modalita utente');
+      return;
+    }
+    if (AUTH.stato().dentro){
+      await AUTH.esci();
+      setMode(AUTH.stato());
+      flash('sei uscito');
+    } else {
+      try { await AUTH.entra(); }        // porta su Google e poi torna qui
+      catch(e){ flash('accesso non riuscito: ' + e.message); }
+    }
   });
 
   const menu = q('#sortmenu'), btn = q('#sort');
@@ -1299,17 +1322,31 @@ function fallbackFlat(){
   q('#gate').classList.add('gone');
 }
 
-// Il selettore di modalita' viene prima di tutto: la scelta decide
-// cosa si vede, quindi si aspetta.
-function gate(){
+/* Il cancello viene prima di tutto. Chi torna da Google ha gia' una
+   sessione: in quel caso non si richiede niente e si tira dritto, se no
+   il giro dell'accesso ricomincerebbe a ogni ritorno. */
+function gate(giaDentro){
+  if (giaDentro){
+    q('#gate').classList.add('gone');
+    return Promise.resolve();
+  }
   return new Promise(function(res){
-    let last = 'utente';
-    try { last = localStorage.getItem('dado-modo') || 'utente'; } catch(e){}
-    qa('#gate [data-mode]').forEach(function(b){
-      b.classList.toggle('last', b.getAttribute('data-mode') === last);
-      b.addEventListener('click', function(){
+    qa('#gate [data-gate]').forEach(function(b){
+      b.addEventListener('click', async function(){
+        if (b.getAttribute('data-gate') === 'entra' && AUTH.attivo()){
+          b.disabled = true;
+          try {
+            await AUTH.entra();      // se ne va su Google: la pagina viene lasciata
+            return;
+          } catch(e){
+            b.disabled = false;
+            q('#gate-note').textContent = 'Accesso non riuscito: ' + e.message +
+              ' -- puoi comunque guardare senza account.';
+            return;
+          }
+        }
         q('#gate').classList.add('gone');
-        res(b.getAttribute('data-mode'));
+        res();
       });
     });
   });
@@ -1318,11 +1355,14 @@ function gate(){
 async function boot(){
   try { state.sort = localStorage.getItem('dado-ordine') || 'aggiunta'; } catch(e){}
   q('#sort-now').textContent = state.sort;
+  LIB.suErrore(flash);                    // le scritture rifiutate le racconta il flash
   buildFlatList();
 
-  const mode = await gate();
+  // Chi torna da Google ha gia' la sessione: si salta il cancello.
+  const chi = await AUTH.init();
+  await gate(chi.dentro);
   const t0 = performance.now();
-  setMode(mode);
+  setMode(chi);
 
   if (typeof THREE === 'undefined'){ fallbackFlat(); return; }
 
@@ -1358,7 +1398,12 @@ async function boot(){
   // prima le misure dello schermo: decidono quante scatole per scaffale,
   // e quindi quanto viene alto l'armadio che sto per costruire
   layout();
-  setProg(.46, 'stampo le copertine');
+  // la libreria vera, prima delle copertine: sono le schede a dire
+  // quali immagini servono
+  setProg(.40, 'apro la libreria');
+  const lib = await LIB.sync();
+  buildFlatList();
+  setProg(.56, 'stampo le copertine');
   await loadCovers();
   await wait(20); setProg(.72, 'monto le mensole');
   applyLibrary({});
@@ -1373,6 +1418,12 @@ async function boot(){
   await wait(Math.max(0, 1400 - (performance.now() - t0)));
   document.body.classList.add('ready');
   intro();
+
+  // Se il backend c'e' ma non ha risposto, meglio dirlo: quello che si
+  // sta guardando e' l'ultima copia locale, non la libreria vera.
+  if (AUTH.attivo() && !lib.remota){
+    flash('libreria offline: mostro l\'ultima copia salvata');
+  }
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

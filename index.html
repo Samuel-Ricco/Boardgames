@@ -35,7 +35,7 @@
         <button type="button" data-sort="voto" role="menuitem">voto</button>
       </div>
     </div>
-    <button id="mode" type="button" class="tool chip" title="cambia modalit&agrave;">utente</button>
+    <button id="mode" type="button" class="tool chip" title="entra o esci">entra</button>
   </div>
 </header>
 
@@ -77,18 +77,19 @@
     <b class="gate-logo">il dado <i>&egrave;</i> trap</b>
     <p class="gate-q">Chi apre l&rsquo;armadio?</p>
     <div class="gate-pick">
-      <button type="button" data-mode="utente">
-        <b>Utente</b>
-        <span>Sfogli gli scaffali e leggi le recensioni.</span>
+      <button type="button" data-gate="entra">
+        <b>Entra</b>
+        <span>Con il tuo account Google. Se il database ti riconosce come admin,
+          puoi aggiungere giochi e toglierli.</span>
       </button>
-      <button type="button" data-mode="admin">
-        <b>Admin</b>
-        <span>Puoi aggiungere giochi all&rsquo;armadio e toglierli.</span>
+      <button type="button" data-gate="ospite">
+        <b>Guarda e basta</b>
+        <span>Sfogli gli scaffali e leggi le recensioni. Nessun account.</span>
       </button>
     </div>
-    <p class="gate-note">La modalit&agrave; admin non &egrave; protetta da password: su un sito
-      statico non ci sarebbe modo di farlo davvero. Le modifiche restano su questo
-      browser finch&eacute; non le esporti.</p>
+    <p class="gate-note" id="gate-note">Chi &egrave; admin lo decide il database, non
+      questa schermata: se non lo sei, i pulsanti per modificare non compaiono &mdash; e
+      se comparissero, sarebbe comunque il server a rifiutare.</p>
   </div>
 </div>
 
@@ -156,7 +157,10 @@
 </div>
 
 <script src="vendor/three.min.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="js/config.js"></script>
 <script src="js/data.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/store.js"></script>
 <script src="js/bgg.js"></script>
 <script src="js/art.js"></script>
