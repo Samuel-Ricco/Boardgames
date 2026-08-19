@@ -28,19 +28,20 @@ KAL.passo = KAL.cell + KAL.t;             // da un cubo al successivo
 
 const BOX = { w: 3.0, h: 3.0, t: 0.84, lid: 0.55 };
 
-/* Quante colonne di cubi. Non e' fisso: dipende dal formato dello
-   schermo, come le colonne di una griglia CSS. Una fila da quattro e'
-   larga 15 e alta 3.3 -- rapporto 4.5 -- e su una finestra verticale,
-   per farla entrare in larghezza, la camera arretrerebbe tanto da
-   mostrare sei file con le scatole grandi come francobolli. Con meno
-   colonne la fila si accorcia, la camera resta vicina, e la libreria
-   diventa semplicemente piu' alta: cosa di cui non le importa niente,
-   visto che e' gia' infinita. */
+/* Quante colonne di cubi: quattro in orizzontale, tre altrimenti.
+
+   Sotto le tre non si scende: con una sola colonna il mobile non
+   sembrava piu' una libreria, solo una pila di scatole.
+
+   Tre colonne su un telefono hanno pero' una conseguenza inevitabile.
+   Una fila da tre e' larga 11.4 e alta 3.3: per farla entrare in
+   larghezza su uno schermo verticale la camera deve arretrare tanto
+   che nel quadro ci finiscono sette file. Non e' un difetto da
+   correggere, e' il rapporto fra le due misure -- e allora, quando ci
+   sta tutto, tanto vale inquadrare la libreria intera e spegnere lo
+   scorrimento invece di fingere che ci sia qualcosa da scorrere. */
 function colonnePer(aspect){
-  if (aspect >= 1.35) return 4;
-  if (aspect >= 0.95) return 3;
-  if (aspect >= 0.62) return 2;
-  return 1;
+  return aspect >= 1.35 ? 4 : 3;
 }
 
 /* La libreria e' ancorata in ALTO, non in basso.
@@ -535,7 +536,7 @@ function applyLibrary(opts){
   });
 
   buildProps(used);
-  state.scrollTo = clamp(state.scrollTo, 0, state.righe - 1);
+  state.scrollTo = clamp(state.scrollTo, 0, maxScroll());
   updateRail();
 }
 
@@ -561,9 +562,19 @@ function layout(){
   // gia' scelte in base al formato, quindi la fila ci sta per intero e
   // conviene inquadrarla tutta, montanti compresi -- e' quella la
   // griglia che si deve leggere.
-  const bw = grigliaW(state.cols)/2 + .5;
+  const bw = grigliaW(state.cols)/2 + .25;   // margine stretto: il mobile riempie la larghezza
   const bh = (KAL.cell + 1.7) / 2;
   state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
+
+  /* Quante file finiscono davvero nel quadro a quella distanza. Su
+     schermo verticale sono parecchie, e se sono piu' di quante ne
+     esistono non c'e' niente da scorrere: si inquadra tutta la
+     libreria e si spegne lo scorrimento, invece di far muovere una
+     barra che non muove niente. */
+  const vh = 2 * (state.distShelf - .2) * tan;
+  state.righeVisibili = vh / KAL.passo;
+  state.tuttaVisibile = state.righeVisibili >= state.righe;
+  document.body.classList.toggle('ferma', state.tuttaVisibile);
 
   // Intro: sempre la stessa facciata, quattro file, comunque sia lunga
   // la collezione. Non guarda state.righe apposta -- se lo guardasse,
@@ -587,9 +598,19 @@ function layout(){
   reposeFocused();          // una scatola aperta va rimessa a posto sul quadro nuovo
 }
 
-// Il centro del cubo va benissimo: la scatola lo riempie quasi tutto,
-// non c'e' l'aria sopra che c'era nei vani dell'armadio.
-const camYFor = s => rigaY(s);
+/* Dove guarda la camera. Se la libreria ci sta tutta si punta al suo
+   centro e la fila corrente non conta piu'; se no si centra sul cubo,
+   che la scatola riempie quasi per intero. */
+function camYFor(s){
+  if (state.tuttaVisibile) return (KAL.topY + groundY(state.righe)) / 2;
+  return rigaY(s);
+}
+
+// L'ultima fila su cui ha senso fermarsi: oltre, si vedrebbe solo vuoto
+function maxScroll(){
+  if (state.tuttaVisibile) return 0;
+  return Math.max(0, state.righe - Math.floor(state.righeVisibili));
+}
 
 // Quanto davanti al mobile viene tenuta la scatola aperta. Deve stare
 // oltre il fronte e oltre lo sventagliamento delle ante, se no il
@@ -890,19 +911,21 @@ let snapT = 0;
 function snapSoon(){
   clearTimeout(snapT);
   snapT = setTimeout(function(){
-    state.scrollTo = clamp(Math.round(state.scrollTo), 0, state.righe - 1);
+    state.scrollTo = clamp(Math.round(state.scrollTo), 0, maxScroll());
   }, 220);
 }
 function scrollBy(d){
   if (state.phase !== 'browse') return;
-  state.scrollTo = clamp(state.scrollTo + d, 0, state.righe - 1);
+  state.scrollTo = clamp(state.scrollTo + d, 0, maxScroll());
   snapSoon();
 }
 function updateRail(){
-  const n = state.righe;
+  const max = maxScroll();
+  if (!max) return;                       // niente da scorrere: il binario e' nascosto dal CSS
+  const n = max + 1;
   q('#rail-txt').textContent = (Math.round(state.scroll) + 1) + ' / ' + n;
-  const t = n > 1 ? state.scroll / (n - 1) : 0;
-  q('#rail-thumb').style.transform = 'translateY(' + (t * (100 * (n - 1))) + '%)';
+  const t = state.scroll / max;
+  q('#rail-thumb').style.transform = 'translateY(' + (t * (100 * max)) + '%)';
   q('#rail-thumb').style.height = (100 / n) + '%';
 }
 
@@ -927,7 +950,7 @@ function bindInput(){
       const vh = 2 * state.distShelf * Math.tan(THREE.MathUtils.degToRad(FOV)/2);
       state.scrollTo = clamp(
         state.scrollTo - (dy * vh / window.innerHeight) / KAL.passo,
-        0, state.righe - 1
+        0, maxScroll()
       );
     }
   });
@@ -1326,7 +1349,7 @@ function goToGame(id){
   const list = LIB.list(state.sort);
   const i = list.findIndex(function(g){ return g.id === id; });
   if (i < 0) return;
-  state.scrollTo = clamp(Math.floor(i / state.cols), 0, state.righe - 1);
+  state.scrollTo = clamp(Math.floor(i / state.cols), 0, maxScroll());
 }
 
 /* ===============================================================

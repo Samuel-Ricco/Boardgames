@@ -71,11 +71,18 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
 - Misure di una KALLAX vera: **cubo da 33 cm, montanti da 3.8, profondità 39**.
   Il cubo da 33 e la scatola da 30 è il motivo per cui mezzo mondo ci tiene i
   giochi da tavolo: ci entra esatta, 1.5 cm di aria per lato.
-- **Una scatola per cubo.** Le colonne (`state.cols`, 1–4) dipendono dal rapporto
-  d'aspetto, come le colonne di una griglia CSS: una fila da quattro è larga 15 e
-  alta 3.3 — rapporto 4.5 — e su schermo verticale la camera dovrebbe arretrare
-  fino a mostrare sei file. Con meno colonne la fila si accorcia e la libreria
-  diventa semplicemente più alta.
+- **Una scatola per cubo.** Le colonne sono **quattro in orizzontale, tre
+  altrimenti**, e sotto le tre non si scende: con una sola il mobile non sembrava
+  più una libreria, solo una pila di scatole.
+- **Tre colonne su un telefono hanno una conseguenza inevitabile.** Una fila da
+  tre è larga 11.4 e alta 3.3: per farla entrare in larghezza su uno schermo
+  verticale la camera arretra tanto che nel quadro finiscono sette file. Non è un
+  difetto correggibile, è il rapporto fra le due misure — quindi quando ci sta
+  tutto si inquadra **la libreria intera** (`state.tuttaVisibile`), si spegne lo
+  scorrimento e si nasconde il binario, invece di far muovere una barra che non
+  muove niente. Con abbastanza giochi lo scorrimento torna da solo.
+- `maxScroll()` è l'ultima fila su cui ha senso fermarsi: `righe − file visibili`,
+  non `righe − 1`. Con l'altra formula si scorreva fin dentro il vuoto.
 - Le file: `max(4, ceil(n/cols) + 1)`. Quella di scorta serve a far capire che
   continua.
 - **Il mobile si costruisce a montanti e ripiani passanti**, non a cubi separati:

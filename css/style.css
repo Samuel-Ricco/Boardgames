@@ -132,6 +132,9 @@ body.dentro .dentro-only{display:inline-flex !important}
   opacity:0; transition:opacity .5s ease; pointer-events:none;
 }
 body.browse #rail{opacity:1}
+/* la libreria ci sta tutta nel quadro: non c'e' niente da scorrere */
+body.ferma #rail{opacity:0 !important}
+body.ferma .hint small{display:none}
 #rail-txt{
   font-family:var(--ff-display); font-size:15px; letter-spacing:.12em;
   color:var(--ink-soft); writing-mode:vertical-rl;
