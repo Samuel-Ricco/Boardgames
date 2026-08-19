@@ -1,66 +1,67 @@
 /* ============================================================
    il dado e' trap - scena 3D
 
-   Fasi: load -> intro (le ante si aprono e la camera entra) ->
-   browse (uno scaffale per schermata, si scorre) -> focus (la
-   scatola esce) -> review (il coperchio si alza e si apre il
-   pannello). Il ciclo di rendering non si ferma mai.
+   Fasi: load -> intro (la camera si avvicina) -> browse (una fila
+   di cubi per schermata, si scorre) -> focus (la scatola esce) ->
+   review (il coperchio si alza e si apre il pannello). Il ciclo di
+   rendering non si ferma mai.
 
-   L'armadio non ha un'altezza fissa: i vani si contano dai giochi
-   nella libreria, e la camera scorre da uno all'altro. Aggiungere
-   giochi lo fa crescere verso il basso.
+   Il mobile e' una libreria a cubi: niente ante, una scatola per
+   cubo. Non ha un'altezza fissa -- le file si contano dai giochi in
+   collezione e la camera scorre da una all'altra. Aggiungere giochi
+   la fa crescere verso il basso.
    ============================================================ */
 (function(){
 'use strict';
 
 /* --- misure, in unita' da 10 cm ------------------------------- */
-const CAB = {
-  w: 11.4,        // larghezza esterna
-  d: 4.2,         // profondita'
-  t: 0.36,        // spessore dei pannelli
-  plinth: 0.9,    // zoccolo
-  bayH: 4.0       // altezza di un vano
+/* Una KALLAX vera: cubo da 33 cm, montanti spessi, 39 di profondita'.
+   Il cubo da 33 e la scatola da 30 e' il motivo per cui mezzo mondo
+   ci tiene i giochi da tavolo: ci entra esatta. */
+const KAL = {
+  cell: 3.3,      // luce interna del cubo
+  t: 0.38,        // spessore di montanti e ripiani
+  d: 3.9          // profondita'
 };
-CAB.front = CAB.d / 2;
+KAL.front = KAL.d / 2;
+KAL.passo = KAL.cell + KAL.t;             // da un cubo al successivo
 
-const BOX = { w: 3.4, h: 3.4, t: 0.84, lid: 0.55 };
-/* Quante scatole per scaffale, e dove. Non e' fisso: dipende dal
-   formato dello schermo, come le colonne di una griglia CSS.
-   Uno scaffale da tre e' largo 10.5 e alto 4 -- rapporto 2.6 -- e su una
-   finestra verticale, per farlo entrare in larghezza, la camera deve
-   arretrare tanto da mostrare quattro mensole con le scatole grandi come
-   francobolli. Con meno scatole per ripiano lo scaffale si accorcia, la
-   camera resta vicina, e l'armadio semplicemente diventa piu' alto: cosa
-   di cui non gliene importa niente, visto che e' gia' infinito. */
-const SLOTS = {
-  1: [0],
-  2: [-1.85, 1.85],
-  3: [-3.55, 0, 3.55]
-};
-function perBayPer(aspect){
-  if (aspect >= 1.05) return 3;
-  if (aspect >= 0.72) return 2;
+const BOX = { w: 3.0, h: 3.0, t: 0.84, lid: 0.55 };
+
+/* Quante colonne di cubi. Non e' fisso: dipende dal formato dello
+   schermo, come le colonne di una griglia CSS. Una fila da quattro e'
+   larga 15 e alta 3.3 -- rapporto 4.5 -- e su una finestra verticale,
+   per farla entrare in larghezza, la camera arretrerebbe tanto da
+   mostrare sei file con le scatole grandi come francobolli. Con meno
+   colonne la fila si accorcia, la camera resta vicina, e la libreria
+   diventa semplicemente piu' alta: cosa di cui non le importa niente,
+   visto che e' gia' infinita. */
+function colonnePer(aspect){
+  if (aspect >= 1.35) return 4;
+  if (aspect >= 0.95) return 3;
+  if (aspect >= 0.62) return 2;
   return 1;
 }
-const DOOR_MAX = 1.42;                   // ~81 gradi
 
-/* L'armadio e' ancorato in ALTO, non in basso.
-   Il cielo del primo vano sta a una quota fissa e i vani in piu'
-   crescono verso il basso, insieme allo zoccolo e al pavimento. Cosi'
+/* La libreria e' ancorata in ALTO, non in basso.
+   Il cielo della prima fila sta a una quota fissa e le file in piu'
+   crescono verso il basso, portandosi dietro il pavimento. Cosi'
    aggiungere giochi non cambia di una virgola quello che si vede
    nell'animazione di apertura: la facciata inquadrata all'inizio e'
-   sempre la stessa, tre mensole, e il resto continua fuori dal quadro.
-   Ancorandolo in basso invece il mobile si allungava verso l'alto e
-   l'intro doveva allontanarsi per farcelo stare. */
-const FACCIATA = 3;                        // vani mostrati nell'intro
-CAB.topY = CAB.plinth + FACCIATA * CAB.bayH + FACCIATA * CAB.t;
+   sempre la stessa, quattro file, e il resto continua fuori dal
+   quadro. Ancorandola in basso, il mobile si allungherebbe verso
+   l'alto e l'intro dovrebbe allontanarsi per farcelo stare. */
+const FACCIATA = 4;                       // file mostrate nell'intro
+KAL.topY = FACCIATA * KAL.passo + KAL.t;
 
-// pagina 0 = vano in cima; cresce verso il basso
-const bayFloor  = p => CAB.topY - p * (CAB.bayH + CAB.t) - CAB.bayH;
-const bayCenter = p => bayFloor(p) + CAB.bayH / 2;
-const cabH      = b => b * CAB.bayH + (b + 1) * CAB.t;
-// quota del pavimento: scende insieme all'armadio
-const groundY   = b => CAB.topY + CAB.t - cabH(b) - CAB.plinth;
+// riga 0 = quella in cima; cresce verso il basso
+const rigaY   = r => KAL.topY - KAL.t - KAL.cell/2 - r * KAL.passo;
+const grigliaH = r => r * KAL.cell + (r + 1) * KAL.t;
+const grigliaW = c => c * KAL.cell + (c + 1) * KAL.t;
+// colonna 0 = quella a sinistra
+const colonnaX = (c, cols) => -grigliaW(cols)/2 + KAL.t + KAL.cell/2 + c * KAL.passo;
+// quota del pavimento: scende insieme alla libreria
+const groundY  = r => KAL.topY - grigliaH(r);
 
 /* --- stato ---------------------------------------------------- */
 const state = {
@@ -69,16 +70,15 @@ const state = {
   sort: 'aggiunta',
   hover: null,
   focused: null,
-  doors: 0,
   bayLight: 0,
   focusLight: 0,
   px: 0, py: 0, tx: 0, ty: 0,
-  bays: 3,
-  scroll: 0, scrollTo: 0,      // 0 = scaffale in cima
+  righe: 4,
+  scroll: 0, scrollTo: 0,      // 0 = fila in cima
   dragging: false,
   distShelf: 22, distFar: 30, introY: 8,
   side: true,                  // il pannello si apre di lato (schermo largo)
-  perBay: 3, slotX: SLOTS[3]   // riempiti da layout(), dipendono dal formato
+  cols: 4                      // riempita da layout(), dipende dal formato
 };
 
 const FOV = 38;
@@ -86,7 +86,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 const camBase = new THREE.Vector3(0, 8, 26);
 
 let renderer, scene, camera, raycaster, pointer;
-let cabGroup, propGroup, doorL, doorR, bayLights = [], focusLight;
+let cabGroup, propGroup, bayLights = [], focusLight;
 let floorMesh, wallMesh;
 let boxes = [];
 let MATS = null;
@@ -162,15 +162,18 @@ function makeWoodMat(o){
   });
 }
 
-// I materiali del mobile si generano una volta sola: l'armadio viene
-// ricostruito a ogni cambio di libreria, le venature no.
+/* Rovere chiaro, quello delle KALLAX: venatura tenue e poco contrasto,
+   se no a questa luminosita' il legno sembra finto invecchiato.
+   `orizz` e' per i ripiani, con la venatura girata di 90 gradi: e' cosi'
+   che si vede sul mobile vero, e senza si nota che e' tutta uguale. */
 function makeMats(){
   MATS = {
-    front: makeWoodMat({ base:'#5a3620', dark:'#2b1a10', light:'#8b5730', lines:170, knots:3 }),
-    vert:  makeWoodMat({ base:'#54321e', dark:'#28170e', light:'#84512c', lines:170, knots:2, rot: Math.PI/2 }),
-    inner: makeWoodMat({ base:'#4a2d1a', dark:'#25150c', light:'#75482a', lines:150, knots:1, rough:.86 }),
-    dim:   makeWoodMat({ base:'#3c2415', dark:'#1c1009', light:'#5c3820', lines:140, knots:1, rough:.9 }),
-    brass: new THREE.MeshStandardMaterial({ color: 0xc9973f, roughness: .32, metalness: .92 })
+    vert: makeWoodMat({ base:'#c9b085', dark:'#9c7f52', light:'#e8d8b6',
+                        lines:220, knots:2, rough:.70, bump:.05, rot: Math.PI/2 }),
+    orizz: makeWoodMat({ base:'#cdb489', dark:'#a08356', light:'#ebdcba',
+                         lines:220, knots:2, rough:.70, bump:.05 }),
+    fondo: makeWoodMat({ base:'#bda283', dark:'#94795a', light:'#d8c5a4',
+                         lines:160, knots:1, rough:.86, bump:.02 })
   };
 }
 
@@ -181,124 +184,112 @@ function slab(w, h, d, mat, x, y, z){
   return m;
 }
 
+/* Stanza chiara, luce diffusa da finestra. Il grosso lo fa l'ambiente e
+   non una lampada: una libreria aperta in una stanza luminosa non ha
+   ombre nette da nessuna parte, e cercare il faretto d'atmosfera qui
+   farebbe solo sporcare i cubi di macchie. */
+const SFONDO = 0xe6ddd0;
+
 function buildRoom(){
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x100d0b);
-  scene.fog = new THREE.Fog(0x100d0b, 34, 96);
+  scene.background = new THREE.Color(SFONDO);
+  scene.fog = new THREE.Fog(SFONDO, 40, 120);
 
-  // Il pavimento non sta a quota zero: sta sotto l'armadio, e l'armadio
-  // scende man mano che si allunga. Altrimenti, con molti scaffali, la
-  // camera scorrendo verso il basso finirebbe sotto il pavimento e se lo
-  // troverebbe davanti a tagliare la scena.
-  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(200,200), makeWoodMat({
-    base:'#33200f', dark:'#170d06', light:'#4d301a',
-    lines: 200, knots: 2, repeat:[11,11], rough:.62, bump:.02
+  // Il pavimento non sta a quota zero: sta sotto la libreria, e la
+  // libreria scende man mano che si allunga. Altrimenti, con molte file,
+  // la camera scorrendo verso il basso finirebbe sotto il pavimento e se
+  // lo troverebbe davanti a tagliare la scena.
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(240,240), makeWoodMat({
+    base:'#cbbba4', dark:'#a8967c', light:'#e3d7c3',
+    lines: 180, knots: 1, repeat:[13,13], rough:.72, bump:.012
   }));
   floorMesh.rotation.x = -Math.PI/2;
   floorMesh.receiveShadow = true;
   scene.add(floorMesh);
 
-  // parete quasi a contatto con lo schienale: staccata, l'ombra
-  // dell'armadio ci si stampa sopra come una lastra nera
+  // parete quasi a contatto con lo schienale: staccata, l'ombra del
+  // mobile ci si stampa sopra come una lastra
   wallMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(200, 400),
-    new THREE.MeshStandardMaterial({ color: 0x35261c, roughness: .96, metalness: 0 })
+    new THREE.PlaneGeometry(240, 400),
+    new THREE.MeshStandardMaterial({ color: 0xe9e2d7, roughness: .98, metalness: 0 })
   );
-  wallMesh.position.set(0, 0, -2.35);
+  wallMesh.position.set(0, 0, -KAL.d/2 - .06);
   wallMesh.receiveShadow = true;
   scene.add(wallMesh);
 
-  scene.add(new THREE.AmbientLight(0xffdcb4, .34));
+  // il cielo chiaro sopra e il rimbalzo caldo del pavimento sotto:
+  // e' quello che fa sembrare la stanza illuminata da una finestra
+  scene.add(new THREE.HemisphereLight(0xf7f2e8, 0xcbb89a, .52));
+  scene.add(new THREE.AmbientLight(0xfff6e8, .20));
 
-  // quasi frontale: di lato allungherebbe l'ombra sulla parete
-  const key = new THREE.SpotLight(0xffd7a3, 2.1, 120, .9, .62, 1.05);
-  key.position.set(-6, 26, 25);
-  key.target.position.set(0, 9, 0);
+  // luce di finestra: larga, morbida, quasi frontale. Di lato
+  // allungherebbe l'ombra della libreria sulla parete.
+  const key = new THREE.DirectionalLight(0xfff4e2, .95);
+  key.position.set(-9, 22, 26);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
-  key.shadow.camera.near = 6;
+  key.shadow.camera.near = 1;
   key.shadow.camera.far = 90;
-  key.shadow.bias = -0.0006;
-  key.shadow.normalBias = 0.02;
+  key.shadow.camera.left = -26;
+  key.shadow.camera.right = 26;
+  key.shadow.camera.top = 30;
+  key.shadow.camera.bottom = -30;
+  key.shadow.bias = -0.0004;
+  key.shadow.normalBias = 0.03;
   scene.add(key, key.target);
 
-  const fill = new THREE.PointLight(0xffa869, .55, 60, 1.4);
-  fill.position.set(14, 8, 15);
+  // riempimento da destra, senza ombre: schiarisce dentro i cubi
+  const fill = new THREE.DirectionalLight(0xffeedd, .22);
+  fill.position.set(16, 8, 18);
   scene.add(fill);
 
-  // non proietta ombre: schiarisce proprio dentro l'ombra dell'armadio
-  const wash = new THREE.DirectionalLight(0xffb87a, .2);
-  wash.position.set(9, 10, 22);
-  scene.add(wash);
-
-  const rim = new THREE.DirectionalLight(0x8fb0cc, .12);
-  rim.position.set(16, 14, -8);
-  scene.add(rim);
-
-  focusLight = new THREE.PointLight(0xffd9a8, 0, 26, 1.6);
+  focusLight = new THREE.PointLight(0xfff1dd, 0, 26, 1.6);
   scene.add(focusLight);
 }
 
-/* --- il mobile, alto quanto servono i vani --------------------- */
+/* --- la libreria a cubi, alta quanto servono le file ------------
+   Niente cassa e niente ante: montanti passanti dall'alto in basso e
+   ripiani passanti da parte a parte, come si vede sulla KALLAX vera.
+   Costruirla come una griglia di scatole separate darebbe gli stessi
+   pixel ma con quattro volte i triangoli e le giunzioni visibili. */
 function buildCabinet(){
   killGroup(cabGroup, false);
   bayLights.length = 0;
 
-  const bays = state.bays, H = cabH(bays), W = CAB.w, D = CAB.d, T = CAB.t;
-  const y0 = groundY(bays) + CAB.plinth;         // quota del fondo della cassa
+  const righe = state.righe, cols = state.cols;
+  const W = grigliaW(cols), H = grigliaH(righe), T = KAL.t, D = KAL.d;
+  const cima = KAL.topY, fondo = groundY(righe);
   const g = new THREE.Group();
 
-  // stanza e zoccolo seguono l'armadio verso il basso
-  floorMesh.position.y = groundY(bays);
-  wallMesh.position.y = y0 + H/2;
+  // stanza e mobile scendono insieme
+  floorMesh.position.y = fondo;
+  wallMesh.position.y = fondo + H/2;
 
-  g.add(slab(W, CAB.plinth, D - .3, MATS.dim, 0, y0 - CAB.plinth/2, -.15));
-  g.add(slab(W + .7, .42, D + .5, MATS.front, 0, y0 + H + .21, .1));
-
-  g.add(slab(T, H, D, MATS.vert, -W/2 + T/2, y0 + H/2, 0));
-  g.add(slab(T, H, D, MATS.vert,  W/2 - T/2, y0 + H/2, 0));
-  g.add(slab(W - T*2, T, D, MATS.front, 0, y0 + H - T/2, 0));
-  g.add(slab(W - T*2, T, D, MATS.front, 0, y0 + T/2, 0));
-  g.add(slab(W - T*2, H - T*2, .16, MATS.dim, 0, y0 + H/2, -D/2 + .12));
-
-  // i ripiani stanno sotto ogni vano tranne l'ultimo, che poggia sul fondo
-  for (let p = 0; p < bays - 1; p++){
-    g.add(slab(W - T*2, T, D - .55, MATS.inner, 0, bayFloor(p) - T/2, -.2));
+  // montanti: due esterni e uno per ogni divisione interna
+  for (let c = 0; c <= cols; c++){
+    const x = -W/2 + T/2 + c * KAL.passo;
+    g.add(slab(T, H, D, MATS.vert, x, fondo + H/2, 0));
   }
 
-  // una luce per vano, alta e avanti: striscia sulle copertine
-  for (let p = 0; p < bays; p++){
-    const l = new THREE.PointLight(0xffcb92, 0, 9.5, 1.8);
-    l.position.set(0, bayFloor(p) + CAB.bayH * .74, 1.2);
+  // ripiani: cielo, fondo e uno per ogni divisione
+  for (let r = 0; r <= righe; r++){
+    const y = cima - T/2 - r * KAL.passo;
+    g.add(slab(W - T*2, T, D, MATS.orizz, 0, y, 0));
+  }
+
+  // schienale sottile e arretrato: senza, i cubi si aprono sulla parete
+  // e le scatole perdono il loro sfondo
+  g.add(slab(W - T*2, H - T*2, .10, MATS.fondo, 0, fondo + H/2, -D/2 + .07));
+
+  /* Una luce per fila, appena davanti al bordo. Serve poco: la stanza e'
+     gia' chiara, questa fa solo risaltare le copertine dentro al cubo,
+     dove la luce di finestra non arriva mai del tutto. */
+  for (let r = 0; r < righe; r++){
+    const l = new THREE.PointLight(0xfff0da, 0, 8, 1.9);
+    l.position.set(0, rigaY(r) + KAL.cell * .34, KAL.front + .5);
     bayLights.push(l);
     g.add(l);
   }
-
-  // ante: perno sul bordo esterno, il pannello spostato di meta' larghezza
-  const dw = W/2, dh = H - .12, dz = CAB.front + .13;
-  function door(sign){
-    const grp = new THREE.Group();
-    grp.position.set(sign * W/2, y0 + H/2, dz);
-    grp.add(slab(dw, dh, .26, MATS.front, sign * -dw/2, 0, 0));
-    grp.add(slab(dw - 1.3, dh - 1.3, .10, MATS.dim, sign * -dw/2, 0, .17));
-
-    const knob = new THREE.Mesh(new THREE.SphereGeometry(.17, 20, 14), MATS.brass);
-    knob.position.set(sign * -dw + sign * .55, 0, .38);
-    knob.castShadow = true;
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.24,10), MATS.brass);
-    stem.rotation.x = Math.PI/2;
-    stem.position.set(knob.position.x, 0, .24);
-    grp.add(knob, stem);
-
-    for (let i = -1; i <= 1; i += 2){
-      const h = new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.5,8), MATS.brass);
-      h.position.set(0, i * dh*.34, -.05);
-      grp.add(h);
-    }
-    return grp;
-  }
-  doorL = door(-1); doorR = door(1);
-  g.add(doorL, doorR);
 
   cabGroup = g;
   scene.add(g);
@@ -401,35 +392,35 @@ function buildProps(used){
   killGroup(propGroup, true);
   const g = new THREE.Group();
 
-  for (let page = 0; page < state.bays; page++){
-    const y = bayFloor(page);
-    for (let slot = 0; slot < state.perBay; slot++){
-      if (used.has(page * state.perBay + slot)) continue;
+  for (let page = 0; page < state.righe; page++){
+    const y = rigaY(page) - KAL.cell/2;      // il piano del cubo
+    for (let slot = 0; slot < state.cols; slot++){
+      if (used.has(page * state.cols + slot)) continue;
       const seed = page * 17 + slot * 5 + 3;
       const r = srnd(seed);
       if (r < .34) continue;                       // qualche posto resta vuoto
-      const x = state.slotX[slot];
+      const x = colonnaX(slot, state.cols);
 
       if (r < .58){                                // pila di scatole coricate
         const n = 2 + Math.floor(srnd(seed+1)*2);
         for (let i = 0; i < n; i++){
           const m = new THREE.Mesh(
-            new THREE.BoxGeometry(2.7, .58, 2.7),
+            new THREE.BoxGeometry(2.5, .52, 2.5),
             new THREE.MeshStandardMaterial({
               map: ART.toTex(ART.coverGeneric(Math.floor(srnd(seed+i*3)*5))), roughness: .7
             })
           );
-          m.position.set(x + (srnd(seed+i)-.5)*.3, y + .29 + i*.58, .1);
+          m.position.set(x + (srnd(seed+i)-.5)*.24, y + .26 + i*.52, -.1);
           m.rotation.y = (srnd(seed+i*2)-.5)*.16;
           m.castShadow = true; m.receiveShadow = true;
           g.add(m);
         }
       } else if (r < .84){                         // fila di dorsi
-        const n = 4 + Math.floor(srnd(seed+2)*3);
+        const n = 4 + Math.floor(srnd(seed+2)*2);
         for (let i = 0; i < n; i++){
-          const w = .42 + srnd(seed+i*7)*.2, h = 2.2 + srnd(seed+i*11)*.6;
-          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.7), thinSpine(seed+i));
-          m.position.set(x - 1.3 + i*.66, y + h/2, .1);
+          const w = .38 + srnd(seed+i*7)*.16, h = 1.9 + srnd(seed+i*11)*.7;
+          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.5), thinSpine(seed+i));
+          m.position.set(x - 1.15 + i*.56, y + h/2, -.1);
           m.rotation.y = (srnd(seed+i)-.5)*.06;
           m.castShadow = true; m.receiveShadow = true;
           g.add(m);
@@ -439,22 +430,22 @@ function buildProps(used){
         for (let i = 0; i < 3; i++){
           const s = .58;
           const d = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), ART.dieMaterials(cols[i][0], cols[i][1]));
-          d.position.set(x - .9 + i*.8, y + s/2, .5 + (i%2)*.5);
+          d.position.set(x - .75 + i*.62, y + s/2, .2 + (i%2)*.4);
           d.rotation.y = srnd(seed+i*13) * Math.PI;
           d.castShadow = true; d.receiveShadow = true;
           g.add(d);
         }
         const d20 = new THREE.Mesh(
           new THREE.IcosahedronGeometry(.62, 0),
-          new THREE.MeshStandardMaterial({ color: 0xc9973f, roughness: .34, metalness: .8, flatShading: true })
+          new THREE.MeshStandardMaterial({ color: 0xb98a3a, roughness: .38, metalness: .7, flatShading: true })
         );
-        d20.position.set(x + 1.2, y + .52, .6);
+        d20.position.set(x + .95, y + .52, .35);
         d20.rotation.set(.4, srnd(seed+4)*3, .2);
         d20.castShadow = true; d20.receiveShadow = true;
         g.add(d20);
         const m1 = makeMeeple(0xd8552c, .42), m2 = makeMeeple(0xe8c05f, .36);
-        m1.position.set(x + .2, y + .45, .8);
-        m2.position.set(x + .7, y + .40, 1.1); m2.rotation.y = -.5;
+        m1.position.set(x + .15, y + .45, .55);
+        m2.position.set(x + .55, y + .40, .8); m2.rotation.y = -.5;
         g.add(m1, m2);
       }
     }
@@ -469,8 +460,9 @@ function buildProps(used){
    =============================================================== */
 
 function homeOf(index, h){
-  const page = Math.floor(index / state.perBay), slot = index % state.perBay;
-  return new THREE.Vector3(state.slotX[slot], bayFloor(page) + h/2, .35);
+  const page = Math.floor(index / state.cols), slot = index % state.cols;
+  // poggiata sul piano del cubo, un filo dentro rispetto al fronte
+  return new THREE.Vector3(colonnaX(slot, state.cols), rigaY(page) - KAL.cell/2 + h/2, .2);
 }
 
 /* Rifa' la scena a partire dalla libreria. Le scatole gia' presenti
@@ -479,10 +471,10 @@ function homeOf(index, h){
 function applyLibrary(opts){
   opts = opts || {};
   const list = LIB.list(state.sort);
-  const bays = Math.max(FACCIATA, Math.ceil(list.length / state.perBay) + 1);
+  const bays = Math.max(FACCIATA, Math.ceil(list.length / state.cols) + 1);
 
-  if (bays !== state.bays || !cabGroup){
-    state.bays = bays;
+  if (bays !== state.righe || !cabGroup){
+    state.righe = bays;
     buildCabinet();
   }
 
@@ -543,7 +535,7 @@ function applyLibrary(opts){
   });
 
   buildProps(used);
-  state.scrollTo = clamp(state.scrollTo, 0, state.bays - 1);
+  state.scrollTo = clamp(state.scrollTo, 0, state.righe - 1);
   updateRail();
 }
 
@@ -558,31 +550,30 @@ function layout(){
 
   // le colonne dello scaffale cambiano col formato: se cambiano, la
   // libreria va ridisposta prima di ricalcolare le distanze
-  const perBay = perBayPer(aspect);
-  const cambiato = perBay !== state.perBay;
-  state.perBay = perBay;
-  state.slotX = SLOTS[perBay];
+  const cols = colonnePer(aspect);
+  const cambiato = cols !== state.cols;
+  state.cols = cols;
 
   const half = THREE.MathUtils.degToRad(FOV) / 2, tan = Math.tan(half);
   const tall = aspect < .8;
 
-  // Navigazione: si guarda dentro un vano. In larghezza si inquadrano
-  // le scatole, non il mobile: i fianchi possono uscire dal quadro,
-  // se li si volesse tenere bisognerebbe stare cosi' lontani da vedere
-  // mezzo armadio invece dello scaffale.
-  const bw = (state.slotX[state.slotX.length-1] + BOX.w/2) + .5;
-  const bh = (CAB.bayH + 1.1) / 2;
-  state.distShelf = .6 + Math.max(bh / tan, bw / (tan * aspect));
+  // Navigazione: una fila di cubi riempie lo schermo. Le colonne sono
+  // gia' scelte in base al formato, quindi la fila ci sta per intero e
+  // conviene inquadrarla tutta, montanti compresi -- e' quella la
+  // griglia che si deve leggere.
+  const bw = grigliaW(state.cols)/2 + .5;
+  const bh = (KAL.cell + 1.7) / 2;
+  state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
 
-  // Intro: sempre la stessa facciata, tre mensole, comunque sia lunga
-  // la libreria. Non dipende da state.bays apposta -- se dipendesse,
-  // aggiungere giochi farebbe rimpicciolire l'armadio nell'animazione
-  // di apertura, e l'effetto "poi continua" si perderebbe.
-  const cima = CAB.topY + CAB.t + .42;                       // sopra la cornice
-  const fondo = CAB.topY - FACCIATA * CAB.bayH - (FACCIATA - 1) * CAB.t;
-  const fitH = (cima - fondo) + 2.2;
-  const fitW = (CAB.w + (tall ? 1.4 : 5.0)) / 2;
-  state.distFar = CAB.front + Math.max((fitH/2) / tan, fitW / (tan * aspect));
+  // Intro: sempre la stessa facciata, quattro file, comunque sia lunga
+  // la collezione. Non guarda state.righe apposta -- se lo guardasse,
+  // aggiungere giochi farebbe rimpicciolire la libreria nell'avvicinamento
+  // e l'effetto "poi continua" si perderebbe.
+  const cima = KAL.topY + .5;
+  const fondo = KAL.topY - grigliaH(FACCIATA) - .5;
+  const fitH = (cima - fondo) + 1.6;
+  const fitW = (grigliaW(state.cols) + (tall ? 1.6 : 4.0)) / 2;
+  state.distFar = KAL.front + Math.max((fitH/2) / tan, fitW / (tan * aspect));
   state.introY = (cima + fondo) / 2;
 
   camera.aspect = aspect;
@@ -596,15 +587,14 @@ function layout(){
   reposeFocused();          // una scatola aperta va rimessa a posto sul quadro nuovo
 }
 
-// Non il centro geometrico del vano: le scatole poggiano sul ripiano,
-// quindi la loro massa sta nella meta' bassa e l'inquadratura va
-// abbassata di conseguenza.
-const camYFor = s => bayCenter(s) - .75;
+// Il centro del cubo va benissimo: la scatola lo riempie quasi tutto,
+// non c'e' l'aria sopra che c'era nei vani dell'armadio.
+const camYFor = s => rigaY(s);
 
 // Quanto davanti al mobile viene tenuta la scatola aperta. Deve stare
 // oltre il fronte e oltre lo sventagliamento delle ante, se no il
 // coperchio alzato entra nel ripiano.
-const FOCUS_Z = CAB.front + 4.2;
+const FOCUS_Z = KAL.front + 4.2;
 
 /* Dove va la scatola quando esce, in frazioni di quadro: a sinistra se
    il pannello si apre di lato, in alto se sale dal basso.
@@ -642,6 +632,8 @@ function focusPose(box){
    INTERAZIONE
    =============================================================== */
 
+/* Senza ante non c'e' niente da aprire: l'ingresso e' un solo
+   avvicinamento, dalla libreria intera alla prima fila di cubi. */
 function intro(){
   state.phase = 'intro';
   state.scroll = state.scrollTo = 0;
@@ -649,16 +641,13 @@ function intro(){
   const to   = new THREE.Vector3(0, camYFor(0), state.distShelf);
   camBase.copy(from);
 
-  tween(1.5, function(p){ state.doors = easeOut(p) * DOOR_MAX; }, null, .35);
-  tween(1.1, function(p){ state.bayLight = p; }, null, .8);
-  // la camera aspetta che le ante siano aperte, poi entra nello scaffale
-  tween(1.6, function(p){
-    const e = easeInOut(p);
-    camBase.lerpVectors(from, to, e);
+  tween(1.4, function(p){ state.bayLight = p; }, null, .9);
+  tween(2.3, function(p){
+    camBase.lerpVectors(from, to, easeInOut(p));
   }, function(){
     state.phase = 'browse';
     document.body.classList.add('browse');
-  }, 1.1);
+  }, .5);
 }
 
 function focusOn(box){
@@ -901,16 +890,16 @@ let snapT = 0;
 function snapSoon(){
   clearTimeout(snapT);
   snapT = setTimeout(function(){
-    state.scrollTo = clamp(Math.round(state.scrollTo), 0, state.bays - 1);
+    state.scrollTo = clamp(Math.round(state.scrollTo), 0, state.righe - 1);
   }, 220);
 }
 function scrollBy(d){
   if (state.phase !== 'browse') return;
-  state.scrollTo = clamp(state.scrollTo + d, 0, state.bays - 1);
+  state.scrollTo = clamp(state.scrollTo + d, 0, state.righe - 1);
   snapSoon();
 }
 function updateRail(){
-  const n = state.bays;
+  const n = state.righe;
   q('#rail-txt').textContent = (Math.round(state.scroll) + 1) + ' / ' + n;
   const t = n > 1 ? state.scroll / (n - 1) : 0;
   q('#rail-thumb').style.transform = 'translateY(' + (t * (100 * (n - 1))) + '%)';
@@ -937,8 +926,8 @@ function bindInput(){
       // quanti scaffali vale un pixel, a questa distanza di camera
       const vh = 2 * state.distShelf * Math.tan(THREE.MathUtils.degToRad(FOV)/2);
       state.scrollTo = clamp(
-        state.scrollTo - (dy * vh / window.innerHeight) / (CAB.bayH + CAB.t),
-        0, state.bays - 1
+        state.scrollTo - (dy * vh / window.innerHeight) / KAL.passo,
+        0, state.righe - 1
       );
     }
   });
@@ -1337,7 +1326,7 @@ function goToGame(id){
   const list = LIB.list(state.sort);
   const i = list.findIndex(function(g){ return g.id === id; });
   if (i < 0) return;
-  state.scrollTo = clamp(Math.floor(i / state.perBay), 0, state.bays - 1);
+  state.scrollTo = clamp(Math.floor(i / state.cols), 0, state.righe - 1);
 }
 
 /* ===============================================================
@@ -1386,11 +1375,10 @@ function frame(now){
   );
   camera.lookAt(0, camBase.y, 0);
 
-  if (doorL){ doorL.rotation.y = -state.doors; doorR.rotation.y = state.doors; }
-  for (let i = 0; i < bayLights.length; i++) bayLights[i].intensity = state.bayLight * .62;
+  for (let i = 0; i < bayLights.length; i++) bayLights[i].intensity = state.bayLight * .30;
 
   if (state.focused) focusLight.position.copy(state.focused.position).add(new THREE.Vector3(1.2, 2.2, 3.4));
-  focusLight.intensity = state.focusLight * 2.2;
+  focusLight.intensity = state.focusLight * 1.1;
 
   if (state.phase === 'browse' && !state.dragging){
     const hit = pick();
@@ -1523,7 +1511,7 @@ async function boot(){
   else renderer.outputEncoding = THREE.sRGBEncoding;
   if ('useLegacyLights' in renderer) renderer.useLegacyLights = true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.18;
+  renderer.toneMappingExposure = 0.90;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   q('#scene').appendChild(renderer.domElement);

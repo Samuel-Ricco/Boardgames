@@ -1,8 +1,11 @@
-# il dado è trap — note di progetto
+# il dado è trap — note di progetto (ramo `libreria`)
 
-Sito di recensioni di giochi da tavolo. **Il sito è un armadio in 3D**: si apre
-all'avvio, le scatole stanno sulle mensole, cliccandone una esce, si apre e mostra
-la recensione. Niente build, niente dipendenze da installare.
+Sito di recensioni di giochi da tavolo. **Il sito è una libreria a cubi in 3D**,
+una KALLAX: la camera si avvicina all'avvio, una scatola per cubo, cliccandone
+una esce, si apre e mostra la recensione. Niente build, niente dipendenze.
+
+Questo ramo è la variante «libreria» del progetto: su `main` il mobile è un
+armadio con le ante e la scena è notturna.
 
 ```
 index.html            markup
@@ -63,37 +66,45 @@ sito deve funzionare a rete staccata. Prima di aggiungere un `<link>` o un
 `state.phase`: `load` → `intro` → `browse` → `focus` → `review` → `closing`.
 Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
 
-## Armadio a scaffali
+## Libreria a cubi
 
-- I vani si contano dai giochi: `max(3, ceil(n/3) + 1)`. Quello di scorta serve a
-  far capire che l'armadio continua.
-- **Il primo gioco dell'ordinamento sta in cima**: `bay = bays-1-page`. Lo scroll
-  si misura in pagine dall'alto, non in vani dal basso.
-- `applyLibrary()` non ricrea le scatole che ci sono già: le fa scivolare al posto
-  nuovo, così riordinare si vede. Ricostruisce il mobile solo se cambia il numero
-  di vani.
-- Gli oggetti di contorno riempiono i posti vuoti e usano un rumore **ripetibile**
-  (`srnd`), se no a ogni riordino saltavano da un ripiano all'altro.
-- In navigazione la camera inquadra **le scatole, non i fianchi**: tenerli nel
-  quadro vorrebbe dire stare così lontani da vedere mezzo armadio. E guarda un
-  filo sotto il centro del vano, perché le scatole poggiano sul ripiano.
-- Lo scroll si aggancia allo scaffale più vicino 220 ms dopo che ci si è fermati.
+- Misure di una KALLAX vera: **cubo da 33 cm, montanti da 3.8, profondità 39**.
+  Il cubo da 33 e la scatola da 30 è il motivo per cui mezzo mondo ci tiene i
+  giochi da tavolo: ci entra esatta, 1.5 cm di aria per lato.
+- **Una scatola per cubo.** Le colonne (`state.cols`, 1–4) dipendono dal rapporto
+  d'aspetto, come le colonne di una griglia CSS: una fila da quattro è larga 15 e
+  alta 3.3 — rapporto 4.5 — e su schermo verticale la camera dovrebbe arretrare
+  fino a mostrare sei file. Con meno colonne la fila si accorcia e la libreria
+  diventa semplicemente più alta.
+- Le file: `max(4, ceil(n/cols) + 1)`. Quella di scorta serve a far capire che
+  continua.
+- **Il mobile si costruisce a montanti e ripiani passanti**, non a cubi separati:
+  stessi pixel, un quarto dei triangoli e nessuna giunzione visibile.
+- **Niente ante**: l'ingresso è un solo avvicinamento, dalla libreria intera alla
+  prima fila.
+- Gli oggetti di contorno riempiono i cubi vuoti con un rumore **ripetibile**
+  (`srnd`), se no a ogni riordino saltavano da un cubo all'altro.
 
-## Collezioni personali
+## Luce e colori
 
-- **Ogni riga ha un proprietario** e le regole del database mostrano a ciascuno
-  solo la sua: non esiste più lettura pubblica sui giochi.
-- **La chiave primaria è la coppia `(proprietario, id)`**: lo slug è unico dentro
-  una collezione, non nel mondo — due persone devono poter avere entrambe `root`.
-  Il client continua a usare solo `id` e non sa nulla del proprietario.
-- **Le copertine stanno in `<uid>/<slug>.jpg`**, una cartella a testa, e le regole
-  dello storage lasciano scrivere solo dentro la propria.
-- **Una collezione vuota è una risposta valida, non un guasto.** Solo se la
-  lettura *fallisce* si ripiega sulla copia locale. Confonderle farebbe comparire
-  i giochi di esempio nell'armadio di chi non ne ha ancora messo nessuno.
-- **`admin` non dà nessun potere in più**: chi è entrato comanda sulla propria
-  collezione e basta. Resta come etichetta per provare i due tipi di accesso.
-- Uscendo si ricarica e si svuota la copia locale: quella collezione non è più tua.
+La stanza è chiara: emisferica + ambiente fanno il grosso, una direzionale larga
+quasi frontale fa la forma e le ombre. **Attenzione a non esagerare**: la prima
+versione aveva emisferica 1.15 e ambiente 0.45 e la scena usciva slavata, media
+214/255 con tutto fra 205 e 237. Si misura leggendo i pixel, non a occhio.
+
+`--bg` nel CSS deve restare **uguale** a `SFONDO` in `js/app.js`: è la stessa
+tinta a tenere insieme caricamento, cancello e mondo dietro.
+
+## Vedere la scena quando l'anteprima non compone
+
+Il pannello a volte non disegna frame: niente screenshot, e senza frame anche le
+animazioni restano ferme. Si aggira così:
+
+1. si fa avanzare `frame()` a mano con un orologio finto **monotono**;
+2. si leggono i pixel dal contesto WebGL con `gl.readPixels` (capovolti);
+3. si spediscono a `tools/ricevi-fotogramma.mjs`, che li scrive su disco.
+
+Serve anche a misurare la luce invece di indovinarla.
 
 ## Admin
 

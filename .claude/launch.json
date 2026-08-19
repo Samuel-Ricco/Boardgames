@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dado",
+      "name": "dado-libreria",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8124", "--directory", "."],
-      "port": 8124
+      "runtimeArgs": ["-m", "http.server", "8125", "--directory", "."],
+      "port": 8125
     }
   ]
 }
