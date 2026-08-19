@@ -363,6 +363,19 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 }
 .add-form input:focus{outline:none; border-color:var(--amber)}
 .add-form button{grid-column:1/-1; margin-top:6px}
+.add-form label.wide{grid-column:1/-1}
+.add-form input[type=file]{
+  padding:7px 9px; font-size:12px; cursor:pointer; color:var(--ink-soft);
+}
+.add-form input[type=file]::file-selector-button{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; cursor:pointer; margin-right:10px;
+  background:rgba(232,178,95,.16); color:var(--amber);
+  border:1px solid var(--line); padding:6px 10px;
+}
+.add-form input[type=file]::file-selector-button:hover{background:var(--amber); color:#20150c}
+#m-file-nota{font-size:10px; letter-spacing:0; text-transform:none; line-height:1.5;
+  color:rgba(246,236,221,.38)}
 .add-foot{margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line);
   font-size:11px; color:rgba(246,236,221,.4); display:flex; flex-wrap:wrap;
   align-items:center; gap:10px}

@@ -160,26 +160,47 @@ async function miniatura(fileUrl){
   throw new Error('miniatura non trovata');
 }
 
-async function copertina(voce){
-  if (voce.fonte === 'bgg') return BGG.copertina(voce.id);
-  if (!voce.immagine) throw new Error('nessuna immagine');
-
-  const url = await miniatura(voce.immagine);
-  const im = await new Promise(function(res, rej){
-    const i = new Image();
-    i.crossOrigin = 'anonymous';
-    i.onload = function(){ res(i); };
-    i.onerror = function(){ rej(new Error('immagine non caricata')); };
-    i.src = url;
-  });
-
-  const W = Math.min(760, im.naturalWidth);
-  const H = Math.round(im.naturalHeight * (W / im.naturalWidth));
+function ridimensiona(im){
+  const W = Math.min(760, im.naturalWidth || im.width);
+  const H = Math.round((im.naturalHeight || im.height) * (W / (im.naturalWidth || im.width)));
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   c.getContext('2d').drawImage(im, 0, 0, W, H);
   return c.toDataURL('image/jpeg', .82);
 }
 
-return { fonte: fonte, cerca: cerca, dettagli: dettagli, copertina: copertina };
+function carica(url, conCors){
+  return new Promise(function(res, rej){
+    const i = new Image();
+    if (conCors) i.crossOrigin = 'anonymous';
+    i.onload = function(){ res(i); };
+    i.onerror = function(){ rej(new Error('immagine non caricata')); };
+    i.src = url;
+  });
+}
+
+async function copertina(voce){
+  if (voce.fonte === 'bgg') return BGG.copertina(voce.id);
+  if (!voce.immagine) throw new Error('nessuna immagine');
+  return ridimensiona(await carica(await miniatura(voce.immagine), true));
+}
+
+/* Una copertina scelta a mano dal disco.
+
+   Su Wikidata le immagini arrivano da Wikimedia Commons, che accetta
+   solo file con licenza libera: la grafica di una scatola e' protetta,
+   quindi non ci sta quasi mai. Su 4.445 giochi da tavolo, 597 hanno
+   una qualche immagine -- e sono foto di partite sul tavolo, non
+   copertine. Per quelle serve il file, preso dal press kit dell'editore
+   che per un sito di recensioni e' anche la fonte piu' corretta. */
+async function daFile(file){
+  if (!file) throw new Error('nessun file');
+  if (!/^image\//.test(file.type)) throw new Error('non e\' un\'immagine');
+  const url = URL.createObjectURL(file);
+  try { return ridimensiona(await carica(url, false)); }
+  finally { URL.revokeObjectURL(url); }
+}
+
+return { fonte: fonte, cerca: cerca, dettagli: dettagli,
+         copertina: copertina, daFile: daFile };
 })();

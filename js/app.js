@@ -1220,11 +1220,19 @@ async function addManual(){
     art: 'generic'
   };
 
-  // la copertina si scarica solo adesso: se si cambia idea a meta'
-  // ricerca, non si e' scaricato niente per niente
-  if (inAttesa && inAttesa.immagine && inAttesa.title === title){
-    const b = q('#m-go');
-    const prima = b.textContent;
+  /* La copertina: prima il file scelto a mano, che vince sempre --
+     e' quello che l'admin ha voluto. Se non c'e', quella della fonte.
+     Si scarica solo adesso: cambiando idea a meta' ricerca non si e'
+     scaricato niente per niente. */
+  const b = q('#m-go'), prima = b.textContent;
+  const file = q('#m-file').files[0];
+
+  if (file){
+    b.disabled = true; b.textContent = 'preparo la copertina...';
+    try { g.cover = await CATALOGO.daFile(file); }
+    catch(e){ flash('immagine non usata: ' + e.message); }
+    b.disabled = false; b.textContent = prima;
+  } else if (inAttesa && inAttesa.immagine && inAttesa.title === title){
     b.disabled = true; b.textContent = 'scarico la copertina...';
     try { g.cover = await CATALOGO.copertina(inAttesa); }
     catch(e){ flash('copertina non presa: uso quella disegnata'); }
@@ -1233,7 +1241,7 @@ async function addManual(){
 
   const added = LIB.add(g);
   inAttesa = null;
-  qa('#add-man input').forEach(function(i){ i.value = ''; });
+  qa('#add-man input').forEach(function(i){ i.value = ''; });   // svuota anche il file
   closeAdd();
   await loadCovers();
   applyLibrary({ animate: true });

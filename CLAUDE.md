@@ -216,6 +216,11 @@ in `supabase/migrations/`. La chiave `sb_secret_` non deve mai entrare nel repo.
   (l'editore è spesso il distributore locale), e l'immagine è quasi sempre una
   **foto del gioco allestito**, non la scatola. Per questo un risultato **riempie
   il modulo** invece di finire dritto sullo scaffale.
+- **Wikidata non ha le copertine, e non le avra' mai.** Le sue immagini vengono
+  da Wikimedia Commons, che accetta solo file con licenza libera: la grafica di
+  una scatola e' protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%)
+  e sono foto di partite sul tavolo. Per le copertine c'e' il **campo file** nel
+  modulo admin, che vince sempre sull'immagine della fonte.
 - **Le immagini di Wikimedia vanno chieste all'API di Commons** (`imageinfo` con
   `iiurlwidth`), mai costruite a mano né prese da `Special:FilePath`: quello
   risponde con un **redirect**, e in una richiesta CORS ogni passaggio della
