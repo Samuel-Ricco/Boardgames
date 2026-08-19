@@ -628,9 +628,18 @@ faccia** salvati sul profilo, le due funzioni di **richiesta amicizia**
 partecipanti, posizioni e vincitore. Tutte e sette le migrazioni sono applicate.
 Verificato rileggendo il database dall'esterno, non dalla cache del browser.
 
-Quello che **non** è ancora stato provato con due persone vere: richiesta,
-accettazione e visita a una libreria che sia davvero di qualcun altro. Serve un
-secondo account.
+Provato anche **con due account veri** (2026-08-20): amicizia accettata, la
+libreria dell'amico che si apre in scena con le sue recensioni, tutti i comandi
+di modifica spariti, e la scrittura su una sua riga che tocca **zero righe** —
+rifiutata dal server, non solo dall'interfaccia. La collezione di un estraneo
+torna zero righe.
+
+Dopo la migrazione `codice_riservato`: il proprio codice si legge (`mio_codice()`),
+quello di un amico **no** — `42501 permission denied` — e nemmeno il proprio per
+la via diretta. `select *` su `profili` è rifiutato, come previsto. Salvataggio
+di nick e faccia, elenco amici e richiesta per codice continuano a funzionare:
+la funzione di ricerca è `security definer` e legge la colonna che il client non
+può leggere.
 
 Cosa manca, in ordine di fastidio:
 
