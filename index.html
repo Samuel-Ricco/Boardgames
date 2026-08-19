@@ -37,7 +37,8 @@
              autocomplete="off" spellcheck="false" aria-label="cerca nella collezione">
       <button id="cerca-x" type="button" title="pulisci la ricerca" aria-label="pulisci">&times;</button>
     </div>
-    <span id="conta" class="tool count" aria-live="polite"></span>
+    <button id="conta" type="button" class="tool count" aria-live="polite"
+            title="vedi la libreria come elenco"></button>
     <button id="add" type="button" class="tool dentro-only" title="aggiungi un gioco">+</button>
     <div class="sortwrap">
       <button id="sort" type="button" class="tool" aria-haspopup="true" aria-expanded="false">
@@ -124,6 +125,22 @@
     <canvas id="tab-faccia" width="44" height="44" aria-hidden="true"></canvas><span>profilo</span></button>
 </nav>
 
+<!-- LA MIA LIBRERIA COME ELENCO. Lo scaffale in tre dimensioni e' bello
+     da guardare ma pessimo da consultare: dodici scatole per schermata,
+     i titoli piccoli, e per sapere se hai gia' un gioco devi scorrere i
+     mobili. Qui e' una riga per gioco, come il catalogo. Ci si arriva
+     dal contatore, che e' gia' il posto dove uno guarda per sapere
+     quanti sono. -->
+<section id="mia" aria-hidden="true" aria-label="la tua libreria come elenco">
+  <div class="cat-in">
+    <div class="cat-testa">
+      <p class="eyebrow" id="mia-eyebrow">la tua libreria</p>
+      <p id="mia-msg"></p>
+    </div>
+    <ol id="mia-list" class="righe"></ol>
+  </div>
+</section>
+
 <!-- IL CATALOGO: elenco piatto, una riga per gioco.
      Fuori dalla scena 3D apposta. La libreria in tre dimensioni e' la
      tua collezione, una cosa che si guarda; il catalogo sono migliaia
@@ -142,7 +159,7 @@
       <p id="cat-msg"></p>
     </div>
 
-    <ol id="cat-list"></ol>
+    <ol id="cat-list" class="righe"></ol>
 
     <div class="cat-fondo">
       <button id="cat-piu" type="button">altri giochi</button>

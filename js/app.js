@@ -608,6 +608,7 @@ function applyLibrary(opts){
   state.scrollTo = clamp(state.scrollTo, 0, maxScroll());
   updateRail();
   updateConta();
+  if (document.body.classList.contains('elenco')) disegnaMia();
 }
 
 /* ===============================================================
@@ -1257,7 +1258,8 @@ function bindInput(){
 
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
-      finiscePresa(true); chiudiMia(); chiudiPartita(); unfocus(); closeAdd(); return;
+      finiscePresa(true); chiudiMia(); chiudiPartita(); chiudiElenco();
+      unfocus(); closeAdd(); return;
     }
     if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
       e.preventDefault(); tornaACasa(); return;
@@ -1788,6 +1790,7 @@ function setSezione(s){
      l'elenco: tornando indietro ci si ritrovava un pannello a meta'
      schermo di cui non si ricordava piu' il perche'. */
   if (s !== 'collezione' && (state.phase === 'focus' || state.phase === 'review')) unfocus();
+  if (s !== 'collezione') chiudiElenco();
   state.sezione = s;
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
   document.body.classList.toggle('sez-profilo',  s === 'profilo');
@@ -1994,6 +1997,94 @@ function bindCatalogo(){
     }
     apriRiga(li);
   });
+}
+
+/* ===============================================================
+   LA MIA LIBRERIA COME ELENCO
+   ===============================================================
+
+   Lo scaffale in tre dimensioni e' bello da guardare e pessimo da
+   consultare: dodici scatole per schermata, i titoli piccoli, e per
+   sapere se un gioco ce l'hai gia' devi scorrere i mobili. L'elenco e'
+   la stessa collezione in una riga per gioco.
+
+   Ci si arriva dal CONTATORE, che e' gia' il posto dove uno guarda per
+   sapere quanti sono: non serviva un altro pulsante in una testata che
+   a 390 px e' gia' piena. */
+
+function rigaMia(g){
+  const chi = [g.designer, g.publisher].filter(Boolean).map(esc).join(' &middot; ');
+  const spec = [[g.players, 'giocatori'], [g.time, 'minuti'],
+                [g.year, 'anno'], [g.score, 'voto']]
+    .filter(function(x){ return x[0]; })
+    .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
+  const cop = g.cover
+    ? '<img src="' + esc(g.cover) + '" alt="" loading="lazy">'
+    : '<span class="senza">' + esc(String(g.title || '?').slice(0, 1).toUpperCase()) + '</span>';
+
+  return '<li data-id="' + esc(g.id) + '">' +
+    '<div class="cat-cop">' + cop + '</div>' +
+    '<div class="cat-dati">' +
+      '<h3>' + esc(g.title) + '</h3>' +
+      (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
+      (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
+    '</div>' +
+    '<div class="cat-azioni">' +
+      '<button type="button" class="apri">recensione</button>' +
+      '<button type="button" data-fa="scaffale">sullo scaffale</button>' +
+    '</div>' +
+    '<div class="cat-rec"></div>' +
+  '</li>';
+}
+
+function disegnaMia(){
+  const l = lista();
+  const dove = LIB.ospitePresso();
+  q('#mia-eyebrow').textContent = dove && dove.nick
+    ? 'la libreria di ' + dove.nick : 'la tua libreria';
+  q('#mia-list').innerHTML = l.map(rigaMia).join('');
+  q('#mia-msg').innerHTML = l.length
+    ? '<b>' + l.length + '</b> ' + (l.length === 1 ? 'gioco' : 'giochi') +
+      (state.q ? ' per <b>' + esc(state.q) + '</b>' : '') +
+      '. Tocca una riga per leggere la recensione.'
+    : (state.q ? 'Nessun gioco per <b>' + esc(state.q) + '</b>.' : 'La libreria e\' vuota.');
+}
+
+function apriElenco(){
+  if (state.phase === 'focus' || state.phase === 'review') unfocus();
+  document.body.classList.add('elenco');
+  q('#mia').setAttribute('aria-hidden', 'false');
+  disegnaMia();
+}
+
+function chiudiElenco(){
+  document.body.classList.remove('elenco');
+  q('#mia').setAttribute('aria-hidden', 'true');
+}
+
+/* Dall'elenco allo scaffale: si chiude l'elenco, la camera va alla
+   libreria giusta, e SOLO QUANDO E' ARRIVATA la scatola si apre. Se si
+   aprisse subito, l'animazione di apertura e quella dello scorrimento
+   si contenderebbero l'inquadratura. */
+function apriSulloScaffale(id){
+  chiudiElenco();
+  goToGame(id);
+  setTimeout(function(){
+    const b = boxes.find(function(x){ return x.userData.id === id; });
+    if (b && state.phase === 'browse') focusOn(b);
+  }, 430);
+}
+
+function apriRigaMia(li){
+  const g = LIB.get(li.getAttribute('data-id'));
+  if (!g) return;
+  const aperta = li.classList.toggle('aperta');
+  li.querySelector('.apri').textContent = aperta ? 'chiudi' : 'recensione';
+  if (!aperta) return;
+  const testo = (g.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('');
+  li.querySelector('.cat-rec').innerHTML =
+    (g.score ? '<p class="voto">' + esc(g.score) + '<i>/10</i></p>' : '') +
+    (testo || '<p class="vuoto">Nessuna recensione, per ora.</p>');
 }
 
 /* ===============================================================
@@ -2244,6 +2335,31 @@ function bindProfilo(){
   q('#pro-rinomina').addEventListener('click', function(){ apriNick(true); });
   q('#vis-torna').addEventListener('click', tornaACasa);
 
+  q('#conta').addEventListener('click', function(){
+    if (document.body.classList.contains('elenco')) chiudiElenco();
+    else apriElenco();
+  });
+
+  q('#mia-list').addEventListener('click', function(e){
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    if (e.target.closest('[data-fa="scaffale"]')){
+      apriSulloScaffale(li.getAttribute('data-id'));
+      return;
+    }
+    apriRigaMia(li);
+  });
+
+  // le tendine per gioco nelle partite
+  q('#pro-partite').addEventListener('click', function(e){
+    const b = e.target.closest('.gio-gioco');
+    if (!b) return;
+    const su = b.getAttribute('aria-expanded') === 'true';
+    b.setAttribute('aria-expanded', su ? 'false' : 'true');
+    const ul = b.nextElementSibling;
+    if (ul) ul.hidden = su;
+  });
+
   /* Uscire sta anche qui perche' su schermo stretto la testata non ha
      piu' posto per dirlo. E' lo stesso gesto del pulsante in alto: la
      collezione di prima non e' piu' tua e si riparte dall'accesso. */
@@ -2379,14 +2495,16 @@ function disegnaPartite(){
     per[k].partite.push(p);
   });
 
-  el.innerHTML = gruppi.map(function(g){
+  el.innerHTML = gruppi.map(function(g, i){
     const n = g.partite.length;
     const chi = vinceDi(g.partite);
     return '<div class="gio-gruppo">' +
-      '<p class="gio-gioco"><b>' + esc(g.titolo) + '</b>' +
-      '<span>' + n + (n === 1 ? ' partita' : ' partite') +
-      (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span></p>' +
-      '<ul class="giocate">' +
+      '<button type="button" class="gio-gioco" aria-expanded="false" data-g="' + i + '">' +
+        '<b>' + esc(g.titolo) + '</b>' +
+        '<span>' + n + (n === 1 ? ' partita' : ' partite') +
+        (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span>' +
+      '</button>' +
+      '<ul class="giocate" hidden>' +
         g.partite.map(function(p){ return rigaGiocata(p, false); }).join('') +
       '</ul></div>';
   }).join('');

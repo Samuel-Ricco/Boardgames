@@ -169,6 +169,21 @@ calcolano, il quarto no — e infatti è l'unico che ha bisogno di una colonna.
 - `applyLibrary` salta la scatola in mano. Un `resize` in mezzo a uno spostamento
   gliela riportava a casa da sotto le dita.
 
+## La libreria come elenco
+
+Lo scaffale in 3D è bello da guardare e pessimo da consultare: dodici scatole per
+schermata, i titoli piccoli, e per sapere se un gioco ce l'hai già devi scorrere
+i mobili. `#mia` è la stessa collezione in una riga per gioco, con le stesse
+classi `.righe` del catalogo.
+
+- **Ci si arriva dal contatore**, che diventa un pulsante. È già il posto dove
+  uno guarda per sapere quanti sono, e a 390 px la testata non aveva spazio per
+  un pulsante in più.
+- «Sullo scaffale» chiude l'elenco, porta la camera alla libreria giusta e apre
+  la scatola **solo quando è arrivata**: aprendola subito, l'animazione di
+  apertura e quella dello scorrimento si contendono l'inquadratura.
+- Funziona anche in casa di un amico: l'occhiello dice «la libreria di X».
+
 ## Cercare e contare
 
 - `LIB.list(ordine, testo)` è l'unico punto in cui si decide **quali** giochi
