@@ -44,6 +44,11 @@ sito deve funzionare a rete staccata. Prima di aggiungere un `<link>` o un
   resterebbe fermo per sempre;
 - `innerWidth`/`innerHeight` possono valere **0** se il pannello non è disposto:
   `layout()` esce subito se sono minori di 2;
+- il browser dell'anteprima **tiene in cache il CSS e non lo rilegge**, nemmeno
+  con `location.reload(true)`: una regola nuova può essere sul disco, essere
+  servita dal server, e non essere nel foglio caricato. Se una modifica di stile
+  «non fa niente», confrontare `fetch('css/style.css')` con `document.styleSheets`
+  prima di cercare il bug altrove;
 - il riquadro dell'anteprima è **verticale**, quindi non è un buon giudice
   dell'inquadratura su un monitor normale;
 - con il pannello non visibile `document.visibilityState` è `hidden`, i frame non
@@ -73,6 +78,22 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   quadro vorrebbe dire stare così lontani da vedere mezzo armadio. E guarda un
   filo sotto il centro del vano, perché le scatole poggiano sul ripiano.
 - Lo scroll si aggancia allo scaffale più vicino 220 ms dopo che ci si è fermati.
+
+## Collezioni personali
+
+- **Ogni riga ha un proprietario** e le regole del database mostrano a ciascuno
+  solo la sua: non esiste più lettura pubblica sui giochi.
+- **La chiave primaria è la coppia `(proprietario, id)`**: lo slug è unico dentro
+  una collezione, non nel mondo — due persone devono poter avere entrambe `root`.
+  Il client continua a usare solo `id` e non sa nulla del proprietario.
+- **Le copertine stanno in `<uid>/<slug>.jpg`**, una cartella a testa, e le regole
+  dello storage lasciano scrivere solo dentro la propria.
+- **Una collezione vuota è una risposta valida, non un guasto.** Solo se la
+  lettura *fallisce* si ripiega sulla copia locale. Confonderle farebbe comparire
+  i giochi di esempio nell'armadio di chi non ne ha ancora messo nessuno.
+- **`admin` non dà nessun potere in più**: chi è entrato comanda sulla propria
+  collezione e basta. Resta come etichetta per provare i due tipi di accesso.
+- Uscendo si ricarica e si svuota la copia locale: quella collezione non è più tua.
 
 ## Admin
 
