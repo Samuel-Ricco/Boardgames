@@ -528,7 +528,8 @@ function buildCabinet(){
           map: ART.toTex(c), transparent: true, depthWrite: false
         })
       );
-      targa.position.set(ox, KAL.topY + SOPRA - .62, -KAL.d/2 + .02);
+      targa.position.set(ox, state.yTarga || (KAL.topY + SOPRA - .62), -KAL.d/2 + .02);
+      targa.userData.targa = true;      // `allineaComandi` la sposta senza ricostruire
       g.add(targa);
     }
   }
@@ -629,27 +630,22 @@ function thinSpine(seed){
    vedono due meeple diversi nella stessa schermata. */
 function meepleShape(){
   const s = new THREE.Shape();
-  s.moveTo(-0.40, -1.00);
-  s.bezierCurveTo(-0.44,-0.72, -0.42,-0.44, -0.36,-0.24);
-  s.bezierCurveTo(-0.42,-0.16, -0.48,-0.10, -0.58,-0.07);
-  s.bezierCurveTo(-0.78,-0.09, -0.98,-0.08, -1.02,0.02);
-  s.bezierCurveTo(-1.10,0.10, -1.08,0.30, -0.90,0.32);
-  s.bezierCurveTo(-0.72,0.34, -0.56,0.32, -0.44,0.37);
-  s.bezierCurveTo(-0.38,0.40, -0.35,0.41, -0.33,0.44);
-  s.bezierCurveTo(-0.30,0.51, -0.25,0.56, -0.21,0.59);
-  s.bezierCurveTo(-0.50,0.70, -0.46,1.06, 0.00,1.06);
-  s.bezierCurveTo(0.46,1.06, 0.50,0.70, 0.21,0.59);
-  s.bezierCurveTo(0.25,0.56, 0.30,0.51, 0.33,0.44);
-  s.bezierCurveTo(0.35,0.41, 0.38,0.40, 0.44,0.37);
-  s.bezierCurveTo(0.56,0.32, 0.72,0.34, 0.90,0.32);
-  s.bezierCurveTo(1.08,0.30, 1.10,0.10, 1.02,0.02);
-  s.bezierCurveTo(0.98,-0.08, 0.78,-0.09, 0.58,-0.07);
-  s.bezierCurveTo(0.48,-0.10, 0.42,-0.16, 0.36,-0.24);
-  s.bezierCurveTo(0.42,-0.44, 0.44,-0.72, 0.40,-1.00);
-  s.lineTo(0.15, -1.00);
-  s.bezierCurveTo(0.14,-0.74, 0.10,-0.50, 0.00,-0.36);
-  s.bezierCurveTo(-0.10,-0.50, -0.14,-0.74, -0.15,-1.00);
-  s.lineTo(-0.40, -1.00);
+  s.moveTo(-0.93, -1.00);
+  s.bezierCurveTo(-0.97,-0.72, -0.80,-0.34, -0.56,-0.06);
+  s.bezierCurveTo(-0.72,-0.06, -0.88,-0.05, -0.96,0.00);
+  s.bezierCurveTo(-1.03,0.06, -1.03,0.26, -0.94,0.34);
+  s.bezierCurveTo(-0.78,0.46, -0.52,0.56, -0.33,0.59);
+  s.bezierCurveTo(-0.34,0.66, -0.34,0.74, -0.32,0.80);
+  s.bezierCurveTo(-0.32,1.02, 0.32,1.02, 0.32,0.80);
+  s.bezierCurveTo(0.34,0.74, 0.34,0.66, 0.33,0.59);
+  s.bezierCurveTo(0.52,0.56, 0.78,0.46, 0.94,0.34);
+  s.bezierCurveTo(1.03,0.26, 1.03,0.06, 0.96,0.00);
+  s.bezierCurveTo(0.88,-0.05, 0.72,-0.06, 0.56,-0.06);
+  s.bezierCurveTo(0.80,-0.34, 0.97,-0.72, 0.93,-1.00);
+  s.lineTo(0.26, -1.00);
+  s.bezierCurveTo(0.24,-0.80, 0.12,-0.68, 0.00,-0.61);
+  s.bezierCurveTo(-0.12,-0.68, -0.24,-0.80, -0.26,-1.00);
+  s.lineTo(-0.93, -1.00);
   s.closePath();
   return s;
 }
@@ -1208,8 +1204,75 @@ function layout(){
 
   if (state.phase === 'browse') camBase.z = state.distShelf;
 
+  allineaComandi();
   rifaiOmbre();            // cambiato il quadro, la mappa va rifatta
   reposeFocused();          // una scatola aperta va rimessa a posto sul quadro nuovo
+}
+
+/* --- I COMANDI SI ALLINEANO AL MOBILE, NON A UN NUMERO ------------
+
+   L'imbuto e il nome della libreria stanno alla stessa quota, e quella
+   quota e' **a meta' fra il bordo della testata e la cima del mobile**.
+   La lampada e il binario stanno anche loro alla stessa quota, a meta'
+   fra il piede del mobile e la barra in basso.
+
+   Non ci sono pixel scritti a mano: il mobile e' in prospettiva e si
+   sposta con lo schermo, quindi la sua cima e il suo piede si
+   PROIETTANO, e da quei due numeri escono gli altri. Con una misura
+   fissa l'allineamento sarebbe giusto su un telefono e sbagliato su
+   tutto il resto.
+
+   La quota della targhetta va anche riportata indietro nel mondo 3D:
+   e' li' che sta scritta, e la si sposta sul posto invece di
+   ricostruire il mobile per due centimetri. */
+const _pv = new THREE.Vector3();
+
+function schermoY(y, z, x){
+  _pv.set(x, y, z).project(camera);
+  return (-_pv.y * .5 + .5) * window.innerHeight;
+}
+
+// l'inverso: che quota nel mondo cade su questa riga dello schermo
+function mondoY(sy, z, x){
+  const a = schermoY(0, z, x), b = schermoY(1, z, x);
+  if (Math.abs(b - a) < 1e-6) return 0;
+  return (sy - a) / (b - a);
+}
+
+function allineaComandi(){
+  if (!camera || !renderer) return;
+  /* Solo a camera ferma sullo scaffale. Durante l'intro sta a
+     `distFar` e guarda un'altra cosa: la cima del mobile si proietta a
+     quattromila pixel, e quel numero restava scritto nella variabile --
+     con l'imbuto spedito fuori dallo schermo. */
+  if (state.phase !== 'browse') return;
+  const testa = q('header');
+  const barra = q('#tabbar');
+  const hb = testa ? testa.getBoundingClientRect().bottom : 0;
+  const bb = (barra && getComputedStyle(barra).display !== 'none')
+    ? barra.getBoundingClientRect().top : window.innerHeight;
+
+  const cx = camBase.x;
+  const cima  = schermoY(KAL.topY, KAL.front, cx);
+  const piede = schermoY(SUOLO,    KAL.front, cx);
+
+  const alto  = (hb + cima) / 2;
+  const basso = (piede + bb) / 2;
+
+  const st = document.body.style;
+  st.setProperty('--y-alto',  Math.round(alto) + 'px');
+  st.setProperty('--y-basso', Math.round(basso) + 'px');
+
+  /* La targhetta e' sulla parete, non sul fronte: la sua z e' quella,
+     se no la quota che si calcola non e' la sua. */
+  const zT = -KAL.d/2 + .02;
+  state.yTarga = mondoY(alto, zT, cx);
+  if (cabGroup){
+    cabGroup.traverse(function(o){
+      if (o.userData && o.userData.targa) o.position.y = state.yTarga;
+    });
+    rifaiOmbre();
+  }
 }
 
 /* Dove guarda la camera. In verticale non si muove piu': la libreria e'
@@ -4653,6 +4716,7 @@ function updateBoxes(dt){
 }
 
 let last = 0;
+let faseIeri = '';
 function frame(now){
   requestAnimationFrame(frame);
   // il passo va tenuto positivo e corto: un dt negativo manderebbe le
@@ -4662,6 +4726,15 @@ function frame(now){
   last = now;
 
   stepAnims(dt);
+
+  /* Entrando in `browse` la camera e' finalmente al suo posto: e' li'
+     che le quote proiettate diventano vere. Si guarda il CAMBIO di
+     fase e non i tre punti in cui qualcuno la scrive, se no il
+     quarto se lo dimentica. */
+  if (state.phase !== faseIeri){
+    faseIeri = state.phase;
+    if (state.phase === 'browse') allineaComandi();
+  }
 
   /* Fuori dalla libreria la scena e' coperta da una pagina piatta. Il
      ciclo non si ferma -- non si e' mai fermato -- ma non si disegna
@@ -4675,6 +4748,7 @@ function frame(now){
     camBase.set(camXFor(state.scroll), VISTA_Y, state.distShelf * state.zoom);
     if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)){
       updateRail();
+      allineaComandi();      // la camera si e' spostata: la proiezione e' un'altra
       rifaiOmbre();          // la luce di finestra segue camBase: l'ombra si sposta
     }
   }

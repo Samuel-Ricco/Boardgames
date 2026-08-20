@@ -2129,3 +2129,39 @@ body.vista-tutti #mia-gruppi, body.vista-tutti #mia-gestisci{display:none !impor
   #pro-avatar{width:84px; height:84px}
   .pro-testa{gap:14px}
 }
+
+/* --- I COMANDI ALLINEATI AL MOBILE ---------------------------------
+   Le due quote le calcola `allineaComandi()` in js/app.js proiettando
+   la cima e il piede della libreria: qui si usano e basta. I valori di
+   scorta servono al primo fotogramma e a chi non ha WebGL. */
+:root{--y-alto:96px; --y-basso:640px}
+
+#vista-apri, #vista{
+  top:var(--y-alto); bottom:auto;
+  transform:translateY(-50%);
+}
+#vista{transform:translateY(-50%)}
+body.vista #vista{transform:translateY(-50%)}
+/* il pannello si apre sotto all'imbuto, non centrato su di lui */
+#vista{top:calc(var(--y-alto) + 30px); transform:none}
+body.vista #vista{transform:none}
+
+#stanza-apri, #stanza{
+  top:var(--y-basso); bottom:auto; transform:translateY(-50%);
+}
+#stanza{top:auto; bottom:calc(100% - var(--y-basso) + 30px); transform:none}
+body.arreda #stanza{transform:none}
+
+#rail{
+  top:var(--y-basso); bottom:auto;
+  transform:translate(-50%,-50%);
+}
+@media (max-width:879px){
+  #rail{top:var(--y-basso); bottom:auto}
+}
+#mobili{bottom:calc(100% - var(--y-basso) + 30px)}
+
+/* Nome e mail piu' staccati dalla faccia: appiccicati sembravano la
+   didascalia dell'immagine invece di chi sei. */
+.pro-testa{gap:26px}
+@media (max-width:420px){ .pro-testa{gap:20px} }
