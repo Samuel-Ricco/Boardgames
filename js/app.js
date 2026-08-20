@@ -135,6 +135,25 @@ function stepAnims(dt){
     if (p >= 1){ anims.splice(i,1); if (a.done) a.done(); }
   }
 }
+
+/* Le ombre non si ridisegnano a ogni fotogramma.
+
+   La mappa e' 2048x2048 e la passata che la riempie costava 316 draw
+   call sulle 574 di un frame -- piu' della meta' del lavoro -- per
+   rifare sessanta volte al secondo un'ombra identica a quella di
+   prima: il mobile sta fermo, gli arredi stanno fermi, e la luce di
+   finestra segue `camBase`, che cambia solo scorrendo fra le librerie.
+   L'ondeggio della camera col puntatore non la tocca: quello muove
+   `camera.position`, non `camBase`.
+
+   Quindi la mappa si rifa' a richiesta. `rifaiOmbre()` prenota DUE
+   fotogrammi, non uno: l'ultimo passo di un'animazione porta l'oggetto
+   nella posa finale proprio nel frame in cui l'animazione esce dalla
+   coda, e con una prenotazione sola quella posa resterebbe con l'ombra
+   della posa precedente. */
+let ombreDaRifare = 2;
+function rifaiOmbre(){ ombreDaRifare = 2; }
+
 const easeOut   = p => 1 - Math.pow(1-p, 3);
 const easeInOut = p => p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
 const lerp      = (a,b,t) => a + (b-a)*t;
@@ -159,13 +178,18 @@ function setProg(p, msg){
   if (msg) q('#load-msg').textContent = msg;
 }
 
+/* Quello che e' segnato `__comune` NON si butta via: e' condiviso da
+   tutti gli arredi (vedi `comune`), e liberarlo qui vorrebbe dire che
+   alla prima ricerca -- che ricostruisce il contorno -- i libri e i
+   dadi restano senza texture. */
 function killGroup(g, deep){
   if (!g) return;
   g.traverse(function(o){
-    if (o.geometry) o.geometry.dispose();
+    if (o.geometry && !o.geometry.__comune) o.geometry.dispose();
     if (deep && o.material){
       const ms = Array.isArray(o.material) ? o.material : [o.material];
       ms.forEach(function(m){
+        if (!m || m.__comune) return;
         ['map','bumpMap','emissiveMap'].forEach(function(k){ if (m[k]) m[k].dispose(); });
         m.dispose();
       });
@@ -392,6 +416,7 @@ function applicaLuce(){
     scene.background = f;
     if (scene.fog) scene.fog.color = f.clone();
   }
+  rifaiOmbre();            // cambiata l'intensita', l'ombra e' un'altra
 }
 
 /* Tutto il resto: colori delle superfici e arredi. Ricostruisce
@@ -490,6 +515,7 @@ function buildCabinet(){
   stanzaLarga(state.libs);
   cabGroup = g;
   scene.add(g);
+  rifaiOmbre();
 }
 
 /* --- una scatola di gioco -------------------------------------- */
@@ -544,21 +570,28 @@ function makeGameBox(game){
 }
 
 /* --- oggetti di contorno --------------------------------------- */
+/* I dorsi sono sei tinte in tutto, e a parte la grana -- che e'
+   rumore casuale -- due libri della stessa tinta erano gia' identici.
+   Quindi sei texture per tutti i libri di tutte le librerie, invece di
+   un canvas da 128x384 disegnato e caricato sulla scheda per ogni
+   singolo libro, a ogni ricostruzione del contorno. */
 function thinSpine(seed){
-  const S = 128, cx = ART.cnv(S, S*3), c = cx[0], x = cx[1];
   const cols = ['#7b4a2e','#4d5a48','#6a3a3a','#3f4a5c','#6d5a2e','#57406a'];
-  const col = cols[Math.floor(srnd(seed)*cols.length) % cols.length];
-  x.fillStyle = col; x.fillRect(0,0,S,S*3);
-  const g = x.createLinearGradient(0,0,S,0);
-  g.addColorStop(0,'rgba(255,255,255,.14)'); g.addColorStop(1,'rgba(0,0,0,.3)');
-  x.fillStyle = g; x.fillRect(0,0,S,S*3);
-  x.fillStyle = 'rgba(240,225,190,.75)';
-  x.fillRect(18, S*0.6, S-36, 10);
-  x.fillRect(18, S*0.8, (S-36)*.6, 6);
-  x.fillStyle = 'rgba(0,0,0,.3)';
-  x.fillRect(0, S*2.2, S, 14);
-  ART.grain(x, S, S*3, 12);
-  return new THREE.MeshStandardMaterial({ map: ART.toTex(c), roughness: .78 });
+  const i = Math.floor(srnd(seed)*cols.length) % cols.length;
+  return comune('dorso' + i, function(){
+    const S = 128, cx = ART.cnv(S, S*3), c = cx[0], x = cx[1];
+    x.fillStyle = cols[i]; x.fillRect(0,0,S,S*3);
+    const g = x.createLinearGradient(0,0,S,0);
+    g.addColorStop(0,'rgba(255,255,255,.14)'); g.addColorStop(1,'rgba(0,0,0,.3)');
+    x.fillStyle = g; x.fillRect(0,0,S,S*3);
+    x.fillStyle = 'rgba(240,225,190,.75)';
+    x.fillRect(18, S*0.6, S-36, 10);
+    x.fillRect(18, S*0.8, (S-36)*.6, 6);
+    x.fillStyle = 'rgba(0,0,0,.3)';
+    x.fillRect(0, S*2.2, S, 14);
+    ART.grain(x, S, S*3, 12);
+    return new THREE.MeshStandardMaterial({ map: ART.toTex(c), roughness: .78 });
+  });
 }
 
 function meepleShape(){
@@ -572,12 +605,19 @@ function meepleShape(){
   s.closePath();
   return s;
 }
+/* L'estrusione del meeple e' la geometria piu' cara del contorno --
+   sagoma, smusso, due segmenti -- e ce n'erano due nuove per ogni cubo
+   coi dadi. E' sempre lo stesso meeple: la si costruisce una volta e
+   la misura la fa `scale`. */
 function makeMeeple(col, s){
-  const geo = new THREE.ExtrudeGeometry(meepleShape(), {
-    depth: .34, bevelEnabled: true, bevelSize: .04, bevelThickness: .04, bevelSegments: 2
+  const geo = comune('meeple', function(){
+    const g = new THREE.ExtrudeGeometry(meepleShape(), {
+      depth: .34, bevelEnabled: true, bevelSize: .04, bevelThickness: .04, bevelSegments: 2
+    });
+    g.center();
+    return g;
   });
-  geo.center();
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: .58 }));
+  const m = new THREE.Mesh(geo, matTinta('meeple' + col, { color: col, roughness: .58 }));
   m.scale.setScalar(s || .42);
   m.castShadow = true; m.receiveShadow = true;
   return m;
@@ -599,15 +639,63 @@ function makeMeeple(col, s){
    o il cielo del mobile.
    ============================================================ */
 
+/* --- geometrie e materiali in comune ---------------------------
+
+   Gli arredi sono tanti e sono tutti lo stesso oggetto: dieci dadi
+   sono lo stesso dado, ogni pianta ha otto foglie che sono la stessa
+   foglia, le cornici hanno tutte lo stesso bordo di legno. Costruirne
+   una geometria e un materiale per ognuno faceva 152 geometrie e 224
+   materiali per 5.800 triangoli -- piu' materiali che mesh -- e ogni
+   `buildProps` (cioe' ogni lettera scritta nella ricerca) li rifaceva
+   tutti da capo, canvas e texture comprese.
+
+   Qui si costruiscono una volta sola e si riusano. La misura la fa
+   `scale` sul mesh, che non costa niente: una scatola 0.4 x 2.2 x 2.5
+   e un cubo unitario scalato uguale sono la stessa identica forma, e
+   le UV di un box sono per faccia -- quindi anche la texture cade
+   esattamente dov'era.
+
+   Chi sta in cache va segnato `__comune`, se no `killGroup` lo butta
+   via alla prima ricostruzione e lo porta via a tutti. */
+const COMUNI = {};
+
+function marca(v){
+  if (Array.isArray(v)){ v.forEach(marca); return v; }
+  if (v) v.__comune = true;
+  return v;
+}
+
+function comune(chiave, fai){
+  if (!(chiave in COMUNI)) COMUNI[chiave] = marca(fai());
+  return COMUNI[chiave];
+}
+
+const geoCubo   = () => comune('cubo',   () => new THREE.BoxGeometry(1, 1, 1));
+const geoFoglia = () => comune('foglia', () => new THREE.SphereGeometry(.17, 7, 5));
+// il vaso e' alto 1 e viene scalato: la rastremazione resta quella
+const geoVaso   = () => comune('vaso',   () => new THREE.CylinderGeometry(.38, .28, 1, 14));
+const geoD20    = () => comune('d20',    () => new THREE.IcosahedronGeometry(.62, 0));
+
+const matTinta = (chiave, par) =>
+  comune(chiave, () => new THREE.MeshStandardMaterial(par));
+
+// le copertine generiche sono cinque disegni in tutto: cinque texture
+// per tutte le scatole di contorno di tutte le librerie, non una a testa
+const matScatola = i => comune('scat' + i, () => new THREE.MeshStandardMaterial({
+  map: ART.toTex(ART.coverGeneric(i)), roughness: .7
+}));
+
+// e i dadi sono tre coppie di colori, quindi tre corredi di sei facce
+const matDado = i => comune('dado' + i, () => {
+  const c = [['#efe3cb','#2a1a0f'], ['#c1552c','#f6e6c8'], ['#3f4f63','#f6e6c8']][i];
+  return ART.dieMaterials(c[0], c[1]);
+});
+
 function arrScatole(g, seed, x, y){
   const n = 2 + Math.floor(srnd(seed+1)*2);
   for (let i = 0; i < n; i++){
-    const m = new THREE.Mesh(
-      new THREE.BoxGeometry(2.5, .52, 2.5),
-      new THREE.MeshStandardMaterial({
-        map: ART.toTex(ART.coverGeneric(Math.floor(srnd(seed+i*3)*5))), roughness: .7
-      })
-    );
+    const m = new THREE.Mesh(geoCubo(), matScatola(Math.floor(srnd(seed+i*3)*5)));
+    m.scale.set(2.5, .52, 2.5);
     m.position.set(x + (srnd(seed+i)-.5)*.24, y + .26 + i*.52, -.1);
     m.rotation.y = (srnd(seed+i*2)-.5)*.16;
     m.castShadow = true; m.receiveShadow = true;
@@ -619,7 +707,8 @@ function arrLibri(g, seed, x, y){
   const n = 4 + Math.floor(srnd(seed+2)*2);
   for (let i = 0; i < n; i++){
     const w = .38 + srnd(seed+i*7)*.16, h = 1.9 + srnd(seed+i*11)*.7;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.5), thinSpine(seed+i));
+    const m = new THREE.Mesh(geoCubo(), thinSpine(seed+i));
+    m.scale.set(w, h, 2.5);
     m.position.set(x - 1.15 + i*.56, y + h/2, -.1);
     m.rotation.y = (srnd(seed+i)-.5)*.06;
     m.castShadow = true; m.receiveShadow = true;
@@ -628,19 +717,17 @@ function arrLibri(g, seed, x, y){
 }
 
 function arrDadi(g, seed, x, y){
-  const cols = [['#efe3cb','#2a1a0f'], ['#c1552c','#f6e6c8'], ['#3f4f63','#f6e6c8']];
   for (let i = 0; i < 3; i++){
     const s = .58;
-    const d = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), ART.dieMaterials(cols[i][0], cols[i][1]));
+    const d = new THREE.Mesh(geoCubo(), matDado(i));
+    d.scale.setScalar(s);
     d.position.set(x - .75 + i*.62, y + s/2, .2 + (i%2)*.4);
     d.rotation.y = srnd(seed+i*13) * Math.PI;
     d.castShadow = true; d.receiveShadow = true;
     g.add(d);
   }
-  const d20 = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(.62, 0),
-    new THREE.MeshStandardMaterial({ color: 0xb98a3a, roughness: .38, metalness: .7, flatShading: true })
-  );
+  const d20 = new THREE.Mesh(geoD20(), matTinta('d20mat',
+    { color: 0xb98a3a, roughness: .38, metalness: .7, flatShading: true }));
   d20.position.set(x + .95, y + .52, .35);
   d20.rotation.set(.4, srnd(seed+4)*3, .2);
   d20.castShadow = true; d20.receiveShadow = true;
@@ -656,21 +743,20 @@ function arrDadi(g, seed, x, y){
    costerebbe piu' triangoli di tutto il resto del mobile. */
 function arrPiante(g, seed, x, y){
   const h = .5 + srnd(seed)*.22;
-  const vaso = new THREE.Mesh(
-    new THREE.CylinderGeometry(.38, .28, h, 14),
-    new THREE.MeshStandardMaterial({ color: 0xb2643f, roughness: .88 })
-  );
+  const vaso = new THREE.Mesh(geoVaso(), matTinta('vasomat', { color: 0xb2643f, roughness: .88 }));
+  vaso.scale.y = h;
   vaso.position.set(x, y + h/2, .05);
   vaso.castShadow = true; vaso.receiveShadow = true;
   g.add(vaso);
 
-  const verde = new THREE.MeshStandardMaterial({
-    color: srnd(seed+9) < .5 ? 0x4f7a4a : 0x5f8a52, roughness: .76
-  });
+  // i verdi sono due: due materiali per tutte le foglie di tutte le piante
+  const verde = srnd(seed+9) < .5
+    ? matTinta('foglia0', { color: 0x4f7a4a, roughness: .76 })
+    : matTinta('foglia1', { color: 0x5f8a52, roughness: .76 });
   const n = 6 + Math.floor(srnd(seed+1)*4);
   for (let i = 0; i < n; i++){
     const lung = .55 + srnd(seed + i*3)*.75;
-    const f = new THREE.Mesh(new THREE.SphereGeometry(.17, 7, 5), verde);
+    const f = new THREE.Mesh(geoFoglia(), verde);
     f.scale.set(.55, lung/.34, .4);
     const ang = (i / n) * Math.PI * 2 + srnd(seed+i)*.7;
     const fuori = .25 + srnd(seed+i*2)*.5;
@@ -686,10 +772,13 @@ function arrCornici(g, seed, x, y){
   for (let i = 0; i < n; i++){
     const w = .95 + srnd(seed+i)*.5;
     const h = w * (1 + srnd(seed+i*3)*.35);
+    /* La tela dipende dal seme e resta una per quadro -- sono diversi
+       apposta. Il bordo invece e' sempre lo stesso legno: erano
+       cinquanta materiali identici, uno per cornice. */
     const tela  = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.quadro(seed + i*5)), roughness: .72 });
-    const bordo = new THREE.MeshStandardMaterial({ color: 0x6b5540, roughness: .74 });
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, .08),
-                             [bordo, bordo, bordo, bordo, tela, bordo]);
+    const bordo = matTinta('bordoq', { color: 0x6b5540, roughness: .74 });
+    const m = new THREE.Mesh(geoCubo(), [bordo, bordo, bordo, bordo, tela, bordo]);
+    m.scale.set(w, h, .08);
     // appoggiate all'indietro, come si appoggia una cornice a un muro
     m.position.set(x - .45 + i*.85 + (srnd(seed+i*11)-.5)*.2, y + h/2, -.55 + i*.4);
     m.rotation.set(-.14, (srnd(seed+i*7)-.5)*.45, 0);
@@ -743,7 +832,7 @@ function buildProps(used){
      dadi fa sembrare lo scaffale pieno, e i risultati -- che sono il
      motivo per cui si sta guardando -- non si distinguono piu' dal
      contorno. */
-  if (!used){ propGroup = g; scene.add(g); return; }
+  if (!used){ propGroup = g; scene.add(g); rifaiOmbre(); return; }
 
   for (let l = 0; l < state.libs; l++){
     const stile = stileLib(l).arredo;        // ogni mobile il suo
@@ -761,6 +850,7 @@ function buildProps(used){
 
   propGroup = g;
   scene.add(g);
+  rifaiOmbre();
 }
 
 /* ===============================================================
@@ -981,6 +1071,7 @@ function layout(){
 
   if (state.phase === 'browse') camBase.z = state.distShelf;
 
+  rifaiOmbre();            // cambiato il quadro, la mappa va rifatta
   reposeFocused();          // una scatola aperta va rimessa a posto sul quadro nuovo
 }
 
@@ -4165,7 +4256,11 @@ function bindPartite(){
 /* ===============================================================
    CICLO DI RENDERING
    =============================================================== */
+/* Torna vero se qualche scatola si sta ancora muovendo: l'alzata
+   dell'hover e' smorzata, quindi continua per qualche frame dopo che
+   il puntatore si e' fermato -- e finche' si muove l'ombra cambia. */
 function updateBoxes(dt){
+  let mosso = false;
   for (let i = 0; i < boxes.length; i++){
     const b = boxes[i], u = b.userData;
     if (u.busy){ u.cover.emissiveIntensity = .10; continue; }
@@ -4175,11 +4270,13 @@ function updateBoxes(dt){
     const mirato = !!(state.presa && state.presa.mirBox === b);
     const want = ((state.hover === b && state.phase === 'browse') || mirato) ? 1 : 0;
     u.hover += (want - u.hover) * Math.min(1, dt * 9);
+    if (Math.abs(want - u.hover) > .002) mosso = true;
 
     b.position.set(u.homePos.x, u.homePos.y + u.hover * .10, u.homePos.z + u.hover * .5);
     b.rotation.y = u.homeRot.y + u.hover * .07;
     u.cover.emissiveIntensity = u.hover * .30;
   }
+  return mosso;
 }
 
 let last = 0;
@@ -4203,7 +4300,10 @@ function frame(now){
     const before = Math.round(state.scroll);
     state.scroll += (state.scrollTo - state.scroll) * Math.min(1, dt * 7);
     camBase.set(camXFor(state.scroll), CENTRO_Y, state.distShelf * state.zoom);
-    if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)) updateRail();
+    if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)){
+      updateRail();
+      rifaiOmbre();          // la luce di finestra segue camBase: l'ombra si sposta
+    }
   }
 
   const damp = Math.min(1, dt * 5);
@@ -4264,7 +4364,12 @@ function frame(now){
     document.body.style.cursor = '';
   }
 
-  updateBoxes(dt);
+  if (updateBoxes(dt) || anims.length || state.presa) rifaiOmbre();
+
+  // la mappa d'ombra solo quando serve davvero: vedi `rifaiOmbre`
+  renderer.shadowMap.needsUpdate = ombreDaRifare > 0;
+  if (ombreDaRifare > 0) ombreDaRifare--;
+
   renderer.render(scene, camera);
 }
 
@@ -4415,6 +4520,8 @@ async function boot(){
   renderer.toneMappingExposure = 0.90;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // le ombre le programma `rifaiOmbre`, non il renderer a ogni frame
+  renderer.shadowMap.autoUpdate = false;
   q('#scene').appendChild(renderer.domElement);
 
   raycaster = new THREE.Raycaster();

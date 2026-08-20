@@ -754,6 +754,64 @@ versione aveva emisferica 1.15 e ambiente 0.45 e la scena usciva slavata, media
 `--bg` nel CSS deve restare **uguale** a `SFONDO` in `js/app.js`: è la stessa
 tinta a tenere insieme caricamento, cancello e mondo dietro.
 
+## Quello che costa un fotogramma
+
+Misurato avvolgendo il contesto WebGL e contando i draw call divisi per
+framebuffer, non a occhio. Da qui sono nate le due ottimizzazioni sotto.
+
+Com'era: **574 draw call per fotogramma per 5.794 triangoli** — dodici triangoli
+a chiamata. Il collo di bottiglia non è mai stata la geometria, era l'overhead:
+152 mesh, **224 materiali** (più dei mesh), 152 geometrie, niente condiviso.
+
+### Le ombre si ridisegnano solo se qualcosa si è mosso
+
+**316 di quei 574 erano la passata d'ombra**: la scena intera ridisegnata una
+seconda volta dentro una mappa 2048×2048, sessanta volte al secondo, per
+ottenere un'ombra identica a quella del fotogramma prima. Il mobile sta fermo,
+gli arredi stanno fermi, e la luce di finestra segue `camBase` — che cambia solo
+scorrendo fra le librerie, non con l'ondeggio della camera, che muove
+`camera.position`.
+
+Quindi `renderer.shadowMap.autoUpdate = false`, e la mappa si rifà su
+prenotazione: `rifaiOmbre()`. A riposo si scende a **265 draw call**, e i pixel
+sono **identici** — verificato leggendo il framebuffer con e senza aggiornamento
+forzato: scarto 0 su 192 valori.
+
+**Chi muove qualcosa deve chiamare `rifaiOmbre()`**, se no resta con l'ombra
+della posa di prima. Oggi lo fanno: le animazioni in coda, la presa, lo
+scorrimento, `updateBoxes` (l'alzata dell'hover è smorzata e continua per
+qualche frame dopo il puntatore, per questo torna un booleano), e ogni
+ricostruzione — `buildCabinet`, `buildProps`, `applicaLuce`, `layout`.
+
+Prenota **due** fotogrammi e non uno: l'ultimo passo di un tween porta l'oggetto
+nella posa finale nello stesso frame in cui l'animazione esce dalla coda, e con
+una prenotazione sola quella posa resterebbe senza la sua ombra.
+
+### Geometrie e materiali in comune
+
+Dieci dadi sono lo stesso dado, ogni pianta ha otto foglie che sono la stessa
+foglia, cinquanta cornici avevano cinquanta materiali identici per il bordo. Ora
+c'è `comune(chiave, fai)`: si costruisce una volta e si riusa, e **la misura la
+fa `scale`** — un cubo unitario scalato è la stessa identica forma, e le UV di un
+box sono per faccia, quindi anche la texture cade dov'era. Da **224 materiali a
+113** e da **152 geometrie a 60**, sulla stessa scena.
+
+Vale soprattutto per le texture: i dorsi dei libri sono sei tinte e le copertine
+di contorno cinque disegni, ma erano un canvas disegnato e caricato sulla scheda
+**per ogni singolo oggetto, a ogni `buildProps`** — cioè a ogni lettera scritta
+nella ricerca.
+
+**Trappola, ed è quella che si paga cara:** `killGroup` libera geometrie e
+materiali del gruppo che butta via. Quello che è in cache va segnato `__comune`
+e saltato, se no la prima ricerca lo porta via *a tutti*. E il guasto non si
+vede: three.js ricostruisce da sé quello che gli serve, quindi non compare
+niente di rotto — si ricomincia solo a pagare l'upload a ogni fotogramma.
+
+Non è stato tolto niente da quello che si vede: gli arredi continuano a
+proiettare ombra, le tele dei quadri restano una per quadro perché sono diverse
+apposta, e la luce di focus a intensità zero resta in scena (è quella che si
+accende aprendo una scatola, non una luce morta).
+
 ## Vedere la scena quando l'anteprima non compone
 
 Il pannello a volte non disegna frame: niente screenshot, e senza frame anche le
