@@ -803,6 +803,35 @@ stanza diversa per ognuna.
 - Il pannello parla del **mobile che si sta guardando** (`libCorrente`), e
   scorrendo si aggiorna da solo.
 
+## Un pannello solo per la libreria
+
+Erano due — «la stanza» (luce e colori) e «i tuoi mobili» (nome, crea, togli) —
+aperti da due pulsanti diversi. Ma sono la stessa domanda: **com'è fatto quello
+che sto guardando**. Adesso è uno, e va dal generale al particolare:
+
+1. la **luce**, che è di tutta la stanza;
+2. il **nome** di questo mobile, in chiaro perché è quello che lo distingue
+   dagli altri e all'inizio si cambia spesso;
+3. `modifica libreria` — legno, muro, pavimento, arredi;
+4. `ordina librerie` — l'elenco, che si riordina trascinando;
+5. **aggiungi una libreria** / **elimina questa libreria**.
+
+Le due parti lunghe stanno in `<details>` perché **non si guardano insieme**:
+chi rinomina non sta scegliendo un legno, e chi riordina non sta facendo né
+l'una né l'altra cosa.
+
+- **Si trascina dalla maniglia, non dalla riga.** La riga porta anche un pulsante
+  che elimina, e un elenco dove ogni punto è buono per trascinare è un elenco
+  dove ogni tocco rischia di spostare qualcosa.
+- Mentre si trascina si riordina **solo il DOM**; al rilascio si manda l'ordine
+  e si rifà la scena. **Cambiare l'ordine dei mobili sposta anche le scatole**:
+  l'ordine è da che parte stanno lungo la parete, quindi `buildCabinet` e
+  `applyLibrary` vanno richiamati.
+- `LIB.riordinaLibrerie(ids)` è ottimista come quello dei giochi e scrive solo
+  le righe che cambiano davvero.
+- La porta è una sola: quella dell'imbuto è stata tolta. Due porte per la stessa
+  stanza sono una di troppo.
+
 ## Arredare la stanza
 
 `profili.stanza` (jsonb): luce, tre colori, uno stile di arredo. Sta nel profilo

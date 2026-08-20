@@ -2318,3 +2318,135 @@ body.arreda #stanza{transform:none}
   border-radius:999px; background:var(--accent);
 }
 .rail-bar:hover #rail-thumb, .rail-bar.presa #rail-thumb{background:#b85c31}
+
+/* ===================================================================
+   IL PANNELLO DELLA LIBRERIA
+   Luce, nome, aspetto, ordine, e i due gesti che cambiano quanti sono.
+   Va dal generale al particolare, e le due parti lunghe stanno in
+   `<details>` perche' non si guardano insieme.
+   =================================================================== */
+
+#stanza{max-height:calc(100vh - var(--y-alto) - 90px); overflow-y:auto}
+
+/* il nome della libreria che stai guardando, in chiaro */
+.st-nome{display:flex; gap:9px; align-items:center; margin:18px 0 0}
+#st-rinomina{
+  flex:1 1 auto; min-width:0; font-family:var(--ff); font-size:15px; font-weight:600;
+  color:var(--ink); background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  padding:11px 13px;
+}
+#st-rinomina:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
+#st-rinomina-ok{flex:0 0 auto; padding:11px 15px; font-size:13px}
+#st-rinomina-ok:disabled{opacity:.4; cursor:default; background:rgba(51,53,43,.07); color:var(--ink-soft)}
+
+/* --- le tendine ---------------------------------------------------- */
+.st-tendina{margin:14px 0 0; border-top:1px solid var(--line)}
+.st-tendina summary{
+  list-style:none; cursor:pointer; display:flex; align-items:center;
+  font-family:var(--ff); font-size:14px; font-weight:500; color:var(--ink);
+  padding:13px 2px; user-select:none;
+}
+.st-tendina summary::-webkit-details-marker{display:none}
+.st-tendina summary::after{
+  content:''; margin-left:auto; width:8px; height:8px;
+  border-right:1.6px solid var(--ink-soft); border-bottom:1.6px solid var(--ink-soft);
+  transform:rotate(45deg) translate(-2px,-2px);
+  transition:transform .2s var(--ease);
+}
+.st-tendina[open] summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
+.st-tendina summary:hover{color:var(--accent)}
+.st-dentro{padding:2px 0 14px}
+
+/* --- l'elenco delle librerie --------------------------------------- */
+#st-lista{list-style:none; margin:10px 0 0; padding:0}
+#st-lista li{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; margin:0 0 6px;
+  background:rgba(51,53,43,.05); border-radius:var(--r-s);
+  touch-action:none;
+}
+#st-lista li.qui{background:rgba(200,106,60,.12)}
+#st-lista li.in-mano{
+  background:var(--card); box-shadow:0 8px 24px rgba(51,53,43,.20);
+  position:relative; z-index:2;
+}
+#st-lista .nome{
+  flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:var(--ff); font-size:14px; font-weight:500; color:var(--ink);
+}
+#st-lista li.qui .nome{color:var(--accent); font-weight:600}
+#st-lista .quanti{
+  flex:0 0 auto; font-size:12px; color:var(--ink-soft); font-variant-numeric:tabular-nums;
+}
+#st-lista button{
+  flex:0 0 auto; width:32px; height:32px; padding:0; border:0; border-radius:var(--r-s);
+  background:none; color:var(--ink-soft); cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+#st-lista button:hover{background:rgba(51,53,43,.09); color:var(--ink)}
+#st-lista button[data-fa="via"]:hover{background:rgba(190,60,40,.14); color:#a8341f}
+/* la maniglia si tiene premuta: il cursore lo dice */
+#st-lista .presa{cursor:grab}
+#st-lista li.in-mano .presa{cursor:grabbing}
+
+/* --- i due gesti in fondo ------------------------------------------ */
+.st-gesti{
+  display:flex; flex-wrap:wrap; gap:9px; margin:16px 0 0;
+  padding-top:14px; border-top:1px solid var(--line);
+}
+.st-gesti button{flex:1 1 auto; padding:11px 14px; font-size:13px}
+
+/* dentro la tendina dell'aspetto il piede non ha piu' bisogno di un
+   filo sopra: ce l'ha gia' la tendina */
+.st-dentro .st-fondo{border-top:0; margin-top:10px; padding-top:0}
+
+/* --- il profilo: i due comandi di identita' stanno insieme --------- */
+.pro-io{display:flex; flex-wrap:wrap; gap:9px; margin:12px 0 0}
+.pro-io button{padding:9px 14px; font-size:13px}
+/* il codice e il suo copia sulla stessa riga, il pulsante in fondo */
+.pro-cod{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.pro-cod>span:first-child{flex:0 0 auto}
+.pro-cod b, #pro-codice{flex:0 1 auto}
+#pro-copia{margin-left:auto; padding:11px 18px; font-size:13px}
+
+/* --- il profilo, seconda passata ------------------------------------
+
+   `#pro-copia` aveva una regola con un id, che batte qualunque classe:
+   il `.primario` non arrivava mai. Le tre classi di livello valgono
+   anche contro un id se glielo si dice, e qui glielo si dice una volta
+   sola invece di rincorrere ogni pulsante. */
+#profilo button.primario, #profilo button.secondario, #profilo button.distruttivo,
+#stanza button.primario, #stanza button.secondario, #stanza button.distruttivo{
+  border:0; border-radius:var(--r-s);
+}
+#profilo button.primario, #stanza button.primario{
+  background:var(--accent); color:#fff; font-weight:600;
+}
+#profilo button.primario:hover, #stanza button.primario:hover{background:#b85c31; color:#fff}
+#profilo button.distruttivo, #stanza button.distruttivo{background:rgba(190,60,40,.10); color:#a8341f}
+#profilo button.secondario, #stanza button.secondario{background:rgba(51,53,43,.07); color:var(--ink)}
+
+/* Il codice e il suo copia su una riga sola: sommati stavano 352 px in
+   una riga da 343 e il pulsante andava a capo. L'etichetta si stringe e
+   il codice pure quel tanto che basta. */
+.pro-cod{flex-wrap:nowrap; gap:10px}
+.pro-cod>span:first-child{font-size:10px; letter-spacing:.06em; line-height:1.2; max-width:64px}
+.pro-cod b, #pro-codice{
+  flex:1 1 auto; min-width:0; text-align:center; padding:11px 10px;
+  letter-spacing:.10em; font-size:15px; overflow:hidden; text-overflow:ellipsis;
+}
+#pro-copia{flex:0 0 auto; margin-left:0; padding:11px 15px; font-size:13px}
+
+/* I due comandi di identita' stanno affiancati anche nella colonna
+   stretta accanto alla faccia: si stringono, non si impilano. */
+.pro-io{flex-wrap:nowrap}
+.pro-io button{
+  flex:0 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  padding:9px 11px; font-size:12.5px;
+}
+@media (max-width:360px){ .pro-io{flex-wrap:wrap} }
+
+.pro-io button{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:9px 13px; font-size:13px; overflow:visible; text-overflow:clip;
+}
+.pro-io .ico{width:15px; height:15px}

@@ -91,9 +91,21 @@
 <button id="stanza-apri" type="button" class="dentro-only" title="arreda la stanza"
         aria-label="arreda la stanza"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/></svg></button>
 
-<aside id="stanza" aria-hidden="true" aria-label="arreda la stanza">
+<!-- IL PANNELLO DELLA LIBRERIA.
+
+     Era solo "la stanza" -- luce e colori -- e i mobili si gestivano da
+     un'altra parte, aperta da un altro pulsante. Erano due pannelli per
+     la stessa domanda: com'e' fatto quello che sto guardando. Adesso e'
+     uno solo, e va dal generale al particolare: la luce di tutta la
+     stanza, il nome di QUESTO mobile, il suo aspetto, l'ordine di
+     tutti, e in fondo i due gesti che cambiano quanti sono.
+
+     Le due parti lunghe stanno in `<details>` perche' non si guardano
+     insieme: chi rinomina non sta scegliendo un legno, e chi riordina
+     non sta facendo ne' l'una ne' l'altra cosa. -->
+<aside id="stanza" aria-hidden="true" aria-label="la tua libreria">
   <button id="stanza-x" type="button" aria-label="chiudi">&times;</button>
-  <p class="eyebrow">la stanza</p>
+  <p class="eyebrow">la libreria</p>
 
   <p class="st-riga luce">
     <span>luce</span>
@@ -102,16 +114,41 @@
     <b id="st-luce-n">100%</b>
   </p>
 
-  <p class="st-quale">legno e arredi di <b id="st-quale">questo mobile</b></p>
-  <p class="st-riga"><span>scaffali</span><span id="st-scaffali" class="pastiglie"></span></p>
-  <p class="st-riga"><span>muro</span><span id="st-muro" class="pastiglie"></span></p>
-  <p class="st-riga"><span>pavimento</span><span id="st-pavimento" class="pastiglie"></span></p>
-  <p class="st-riga alto"><span>arredi</span><span id="st-arredo" class="pastiglie testo"></span></p>
-  <p class="st-quale sotto">luce, muro e pavimento sono della stanza intera</p>
+  <!-- Il nome sta in chiaro e non dentro una tendina: e' quello che
+       distingue un mobile dall'altro, e si cambia spesso all'inizio. -->
+  <p class="st-nome">
+    <input id="st-rinomina" type="text" maxlength="40" autocomplete="off"
+           spellcheck="false" aria-label="nome di questa libreria">
+    <button id="st-rinomina-ok" type="button" class="primario" disabled>salva</button>
+  </p>
 
-  <p class="st-fondo">
-    <span id="st-msg">si salva da solo</span>
-    <button id="st-reset" type="button">com&rsquo;era</button>
+  <details id="st-aspetto" class="st-tendina">
+    <summary>modifica libreria</summary>
+    <div class="st-dentro">
+      <p class="st-quale">legno e arredi di <b id="st-quale">questo mobile</b></p>
+      <p class="st-riga"><span>scaffali</span><span id="st-scaffali" class="pastiglie"></span></p>
+      <p class="st-riga"><span>muro</span><span id="st-muro" class="pastiglie"></span></p>
+      <p class="st-riga"><span>pavimento</span><span id="st-pavimento" class="pastiglie"></span></p>
+      <p class="st-riga alto"><span>arredi</span><span id="st-arredo" class="pastiglie testo"></span></p>
+      <p class="st-quale sotto">luce, muro e pavimento sono della stanza intera</p>
+      <p class="st-fondo">
+        <span id="st-msg">si salva da solo</span>
+        <button id="st-reset" type="button">com&rsquo;era</button>
+      </p>
+    </div>
+  </details>
+
+  <details id="st-ordine" class="st-tendina">
+    <summary>ordina librerie</summary>
+    <div class="st-dentro">
+      <p class="st-quale">l&rsquo;ordine qui e&rsquo; l&rsquo;ordine lungo la parete</p>
+      <ul id="st-lista"></ul>
+    </div>
+  </details>
+
+  <p class="st-gesti">
+    <button id="st-piu" type="button" class="secondario">aggiungi una libreria</button>
+    <button id="st-meno" type="button" class="distruttivo">elimina questa libreria</button>
   </p>
 </aside>
 
@@ -127,16 +164,6 @@
 
 <!-- I MOBILI. Si aprono dal nome della libreria, che e' dove uno guarda
      per sapere in che scaffale si trova. -->
-<aside id="mobili" aria-hidden="true" aria-label="le tue librerie">
-  <button id="mobili-x" type="button" aria-label="chiudi">&times;</button>
-  <p class="eyebrow">le tue librerie</p>
-  <ul id="mobili-lista"></ul>
-  <p class="st-fondo">
-    <span id="mobili-msg">tieni premuta una scatola per spostarla</span>
-    <button id="mobili-piu" type="button">aggiungi</button>
-  </p>
-</aside>
-
 <!-- pannello della recensione: si apre come un'anta, incernierato sul lato -->
 <aside id="panel" role="dialog" aria-modal="false" aria-labelledby="p-title" aria-hidden="true">
   <button id="close" type="button">chiudi &times;</button>
@@ -267,11 +294,21 @@
     <div class="pro-testa">
       <div class="pro-faccia">
         <canvas id="pro-avatar" width="160" height="160" aria-hidden="true"></canvas>
-        <button id="pro-cambia" type="button">cambia faccia</button>
       </div>
       <div class="pro-chi">
         <h2 id="pro-nick">&nbsp;</h2>
         <p class="pro-mail" id="pro-mail"></p>
+        <!-- I due comandi che riguardano CHI SEI stanno insieme e sotto
+             il nome, non uno sotto la faccia e uno in fondo: sono la
+             stessa domanda, come mi chiamo e che faccia ho. -->
+        <!-- Etichette corte con la matita: "modifica meeple" e "cambia
+             nick" per esteso volevano 273 px in una colonna da 239 e
+             venivano tagliate a meta'. Accanto alla faccia e al nome
+             una parola sola basta, e la matita dice che si modifica. -->
+        <p class="pro-io">
+          <button id="pro-cambia" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> meeple</button>
+          <button id="pro-rinomina" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> nick</button>
+        </p>
       </div>
     </div>
 
@@ -279,12 +316,11 @@
         <p class="pro-cod">
           <span>codice amico</span>
           <b id="pro-codice">&mdash;</b>
-          <button id="pro-copia" type="button">copia</button>
+          <button id="pro-copia" type="button" class="primario">copia</button>
         </p>
         <p class="pro-nota">Dallo a chi vuoi che ti trovi. Non compare mai
           nel profilo che vedono gli altri.</p>
         <p class="pro-fondo">
-          <button id="pro-rinomina" type="button" class="pro-lin">cambia nick</button>
           <button id="pro-esci" type="button" class="pro-lin esci">esci dall&rsquo;account</button>
         </p>
     </div>

@@ -501,6 +501,46 @@ async function rinominaLibreria(id, nome){
   if (L) L.nome = t;
 }
 
+/* --- riordinare i MOBILI ------------------------------------------
+   `ids` e' l'ordine nuovo, per intero. Vale la stessa regola dei
+   giochi: si scrivono solo le righe che cambiano davvero, e la
+   scrittura e' ottimista -- i mobili si spostano subito e la richiesta
+   parte dietro.
+
+   Cambiare l'ordine dei mobili cambia da che parte stanno lungo la
+   parete, quindi tocca anche la posizione delle scatole: chi chiama
+   deve rifare la disposizione. */
+function riordinaLibrerie(ids){
+  if (visitata) return 0;
+  const per = {};
+  librerie.forEach(function(L){ per[L.id] = L; });
+
+  const cambiati = [];
+  ids.forEach(function(id, i){
+    const L = per[id];
+    if (!L) return;
+    if (L.ordine !== i){ L.ordine = i; cambiati.push(L); }
+  });
+  librerie.sort(function(a, b){ return (a.ordine || 0) - (b.ordine || 0); });
+
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (c && remota && cambiati.length) mandaOrdineLibrerie(c, cambiati);
+  return cambiati.length;
+}
+
+async function mandaOrdineLibrerie(c, elenco){
+  try {
+    const esiti = await Promise.all(elenco.map(function(L){
+      return c.from('librerie').update({ ordine: L.ordine })
+              .eq('proprietario', AUTH.stato().id).eq('id', L.id);
+    }));
+    const ko = esiti.find(function(r){ return r.error; });
+    if (ko) throw ko.error;
+  } catch(e){
+    onErrore('ordine dei mobili non salvato sul server: ' + messaggio(e));
+  }
+}
+
 /* Togliere un mobile non butta via i giochi: la chiave esterna e'
    `on delete set null`, quindi restano senza posto e rifluiscono nei
    cubi liberi delle altre librerie. Cancellare uno scaffale non e'
@@ -788,7 +828,7 @@ return {
   visita: visita, torna: torna, ospitePresso: ospitePresso,
   librerie: elencoLibrerie, caricaLibrerie: caricaLibrerie,
   creaLibreria: creaLibreria, rinominaLibreria: rinominaLibreria,
-  togliLibreria: togliLibreria, metti: metti, mandaPosti: mandaPosti,
+  togliLibreria: togliLibreria, riordinaLibrerie: riordinaLibrerie, metti: metti, mandaPosti: mandaPosti,
   gruppi: elencoGruppi, gruppiDi: gruppiDi, caricaGruppi: caricaGruppi,
   creaGruppo: creaGruppo, rinominaGruppo: rinominaGruppo,
   togliGruppo: togliGruppo, segnaGruppo: segnaGruppo,

@@ -176,7 +176,9 @@ const clamp     = (v,a,b) => v < a ? a : (v > b ? b : v);
    visibilmente scoordinata dell'interfaccia. Tratto 1.6, estremi
    tondi, riquadro 24: tutte uguali. */
 const ICO = {
-  menu: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>'
+  menu:     '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  cestino:  '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M10 7V5h4v2M6.5 7l.8 12h9.4l.8-12M10.5 10.5v5.5M13.5 10.5v5.5"/></svg>',
+  maniglia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 9h12M6 15h12"/></svg>'
 };
 
 const q  = s => document.querySelector(s);
@@ -1586,7 +1588,7 @@ function posaScatola(p){
     const tocchi = fotografa();
     LIB.creaLibreria('').then(function(L){
       tocchi.push(LIB.metti(mio.id, L.id, posto));
-      disegnaMobili();
+      disegnaLibrerie();
       concludi(tocchi);
       flash('libreria nuova: ' + L.nome);
     }).catch(function(e){
@@ -2211,7 +2213,7 @@ function bindInput(){
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
       finiscePresa(true); chiudiMia(); chiudiPartita(); chiudiElenco();
-      chiudiArreda(); chiudiMobili(); chiudiGestioneGruppi();
+      chiudiArreda(); chiudiGestioneGruppi();
       unfocus(); closeAdd(); return;
     }
     if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
@@ -3261,116 +3263,193 @@ function bindGruppi(){
    Ci si arriva dal NOME in basso, che e' dove uno guarda per sapere in
    che libreria si trova. */
 
-function disegnaMobili(){
-  const el = q('#mobili-lista');
+function disegnaLibrerie(){
+  const el = q('#st-lista');
   if (!el) return;
   const l = LIB.librerie();
   const perLibreria = {};             // vedi disegnaGruppiElenco: non chiamarlo `quanti`
   LIB.all().forEach(function(g){
     if (g.libreria) perLibreria[g.libreria] = (perLibreria[g.libreria] || 0) + 1;
   });
+  const corrente = l[Math.round(state.scroll)];
 
   el.innerHTML = l.map(function(L){
-    return '<li data-id="' + esc(L.id) + '">' +
-      '<input type="text" value="' + esc(L.nome) + '" maxlength="30" ' +
-        'aria-label="nome della libreria">' +
-      '<button type="button" class="ok" data-fa="ok" aria-label="conferma il nome" ' +
-        'disabled>&#10003;</button>' +
+    return '<li data-id="' + esc(L.id) + '"' +
+        (corrente && corrente.id === L.id ? ' class="qui"' : '') + '>' +
+      '<span class="nome">' + esc(L.nome) + '</span>' +
       '<span class="quanti">' + (perLibreria[L.id] || 0) + '</span>' +
-      (l.length > 1 ? '<button type="button" data-fa="via" aria-label="togli">&times;</button>' : '') +
+      (l.length > 1
+        ? '<button type="button" data-fa="via" aria-label="elimina ' + esc(L.nome) + '">' + ICO.cestino + '</button>'
+        : '') +
+      '<button type="button" class="presa" data-fa="sposta" aria-label="tieni premuto e trascina per riordinare">' +
+        ICO.maniglia + '</button>' +
     '</li>';
   }).join('');
-  updateRail();
 }
 
-function apriMobili(){
-  if (LIB.ospitePresso()) return;        // i mobili di un altro non si toccano
-  chiudiPannelli('mobili');
-  disegnaMobili();
-  document.body.classList.add('mobili');
-  q('#mobili').setAttribute('aria-hidden', 'false');
+/* Il nome della libreria che si sta guardando, nel campo in chiaro. Il
+   pulsante si accende solo se c'e' davvero qualcosa da salvare: vedi
+   la nota sulla rinomina piu' sotto. */
+function disegnaNomeCorrente(){
+  const inp = q('#st-rinomina'), ok = q('#st-rinomina-ok');
+  if (!inp) return;
+  const L = LIB.librerie()[Math.round(state.scroll)];
+  inp.value = L ? L.nome : '';
+  inp.disabled = !L;
+  if (ok) ok.disabled = true;
 }
 
-function chiudiMobili(){
-  document.body.classList.remove('mobili');
-  q('#mobili').setAttribute('aria-hidden', 'true');
+/* Rinominare vuole una conferma esplicita. Salvare all'uscita dal campo
+   faceva partire una scrittura anche a chi ci cliccava dentro per
+   sbaglio, e soprattutto non si capiva se era andata: il nome sopra la
+   libreria e' l'unica prova, e va aggiornato subito -- per questo si
+   richiama `buildCabinet`, che la targhetta sta dentro il mobile. */
+function confermaNomeCorrente(){
+  const inp = q('#st-rinomina'), ok = q('#st-rinomina-ok');
+  const L = LIB.librerie()[Math.round(state.scroll)];
+  if (!L) return;
+  ok.disabled = true;
+  LIB.rinominaLibreria(L.id, inp.value).then(function(){
+    buildCabinet();
+    applyLibrary({});
+    updateRail();
+    disegnaLibrerie();
+    flash('libreria rinominata');
+  }).catch(function(err){
+    ok.disabled = false;
+    flash('non rinominata: ' + err.message);
+  });
 }
 
-function bindMobili(){
-  // la porta dei mobili e' passata nell'imbuto: vedi `bindVista`
-  q('#mobili-x').addEventListener('click', chiudiMobili);
+/* --- riordinare i mobili trascinando ------------------------------
+   Si prende dalla MANIGLIA e non da tutta la riga: la riga porta anche
+   un pulsante che elimina, e un elenco dove ogni punto e' buono per
+   trascinare e' un elenco dove ogni tocco rischia di spostare qualcosa.
 
-  q('#mobili-piu').addEventListener('click', function(){
-    LIB.creaLibreria('').then(function(L){
-      disegnaMobili();
-      /* Una libreria nuova esiste solo nell'ordine manuale: negli altri
-         i cubi si riempiono in sequenza e il mobile in piu' resta vuoto
-         qualunque cosa si faccia. Creandone una si sta dicendo "voglio
-         decidere io dove vanno", quindi ci si passa. */
-      if (state.sort !== 'mio'){
-        fissaOrdineCorrente();
-        setSort('mio');
-        flash('libreria "' + L.nome + '": ordine tuo, ora le scatole si spostano');
-      } else {
-        applyLibrary({ animate: true });
-        flash('libreria nuova: ' + L.nome);
-      }
-      state.scrollTo = clamp(LIB.librerie().length - 1, 0, maxScroll());
-    }).catch(function(e){ flash('non creata: ' + e.message); });
+   Mentre si trascina si riordina il DOM e basta; al rilascio si manda
+   l'ordine nuovo, si rifa' il mobile e si ridispongono le scatole --
+   cambiare l'ordine dei mobili cambia da che parte stanno lungo la
+   parete, quindi le scatole si spostano con loro. */
+function bindOrdineLibrerie(){
+  const el = q('#st-lista');
+  if (!el) return;
+  let presa = null;
+
+  el.addEventListener('pointerdown', function(e){
+    const man = e.target.closest('[data-fa="sposta"]');
+    if (!man) return;
+    presa = man.closest('li');
+    presa.classList.add('in-mano');
+    try { man.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
   });
 
-  /* La rinomina vuole una conferma esplicita. Salvare all'uscita dal
-     campo faceva partire una scrittura anche a chi ci cliccava dentro
-     per sbaglio, e soprattutto non si capiva se era andata: il nome
-     sopra la libreria e' l'unica prova, e va aggiornato subito. */
-  const confermaNome = function(li){
-    const inp = li.querySelector('input');
-    const ok = li.querySelector('[data-fa="ok"]');
-    const id = li.getAttribute('data-id');
-    ok.disabled = true;
-    LIB.rinominaLibreria(id, inp.value).then(function(){
-      buildCabinet();               // la targhetta sopra il mobile e' li' dentro
-      applyLibrary({});
-      updateRail();
-      flash('libreria rinominata');
-    }).catch(function(err){
-      ok.disabled = false;
-      flash('non rinominata: ' + err.message);
-    });
-  };
-
-  q('#mobili-lista').addEventListener('input', function(e){
-    if (e.target.tagName !== 'INPUT') return;
-    const li = e.target.closest('li');
-    const L = LIB.librerie().find(function(x){ return x.id === li.getAttribute('data-id'); });
-    // il segno di spunta si accende solo se c'e' davvero qualcosa da salvare
-    li.querySelector('[data-fa="ok"]').disabled =
-      !e.target.value.trim() || (L && e.target.value === L.nome);
-  });
-  q('#mobili-lista').addEventListener('keydown', function(e){
-    e.stopPropagation();
-    if (e.key === 'Enter' && e.target.tagName === 'INPUT'){
-      const li = e.target.closest('li');
-      if (!li.querySelector('[data-fa="ok"]').disabled) confermaNome(li);
+  el.addEventListener('pointermove', function(e){
+    if (!presa) return;
+    // su quale riga sta il dito adesso
+    const righe = Array.prototype.slice.call(el.children);
+    for (let i = 0; i < righe.length; i++){
+      const li = righe[i];
+      if (li === presa) continue;
+      const r = li.getBoundingClientRect();
+      if (e.clientY < r.top || e.clientY > r.bottom) continue;
+      const meta = r.top + r.height / 2;
+      el.insertBefore(presa, e.clientY < meta ? li : li.nextSibling);
+      break;
     }
   });
 
-  q('#mobili-lista').addEventListener('click', function(e){
-    const ok = e.target.closest('button[data-fa="ok"]');
-    if (ok){ confermaNome(ok.closest('li')); return; }
+  const molla = function(){
+    if (!presa) return;
+    presa.classList.remove('in-mano');
+    presa = null;
+    const ids = Array.prototype.slice.call(el.children)
+      .map(function(li){ return li.getAttribute('data-id'); });
+    if (!LIB.riordinaLibrerie(ids)) return;     // niente cambiato: niente da rifare
+    buildCabinet();
+    applyLibrary({ animate: true });
+    updateRail();
+    disegnaNomeCorrente();
+    disegnaLibrerie();
+    flash('librerie riordinate');
+  };
+  el.addEventListener('pointerup', molla);
+  el.addEventListener('pointercancel', molla);
 
+  // eliminare una libreria dall'elenco
+  el.addEventListener('click', function(e){
     const b = e.target.closest('button[data-fa="via"]');
     if (!b) return;
     const id = b.closest('li').getAttribute('data-id');
     b.disabled = true;
     LIB.togliLibreria(id).then(function(){
-      disegnaMobili();
-      state.scrollTo = clamp(state.scrollTo, 0, maxScroll());
+      state.scrollTo = state.scroll = clamp(state.scroll, 0, maxScroll());
       buildCabinet();
       applyLibrary({ animate: true });
+      updateRail();
+      disegnaNomeCorrente();
+      disegnaLibrerie();
       flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
     }).catch(function(err){ b.disabled = false; flash('non tolta: ' + err.message); });
   });
+}
+
+function creaLibreriaNuova(){
+  LIB.creaLibreria('').then(function(L){
+    disegnaLibrerie();
+    /* Una libreria nuova esiste solo nell'ordine manuale: negli altri i
+       cubi si riempiono in sequenza e il mobile in piu' resta vuoto
+       qualunque cosa si faccia. Creandone una si sta dicendo "voglio
+       decidere io dove vanno", quindi ci si passa. */
+    if (state.sort !== 'mio'){
+      fissaOrdineCorrente();
+      setSort('mio');
+      flash('libreria "' + L.nome + '": ordine tuo, ora le scatole si spostano');
+    } else {
+      applyLibrary({ animate: true });
+      flash('libreria nuova: ' + L.nome);
+    }
+    state.scrollTo = clamp(LIB.librerie().length - 1, 0, maxScroll());
+    disegnaNomeCorrente();
+  }).catch(function(e){ flash('non creata: ' + e.message); });
+}
+
+function bindLibrerie(){
+  const inp = q('#st-rinomina'), ok = q('#st-rinomina-ok');
+  if (inp){
+    inp.addEventListener('input', function(){
+      const L = LIB.librerie()[Math.round(state.scroll)];
+      ok.disabled = !inp.value.trim() || (L && inp.value === L.nome);
+    });
+    inp.addEventListener('keydown', function(e){
+      e.stopPropagation();                       // se no Esc chiude il pannello
+      if (e.key === 'Enter' && !ok.disabled) confermaNomeCorrente();
+    });
+  }
+  if (ok) ok.addEventListener('click', confermaNomeCorrente);
+
+  const piu = q('#st-piu');
+  if (piu) piu.addEventListener('click', creaLibreriaNuova);
+
+  /* Eliminare resta in due tempi, come tutto quello che butta via
+     qualcosa: una libreria in meno rimanda i suoi giochi fuori dagli
+     scaffali, e non e' un gesto da un clic solo. */
+  const meno = q('#st-meno');
+  if (meno) armaBottone(meno, 'elimina questa libreria', 'sicuro? tocca ancora', function(){
+    const L = LIB.librerie()[Math.round(state.scroll)];
+    if (!L) return;
+    LIB.togliLibreria(L.id).then(function(){
+      state.scrollTo = state.scroll = clamp(state.scroll, 0, maxScroll());
+      buildCabinet();
+      applyLibrary({ animate: true });
+      updateRail();
+      disegnaNomeCorrente();
+      disegnaLibrerie();
+      flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
+    }).catch(function(err){ flash('non tolta: ' + err.message); });
+  });
+
+  bindOrdineLibrerie();
 }
 
 /* ===============================================================
@@ -3442,7 +3521,6 @@ function disegnaStanza(){
 function chiudiPannelli(tranne){
   if (tranne !== 'vista')   chiudiVista();
   if (tranne !== 'arreda')  chiudiArreda();
-  if (tranne !== 'mobili')  chiudiMobili();
   if (tranne !== 'elenco')  chiudiElenco();
   if (tranne !== 'mia')     chiudiMia();
   if (tranne !== 'partita') chiudiPartita();
@@ -3486,16 +3564,17 @@ function bindVista(){
     else apriVista();
   });
   q('#vista-x').addEventListener('click', chiudiVista);
-  q('#vista-mobili').addEventListener('click', function(){
-    chiudiVista();
-    apriMobili();
-  });
+  /* La porta dei mobili non sta piu' qui: il pannello della libreria
+     -- quello della lampada -- fa gia' nome, aspetto e ordine, e due
+     porte per la stessa stanza sono una di troppo. */
 }
 
 function apriArreda(){
   if (LIB.ospitePresso()) return;          // in casa d'altri non si arreda
   chiudiPannelli('arreda');
   disegnaStanza();
+  disegnaNomeCorrente();
+  disegnaLibrerie();
   document.body.classList.add('arreda');
   q('#stanza').setAttribute('aria-hidden', 'false');
   q('#st-msg').textContent = 'si salva da solo';
@@ -4149,7 +4228,6 @@ function bindProfilo(){
 
   q('#pro-rinomina').addEventListener('click', function(){ apriNick(true); });
   q('#vis-torna').addEventListener('click', tornaACasa);
-  q('#mobili').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   q('#conta').addEventListener('click', function(){
     if (document.body.classList.contains('elenco')) chiudiElenco();
@@ -4516,7 +4594,6 @@ async function visitaLibreria(id, nick){
   }
   document.body.classList.add('visita');
   chiudiArreda();
-  chiudiMobili();
   q('#vis-chi').textContent = chi;
   q('#visita').setAttribute('aria-hidden', 'false');
 
@@ -4554,7 +4631,7 @@ async function tornaACasa(){
   q('#visita').setAttribute('aria-hidden', 'true');
   STANZA.daProfilo();
   applicaStanza();
-  disegnaMobili();
+  disegnaLibrerie();
   disegnaGruppiFiltro();
   state.scrollTo = state.scroll = 0;
   await loadCovers();
@@ -5023,7 +5100,7 @@ async function boot(){
   bindCuore();
   bindPiedeGruppi();
   bindStanza();
-  bindMobili();
+  bindLibrerie();
   bindGruppi();
   setSort(state.sort);
   requestAnimationFrame(frame);
