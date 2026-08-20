@@ -172,6 +172,31 @@ body.visita #p-pref{display:none !important}
 }
 .scegli-lib button.lascia:hover{color:var(--ink); background:none; border-color:var(--amber)}
 
+/* --- le due viste dell'elenco ------------------------------------
+   L'indicatore segue il dito mentre si scorre invece di saltare alla
+   fine: e' quello che dice che le due viste sono una accanto all'altra
+   e non due schermate diverse. */
+.viste{
+  position:relative; display:grid; grid-template-columns:1fr 1fr;
+  margin:14px 0 0; border-bottom:1px solid var(--line);
+}
+.viste button{
+  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:none; border:0; padding:11px 6px 12px;
+}
+.viste button:hover{color:var(--ink)}
+.viste button.on{color:var(--ink)}
+.viste .ind{
+  position:absolute; left:0; bottom:-1px; width:50%; height:2px;
+  background:var(--amber); transform:translateX(0);
+  transition:transform .3s cubic-bezier(.22,.9,.26,1);
+}
+.viste.trascina .ind{transition:none}
+/* il contenuto accompagna lo scorrimento, appena appena */
+#mia-list{transition:transform .3s cubic-bezier(.22,.9,.26,1), opacity .3s ease}
+#mia.trascina #mia-list{transition:none}
+
 /* la barra sopra l'elenco: filtri a sinistra, gestione a destra */
 .mia-barra{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:14px 0 0}
 .mia-barra .gruppi{margin:0; flex:1; min-width:0}

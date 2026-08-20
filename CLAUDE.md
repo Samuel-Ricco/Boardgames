@@ -172,6 +172,27 @@ niente, e non c'era modo di portarci una scatola.
   subito dopo va richiamata `muoviPresa`, perché la scena si è spostata sotto la
   scatola e il cubo mirato non è più quello di un attimo fa.
 
+## Le due viste dell'elenco
+
+`gruppi` divide in cartelle, `tutti i giochi` è l'elenco intero ordinabile con i
+soliti criteri. Si passa dall'una all'altra toccando la voce **oppure scorrendo
+di lato**, e l'indicatore **segue il dito** invece di saltare alla fine: è quello
+che dice che le due viste stanno una accanto all'altra e non sono due schermate
+diverse.
+
+- Lo scorrimento si ingaggia **solo quando il movimento è chiaramente
+  orizzontale** (|dy| > 10 e maggiore di |dx| annulla tutto): `#mia` scorre in
+  verticale, e rubare il gesto a chi sta scendendo nell'elenco è il modo più
+  rapido di rendere una pagina inusabile.
+- Non si trascina oltre il bordo. Dalla prima vista si va solo verso destra,
+  dall'ultima solo verso sinistra: lasciar scorrere dove non c'è niente promette
+  una terza schermata che non esiste.
+- La soglia è un quinto della larghezza **ma non più di 150 px**: su un monitor
+  da 1280 un quinto sono quasi trecento pixel, cioè un gesto che nessuno fa. E un
+  **colpo secco** vale comunque, anche se corto — è come si sfoglia col pollice.
+- In vista `gruppi` senza nessun gruppo non si mostra un elenco vuoto: si dice
+  che da «gestisci gruppi» se ne crea uno.
+
 ## Righe compatte, e due aperture invece di una
 
 Nell'elenco una riga mostra **copertina, nome e un tasto a tre righe**, e basta.

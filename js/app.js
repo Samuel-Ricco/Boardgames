@@ -97,6 +97,7 @@ const state = {
   q: '',                       // il testo cercato, '' se non si sta cercando
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   soloPreferiti: false,        // mostra solo i giochi segnati
+  vista: 'gruppi',             // come si guarda l'elenco: 'gruppi' o 'tutti'
   presa: null,                 // la scatola che si sta spostando a mano
   zoom: 1,                     // quanto la camera e' arretrata: 1 = normale
   libs: 1,                     // quante librerie in fila lungo la parete
@@ -2713,6 +2714,7 @@ function bindGruppi(){
     if (b) setGruppo(b.getAttribute('data-g'));
   });
 
+  bindViste();
   q('#mia-gestisci').addEventListener('click', apriGestioneGruppi);
   q('#gru-x').addEventListener('click', chiudiGestioneGruppi);
   q('#gruppilayer').addEventListener('pointerup', function(e){ e.stopPropagation(); });
@@ -3162,7 +3164,8 @@ function disegnaMia(){
     ? 'la libreria di ' + dove.nick : 'la tua libreria';
 
   const gruppi = LIB.gruppi();
-  const aCartelle = !state.gruppo && gruppi.length > 0;
+  const aCartelle = state.vista === 'gruppi' && !state.gruppo && gruppi.length > 0;
+  disegnaViste();
 
   if (!aCartelle){
     q('#mia-list').innerHTML = l.map(rigaMia).join('');
@@ -3197,11 +3200,127 @@ function disegnaMia(){
   const perche = [];
   if (state.q) perche.push('per <b>' + esc(state.q) + '</b>');
   if (state.soloPreferiti) perche.push('fra i preferiti');
+  if (state.vista === 'gruppi' && !gruppi.length){
+    q('#mia-msg').innerHTML = 'Nessun gruppo, per ora: da <b>gestisci gruppi</b> ' +
+      'se ne crea uno e ci si mettono i giochi dentro.';
+    return;
+  }
   q('#mia-msg').innerHTML = l.length
     ? '<b>' + l.length + '</b> ' + (l.length === 1 ? 'gioco' : 'giochi') +
       (perche.length ? ' ' + perche.join(', ') : '') +
       ', <b>' + inVetrina + '</b> sugli scaffali. Tocca una riga per la scheda.'
     : (perche.length ? 'Niente ' + perche.join(', ') + '.' : 'La libreria e\' vuota.');
+}
+
+/* --- le due viste ------------------------------------------------
+   `gruppi` divide in cartelle, `tutti` e' l'elenco intero ordinabile.
+   Si passa dall'una all'altra toccando la voce oppure scorrendo di
+   lato, e l'indicatore segue il dito invece di saltare alla fine: e'
+   quello che dice che le due viste stanno una accanto all'altra. */
+function disegnaViste(){
+  qa('#viste button').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-vista') === state.vista);
+    b.setAttribute('aria-selected', b.getAttribute('data-vista') === state.vista ? 'true' : 'false');
+  });
+  const ind = q('#viste .ind');
+  if (ind) ind.style.transform = 'translateX(' + (state.vista === 'tutti' ? 100 : 0) + '%)';
+}
+
+function setVista(v){
+  if (v !== 'gruppi' && v !== 'tutti') return;
+  if (v === state.vista){ disegnaViste(); return; }
+  state.vista = v;
+  try { localStorage.setItem('dado-vista', v); } catch(e){}
+  disegnaMia();
+  // l'elenco entra dal lato da cui si e' arrivati
+  const lista = q('#mia-list');
+  if (lista){
+    lista.style.transition = 'none';
+    lista.style.transform = 'translateX(' + (v === 'tutti' ? 26 : -26) + 'px)';
+    lista.style.opacity = '0';
+    requestAnimationFrame(function(){
+      lista.style.transition = '';
+      lista.style.transform = '';
+      lista.style.opacity = '';
+    });
+  }
+}
+
+/* Lo scorrimento di lato. Si ingaggia solo quando il movimento e'
+   chiaramente orizzontale: `#mia` scorre in verticale, e rubare il
+   gesto a chi sta scendendo nell'elenco sarebbe il modo piu' rapido di
+   rendere la pagina inusabile. */
+function bindViste(){
+  qa('#viste button').forEach(function(b){
+    b.addEventListener('click', function(){ setVista(b.getAttribute('data-vista')); });
+  });
+
+  const mia = q('#mia'), viste = q('#viste'), lista = q('#mia-list');
+  let x0 = 0, y0 = 0, attivo = false, deciso = false, largo = 1;
+
+  let t0 = 0;
+  mia.addEventListener('pointerdown', function(e){
+    if (e.target.closest('button, input, a')) return;
+    x0 = e.clientX; y0 = e.clientY; t0 = performance.now();
+    attivo = true; deciso = false;
+    largo = mia.clientWidth || 1;
+  });
+
+  mia.addEventListener('pointermove', function(e){
+    if (!attivo) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+
+    if (!deciso){
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)){ attivo = false; return; }
+      if (Math.abs(dx) < 12) return;
+      deciso = true;
+      viste.classList.add('trascina');
+      mia.classList.add('trascina');
+    }
+
+    /* Non si scorre oltre il bordo: dalla prima vista si va solo verso
+       destra, dall'ultima solo verso sinistra. Lasciar trascinare dove
+       non c'e' niente promette una terza schermata che non esiste. */
+    const utile = state.vista === 'gruppi' ? Math.min(0, dx) : Math.max(0, dx);
+    const frazione = Math.max(-1, Math.min(1, utile / largo));
+    const base = state.vista === 'tutti' ? 100 : 0;
+
+    q('#viste .ind').style.transform = 'translateX(' + (base - frazione * 100) + '%)';
+    lista.style.transform = 'translateX(' + (frazione * largo * .25) + 'px)';
+    lista.style.opacity = String(1 - Math.abs(frazione) * .55);
+  });
+
+  const finito = function(e){
+    if (!attivo) return;
+    const dx = e.clientX - x0;
+    attivo = false;
+    viste.classList.remove('trascina');
+    mia.classList.remove('trascina');
+    lista.style.transform = '';
+    lista.style.opacity = '';
+
+    /* La soglia e' un quinto della larghezza ma non piu' di 150 px: su
+       un monitor da 1280 un quinto sono quasi trecento pixel, cioe' un
+       gesto che nessuno fa. E un colpo secco vale comunque, anche se
+       corto: e' il modo in cui si sfoglia con il pollice. */
+    const soglia = Math.min(largo * .2, 150);
+    const secco = Math.abs(dx) > 45 && (performance.now() - t0) < 300;
+
+    if (deciso && (Math.abs(dx) > soglia || secco)){
+      setVista(dx < 0 ? 'tutti' : 'gruppi');
+    } else {
+      disegnaViste();
+    }
+    deciso = false;
+  };
+  mia.addEventListener('pointerup', finito);
+  mia.addEventListener('pointercancel', function(){
+    attivo = false; deciso = false;
+    viste.classList.remove('trascina');
+    mia.classList.remove('trascina');
+    lista.style.transform = ''; lista.style.opacity = '';
+    disegnaViste();
+  });
 }
 
 function apriElenco(){
@@ -4226,6 +4345,7 @@ function gate(giaDentro){
 
 async function boot(){
   try { state.sort = localStorage.getItem('dado-ordine') || 'aggiunta'; } catch(e){}
+  try { state.vista = localStorage.getItem('dado-vista') || 'gruppi'; } catch(e){}
   q('#sort-now').textContent = ETICHETTE[state.sort] || state.sort;
   LIB.suErrore(flash);                    // le scritture rifiutate le racconta il flash
   buildFlatList();
