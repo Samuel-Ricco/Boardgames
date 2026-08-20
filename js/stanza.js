@@ -22,40 +22,45 @@ const STANZA = (function(){
        cambiare, cosi' chi non tocca niente non vede niente cambiare */
 const DEFAULT = {
   luce: 1,
-  scaffali: '#c9b085',
-  muro: '#e9e2d7',
-  pavimento: '#cbbba4',
+  scaffali: '#41402f',
+  muro: '#eae6db',
+  pavimento: '#d6d0c1',
   arredo: 'misto'
 };
 
+/* I legni tirati verso l'oliva. Un mobile scuro contro una parete
+   color crema e' l'immagine che il sito vuole dare, e il rovere
+   sbiancato di prima -- chiaro su chiaro -- la annullava: la libreria
+   spariva nel muro invece di stagliarcisi contro. Restano essenze
+   vere, e chi vuole il chiaro ce l'ha ancora. */
 const LEGNI = [
-  { v: '#c9b085', n: 'rovere chiaro' },
-  { v: '#ddc9a3', n: 'betulla' },
-  { v: '#a8713c', n: 'ciliegio' },
-  { v: '#8a6642', n: 'noce' },
+  { v: '#41402f', n: 'ebano oliva' },
   { v: '#5a4636', n: 'wenge' },
-  { v: '#e6e0d6', n: 'laccato' }
+  { v: '#8a6642', n: 'noce' },
+  { v: '#a8713c', n: 'ciliegio' },
+  { v: '#c9b085', n: 'rovere chiaro' },
+  { v: '#e4ded1', n: 'laccato' }
 ];
 
 /* Le prime tinte erano tutte a mezzo passo dal bianco: sul muro, sotto
    una luce diffusa, si leggevano tutte uguali. Adesso hanno un colore
    vero -- restano intonaci, non fluorescenze, ma si distinguono. */
 const MURI = [
-  { v: '#e9e2d7', n: 'calce' },
-  { v: '#e8c98f', n: 'ocra' },
-  { v: '#9dbd93', n: 'salvia' },
-  { v: '#8fb4cf', n: 'cenere azzurra' },
-  { v: '#b79ed8', n: 'glicine' },
+  { v: '#eae6db', n: 'crema' },
+  { v: '#ddd6c4', n: 'lino' },
+  { v: '#c9c4a8', n: 'salvia chiara' },
+  { v: '#a9a58c', n: 'oliva' },
   { v: '#b4685a', n: 'terracotta' },
-  { v: '#2f3a46', n: 'notte' }
+  { v: '#8fa5b0', n: 'cenere azzurra' },
+  { v: '#2f2f27', n: 'oliva scuro' }
 ];
 
 const PAVIMENTI = [
-  { v: '#cbbba4', n: 'rovere sbiancato' },
+  { v: '#d6d0c1', n: 'rovere sbiancato' },
+  { v: '#c2beb6', n: 'cemento' },
   { v: '#c08f45', n: 'castagno' },
   { v: '#7a4f28', n: 'parquet scuro' },
-  { v: '#c2beb6', n: 'cemento' },
-  { v: '#6b8c5e', n: 'verde' },
+  { v: '#8b8a6e', n: 'verde oliva' },
   { v: '#b0552b', n: 'cotto' }
 ];
 

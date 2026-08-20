@@ -43,6 +43,11 @@ function imgTex(im){
 
 const rnd = (a,b) => a + Math.random()*(b-a);
 
+// La faccia dei titoli disegnati su canvas. Deve restare la stessa del
+// CSS (--ff-display), se no i titoli sulle scatole e quelli nella
+// pagina sembrano di due siti diversi.
+const SERIF = "'Instrument Serif', Georgia, serif";
+
 // Testo con crenatura allargata: il canvas non ha letter-spacing
 // prima di Chrome 99, quindi le lettere vanno piazzate a mano.
 function spaced(x, str, cx, y, sp, align){
@@ -215,10 +220,10 @@ function coverRoot(){
 
   // titolo
   x.fillStyle = '#f3e3bd';
-  x.font = "112px 'Bebas Neue', Impact, sans-serif";
+  x.font = "128px " + SERIF;
   x.textBaseline = 'alphabetic'; x.textAlign = 'left';
   x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 14; x.shadowOffsetY = 3;
-  spaced(x, 'ROOT', S/2, 486, 12, 'center');
+  spaced(x, 'Root', S/2, 486, 6, 'center');
   x.shadowBlur = 0; x.shadowOffsetY = 0;
 
   x.fillStyle = 'rgba(243,227,189,.72)';
@@ -335,10 +340,10 @@ function coverScythe(){
 
   // titolo
   x.fillStyle = '#f2e3be';
-  x.font = "104px 'Bebas Neue', Impact, sans-serif";
+  x.font = "116px " + SERIF;
   x.textBaseline = 'alphabetic'; x.textAlign = 'left';
   x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 16; x.shadowOffsetY = 3;
-  spaced(x, 'SCYTHE', S/2, 462, 14, 'center');
+  spaced(x, 'Scythe', S/2, 462, 6, 'center');
   x.shadowBlur = 0; x.shadowOffsetY = 0;
 
   x.strokeStyle = 'rgba(242,227,190,.45)'; x.lineWidth = 1.4;
@@ -438,13 +443,17 @@ function coverTitolo(game){
 
   // titolo, rimpicciolito finche' non ci sta
   const ink = game.ink || '#f1e2bd';
-  const title = String(game.title || '').toUpperCase();
-  let size = 92;
+  /* Il titolo resta com'e' scritto, non tutto maiuscolo: un serif
+     editoriale vive di maiuscole e minuscole insieme, e un blocco di
+     capitali e' esattamente quello che faceva sembrare queste copertine
+     un cartello e non una scatola. */
+  const title = String(game.title || '');
+  let size = 104;
   x.textBaseline = 'alphabetic'; x.textAlign = 'left';
   do {
-    x.font = size + "px 'Bebas Neue', Impact, sans-serif";
+    x.font = size + "px " + SERIF;
     size -= 4;
-  } while (size > 26 && x.measureText(title).width + title.length*7 > W - 90);
+  } while (size > 30 && x.measureText(title).width + title.length*3 > W - 90);
 
   x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(46, H-152, W-92, 4);
   x.fillStyle = ink;
@@ -484,9 +493,12 @@ function spine(game, vertical){
   x.translate(w/2, h/2);
   if (vertical) x.rotate(-Math.PI/2);
   x.fillStyle = game.ink;
-  x.font = "62px 'Bebas Neue', Impact, sans-serif";
+  /* Sul dorso il maiuscolo resta: e' alto sessanta pixel su una
+     striscia che a schermo ne vale otto, e li' contano le sagome delle
+     lettere piu' della finezza. */
+  x.font = "58px " + SERIF;
   x.textBaseline = 'middle'; x.textAlign = 'left';
-  spaced(x, game.title.toUpperCase(), 0, 2, 8, 'center');
+  spaced(x, game.title.toUpperCase(), 0, 2, 5, 'center');
   x.restore();
 
   // filetti sui bordi lunghi
@@ -669,17 +681,22 @@ function avatar(av, S){
    La larghezza del canvas segue la lunghezza del testo invece di essere
    fissa: con un canvas fisso, "Party games" e "A" venivano stirati in
    modo diverso sullo stesso piano. */
+/* La targhetta e' la tipografia piu' grande della scena, quindi e'
+   quella che decide di che sito si tratta. Il nome ci va **come lo hai
+   scritto**: un serif editoriale in maiuscole e minuscole, spaziato
+   appena. Tutto maiuscolo e tracciato di sei pixel era il modo di far
+   funzionare un condensato, ed era l'opposto di questo. */
 function targhetta(nome){
-  const testo = String(nome || '').toUpperCase();
+  const testo = String(nome || '');
   const H = 128, pad = 24;
   const mis = cnv(8, 8)[1];
-  mis.font = '600 84px "Bebas Neue", Haettenschweiler, "Arial Narrow", sans-serif';
-  mis.letterSpacing = '6px';
+  mis.font = '96px "Instrument Serif", Georgia, serif';
+  mis.letterSpacing = '2px';
   const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + pad * 2);
 
   const cx = cnv(larg, H), c = cx[0], x = cx[1];
   x.font = mis.font;
-  x.letterSpacing = '6px';
+  x.letterSpacing = '2px';
   x.textAlign = 'center';
   x.textBaseline = 'middle';
   x.fillStyle = 'rgba(44,36,27,.82)';

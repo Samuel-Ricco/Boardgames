@@ -1116,12 +1116,40 @@ formato dello schermo, e la posizione della scatola in primo piano è espressa i
 
 ## Estetica (vincoli fissi)
 
-- Legno caldo, luce da lampada, ottone. `--void #100d0b`, `--ink #f6ecdd`,
-  `--amber #e8b25f` (interattivi), `--rust #c2562f` (etichette).
-- Font: **Bebas Neue** per titoli e numeri, **Inter** per il testo. Sono anche i
-  font disegnati su canvas, quindi `document.fonts.ready` va aspettato **prima**
-  di generare le texture, se no i titoli escono con il ripiego. Stanno in
-  `fonts/`, dichiarati con `@font-face` in cima al CSS.
+- **Crema e verde molto scuro**, direzione editoriale. `--bg #eae6db` (la
+  stanza), `--ink #2a2a22` (il testo), `--amber #8a7638` (interattivi),
+  `--rust #9c5138` (etichette). `--bg` deve restare **uguale a `SFONDO`** in
+  `js/app.js`: è la stessa tinta a tenere insieme caricamento, cancello e mondo
+  dietro.
+- Font: **Instrument Serif** per titoli e numeri, **Inter** per il testo.
+  Entrambi in `fonts/`, licenza OFL, scaricati e committati — niente risorse
+  esterne, mai. Sono anche i font disegnati su canvas, quindi
+  `document.fonts.ready` va aspettato **prima** di generare le texture.
+- **Maiuscole e minuscole, non tutto maiuscolo.** Bebas Neue era condensato e
+  senza minuscole: viveva di capitali e di spaziatura positiva. Un serif
+  editoriale è l'opposto — vuole il testo com'è scritto e la spaziatura a zero.
+  Passando da uno all'altro **le misure non si portano dietro**: agli stessi px
+  un serif di larghezza normale è molto più largo di un condensato, e i titoli
+  escono dal quadro. Tutte le regole che usano `--ff-display` sono state
+  riscalate di **0.82** e la loro `letter-spacing` azzerata.
+- Resta maiuscolo solo il **dorso** delle scatole: è alto sessanta pixel su una
+  striscia che a schermo ne vale otto, e lì contano le sagome delle lettere.
+- Il **mobile scuro contro la parete chiara** è l'immagine del sito. Il rovere
+  sbiancato di prima — chiaro su chiaro — la annullava: la libreria spariva nel
+  muro invece di stagliarcisi contro. I legni sono tirati verso l'oliva e il
+  valore di partenza è `ebano oliva`; chi vuole il chiaro ce l'ha ancora, le
+  tavolozze restano chiuse e ogni tinta resta un legno o un intonaco che esiste.
+- **Una curva sola per tutto il sito** (`--ease`): parte decisa e si posa piano.
+  Le cose entrano dal basso, a scaglioni, e le prime dodici righe sono le uniche
+  ritardate — ritardare la duecentesima vuol dire farla comparire tre secondi
+  dopo che ci sei arrivato sopra. Niente rimbalzi e niente rotazioni: qui si
+  parla di mobili e di carta, e il movimento deve leggersi come una pagina che
+  si volta.
+- Le sezioni si accendono con `display`, quindi vogliono una **`animation` e non
+  una `transition`**: una transizione su un elemento che passa da `none` a
+  `block` non parte proprio.
+- `prefers-reduced-motion` è rispettato. Non è una cortesia: per qualcuno il
+  movimento sullo schermo è nausea vera, e il sistema operativo lo sa già.
 
 ## Il backend (Supabase)
 

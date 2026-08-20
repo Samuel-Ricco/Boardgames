@@ -299,7 +299,9 @@ function slab(w, h, d, mat, x, y, z){
    non una lampada: una libreria aperta in una stanza luminosa non ha
    ombre nette da nessuna parte, e cercare il faretto d'atmosfera qui
    farebbe solo sporcare i cubi di macchie. */
-const SFONDO = 0xe6ddd0;
+/* Deve restare uguale a --bg nel CSS: e' la stessa tinta a tenere
+   insieme il caricamento, il cancello e il mondo dietro. */
+const SFONDO = 0xeae6db;
 
 function buildRoom(){
   scene = new THREE.Scene();
@@ -4782,7 +4784,7 @@ async function boot(){
   if (typeof THREE === 'undefined'){ fallbackFlat(); return; }
 
   // I font servono gia' al primo disegno: i titoli sui dorsi sono
-  // testo su canvas, e senza Bebas escono con il ripiego.
+  // testo su canvas, e senza Instrument Serif escono con il ripiego.
   setProg(.12, 'preparo i caratteri');
   try { await document.fonts.ready; } catch(e){}
 
