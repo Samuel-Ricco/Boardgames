@@ -75,6 +75,16 @@ const SUOLO = KAL.topY - LIB_H;            // zero, per costruzione
 const SOPRA = 2.75;
 const CIMA_VISTA = KAL.topY + SOPRA;
 const CENTRO_Y = (CIMA_VISTA + SUOLO) / 2;
+/* La camera guarda un filo piu' in basso del centro geometrico, cosi' il
+   mobile sale nel quadro. Prima era centrato sull'ingombro compresa
+   l'aria sopra la cima, e con i suggerimenti tolti da sotto restava
+   seduto in fondo allo schermo -- il bordo inferiore usciva addirittura
+   dal quadro di una trentina di pixel su 800.
+
+   Il margine di `layout()` tiene conto dello spostamento, se no
+   alzando il mobile gli si taglia la cima. */
+const ALZA = .85;
+const VISTA_Y = CENTRO_Y - ALZA;
 
 // riga 0 = quella in cima; cresce verso il basso
 const rigaY = r => KAL.topY - KAL.t - KAL.cell/2 - r * KAL.passo;
@@ -1021,6 +1031,20 @@ function disposizione(list){
   };
 }
 
+/* Con una libreria sola non c'e' niente da scorrere: via il binario,
+   invece di far muovere una barra che non muove niente.
+
+   Sta in una funzione sua perche' `state.libs` cambia in `applyLibrary`,
+   mentre `layout()` gira all'avvio e a ogni resize -- cioe' quando il
+   numero di mobili puo' ancora essere quello di prima. Deciso solo li',
+   il binario restava nascosto su una collezione da tre librerie: si
+   vedeva "1 / 3" scritto in un elemento a opacita' zero, e non c'era
+   piu' modo di cambiare mobile. */
+function segnaFerma(){
+  state.tuttaVisibile = state.libs <= 1;
+  document.body.classList.toggle('ferma', state.tuttaVisibile);
+}
+
 function applyLibrary(opts){
   opts = opts || {};
   const list = listaScaffale();
@@ -1031,6 +1055,7 @@ function applyLibrary(opts){
     state.libs = disp.libs;
     buildCabinet();
   }
+  segnaFerma();
 
   const wanted = {};
   list.forEach(function(g, i){ wanted[g.id] = i; });
@@ -1121,13 +1146,10 @@ function layout(){
      sotto il mobile. */
   const marg = aspect < .8 ? .3 : .9;
   const bw = LIB_W/2 + marg;
-  const bh = (CIMA_VISTA - SUOLO)/2 + marg;
+  const bh = (CIMA_VISTA - SUOLO)/2 + marg + ALZA;
   state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
 
-  /* Con una libreria sola non c'e' niente da scorrere: via il binario,
-     invece di far muovere una barra che non muove niente. */
-  state.tuttaVisibile = state.libs <= 1;
-  document.body.classList.toggle('ferma', state.tuttaVisibile);
+  segnaFerma();
 
   /* Intro: si parte abbastanza indietro da vedere la stanza e un pezzo
      della libreria accanto, e ci si avvicina alla prima. Le misure sono
@@ -1189,8 +1211,8 @@ function focusPose(box){
   // guardando, e la scatola deve uscire davanti a lei
   const x = camXFor(state.scrollTo);
   return {
-    pos: new THREE.Vector3(x + offX * vw, CENTRO_Y + offY * vh, FOCUS_Z),
-    cam: new THREE.Vector3(x, CENTRO_Y, FOCUS_Z + d),
+    pos: new THREE.Vector3(x + offX * vw, VISTA_Y + offY * vh, FOCUS_Z),
+    cam: new THREE.Vector3(x, VISTA_Y, FOCUS_Z + d),
     rot: new THREE.Euler(-.05, .34, .02),
     scale: scale
   };
@@ -1530,8 +1552,8 @@ function finiscePresa(annulla, subito){
 function intro(){
   state.phase = 'intro';
   state.scroll = state.scrollTo = 0;
-  const from = new THREE.Vector3(0, CENTRO_Y, state.distFar);
-  const to   = new THREE.Vector3(0, CENTRO_Y, state.distShelf);
+  const from = new THREE.Vector3(0, VISTA_Y, state.distFar);
+  const to   = new THREE.Vector3(0, VISTA_Y, state.distShelf);
   camBase.copy(from);
 
   tween(1.4, function(p){ state.bayLight = p; }, null, .9);
@@ -1638,7 +1660,7 @@ function unfocus(poi){
     const r0 = { x: box.rotation.x, y: box.rotation.y, z: box.rotation.z };
     const s0 = box.scale.x;
     const cam0 = camBase.clone();
-    const camTo = new THREE.Vector3(camXFor(state.scrollTo), CENTRO_Y, state.distShelf);
+    const camTo = new THREE.Vector3(camXFor(state.scrollTo), VISTA_Y, state.distShelf);
 
     tween(.8, function(p){
       const e = easeInOut(p);
@@ -1686,7 +1708,7 @@ function removeFocused(){
 
   const p0 = box.position.clone();
   const cam0 = camBase.clone();
-  const camTo = new THREE.Vector3(camXFor(state.scrollTo), CENTRO_Y, state.distShelf);
+  const camTo = new THREE.Vector3(camXFor(state.scrollTo), VISTA_Y, state.distShelf);
   tween(.5, function(p){
     const e = easeInOut(p);
     box.position.set(p0.x, p0.y - e * 2.2, p0.z + e * 1.2);
@@ -1825,10 +1847,7 @@ function scrollBy(d){
   snapSoon();
 }
 function updateRail(){
-  // il nome del mobile che si sta guardando: e' anche la porta dei mobili
-  const L = LIB.librerie()[Math.round(state.scroll)];
-  const nome = q('#rail-nome');
-  if (nome) nome.textContent = L ? L.nome : 'nuova libreria';
+  nomeMobileCorrente();                   // il nome sta nell'imbuto, non qui
 
   // col pannello aperto, cambiando mobile cambiano legno e arredi mostrati
   if (document.body.classList.contains('arreda')) disegnaStanza();
@@ -1838,14 +1857,77 @@ function updateRail(){
   const n = max + 1;
   q('#rail-txt').textContent = (Math.round(state.scroll) + 1) + ' / ' + n;
   const t = state.scroll / max;
+  const bar = q('.rail-bar');
+  if (bar){
+    bar.setAttribute('aria-valuemax', n);
+    bar.setAttribute('aria-valuenow', Math.round(state.scroll) + 1);
+  }
   q('#rail-thumb').style.transform = 'translateX(' + (t * (100 * max)) + '%)';
   q('#rail-thumb').style.width = (100 / n) + '%';
 }
 
+/* --- la barra in basso si trascina --------------------------------
+   Era un indicatore che sembrava un comando. Adesso lo e': si prende
+   ovunque sulla barra e la vista ci va dietro, e con le frecce si passa
+   di mobile in mobile.
+
+   `setPointerCapture` serve perche' il dito esce quasi subito dalla
+   riga -- e' alta due pixel -- e senza, il trascinamento si
+   interromperebbe al primo movimento verticale. */
+function bindRail(){
+  const bar = q('.rail-bar');
+  if (!bar) return;
+  let preso = false;
+
+  function vaiA(e){
+    const max = maxScroll();
+    if (!max) return;
+    const r = bar.getBoundingClientRect();
+    const t = clamp((e.clientX - r.left) / r.width, 0, 1);
+    state.scrollTo = t * max;
+    state.scroll = t * max;              // sotto il dito non si insegue, si sta
+    updateRail();
+    rifaiOmbre();
+  }
+
+  bar.addEventListener('pointerdown', function(e){
+    if (state.phase !== 'browse') return;
+    preso = true;
+    bar.classList.add('presa');
+    try { bar.setPointerCapture(e.pointerId); } catch(err){}
+    vaiA(e);
+    e.preventDefault();
+  });
+  bar.addEventListener('pointermove', function(e){ if (preso) vaiA(e); });
+  function molla(){
+    if (!preso) return;
+    preso = false;
+    bar.classList.remove('presa');
+    snapSoon();                          // al rilascio si accosta al mobile
+  }
+  bar.addEventListener('pointerup', molla);
+  bar.addEventListener('pointercancel', molla);
+
+  bar.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowLeft'){ scrollBy(-1); e.preventDefault(); }
+    if (e.key === 'ArrowRight'){ scrollBy(1);  e.preventDefault(); }
+  });
+}
+
 /* --- puntatore -------------------------------------------------- */
+/* Quanto rende un pixel di trascinamento. A 1 la scena seguiva il dito
+   uno a uno e cambiare mobile costava una schermata piena; a 2.4 basta
+   un gesto da pollice, e sotto la soglia del colpo secco resta comunque
+   preciso perche' alla fine ci si accosta al mobile piu' vicino. */
+const TIRO = 2.4;
+/* Oltre questa velocita' al rilascio e' un COLPO, non un trascinamento:
+   si passa al mobile accanto anche se il dito ha fatto pochi pixel --
+   e' come si sfoglia. */
+const COLPO = 6;
+
 function bindInput(){
   const el = renderer.domElement;
-  let downAt = 0, downX = 0, downY = 0, lastX = 0, moved = 0, presaT = 0;
+  let downAt = 0, downX = 0, downY = 0, lastX = 0, moved = 0, presaT = 0, vx = 0;
 
   function norm(e){
     state.tx = (e.clientX / window.innerWidth) * 2 - 1;
@@ -1862,11 +1944,17 @@ function bindInput(){
       const dx = e.clientX - lastX;
       lastX = e.clientX;
       moved += Math.abs(dx);
-      // quante librerie vale un pixel, a questa distanza di camera
+      vx = dx;                          // per il colpo secco, al rilascio
+      /* Quante librerie vale un pixel, a questa distanza di camera --
+         moltiplicato per `TIRO`. Uno a uno la scena seguiva il dito
+         esattamente, che e' fedele e scomodo: il mobile riempie lo
+         schermo, quindi per passare al successivo bisognava trascinare
+         una schermata intera, due volte, con la mano che finiva fuori
+         dal vetro. */
       const vh = 2 * state.distShelf * Math.tan(THREE.MathUtils.degToRad(FOV)/2);
       const vw = vh * camera.aspect;
       state.scrollTo = clamp(
-        state.scrollTo - (dx * vw / window.innerWidth) / PASSO_LIB,
+        state.scrollTo - TIRO * (dx * vw / window.innerWidth) / PASSO_LIB,
         0, maxScroll()
       );
     }
@@ -1874,7 +1962,7 @@ function bindInput(){
 
   el.addEventListener('pointerdown', function(e){
     downAt = performance.now(); downX = e.clientX; downY = e.clientY;
-    lastX = e.clientX; moved = 0;
+    lastX = e.clientX; moved = 0; vx = 0;
     state.dragging = true;
     if (el.setPointerCapture) try { el.setPointerCapture(e.pointerId); } catch(err){}
     norm(e); pointer.set(state.tx, state.ty);
@@ -1904,7 +1992,11 @@ function bindInput(){
 
     const wasDrag = moved > 9;
     state.dragging = false;
-    if (wasDrag) snapSoon();
+    if (wasDrag){
+      // un colpo secco vale un mobile intero, anche se corto
+      if (Math.abs(vx) > COLPO) scrollBy(vx > 0 ? -1 : 1);
+      else snapSoon();
+    }
 
     const dt = performance.now() - downAt;
     const dx = Math.abs(e.clientX - downX), dy = Math.abs(e.clientY - downY);
@@ -2048,15 +2140,6 @@ function bindTools(){
     location.reload();
   });
 
-  const menu = q('#sortmenu'), btn = q('#sort');
-  btn.addEventListener('click', function(e){
-    e.stopPropagation();
-    const open = menu.classList.toggle('on');
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  document.addEventListener('click', function(){
-    menu.classList.remove('on'); btn.setAttribute('aria-expanded','false');
-  });
   qa('#sortmenu button').forEach(function(b){
     b.addEventListener('click', function(){
       setSort(b.getAttribute('data-sort'));
@@ -2075,14 +2158,6 @@ function bindTools(){
     e.stopPropagation();                       // se no Esc chiude anche altro
     if (e.key === 'Escape'){ inp.value = ''; setQuery(''); inp.blur(); }
     if (e.key === 'Enter'){ clearTimeout(ct); setQuery(inp.value); }
-  });
-  // sullo stretto il campo si prende la testata: vuoto, la restituisce
-  inp.addEventListener('blur', function(){
-    if (!inp.value.trim()) document.body.classList.remove('cercando');
-  });
-  q('#cerca-go').addEventListener('click', function(){
-    document.body.classList.add('cercando');
-    inp.focus();
   });
   q('#cerca-x').addEventListener('click', function(){
     inp.value = ''; setQuery(''); inp.focus();
@@ -2116,18 +2191,12 @@ function bindTools(){
   });
 }
 
-/* Nel menu il nome per esteso, sul pulsante quello corto: la testata e'
-   stretta e "ordine di aggiunta" ci stava solo togliendo altro. */
-const ETICHETTE = { mio: 'il mio', aggiunta: 'data', nome: 'nome', voto: 'voto' };
-
 function setSort(mode){
   state.sort = mode;
   try { localStorage.setItem('dado-ordine', mode); } catch(e){}
-  q('#sort-now').textContent = ETICHETTE[mode] || mode;
   qa('#sortmenu button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-sort') === mode);
   });
-  q('#sortmenu').classList.remove('on');
   ridisponi();
 }
 
@@ -2148,13 +2217,17 @@ function setQuery(v){
 
 /* Quanti sono. Mentre si cerca dice anche su quanti, se no il numero
    che cala sembra che i giochi siano spariti. */
+/* "la mia collezione: 10", non "10". Un numero da solo non diceva ne'
+   di cosa fosse ne' che ci si potesse cliccare sopra -- ed e' la porta
+   dell'elenco. In casa di un amico e' la sua, e lo dice. */
 function updateConta(){
   const tot = LIB.all().length;
   const el = q('#conta');
   if (!el) return;
+  const chi = LIB.ospitePresso() ? 'la sua collezione' : 'la mia collezione';
   el.innerHTML = (state.q || state.gruppo)
-    ? '<b>' + lista().length + '</b> <span>di ' + tot + '</span>'
-    : '<b>' + tot + '</b> <span>' + (tot === 1 ? 'gioco' : 'giochi') + '</span>';
+    ? '<span>' + chi + ':</span> <b>' + lista().length + '</b> <span>di ' + tot + '</span>'
+    : '<span>' + chi + ':</span> <b>' + tot + '</b>';
 }
 
 /* --- aggiunta -------------------------------------------------- */
@@ -3020,10 +3093,7 @@ function chiudiMobili(){
 }
 
 function bindMobili(){
-  q('#rail-nome').addEventListener('click', function(){
-    if (document.body.classList.contains('mobili')) chiudiMobili();
-    else apriMobili();
-  });
+  // la porta dei mobili e' passata nell'imbuto: vedi `bindVista`
   q('#mobili-x').addEventListener('click', chiudiMobili);
 
   q('#mobili-piu').addEventListener('click', function(){
@@ -3166,6 +3236,7 @@ function disegnaStanza(){
    librerie, e le due finestre si accavallavano. Aprirne uno chiude
    tutti gli altri, sempre. */
 function chiudiPannelli(tranne){
+  if (tranne !== 'vista')   chiudiVista();
   if (tranne !== 'arreda')  chiudiArreda();
   if (tranne !== 'mobili')  chiudiMobili();
   if (tranne !== 'elenco')  chiudiElenco();
@@ -3173,6 +3244,47 @@ function chiudiPannelli(tranne){
   if (tranne !== 'partita') chiudiPartita();
   if (tranne !== 'add')     closeAdd();
   if (tranne !== 'gruppi')  chiudiGestioneGruppi();
+}
+
+/* --- l'imbuto: cosa vedi sullo scaffale ---------------------------
+   Cercare, ordinare e scegliere il mobile sono la stessa domanda, e
+   stanno sotto lo stesso pulsante. Un pannello alla volta come tutti
+   gli altri: due aperti insieme si contendono l'angolo e nessuno dei
+   due dice piu' a cosa si riferisce. */
+function apriVista(){
+  chiudiPannelli('vista');
+  document.body.classList.add('vista');
+  q('#vista').setAttribute('aria-hidden', 'false');
+  q('#vista-apri').setAttribute('aria-expanded', 'true');
+  nomeMobileCorrente();
+  const inp = q('#cerca');
+  if (inp && window.innerWidth > 760) setTimeout(function(){ inp.focus(); }, 60);
+}
+
+function chiudiVista(){
+  document.body.classList.remove('vista');
+  q('#vista').setAttribute('aria-hidden', 'true');
+  q('#vista-apri').setAttribute('aria-expanded', 'false');
+}
+
+// il nome del mobile che si sta guardando, sul pulsante che li apre
+function nomeMobileCorrente(){
+  const b = q('#vista-mobili');
+  if (!b) return;
+  const L = LIB.librerie()[Math.round(state.scroll)];
+  b.textContent = L ? L.nome : 'nuova libreria';
+}
+
+function bindVista(){
+  q('#vista-apri').addEventListener('click', function(){
+    if (document.body.classList.contains('vista')) chiudiVista();
+    else apriVista();
+  });
+  q('#vista-x').addEventListener('click', chiudiVista);
+  q('#vista-mobili').addEventListener('click', function(){
+    chiudiVista();
+    apriMobili();
+  });
 }
 
 function apriArreda(){
@@ -4371,7 +4483,7 @@ function frame(now){
   if (state.phase === 'browse'){
     const before = Math.round(state.scroll);
     state.scroll += (state.scrollTo - state.scroll) * Math.min(1, dt * 7);
-    camBase.set(camXFor(state.scroll), CENTRO_Y, state.distShelf * state.zoom);
+    camBase.set(camXFor(state.scroll), VISTA_Y, state.distShelf * state.zoom);
     if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)){
       updateRail();
       rifaiOmbre();          // la luce di finestra segue camBase: l'ombra si sposta
@@ -4540,7 +4652,9 @@ function gate(giaDentro){
 async function boot(){
   try { state.sort = localStorage.getItem('dado-ordine') || 'aggiunta'; } catch(e){}
   try { state.vista = localStorage.getItem('dado-vista') || 'gruppi'; } catch(e){}
-  q('#sort-now').textContent = ETICHETTE[state.sort] || state.sort;
+  qa('#sortmenu button').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-sort') === state.sort);
+  });
   LIB.suErrore(flash);                    // le scritture rifiutate le racconta il flash
   buildFlatList();
 
@@ -4627,6 +4741,8 @@ async function boot(){
 
   bindInput();
   bindTools();
+  bindVista();
+  bindRail();
   bindStanza();
   bindMobili();
   bindGruppi();

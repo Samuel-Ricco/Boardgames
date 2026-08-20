@@ -47,11 +47,12 @@ canvas{display:block}
 #scene{position:fixed; inset:0; z-index:0; touch-action:none}
 #scene canvas{width:100%; height:100%}
 
-/* vignettatura: chiude gli angoli, la stanza sembra piu' profonda */
+/* Vignettatura: chiude gli angoli e basta. Le due velature chiare in
+   alto e in basso sono state tolte -- servivano a staccare testata e
+   suggerimenti dal fondo, ma tagliavano la stanza in orizzontale e si
+   vedevano come due bande slavate. */
 #vig{position:fixed; inset:0; z-index:1; pointer-events:none;
-  background:
-    linear-gradient(to top, rgba(230,221,208,.9), rgba(230,221,208,0) 20%),
-    radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(96,78,52,.26) 100%)}
+  background:radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(96,78,52,.26) 100%)}
 
 /* --- interfaccia --------------------------------------------- */
 header{
@@ -62,12 +63,9 @@ header{
   transition:opacity .9s ease .2s, transform .9s ease .2s;
   pointer-events:none;
 }
-/* velo scuro dietro alla testata: con la camera dentro l'armadio il
-   legno chiaro le arriva sotto e il testo si perdeva */
-header::before{
-  content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
-  background:linear-gradient(to bottom, rgba(230,221,208,.95), rgba(230,221,208,0));
-}
+/* Niente velo dietro la testata: in alto c'e' la parete chiara della
+   stanza, il testo scuro ci si legge sopra da solo, e la sfumatura si
+   notava piu' del problema che risolveva. */
 body.ready header{opacity:1; transform:none}
 .brand{display:flex; align-items:baseline; gap:12px; pointer-events:auto}
 .brand b{
@@ -99,11 +97,11 @@ body.ready header{opacity:1; transform:none}
    diventa una lente, e aprendolo si prende la riga della testata
    nascondendo marchio e strumenti -- in quello spazio non ci stanno
    tutti e due, e mentre si cerca serve il campo, non il resto. */
-.cercawrap{position:relative; display:flex; align-items:center}
-#cerca-go{display:none; font-size:14px; padding:6px 11px}
+.cercawrap{position:relative; display:flex; align-items:center; margin:14px 0 0}
 #cerca{
-  width:clamp(110px,16vw,200px); text-transform:none; letter-spacing:.04em;
-  font-size:12px; color:var(--ink); padding-right:24px;
+  width:100%; text-transform:none; letter-spacing:.04em; font-family:var(--ff-text);
+  font-size:13px; color:var(--ink); padding:9px 26px 9px 10px;
+  background:none; border:1px solid var(--line);
 }
 #cerca:focus{outline:none; border-color:var(--amber)}
 #cerca::placeholder{
@@ -115,10 +113,13 @@ body.ready header{opacity:1; transform:none}
 }
 body.cerca #cerca-x{display:block}
 #cerca-x:hover{color:var(--rust)}
-/* il contatore non e' un pulsante: dice solo quanti sono */
-#conta{cursor:default; color:var(--ink)}
-#conta:hover{color:var(--ink); border-color:var(--line)}
+/* Il contatore e' la porta dell'elenco, e adesso lo dice: "la mia
+   collezione: 10". Un numero da solo non si capiva che fosse un
+   pulsante, e nemmeno di cosa fosse il numero. */
+#conta{cursor:pointer; color:var(--ink)}
+#conta:hover{color:var(--amber); border-color:var(--amber)}
 #conta b{font-family:var(--ff-display); font-size:15px; letter-spacing:.06em; color:var(--ink)}
+#conta:hover b{color:var(--amber)}
 #conta span{color:var(--ink-soft)}
 
 /* --- i gruppi -----------------------------------------------------
@@ -321,10 +322,8 @@ body.admin #m-pub-riga{display:flex !important; align-items:flex-start; gap:10px
 #m-pub-riga input{width:16px; height:16px; margin-top:2px; accent-color:var(--amber); flex:none}
 #m-pub-riga b{color:var(--ink); font-weight:500}
 #m-pub-riga small{display:block; margin-top:2px; font-size:11px; color:rgba(44,36,27,.5)}
-.hint i{font-style:normal}
 /* mentre si tiene in mano una scatola non si va da nessuna parte:
    il suggerimento a fondo pagina parla di un gesto che non e' quello */
-body.presa .hint{opacity:0}
 /* il chip dice chi sei e basta: entrati non e' piu' un pulsante */
 #mode.chip{color:var(--ink)}
 #mode.chip:disabled{cursor:default; opacity:1}
@@ -334,13 +333,10 @@ body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--rust)}
 #esci{color:var(--ink-soft)}
 #esci:hover{color:var(--rust); border-color:var(--rust)}
 
-.sortwrap{position:relative}
-#sortmenu{
-  position:absolute; top:calc(100% + 6px); right:0; min-width:190px;
-  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
-  display:none; flex-direction:column; z-index:5;
-}
-#sortmenu.on{display:flex}
+/* L'ordinamento non e' piu' una tendina in testata: e' una lista dentro
+   al pannello della vista, sempre aperta -- li' dentro non deve
+   contendersi lo spazio con nient'altro. */
+#sortmenu{display:flex; flex-direction:column; border:1px solid var(--line); margin:8px 0 0}
 #sortmenu button{
   font-family:var(--ff-text); font-size:12px; text-align:left; cursor:pointer;
   background:none; border:0; border-bottom:1px solid rgba(44,36,27,.10);
@@ -374,15 +370,12 @@ body.dentro .dentro-only{display:inline-flex !important}
    vuota sarebbe una promessa che il sito non puo' mantenere */
 body.ospite #sezioni [data-sez="collezione"]{display:none}
 
-/* Nel catalogo gli strumenti della collezione non servono, e alcuni
-   sarebbero proprio sbagliati: il campo di ricerca e' un altro, e il
-   contatore conta i giochi tuoi. */
-body.sez-catalogo .cercawrap, body.sez-profilo .cercawrap,
-body.sez-catalogo #conta,     body.sez-profilo #conta,
-body.sez-catalogo #add,       body.sez-profilo #add,
-body.sez-catalogo .sortwrap,  body.sez-profilo .sortwrap{display:none !important}
-body.sez-catalogo #rail, body.sez-profilo #rail,
-body.sez-catalogo .hint, body.sez-profilo .hint{opacity:0 !important}
+/* La testata e' la stessa in tutte le schermate, contatore compreso:
+   "la mia collezione: N" e' vero anche mentre guardi il catalogo, ed e'
+   da li' che ci si torna. Sparisce solo cio' che parla dello scaffale:
+   l'imbuto e il binario delle librerie. */
+body.sez-catalogo #rail,       body.sez-profilo #rail,
+body.sez-catalogo #vista-apri, body.sez-profilo #vista-apri{opacity:0 !important; pointer-events:none}
 
 /* --- il catalogo ------------------------------------------------
    Sta sopra la scena (z2) ma sotto la testata (z3): la barra in alto
@@ -399,8 +392,9 @@ body.elenco #mia{display:block}
 body.elenco #conta{background:var(--amber); color:#fdfaf4; border-color:var(--amber)}
 body.elenco #conta b, body.elenco #conta span{color:#fdfaf4}
 #conta{cursor:pointer}
-/* con l'elenco davanti, scaffale e suggerimenti non servono */
-body.elenco #rail, body.elenco .hint{opacity:0 !important}
+/* con l'elenco davanti, scaffale e imbuto non servono */
+body.elenco #rail{opacity:0 !important}
+body.elenco #vista-apri{opacity:0 !important; pointer-events:none}
 
 #catalogo{
   position:fixed; inset:0; z-index:2; display:none;
@@ -846,6 +840,60 @@ body.visita #p-segna{display:none !important}
    Il pannello sta in un angolo e non copre la scena: scegliere un
    colore guardando un'anteprima grande come un francobollo non e'
    scegliere, e' indovinare. */
+/* --- L'IMBUTO E LA VISTA ------------------------------------------
+   Sta in alto a sinistra sulla SCENA e non in testata: cercare e
+   ordinare riguardano lo scaffale che si ha davanti, e una testata che
+   vale per tutto il sito non e' il posto di un comando che vale per una
+   schermata sola. In basso a sinistra c'e' gia' la stanza: due comandi
+   nello stesso angolo si contenderebbero lo spazio. */
+#vista-apri{
+  position:fixed; z-index:5; left:clamp(12px,2.4vw,28px);
+  top:calc(18px + clamp(52px,7vw,66px));
+  line-height:0; cursor:pointer; color:var(--ink-soft);
+  background:var(--card); border:1px solid var(--line); padding:9px;
+  opacity:0; transition:opacity .5s ease, color .2s ease, border-color .2s ease;
+}
+#vista-apri svg{width:18px; height:18px; display:block}
+body.browse #vista-apri{opacity:1}
+#vista-apri:hover{color:var(--amber); border-color:var(--amber)}
+body.vista #vista-apri{color:var(--amber); border-color:var(--amber)}
+body.review #vista-apri, body.arreda #vista-apri, body.mobili #vista-apri{display:none}
+
+#vista{
+  position:fixed; z-index:5; left:clamp(12px,2.4vw,28px);
+  top:calc(18px + clamp(52px,7vw,66px));
+  width:min(300px,88vw); padding:18px 18px 16px;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  opacity:0; visibility:hidden; transform:translateY(-10px);
+  transition:opacity .28s ease, transform .28s ease, visibility 0s .28s;
+}
+body.vista #vista{opacity:1; visibility:visible; transform:none; transition-delay:0s}
+#vista .eyebrow{margin:0 0 4px}
+#vista-x{
+  position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
+  color:var(--ink-soft); background:none; border:0; padding:4px 6px;
+}
+#vista-x:hover{color:var(--rust)}
+.vista-tit{
+  margin:16px 0 0; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.vista-riga{
+  display:block; width:100%; text-align:left; cursor:pointer; margin:8px 0 0;
+  font-family:var(--ff-display); font-size:16px; letter-spacing:.06em; color:var(--ink);
+  background:none; border:1px solid var(--line); padding:9px 11px;
+}
+.vista-riga:hover{color:var(--amber); border-color:var(--amber)}
+
+/* il "+" e' sceso qui dalla testata: si aggiunge un gioco da dove si
+   guarda la collezione, che e' anche da dove ci si accorge che manca */
+.aggiungi{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; cursor:pointer; color:var(--amber);
+  background:none; border:1px dashed var(--amber); padding:6px 10px;
+}
+.aggiungi:hover{background:var(--amber); color:#fdfaf4; border-style:solid}
+
 #stanza-apri{
   position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
   font-size:17px; line-height:1; cursor:pointer; color:var(--ink-soft);
@@ -911,25 +959,15 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
   opacity:0; transition:opacity .5s ease; pointer-events:none;
 }
 body.browse #rail{opacity:1}
-/* Una libreria sola: non c'e' niente da scorrere, ma il NOME resta --
-   e' anche il modo di aprire i mobili e crearne un altro. */
-body.ferma #rail-txt, body.ferma .rail-bar{display:none}
+/* Con una libreria sola non c'e' niente da scorrere e il binario sparisce
+   tutto: il nome del mobile e la porta per crearne un altro sono passati
+   nell'imbuto, quindi qui non resta niente da tenere in piedi. */
+body.ferma #rail{opacity:0 !important; pointer-events:none}
 body.sez-catalogo #rail, body.sez-profilo #rail{opacity:0 !important}
-body.ferma .hint{bottom:26px}
-body.ferma .hint small{display:none}
 #rail-txt{
   font-family:var(--ff-display); font-size:15px; letter-spacing:.12em;
   color:var(--ink-soft);
 }
-#rail-nome{
-  pointer-events:auto; cursor:pointer; max-width:44vw; overflow:hidden;
-  white-space:nowrap; text-overflow:ellipsis;
-  font-family:var(--ff-display); font-size:17px; letter-spacing:.06em;
-  color:var(--ink); background:none; border:0; border-bottom:1px solid var(--line);
-  padding:2px 2px 3px;
-}
-#rail-nome:hover{color:var(--amber); border-color:var(--amber)}
-body.visita #rail-nome{pointer-events:none; border-bottom-color:transparent}
 
 #mobili{
   position:fixed; z-index:5; left:50%; bottom:64px; transform:translate(-50%,10px);
@@ -972,22 +1010,20 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
   background:var(--amber); border:1px solid var(--amber); padding:8px 12px;
 }
 #mobili-piu:hover{background:var(--ink); border-color:var(--ink)}
-.rail-bar{height:2px; width:min(280px,44vw); background:rgba(44,36,27,.16); position:relative}
+/* La barra e' un comando, quindi va presa: due pixel di altezza non si
+   centrano col dito, e l'area cliccabile viene da un padding con lo
+   sfondo trasparente -- la riga sottile resta quella. */
+.rail-bar{
+  height:2px; width:min(280px,44vw); background:rgba(44,36,27,.16); position:relative;
+  pointer-events:auto; cursor:pointer; touch-action:none;
+  border-top:13px solid transparent; border-bottom:13px solid transparent;
+  background-clip:padding-box;
+}
+.rail-bar:hover i, .rail-bar.presa i{background:var(--rust)}
+.rail-bar:focus-visible{outline:1px solid var(--amber); outline-offset:6px}
 .rail-bar i{position:absolute; top:0; height:2px; background:var(--amber);
   transition:transform .25s ease, width .25s ease}
 
-.hint{
-  position:fixed; z-index:3; left:50%; bottom:72px;
-  transform:translateX(-50%) translateY(8px);
-  margin:0; padding:0 16px; text-align:center;
-  font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-soft);
-  opacity:0; transition:opacity .6s ease, transform .6s ease; pointer-events:none;
-}
-body.browse .hint{opacity:1; transform:translateX(-50%)}
-.hint em{color:var(--amber); font-style:normal}
-.hint small{display:block; margin-top:7px; font-size:10px; letter-spacing:.16em;
-  color:rgba(44,36,27,.42)}
-.hint .narrow{display:none}
 
 /* --- pannello della recensione -------------------------------- */
 /* incernierato a sinistra: si apre come l'anta di un armadio */
@@ -1086,21 +1122,10 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   .specs{grid-template-columns:repeat(2,1fr)}
   /* il suggerimento su una riga sola: a capo tre volte era illeggibile,
      e su schermo stretto il testo lungo non ci sta comunque */
-  .hint{font-size:11px; letter-spacing:.1em; bottom:56px}
-  .hint small, .hint .wide{display:none}
-  .hint .narrow{display:inline}
-  body.ferma .hint{bottom:18px}
-  #sort .lbl{display:none}
   .tool{padding:7px 9px; letter-spacing:.08em}
-  #cerca{display:none}
-  #cerca-go{display:inline-flex}
-  #conta span{display:none}
-  body.cercando .brand{display:none}
-  body.cercando .tools, body.cercando .cercawrap{flex:1}
-  body.cercando #cerca{display:block; width:100%}
-  body.cercando #cerca-go{display:none}
-  body.cercando #conta, body.cercando #add, body.cercando .sortwrap,
-  body.cercando #mode, body.cercando #esci{display:none !important}
+  /* la testata stretta non deve piu' ospitare la ricerca: sta
+     nell'imbuto, e il contatore puo' restare per esteso */
+  #conta span{font-size:10px}
   /* le sezioni passano dalla testata alla barra in basso */
   #sezioni{display:none}
   #tabbar{display:flex}
@@ -1113,8 +1138,6 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   /* il contenuto non deve finire sotto la barra */
   .cat-in, .pro-in{padding-bottom:104px}
   #rail{bottom:calc(58px + env(safe-area-inset-bottom))}
-  .hint{bottom:calc(106px + env(safe-area-inset-bottom))}
-  body.ferma .hint{bottom:calc(70px + env(safe-area-inset-bottom))}
 
   body.visita #visita{transform:translate(-50%,80px)}
   #visita{padding:8px 8px 8px 13px; gap:10px}
@@ -1384,7 +1407,7 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
   padding:92px clamp(18px,5vw,56px) 60px}
 body.no3d{overflow:auto}
 body.no3d #flat{display:block}
-body.no3d #scene,body.no3d #vig,body.no3d .hint,body.no3d #panel{display:none}
+body.no3d #scene,body.no3d #vig,body.no3d #panel{display:none}
 #flat h1{font-family:var(--ff-display); font-weight:400; font-size:clamp(34px,7vw,64px);
   letter-spacing:.04em; margin:0 0 6px}
 #flat .lead{color:var(--ink-soft); margin:0 0 44px; max-width:52ch}

@@ -150,6 +150,62 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
   conseguenza, se no il legno si stira.
 
+## La testata dice dove sei, l'imbuto dice cosa vedi
+
+La testata e' **fissa e uguale in tutte le sezioni**, e tiene solo quello che
+vale ovunque: il marchio, le tre sezioni, **«la mia collezione: N»**, chi sei,
+esci. Niente altro.
+
+- Il contatore era un numero nudo: non diceva ne' di cosa fosse ne' che ci si
+  potesse cliccare sopra — ed e' la porta dell'elenco. In casa di un amico
+  diventa «la sua collezione».
+- **Cercare e ordinare non stanno in testata.** Riguardano lo scaffale che si ha
+  davanti, e una barra che vale per tutto il sito non e' il posto di un comando
+  che vale per una schermata sola. Sono passati sotto l'**imbuto**, in alto a
+  sinistra sulla scena, insieme alla scelta del mobile: sono la stessa domanda —
+  *cosa vedo su questo scaffale*.
+- L'imbuto sta in alto a sinistra e non in basso perche' in basso a sinistra
+  c'e' gia' la stanza: due comandi nello stesso angolo si contendono lo spazio.
+  Vale la regola di sempre, **un pannello alla volta** (`chiudiPannelli`).
+- Il **«+»** e' sceso nell'elenco della collezione: si aggiunge un gioco da dove
+  si guarda cos'hai, che e' anche da dove ti accorgi che manca.
+
+## Lo scaffale senza didascalie
+
+- **Via le due velature chiare** in alto e in basso (`#vig` e `header::before`).
+  Servivano a staccare testata e suggerimenti dal fondo, ma tagliavano la stanza
+  in orizzontale e si leggevano come due bande slavate. In alto c'e' la parete
+  chiara: il testo scuro ci si legge sopra da solo.
+- **Via il suggerimento** «clicca una scatola» e **via il nome del mobile** dal
+  fondo dello schermo. Il nome vive nell'imbuto, che e' anche la porta dei
+  mobili — senza, non ci sarebbe piu' modo di crearne un secondo.
+- Il mobile **sale nel quadro** di `ALZA` (0.85). Era centrato sull'ingombro
+  compresa l'aria sopra la cima e, tolte le didascalie da sotto, restava seduto
+  in fondo: il bordo inferiore usciva dal quadro di una trentina di pixel su
+  ottocento. Il margine di `layout()` tiene conto dello spostamento, se no
+  alzandolo gli si taglia la cima.
+
+### Scorrere fra le librerie
+
+- Il trascinamento era **uno a uno** con la scena: fedele e scomodo, perche' il
+  mobile riempie lo schermo e per passare al successivo bisognava trascinare una
+  schermata intera. Ora c'e' `TIRO` (2.4): un gesto da pollice basta, e la
+  precisione non si perde perche' al rilascio ci si accosta comunque al mobile
+  piu' vicino.
+- Un **colpo secco** (`COLPO`, velocita' > 6 px/evento al rilascio) vale un
+  mobile intero anche se corto: e' come si sfoglia.
+- **La barra in basso si trascina.** Era un indicatore che sembrava un comando.
+  Serve `setPointerCapture` perche' la riga e' alta due pixel e il dito ne esce
+  subito; l'area cliccabile viene da un bordo trasparente, non dall'altezza
+  della riga. Con le frecce si passa di mobile in mobile.
+
+**`ferma` lo decide chi cambia i mobili, non `layout()`.** `state.libs` cambia
+in `applyLibrary`, mentre `layout()` gira all'avvio e a ogni resize — cioe'
+quando il numero di mobili puo' ancora essere quello di prima. Deciso solo li',
+su una collezione da tre librerie il binario restava nascosto: si leggeva
+«1 / 3» dentro un elemento a opacita' zero, e non c'era piu' modo di cambiare
+mobile. Ora c'e' `segnaFerma()`, chiamata da tutti e due.
+
 ## La libreria è una vetrina, l'elenco è la collezione
 
 `libreria` nulla vuol dire **«ce l'ho ma non è in mostra»**. Sugli scaffali va

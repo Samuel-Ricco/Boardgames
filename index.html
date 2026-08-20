@@ -29,28 +29,12 @@
     <button type="button" data-sez="profilo" class="dentro-only">profilo</button>
   </nav>
 
+  <!-- La testata tiene solo quello che vale in TUTTE le schermate: chi
+       sei, dove sei, quanti giochi hai. Cercare e ordinare riguardano
+       solo lo scaffale, e sono passati sotto l'imbuto. -->
   <div class="tools">
-    <div class="cercawrap">
-      <button id="cerca-go" type="button" class="tool" title="cerca nella collezione"
-              aria-label="cerca">&#9906;</button>
-      <input id="cerca" type="text" class="tool" placeholder="cerca"
-             autocomplete="off" spellcheck="false" aria-label="cerca nella collezione">
-      <button id="cerca-x" type="button" title="pulisci la ricerca" aria-label="pulisci">&times;</button>
-    </div>
     <button id="conta" type="button" class="tool count" aria-live="polite"
-            title="vedi la libreria come elenco"></button>
-    <button id="add" type="button" class="tool dentro-only" title="aggiungi un gioco">+</button>
-    <div class="sortwrap">
-      <button id="sort" type="button" class="tool" aria-haspopup="true" aria-expanded="false">
-        <span class="lbl">ordina:</span> <b id="sort-now">aggiunta</b>
-      </button>
-      <div id="sortmenu" role="menu">
-        <button type="button" data-sort="mio" role="menuitem">il mio ordine</button>
-        <button type="button" data-sort="aggiunta" role="menuitem">data di aggiunta</button>
-        <button type="button" data-sort="nome" role="menuitem">nome</button>
-        <button type="button" data-sort="voto" role="menuitem">voto</button>
-      </div>
-    </div>
+            title="vedi la collezione come elenco"></button>
     <button id="mode" type="button" class="tool chip" title="entra">entra</button>
     <button id="esci" type="button" class="tool dentro-only" title="chiudi la sessione">esci</button>
   </div>
@@ -63,6 +47,42 @@
   <span>la libreria di <b id="vis-chi"></b></span>
   <button id="vis-torna" type="button">torna alla tua</button>
 </div>
+
+<!-- LA VISTA DELLO SCAFFALE. Cercare, ordinare e scegliere il mobile
+     sono la stessa domanda -- "cosa vedo su questo scaffale" -- e
+     stanno sotto un imbuto solo. Sta sulla scena e non sulla testata
+     perche' riguarda questa schermata e nessun'altra. -->
+<button id="vista-apri" type="button" title="cerca, ordina, scegli il mobile"
+        aria-label="filtri" aria-expanded="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M3 5h18l-7 8v6l-4 2v-8z" fill="none" stroke="currentColor"
+          stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+<aside id="vista" aria-hidden="true" aria-label="cosa vedi sullo scaffale">
+  <button id="vista-x" type="button" aria-label="chiudi">&times;</button>
+  <p class="eyebrow">la vista</p>
+
+  <div class="cercawrap">
+    <input id="cerca" type="text" placeholder="cerca un gioco&hellip;"
+           autocomplete="off" spellcheck="false" aria-label="cerca nella collezione">
+    <button id="cerca-x" type="button" title="pulisci la ricerca" aria-label="pulisci">&times;</button>
+  </div>
+
+  <p class="vista-tit">ordina per</p>
+  <div id="sortmenu" role="menu" class="vista-scelte">
+    <button type="button" data-sort="mio" role="menuitem">il mio ordine</button>
+    <button type="button" data-sort="aggiunta" role="menuitem">data di aggiunta</button>
+    <button type="button" data-sort="nome" role="menuitem">nome</button>
+    <button type="button" data-sort="voto" role="menuitem">voto</button>
+  </div>
+
+  <!-- Il nome del mobile non sta piu' in fondo allo schermo, ma la porta
+       per crearne e rinominarne deve restare da qualche parte: e' qui. -->
+  <p class="vista-tit dentro-only">il mobile</p>
+  <button id="vista-mobili" type="button" class="dentro-only vista-riga"></button>
+</aside>
 
 <!-- ARREDARE LA STANZA. Un pannello che sta SOPRA la scena e non la
      copre: si sceglie e si vede subito, che e' l'unico modo di
@@ -95,11 +115,13 @@
 </aside>
 
 <!-- a che libreria siamo -->
+<!-- Il binario non porta piu' il nome del mobile (sta nell'imbuto): qui
+     resta solo dove sei, e la barra si TRASCINA -- era l'unica cosa che
+     sembrava un comando senza esserlo. -->
 <div id="rail">
-  <button id="rail-nome" type="button" class="dentro-only"
-          title="rinomina, aggiungi o togli una libreria"></button>
   <span id="rail-txt" aria-hidden="true">1 / 3</span>
-  <div class="rail-bar" aria-hidden="true"><i id="rail-thumb"></i></div>
+  <div class="rail-bar" role="slider" tabindex="0" aria-label="scegli la libreria"
+       aria-valuemin="1" aria-valuenow="1" aria-valuemax="1"><i id="rail-thumb"></i></div>
 </div>
 
 <!-- I MOBILI. Si aprono dal nome della libreria, che e' dove uno guarda
@@ -113,12 +135,6 @@
     <button id="mobili-piu" type="button">aggiungi</button>
   </p>
 </aside>
-
-<p class="hint">
-  <span class="wide">clicca una scatola per <em>leggere la recensione</em></span>
-  <span class="narrow">tocca una <em>scatola</em></span>
-  <small>trascina di lato per le altre librerie<i class="dentro-only"> &middot; tieni premuta una scatola per spostarla</i></small>
-</p>
 
 <!-- pannello della recensione: si apre come un'anta, incernierato sul lato -->
 <aside id="panel" role="dialog" aria-modal="false" aria-labelledby="p-title" aria-hidden="true">
@@ -186,7 +202,7 @@
 <section id="mia" aria-hidden="true" aria-label="la tua libreria come elenco">
   <div class="cat-in">
     <div class="cat-testa">
-      <p class="eyebrow" id="mia-eyebrow">la tua libreria</p>
+      <p class="eyebrow" id="mia-eyebrow">la tua collezione</p>
       <div class="viste" id="viste" role="tablist">
         <button type="button" data-vista="gruppi" role="tab">gruppi</button>
         <button type="button" data-vista="tutti" role="tab">tutti i giochi</button>
@@ -195,6 +211,7 @@
       <div class="mia-barra">
         <div id="mia-gruppi" class="gruppi filtro"></div>
         <button id="mia-gestisci" type="button" class="dentro-only">gestisci gruppi</button>
+        <button id="add" type="button" class="dentro-only aggiungi">+ aggiungi un gioco</button>
       </div>
       <p id="mia-msg"></p>
     </div>
