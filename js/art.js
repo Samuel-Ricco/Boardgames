@@ -587,16 +587,11 @@ function dieFace(n, body, pip){
   return c;
 }
 
-// L'ordine che vuole BoxGeometry: +X, -X, +Y, -Y, +Z, -Z.
-// Le facce opposte sommano a sette, come su un dado vero.
-function dieMaterials(body, pip){
-  const order = [3,4,1,6,2,5];
-  return order.map(function(n){
-    return new THREE.MeshStandardMaterial({
-      map: toTex(dieFace(n, body, pip)), roughness: .42, metalness: .02
-    });
-  });
-}
+/* Le sei facce non diventano piu' sei materiali: costavano sei
+   chiamate di disegno per dado. Ora `atlanteDado` in app.js le mette
+   in un atlante 3x2 e il dado e' un oggetto solo -- l'ordine delle
+   facce (+X, -X, +Y, -Y, +Z, -Z, con le opposte che sommano a sette)
+   e' passato di la'. */
 
 /* --- la faccia del profilo ---------------------------------------
    Un meeple su un fondo, disegnato qui come tutto il resto: niente
@@ -737,6 +732,6 @@ return {
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,
   spine: spine, cardboard: cardboard, inside: inside,
-  dieFace: dieFace, dieMaterials: dieMaterials
+  dieFace: dieFace
 };
 })();

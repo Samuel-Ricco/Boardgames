@@ -545,18 +545,14 @@ function makeGameBox(game){
   const card  = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.cardboard('#a5855c'), {repeat:[2,2]}), roughness: .92 });
   const inMat = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.inside()), roughness: .88 });
 
-  const lid = new THREE.Mesh(
-    new THREE.BoxGeometry(BOX.w, H, BOX.lid),
-    [sideV, sideV, sideH, sideH, cover, dark]
-  );
+  const lid = new THREE.Mesh(geoCoperchio(), [sideV, sideH, cover, dark]);
+  lid.scale.set(BOX.w, H, BOX.lid);
   lid.position.z = BOX.t/2 - BOX.lid/2;
   lid.castShadow = true; lid.receiveShadow = true;
 
   const baseD = BOX.t - BOX.lid;
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(BOX.w*.97, H*.97, baseD),
-    [card, card, card, card, inMat, card]
-  );
+  const base = new THREE.Mesh(geoFronte(), [card, inMat]);
+  base.scale.set(BOX.w*.97, H*.97, baseD);
   base.position.z = BOX.t/2 - BOX.lid - baseD/2;
   base.castShadow = true; base.receiveShadow = true;
 
@@ -676,6 +672,47 @@ const geoFoglia = () => comune('foglia', () => new THREE.SphereGeometry(.17, 7, 
 const geoVaso   = () => comune('vaso',   () => new THREE.CylinderGeometry(.38, .28, 1, 14));
 const geoD20    = () => comune('d20',    () => new THREE.IcosahedronGeometry(.62, 0));
 
+/* --- un cubo con le facce raggruppate per materiale --------------
+
+   three.js emette un elemento da disegnare per ogni GRUPPO di una
+   geometria, non per ogni materiale: un box a sei gruppi sono sei
+   chiamate anche quando quattro facce hanno lo stesso identico
+   materiale. Era il caso di tutto quello che ha una faccia diversa
+   dalle altre -- cornici, coperchi, fondi delle scatole -- e da solo
+   valeva 252 chiamate delle 362 della scena.
+
+   Qui gli indici vengono riordinati per slot, cosi' le facce che
+   condividono il materiale finiscono in un gruppo solo. La geometria
+   e' identica: cambia l'ordine in cui si disegnano i triangoli, e
+   dentro la passata opaca quello lo decide lo z-buffer, non la fila.
+
+   `slot` dice, per ognuna delle sei facce nell'ordine di BoxGeometry
+   (+X, -X, +Y, -Y, +Z, -Z), quale materiale dell'array le tocca. */
+function cuboRaggruppato(slot){
+  const g = new THREE.BoxGeometry(1, 1, 1);
+  const idx = g.index.array;                   // 36 indici, sei per faccia
+  const ord = [], gruppi = [];
+  let quanti = 0;
+  for (let i = 0; i < slot.length; i++) if (slot[i] + 1 > quanti) quanti = slot[i] + 1;
+  for (let sl = 0; sl < quanti; sl++){
+    const da = ord.length;
+    for (let f = 0; f < 6; f++){
+      if (slot[f] !== sl) continue;
+      for (let k = 0; k < 6; k++) ord.push(idx[f*6 + k]);
+    }
+    if (ord.length > da) gruppi.push([da, ord.length - da, sl]);
+  }
+  g.setIndex(ord);
+  g.clearGroups();
+  for (let i = 0; i < gruppi.length; i++) g.addGroup(gruppi[i][0], gruppi[i][1], gruppi[i][2]);
+  return g;
+}
+
+// cinque facce uguali e il fronte diverso: cornici e fondi delle scatole
+const geoFronte = () => comune('cubo5+1', () => cuboRaggruppato([0,0,0,0,1,0]));
+// il coperchio: fianchi, teste, copertina, fondello
+const geoCoperchio = () => comune('cubo2+2+1+1', () => cuboRaggruppato([0,0,1,1,2,3]));
+
 const matTinta = (chiave, par) =>
   comune(chiave, () => new THREE.MeshStandardMaterial(par));
 
@@ -685,10 +722,45 @@ const matScatola = i => comune('scat' + i, () => new THREE.MeshStandardMaterial(
   map: ART.toTex(ART.coverGeneric(i)), roughness: .7
 }));
 
-// e i dadi sono tre coppie di colori, quindi tre corredi di sei facce
+/* Un dado costava SEI chiamate, una per faccia, perche' aveva sei
+   materiali. Le sei facce vanno in un atlante 3x2 e il dado torna a
+   essere un oggetto solo: tre coppie di colori, tre texture, tre
+   materiali per tutti i dadi di tutte le librerie.
+
+   Il margine per le mipmap c'e' gia': i pallini stanno a ventidue
+   pixel dal bordo della faccia, quindi quello che si mescola fra una
+   cella e l'altra rimpicciolendo e' fondo con fondo. */
+function atlanteDado(body, pip){
+  const S = 128, cx = ART.cnv(S*3, S*2), c = cx[0], x = cx[1];
+  const ordine = [3,4,1,6,2,5];       // +X, -X, +Y, -Y, +Z, -Z: opposte a sette
+  for (let f = 0; f < 6; f++){
+    x.drawImage(ART.dieFace(ordine[f], body, pip), (f % 3) * S, Math.floor(f / 3) * S);
+  }
+  return c;
+}
+
+/* Il cubo con le UV riscritte sulle celle dell'atlante: la faccia
+   i-esima legge la cella i-esima. La `v` va contata dal basso perche'
+   CanvasTexture capovolge l'immagine al caricamento. */
+const geoDado = () => comune('cuboDado', function(){
+  const g = new THREE.BoxGeometry(1, 1, 1);
+  const uv = g.attributes.uv;
+  for (let f = 0; f < 6; f++){
+    const col = f % 3, riga = Math.floor(f / 3);
+    for (let v = 0; v < 4; v++){
+      const i = f*4 + v;
+      uv.setXY(i, (col + uv.getX(i)) / 3, ((1 - riga) + uv.getY(i)) / 2);
+    }
+  }
+  uv.needsUpdate = true;
+  return g;
+});
+
 const matDado = i => comune('dado' + i, () => {
   const c = [['#efe3cb','#2a1a0f'], ['#c1552c','#f6e6c8'], ['#3f4f63','#f6e6c8']][i];
-  return ART.dieMaterials(c[0], c[1]);
+  return new THREE.MeshStandardMaterial({
+    map: ART.toTex(atlanteDado(c[0], c[1])), roughness: .42, metalness: .02
+  });
 });
 
 function arrScatole(g, seed, x, y){
@@ -719,7 +791,7 @@ function arrLibri(g, seed, x, y){
 function arrDadi(g, seed, x, y){
   for (let i = 0; i < 3; i++){
     const s = .58;
-    const d = new THREE.Mesh(geoCubo(), matDado(i));
+    const d = new THREE.Mesh(geoDado(), matDado(i));
     d.scale.setScalar(s);
     d.position.set(x - .75 + i*.62, y + s/2, .2 + (i%2)*.4);
     d.rotation.y = srnd(seed+i*13) * Math.PI;
@@ -777,7 +849,7 @@ function arrCornici(g, seed, x, y){
        cinquanta materiali identici, uno per cornice. */
     const tela  = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.quadro(seed + i*5)), roughness: .72 });
     const bordo = matTinta('bordoq', { color: 0x6b5540, roughness: .74 });
-    const m = new THREE.Mesh(geoCubo(), [bordo, bordo, bordo, bordo, tela, bordo]);
+    const m = new THREE.Mesh(geoFronte(), [bordo, tela]);
     m.scale.set(w, h, .08);
     // appoggiate all'indietro, come si appoggia una cornice a un muro
     m.position.set(x - .45 + i*.85 + (srnd(seed+i*11)-.5)*.2, y + h/2, -.55 + i*.4);

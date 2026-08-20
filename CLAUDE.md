@@ -763,6 +763,9 @@ Com'era: **574 draw call per fotogramma per 5.794 triangoli** — dodici triango
 a chiamata. Il collo di bottiglia non è mai stata la geometria, era l'overhead:
 152 mesh, **224 materiali** (più dei mesh), 152 geometrie, niente condiviso.
 
+Dov'è arrivato, sulla stessa scena: **201 elementi da disegnare per 151 mesh**,
+98 materiali, 43 geometrie — e a riposo la passata d'ombra non c'è proprio.
+
 ### Le ombre si ridisegnano solo se qualcosa si è mosso
 
 **316 di quei 574 erano la passata d'ombra**: la scena intera ridisegnata una
@@ -811,6 +814,60 @@ Non è stato tolto niente da quello che si vede: gli arredi continuano a
 proiettare ombra, le tele dei quadri restano una per quadro perché sono diverse
 apposta, e la luce di focus a intensità zero resta in scena (è quella che si
 accende aprendo una scatola, non una luce morta).
+
+### Un box a sei gruppi sono sei chiamate, anche con quattro facce uguali
+
+three.js emette un elemento da disegnare per ogni **gruppo** di una geometria,
+non per ogni materiale. Un `BoxGeometry` con un array di materiali ne ha sei, e
+li disegna tutti e sei anche quando quattro facce hanno lo stesso identico
+oggetto materiale. Erano le cornici (`[bordo ×4, tela, bordo]`), i fondi delle
+scatole (`[card ×4, inMat, card]`) e i coperchi: **40 oggetti che costavano 252
+chiamate delle 362 della scena.**
+
+`cuboRaggruppato(slot)` riordina gli indici per slot, così le facce che
+condividono il materiale finiscono in un gruppo solo. `slot` dice, per ognuna
+delle sei facce nell'ordine di `BoxGeometry` (+X, −X, +Y, −Y, +Z, −Z), quale
+materiale dell'array le tocca. Ne escono due geometrie condivise: `cubo5+1`
+(cinque facce uguali e il fronte diverso) e `cubo2+2+1+1` (il coperchio:
+fianchi, teste, copertina, fondello). Quei 40 oggetti ora costano **80**.
+
+La geometria è la stessa — verificato confrontando l'insieme dei triangoli con
+un `BoxGeometry` appena costruito — e cambia solo l'ordine in cui si disegnano.
+Dentro la passata opaca quell'ordine lo decide lo z-buffer, non la fila.
+
+### Un dado non ha sei materiali
+
+Costava sei chiamate a testa. Le sei facce vanno in un **atlante 3×2**
+(`atlanteDado`) e `geoDado` riscrive le UV del cubo perché la faccia *i*-esima
+legga la cella *i*-esima. Tre coppie di colori, tre texture, tre materiali per
+tutti i dadi di tutte le librerie. La `v` va contata dal basso: `CanvasTexture`
+capovolge l'immagine al caricamento.
+
+Il margine per le mipmap c'è già senza doverlo aggiungere: i pallini stanno a
+ventidue pixel dal bordo della faccia, quindi rimpicciolendo quello che si
+mescola fra una cella e l'altra è **fondo con fondo**.
+
+L'ordine delle facce (`[3,4,1,6,2,5]`, con le opposte che sommano a sette) è
+passato da `art.js` ad `app.js`: `ART.dieMaterials` non c'è più.
+
+### Come si verifica che non è cambiato niente
+
+Il conteggio degli elementi da disegnare si legge dal **grafo di scena**, senza
+bisogno di un solo fotogramma: materiale singolo → uno, array → uno per gruppo.
+Serve quando il pannello non compone (basta agganciare `Object3D.prototype.add`
+e far ricostruire gli arredi con una ricerca, che è sincrona).
+
+Per i pixel, invece, **il confronto va tarato sul suo rumore di fondo**:
+`ART.grain()` usa `Math.random()`, quindi due caricamenti dello stesso identico
+codice non danno mai la stessa immagine. Fra ieri e oggi lo scarto massimo su
+una griglia 16×16 è stato **1,29**; fra due caricamenti dello stesso codice
+**1,27**. Senza il secondo numero il primo non vuol dire niente.
+
+L'atlante dei dadi si verifica meglio a numeri che a occhio, che su un dado da
+venti pixel non arbitra: si controlla che le UV di ogni faccia cadano dentro la
+sua cella, e si contano le macchie scure di ogni cella filtrando per area (un
+pallino ha raggio 12, cioè circa 450 pixel — sotto quella soglia è grana).
+Devono venire `[3,4,1,6,2,5]`.
 
 ## Vedere la scena quando l'anteprima non compone
 
