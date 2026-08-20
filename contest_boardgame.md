@@ -85,7 +85,11 @@ Nell'ordine. Le prime tre precedono questa sessione.
 20260819220000_codice_riservato.sql         il codice amico non esce dalla riga
 20260820100000_stanza_librerie_gruppi.sql   stanza arredabile, librerie, gruppi
 20260820200000_preferiti_e_stile_libreria.sql preferiti, legno e arredi per mobile
+20260820230000_apprezzamenti.sql            i cuori sotto la recensione di un amico
 ```
+
+**L'ultima NON è ancora applicata.** Va eseguita dal pannello Supabase: finché
+non c'è, i cuori non compaiono e il sito lo dice per nome invece di rompersi.
 
 **Sono tutte applicate al progetto.** Se una funzione dice «manca la migrazione
 X», qualcosa è andato storto: il client è scritto per dirlo per nome.

@@ -52,6 +52,7 @@ js/config.js          url e chiave pubblica di Supabase
 js/auth.js            accesso con Google, e "sono admin?"
 js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
 js/recensioni.js      le recensioni del sito: pubbliche, lette anche dall'ospite
+js/apprezzamenti.js   i cuori sotto la recensione di un amico
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori e arredi scelti da chi ci abita
@@ -686,6 +687,35 @@ sito sa fare bene.
   `puoiSpostare()` diventa falsa: in casa d'altri si guarda e basta.
 - Il cartello scende **sotto** la testata (84 px, 80 su schermo stretto): a
   390 px, centrato in alto, finiva sopra gli strumenti.
+- **Di là il sito è una libreria e basta.** Catalogo e profilo spariscono dalle
+  due navigazioni: sono tuoi e lo resterebbero anche mentre sei a casa sua,
+  quindi entrarci da lì vuol dire uscire da casa di qualcuno senza accorgersene
+  — e poi non capire più di chi sia la collezione che si guarda. Si esce da un
+  posto solo, il cartello che dice di chi è la libreria.
+
+### Il cuore: l'unica cosa che si tocca in casa d'altri
+
+`js/apprezzamenti.js` + tabella `apprezzamenti` (migrazione
+`20260820230000_apprezzamenti`). Apri una scatola, leggi quello che ne pensa
+lui, e puoi dire che ti è piaciuto.
+
+- **La chiave è la copia, non il gioco**: `(proprietario, gioco)` e non l'id
+  BGG. Si apprezza *la recensione di quella persona*. È la distinzione che il
+  sito fa già — le recensioni pubbliche del catalogo hanno l'id BGG per chiave
+  perché sono del gioco e le legge chiunque; queste sono di chi le ha scritte.
+  La chiave esterna è composta perché `giochi` ha chiave `(proprietario, id)`.
+- **Una lettura per collezione**, entrando: sono poche righe e la scena le
+  interroga mentre disegna un pannello, quindi `di()` è sincrona come `RECE.di`.
+  Uscendo si buttano, se no i cuori di un altro restano addosso.
+- Ottimista come il resto: il cuore si accende subito e torna indietro se il
+  database rifiuta. Su `insert` un `23505` **non è un errore** — vuol dire che
+  il cuore c'era già, cioè lo stato voluto.
+- **Niente update, e niente grant di update**: un cuore c'è o non c'è.
+- **Che la tabella manchi si cerca nel messaggio, per nome.** Il codice non
+  basta: Postgres dice `42P01`, PostgREST risponde «Could not find the table
+  'public.apprezzamenti' in the schema cache» con un codice suo, e controllare
+  solo il codice lascia passare il caso più probabile — la migrazione non
+  ancora applicata. È la stessa lezione dei nomi di colonna, un piano più su.
 
 ## Le tre sezioni
 

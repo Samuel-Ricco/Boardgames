@@ -1755,8 +1755,25 @@ function ancoraPannello(box){
   el.style.setProperty('--da-y', Math.round(sy - cy) + 'px');
 }
 
+/* Il cuore sotto la recensione di un amico. Fuori dalla visita non
+   esiste: `body.visita` lo tiene nascosto e qui non c'e' niente da
+   disegnare. */
+function disegnaCuore(game){
+  const b = q('#p-cuore');
+  if (!b || !game) return;
+  const dove = LIB.ospitePresso();
+  if (!dove) return;
+  const v = CUORI.di(game.id);
+  b.setAttribute('aria-pressed', v.mio ? 'true' : 'false');
+  q('#p-cuore-n').textContent = v.n ? String(v.n) : '';
+  b.setAttribute('title', v.mio
+    ? 'togli il cuore a questa recensione'
+    : "questa recensione mi e' piaciuta");
+}
+
 function showPanel(game){
   ancoraPannello(state.focused);
+  disegnaCuore(game);
   q('#p-title').textContent = game.title;
 
   const by = [];
@@ -4341,7 +4358,12 @@ async function visitaLibreria(id, nick){
   document.body.classList.remove('cerca');
   state.scrollTo = state.scroll = 0;
 
+  /* Il catalogo e il profilo spariscono: di qui in poi il sito e' la
+     sua libreria e basta, e si esce da un posto solo -- il cartello che
+     dice di chi e'. Portarsi nel proprio catalogo dalla libreria di un
+     altro vuol dire uscire da casa sua senza accorgersene. */
   setSezione('collezione');
+  await CUORI.carica(id);          // i cuori della sua collezione, in una lettura
   await loadCovers();
   applyLibrary({});
   if (!LIB.all().length) flash('la libreria di ' + chi + ' e\' ancora vuota');
@@ -4354,6 +4376,7 @@ async function tornaACasa(){
      qualcun altro. */
   if (state.phase === 'focus' || state.phase === 'review') unfocus();
   LIB.torna();
+  CUORI.vuota();                   // i suoi cuori non c'entrano piu' niente
   document.body.classList.remove('visita');
   q('#visita').setAttribute('aria-hidden', 'true');
   STANZA.daProfilo();
@@ -4363,6 +4386,22 @@ async function tornaACasa(){
   state.scrollTo = state.scroll = 0;
   await loadCovers();
   applyLibrary({});
+}
+
+function bindCuore(){
+  const b = q('#p-cuore');
+  if (!b) return;
+  b.addEventListener('click', async function(){
+    const dove = LIB.ospitePresso();
+    const g = state.focused && state.focused.userData.game;
+    if (!dove || !g) return;
+    try {
+      await CUORI.alterna(dove.id, g.id);
+    } catch(e){
+      flash(CUORI.problema() || ('non riuscito: ' + e.message));
+    }
+    disegnaCuore(g);           // ridisegna comunque: se ha fallito e' tornato com'era
+  });
 }
 
 function bindPartite(){
@@ -4797,6 +4836,7 @@ async function boot(){
   bindTools();
   bindVista();
   bindRail();
+  bindCuore();
   bindStanza();
   bindMobili();
   bindGruppi();

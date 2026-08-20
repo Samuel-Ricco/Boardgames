@@ -160,6 +160,14 @@
   <p class="pan-foot">
     <button id="p-pref" type="button" class="dentro-only" title="segnalo fra i preferiti"
             aria-pressed="false">&#9734;</button>
+    <!-- In casa di un amico non si tocca niente, tranne questo: dire che
+         quello che ha scritto ti e' piaciuto. Sta dove sta la stella
+         perche' e' lo stesso gesto -- uno sulla tua copia, uno sulla sua
+         recensione -- e non compare mai a casa propria. -->
+    <button id="p-cuore" type="button" class="visita-only" aria-pressed="false"
+            title="questa recensione mi e&rsquo; piaciuta">
+      <span class="cuore" aria-hidden="true">&#9825;</span><span id="p-cuore-n"></span>
+    </button>
     <button id="p-mia" type="button" class="dentro-only" title="scrivi cosa ne pensi tu">
       <span aria-hidden="true">&#9998;</span> la tua recensione
     </button>
@@ -558,6 +566,7 @@
 <script src="js/auth.js"></script>
 <script src="js/store.js"></script>
 <script src="js/recensioni.js"></script>
+<script src="js/apprezzamenti.js"></script>
 <script src="js/profilo.js"></script>
 <script src="js/stanza.js"></script>
 <script src="js/partite.js"></script>

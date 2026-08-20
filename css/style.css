@@ -148,6 +148,29 @@ body.cerca #cerca-x{display:block}
 #p-pref:hover{color:var(--amber); border-color:var(--amber)}
 #p-pref[aria-pressed="true"]{color:#fdfaf4; background:var(--amber); border-color:var(--amber)}
 body.visita #p-pref{display:none !important}
+
+/* IN CASA DI UN AMICO IL SITO E' UNA LIBRERIA E BASTA.
+
+   Il catalogo e il profilo sono tuoi e continuerebbero a esserlo anche
+   di la': portarcisi dentro dalla sua libreria vuol dire uscire da casa
+   sua senza accorgersene, e poi non capire piu' di chi sia la
+   collezione che si sta guardando. Si esce da un posto solo, il cartello
+   che dice di chi e' la libreria. */
+body.visita #sezioni [data-sez="catalogo"],
+body.visita #sezioni [data-sez="profilo"],
+body.visita #tabbar  [data-sez="catalogo"],
+body.visita #tabbar  [data-sez="profilo"]{display:none !important}
+
+/* il cuore: c'e' solo in visita, ed e' l'unica cosa che si tocca */
+.visita-only{display:none !important}
+body.visita .visita-only{display:inline-flex !important}
+#p-cuore{align-items:center; gap:7px}
+#p-cuore .cuore{font-size:15px; line-height:1}
+#p-cuore[aria-pressed="true"]{color:var(--rust); border-color:var(--rust)}
+#p-cuore[aria-pressed="true"] .cuore::before{content:'\2665'}
+#p-cuore[aria-pressed="true"] .cuore{font-size:0}
+#p-cuore[aria-pressed="true"] .cuore::before{font-size:15px}
+#p-cuore-n{font-family:var(--ff-display); font-size:14px; letter-spacing:.06em}
 .cat-azioni .pref{font-size:14px; line-height:1; padding:6px 9px}
 .cat-azioni .pref.on{color:#fdfaf4; background:var(--amber); border-color:var(--amber)}
 
