@@ -853,6 +853,45 @@ classifiche ovunque.
   in posto. Rifare l'elenco sotto il dito staccherebbe il campo in cui si sta
   scrivendo — è la stessa lezione dell'elenco dei gruppi.
 
+## Quello che butta via qualcosa sta SEMPRE in due tempi
+
+Nel primo pannello delle librerie il cestino di ogni riga cancellava **al primo
+clic**. Un clic solo su un cestino dentro un elenco che si trascina è un
+incidente che aspetta di capitare — ed è capitato: **due mobili spariti**, e con
+la chiave esterna `on delete set null` trentacinque giochi tornati senza posto
+tutti insieme.
+
+La regola c'era già scritta in queste note e l'ho violata scrivendo quel
+pannello. Vale senza eccezioni: **ogni comando che distrugge chiede conferma sul
+pulsante stesso** e si disarma da solo dopo qualche secondo.
+
+## I filtri non escono dalla schermata in cui si mettono
+
+Un filtro acceso nell'elenco restava acceso tornando in libreria: sugli scaffali
+c'erano tre scatole invece di trenta e niente a schermo diceva perché. E il
+contatore in testata continuava a mostrare il numero filtrato nel catalogo e nel
+profilo, dove nessuno poteva più risalire al motivo.
+
+- **Chiudendo l'elenco i filtri si azzerano** (`scordaFiltri`).
+- **Cambiando vista si azzerano** — «solo i preferiti» è un taglio della vista in
+  cui lo si è scelto.
+- **Il contatore mostra il numero filtrato solo mentre l'elenco è aperto**, cioè
+  dove il filtro si vede.
+
+## Un elenco diviso per gruppi non si filtra anche per gruppo
+
+Le pastiglie che filtravano per gruppo non ci sono più: nella vista a gruppi le
+**cartelle sono già i gruppi**, e filtrare dentro un elenco già diviso vuol dire
+dire la stessa cosa due volte — da lì nasceva il difetto del filtro che
+sopravviveva a «tutti i giochi», dove contraddice il nome della vista.
+
+Resta un filtro solo, **i preferiti**, e sta in «tutti i giochi», che è l'unica
+vista dove tagliare l'elenco significa qualcosa.
+
+Le cartelle **partono chiuse**: aperte, con qualche gruppo, la vista a gruppi
+diventava l'elenco intero con dei titoli in mezzo — cioè la vista accanto, più
+rumore.
+
 ## Le partite hanno tre livelli, e si devono vedere
 
 Sezione → gioco → serata. Erano tre riquadri tinti della stessa misura uno dentro

@@ -176,7 +176,12 @@ const clamp     = (v,a,b) => v < a ? a : (v > b ? b : v);
    visibilmente scoordinata dell'interfaccia. Tratto 1.6, estremi
    tondi, riquadro 24: tutte uguali. */
 const ICO = {
-  menu:     '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  /* Tre punti e non tre righe: le tre righe dicono "un elenco", i tre
+     punti dicono "altro" -- ed e' altro quello che c'e' dentro. */
+  menu:     '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+              '<circle cx="12" cy="5.5" r="1.6" fill="currentColor"/>' +
+              '<circle cx="12" cy="12"  r="1.6" fill="currentColor"/>' +
+              '<circle cx="12" cy="18.5" r="1.6" fill="currentColor"/></svg>',
   cestino:  '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M10 7V5h4v2M6.5 7l.8 12h9.4l.8-12M10.5 10.5v5.5M13.5 10.5v5.5"/></svg>',
   chiudi:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>',
   corona:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8l3.5 3L12 5l4.5 6L20 8l-1.6 9H5.6zM5.6 20h12.8"/></svg>',
@@ -2410,7 +2415,13 @@ function updateConta(){
   const el = q('#conta');
   if (!el) return;
   const chi = LIB.ospitePresso() ? 'la sua collezione' : 'la mia collezione';
-  el.innerHTML = (state.q || state.gruppo)
+  /* Il numero filtrato si vede solo DENTRO l'elenco, che e' dove il
+     filtro si e' messo e dove si vede che c'e'. Fuori, il contatore
+     torna a dire quanti giochi hai -- restava filtrato anche in
+     libreria e nel catalogo, dove nessuno sapeva piu' perche'. */
+  const filtrato = document.body.classList.contains('elenco') &&
+                   (state.q || state.gruppo || state.soloPreferiti);
+  el.innerHTML = filtrato
     ? '<span>' + chi + ':</span> <b>' + lista().length + '</b> <span>di ' + tot + '</span>'
     : '<span>' + chi + ':</span> <b>' + tot + '</b>';
 }
@@ -2591,6 +2602,20 @@ document.addEventListener('keydown', function(e){
   if (e.key !== 'Escape') return;
   if (document.querySelector('.riga-azioni:not([hidden])')) chiudiAzioni(null);
 });
+
+/* Chiudendo l'elenco i filtri se ne vanno con lui.
+
+   Restavano accesi: si sceglieva "solo i preferiti", si tornava alla
+   libreria, e sugli scaffali c'erano tre scatole invece di trenta senza
+   che niente a schermo dicesse perche'. Un filtro che sopravvive alla
+   schermata in cui lo si e' messo e' un filtro che non si trova piu'. */
+function scordaFiltri(){
+  const c1 = state.gruppo, c2 = state.soloPreferiti;
+  state.gruppo = '';
+  state.soloPreferiti = false;
+  if (c1 || c2){ ridisponi(); }
+  updateConta();
+}
 
 function chiudiMia(){
   q('#mialayer').classList.remove('on');
@@ -3033,24 +3058,22 @@ function nuovoGruppoInLinea(btn, game){
   li.addEventListener('blur', function(){ setTimeout(chiudi, 120); });
 }
 
+/* La barra dei filtri porta UNA cosa sola: i preferiti, e solo nella
+   vista "tutti i giochi".
+
+   Le pastiglie per gruppo non ci sono piu'. Nella vista a gruppi le
+   cartelle SONO gia' i gruppi: filtrare per gruppo dentro un elenco
+   diviso per gruppi vuol dire dire la stessa cosa due volte, e da li'
+   nasceva il difetto -- il filtro restava acceso passando a "tutti i
+   giochi", dove contraddice il nome della vista. */
 function disegnaGruppiFiltro(){
   const el = q('#mia-gruppi');
   if (!el) return;
-  const tutti = LIB.gruppi();
   const quanti = LIB.all().filter(function(g){ return g.preferito; }).length;
-
-  el.innerHTML =
-    (tutti.length
-      ? '<button type="button" data-g=""' + (state.gruppo ? '' : ' class="on"') + '>tutti</button>' +
-        tutti.map(function(G){
-          return '<button type="button" data-g="' + esc(G.id) + '"' +
-                 (state.gruppo === G.id ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
-        }).join('')
-      : '') +
-    // i preferiti non sono un gruppo: sono un taglio trasversale ai
-    // gruppi, e restano premibili anche quando di gruppi non ce n'e' uno
-    (quanti ? '<button type="button" data-pref="1"' +
-              (state.soloPreferiti ? ' class="on"' : '') + '>&#9733; preferiti</button>' : '');
+  el.innerHTML = (state.vista === 'tutti' && quanti)
+    ? '<button type="button" data-pref="1"' +
+      (state.soloPreferiti ? ' class="on"' : '') + '>&#9733; solo i preferiti</button>'
+    : '';
 }
 
 let gruppoAperto = null;        // di quale gruppo si stanno scegliendo i giochi
@@ -3378,10 +3401,38 @@ function bindOrdineLibrerie(){
   el.addEventListener('pointerup', molla);
   el.addEventListener('pointercancel', molla);
 
-  // eliminare una libreria dall'elenco
+  /* Eliminare una libreria dall'elenco: IN DUE TEMPI.
+
+     Al primo giro era un clic solo, e un clic solo su un cestino in
+     mezzo a un elenco che si trascina e' un incidente che aspetta di
+     capitare -- infatti e' capitato: due mobili spariti, e con la
+     chiave esterna `on delete set null` trentacinque giochi tornati
+     senza posto tutti insieme.
+
+     Vale la regola di sempre: quello che butta via qualcosa chiede
+     conferma sul pulsante stesso, e si disarma da solo dopo qualche
+     secondo. */
+  let armato = null, armatoT = 0;
+  const disarma = function(){
+    clearTimeout(armatoT);
+    if (armato && armato.isConnected){
+      armato.classList.remove('armed');
+      armato.setAttribute('aria-label', 'elimina');
+    }
+    armato = null;
+  };
   el.addEventListener('click', function(e){
     const b = e.target.closest('button[data-fa="via"]');
-    if (!b) return;
+    if (!b){ disarma(); return; }
+    if (armato !== b){
+      disarma();
+      armato = b;
+      b.classList.add('armed');
+      b.setAttribute('aria-label', 'tocca ancora per eliminare');
+      armatoT = setTimeout(disarma, 4000);
+      return;
+    }
+    disarma();
     const id = b.closest('li').getAttribute('data-id');
     b.disabled = true;
     LIB.togliLibreria(id).then(function(){
@@ -3728,7 +3779,11 @@ function contenutoAzioni(g){
          (g.libreria
            ? '<button type="button" data-fa="scaffale">vai allo scaffale</button>' +
              '<button type="button" data-fa="fuori" class="fuori">togli dalla libreria</button>'
-           : '<button type="button" data-fa="dentro" class="dentro">metti in libreria</button>');
+           : '<button type="button" data-fa="dentro" class="dentro">metti in libreria</button>') +
+         /* Uscire dallo scaffale e sparire dalla collezione restano due
+            gesti diversi: il primo e' reversibile in un clic, il secondo
+            no. Per questo l'ultimo e' rosso e in due tempi. */
+         '<button type="button" data-fa="elimina" class="elimina">elimina il gioco</button>';
 }
 
 /* L'elenco si divide in CARTELLE quando non si sta filtrando su un
@@ -3759,10 +3814,15 @@ function disegnaMia(){
        aperte tutte, con qualche gruppo, si torna a un elenco lungo come
        prima. Si parte aperte pero': un elenco di soli titoli chiusi non
        fa vedere niente al primo colpo. */
+    /* Le cartelle partono CHIUSE. Aperte, con qualche gruppo, la vista
+       a gruppi diventava l'elenco intero con dei titoli in mezzo -- cioe'
+       la vista accanto, piu' rumore. Chiuse si legge subito quali gruppi
+       ci sono e quanti giochi hanno, che e' la domanda per cui uno apre
+       questa vista. Quale si e' aperta se lo ricorda. */
     const cartella = function(id, nome, dentro){
       if (!dentro.length) return '';
-      let su = true;
-      try { su = localStorage.getItem('dado-cartella-' + id) !== '0'; } catch(e){}
+      let su = false;
+      try { su = localStorage.getItem('dado-cartella-' + id) === '1'; } catch(e){}
       return '<div class="cartella" data-c="' + esc(id) + '">' +
         '<button type="button" class="cartella-tit" aria-expanded="' + (su ? 'true' : 'false') + '">' +
           esc(nome) + '<span>' + dentro.length + '</span></button>' +
@@ -3807,8 +3867,11 @@ function disegnaViste(){
     b.classList.toggle('on', b.getAttribute('data-vista') === state.vista);
     b.setAttribute('aria-selected', b.getAttribute('data-vista') === state.vista ? 'true' : 'false');
   });
+  /* L'indicatore segue l'ORDINE delle voci, che si e' invertito: prima
+     "tutti i giochi", poi "gruppi". Era rimasto indietro e restava
+     sotto la prima voce mentre l'accesa era la seconda. */
   const ind = q('#viste .ind');
-  if (ind) ind.style.transform = 'translateX(' + (state.vista === 'tutti' ? 100 : 0) + '%)';
+  if (ind) ind.style.transform = 'translateX(' + (state.vista === 'gruppi' ? 100 : 0) + '%)';
 }
 
 /* I filtri per gruppo appartengono alla vista a cartelle. Nell'elenco
@@ -3824,6 +3887,11 @@ function setVista(v){
   if (v === state.vista){ disegnaViste(); return; }
   state.vista = v;
   try { localStorage.setItem('dado-vista', v); } catch(e){}
+  /* Passando di vista i filtri si azzerano: "solo i preferiti" e' un
+     taglio della vista in cui lo si e' scelto, e trovarselo acceso
+     nell'altra vuol dire vedere un elenco corto senza sapere perche'. */
+  state.gruppo = '';
+  state.soloPreferiti = false;
   segnaVista();
   disegnaMia();
   // l'elenco entra dal lato da cui si e' arrivati
@@ -3875,9 +3943,13 @@ function bindViste(){
     /* Non si scorre oltre il bordo: dalla prima vista si va solo verso
        destra, dall'ultima solo verso sinistra. Lasciar trascinare dove
        non c'e' niente promette una terza schermata che non esiste. */
-    const utile = state.vista === 'gruppi' ? Math.min(0, dx) : Math.max(0, dx);
+    /* L'ordine delle due viste si e' invertito: prima "tutti i giochi",
+       poi "gruppi". Da qui dipendono il verso in cui si puo' trascinare
+       e da che parte parte l'indicatore -- lasciarli com'erano vorrebbe
+       dire un indicatore che va dalla parte sbagliata. */
+    const utile = state.vista === 'tutti' ? Math.min(0, dx) : Math.max(0, dx);
     const frazione = Math.max(-1, Math.min(1, utile / largo));
-    const base = state.vista === 'tutti' ? 100 : 0;
+    const base = state.vista === 'gruppi' ? 100 : 0;
 
     q('#viste .ind').style.transform = 'translateX(' + (base - frazione * 100) + '%)';
     lista.style.transform = 'translateX(' + (frazione * largo * .25) + 'px)';
@@ -3901,7 +3973,7 @@ function bindViste(){
     const secco = Math.abs(dx) > 45 && (performance.now() - t0) < 300;
 
     if (deciso && (Math.abs(dx) > soglia || secco)){
-      setVista(dx < 0 ? 'tutti' : 'gruppi');
+      setVista(dx < 0 ? 'gruppi' : 'tutti');
     } else {
       disegnaViste();
     }
@@ -3928,6 +4000,7 @@ function apriElenco(){
 function chiudiElenco(){
   document.body.classList.remove('elenco');
   q('#mia').setAttribute('aria-hidden', 'true');
+  scordaFiltri();          // i filtri non escono dalla schermata in cui si mettono
 }
 
 /* Dall'elenco allo scaffale: si chiude l'elenco, la camera va alla
@@ -4282,6 +4355,30 @@ function bindProfilo(){
       if (v) mettiSuScaffale(id, v); else disegnaMia();
       return;
     }
+    /* Eliminare e' l'unico gesto qui dentro che non si disfa: resta in
+       due tempi sul pulsante stesso, come tutti gli altri del sito.
+       `window.confirm` bloccherebbe il rendering, e una finestra di
+       sistema in mezzo a questa pagina stonerebbe. */
+    const del = e.target.closest('[data-fa="elimina"]');
+    if (del){
+      if (del.classList.contains('armed')){
+        LIB.remove(id);
+        chiudiAzioni(null);
+        disegnaMia();
+        updateConta();
+        ridisponi();
+        flash('gioco eliminato');
+      } else {
+        del.classList.add('armed');
+        del.textContent = 'sicuro? tocca ancora';
+        setTimeout(function(){
+          if (!del.isConnected) return;
+          del.classList.remove('armed');
+          del.textContent = 'elimina il gioco';
+        }, 3500);
+      }
+      return;
+    }
     if (e.target.closest('[data-fa="pref"]')){
       const g = LIB.get(id);
       if (g) LIB.segnaPreferito(id, !g.preferito);
@@ -4588,14 +4685,17 @@ function disegnaTavolo(){
   const amici = (PARTITE.amiciDaAggiungere ? PARTITE.amiciDaAggiungere() : [])
     .map(function(a){ return (a.profilo && (a.profilo.nick || a.profilo.nome)) || ''; })
     .filter(function(n){ return n && !alTavolo[n]; });
-  q('#pa-scelta').innerHTML = '<option value="">scegli chi c\'era&hellip;</option>' +
-    (amici.length ? '<optgroup label="i tuoi amici">' + amici.map(function(n){
-      return '<option value="amico:' + esc(n) + '">' + esc(n) + '</option>';
-    }).join('') + '</optgroup>' : '') +
-    (liberi.length ? '<optgroup label="i tuoi giocatori">' +
-      liberi.map(function(g){
-        return '<option value="' + esc(g.id) + '">' + esc(g.nome) + '</option>';
-      }).join('') + '</optgroup>' : '');
+  const pastiglia = function(valore, nome, amico){
+    return '<button type="button" class="pa-tocca' + (amico ? ' amico' : '') + '" ' +
+      'data-chi="' + esc(valore) + '">' + esc(nome) + '</button>';
+  };
+  const tutte = amici.map(function(n){ return pastiglia('amico:' + n, n, true); })
+    .concat(liberi.map(function(g){ return pastiglia(g.id, g.nome, false); }));
+
+  q('#pa-scelta').innerHTML = tutte.length
+    ? tutte.join('')
+    : '<p class="pa-vuoto">Nessuno da mettere al tavolo: aggiungi un giocatore, ' +
+      'oppure fatti dare il codice amico da chi ha giocato con te.</p>';
 }
 
 /* Aggiorna posizioni e corone SENZA rifare l'elenco: chi sta scrivendo
@@ -4826,17 +4926,19 @@ function bindPartite(){
     } catch(e){ flash('non eliminata: ' + e.message); }
   });
 
-  q('#pa-piu').addEventListener('click', function(){
-    const sel = q('#pa-scelta');
-    if (!sel.value) return;
-    if (sel.value.slice(0, 6) === 'amico:'){
+  /* Un ascoltatore solo: le pastiglie si rifanno a ogni aggiunta, e
+     attaccarne uno per pastiglia vorrebbe dire rimetterli ogni volta. */
+  q('#pa-scelta').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-chi]');
+    if (!b) return;
+    const v = b.getAttribute('data-chi');
+    if (v.slice(0, 6) === 'amico:'){
       // un amico che non e' ancora un giocatore salvato: entra col nome
-      metteAlTavolo(sel.value.slice(6), null);
+      metteAlTavolo(v.slice(6), null);
     } else {
-      const g = PARTITE.giocatori().find(function(x){ return x.id === sel.value; });
+      const g = PARTITE.giocatori().find(function(x){ return x.id === v; });
       if (g) metteAlTavolo(g.nome, g.id);
     }
-    sel.value = '';
   });
 
   /* Un giocatore nuovo si crea nella SUA sezione. Qui c'e' la porta:

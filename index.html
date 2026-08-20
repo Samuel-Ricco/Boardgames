@@ -240,8 +240,8 @@
     <div class="cat-testa">
       <p class="eyebrow" id="mia-eyebrow">la tua collezione</p>
       <div class="viste" id="viste" role="tablist">
-        <button type="button" data-vista="gruppi" role="tab">gruppi</button>
         <button type="button" data-vista="tutti" role="tab">tutti i giochi</button>
+        <button type="button" data-vista="gruppi" role="tab">gruppi</button>
         <i class="ind" aria-hidden="true"></i>
       </div>
       <div class="mia-barra">
@@ -594,11 +594,13 @@
          crea nella sua sezione, non qui: e' li' che vive, e crearlo di
          sfuggita dentro un modulo vuol dire ritrovarselo senza sapere
          da dove sia uscito. -->
-    <div class="pa-agg">
-      <select id="pa-scelta" aria-label="chi mettere al tavolo"></select>
-      <button id="pa-piu" type="button" class="secondario">metti al tavolo</button>
-      <button id="pa-vai-giocatori" type="button">aggiungi un giocatore</button>
-    </div>
+    <!-- Chi c'era si TOCCA, non si sceglie da una tendina. Un `select`
+         apre il selettore del sistema operativo -- una lista grigia che
+         non somiglia a niente del resto del sito -- e per due o tre
+         nomi e' anche un giro inutile: si vedono tutti insieme e si
+         toccano quelli giusti. -->
+    <div id="pa-scelta" class="pa-scelta"></div>
+    <button id="pa-vai-giocatori" type="button">aggiungi un giocatore</button>
 
     <ul id="pa-chi" class="pa-chi"></ul>
     <p id="pa-msg" class="add-msg"></p>
