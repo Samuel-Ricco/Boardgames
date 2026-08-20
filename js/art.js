@@ -699,9 +699,20 @@ function avatar(av, S){
      filo del bordo e dentro un ritaglio tondo -- che e' come si vede
      nel profilo -- le mani venivano tagliate via.
 
-     E non e' centrato ma un filo piu' in basso: la testa tonda tira
-     l'occhio in alto, e cosi' torna in mezzo. */
-  sagomaMeeple(x, S * .31, S/2, S * .53);
+     Sta anche un filo PIU' IN ALTO del centro geometrico. Con la
+     sagoma vecchia valeva il contrario -- era la testa tonda a tirare
+     l'occhio in su, e la si compensava scendendo -- ma questa ha il
+     grosso dell'inchiostro nelle braccia, che sono larghe e stanno a
+     meta' altezza: il peso visivo e' piu' basso della figura, e per
+     leggersi in mezzo deve salire.
+
+     La misura non e' a occhio. Disegnando il meeple nero su bianco e
+     contando i pixel, a 0.49 l'ingombro era centrato (0.494) ma il
+     BARICENTRO dell'inchiostro cadeva a 0.524: le gambe sono piene e
+     la testa e' piccola, quindi la massa sta in basso. A 0.475 il
+     baricentro torna in mezzo, e l'ingombro resta appena alto -- che e'
+     esattamente come si legge "centrato" per una figura con una testa. */
+  sagomaMeeple(x, S * .31, S/2, S * .475);
 
   grain(x, S, S, 8);
   return c;

@@ -1260,6 +1260,14 @@ Sta a 0.31 del lato e non a 0.40. Non è una questione di gusto: la faccia del
 profilo è **ritagliata tonda**, e a 0.40 il meeple arrivava a filo del quadrato
 — il cerchio gli tagliava via le mani.
 
+E sta a 0.475 di altezza, cioè **sopra** il centro geometrico. Anche questo
+misurato, non a occhio: disegnando il meeple nero su bianco e contando i pixel,
+a centro esatto l'ingombro era a 0.494 ma il **baricentro dell'inchiostro**
+cadeva a 0.524 — le gambe sono piene e la testa è piccola, quindi la massa sta
+in basso, ed è la massa che l'occhio legge. A 0.475 il baricentro torna a 0.509
+e l'ingombro resta appena alto, che è esattamente come si legge «centrato» per
+una figura con una testa. Zero pixel fuori dal cerchio.
+
 Il **dado in filigrana non si sceglie più**: con il meeple ridisegnato, pieno e
 con le braccia che attraversano tutto il quadrato, della filigrana restavano due
 angoli, e nel ritaglio tondo nemmeno quelli. Si sceglieva un numero che nessuno
