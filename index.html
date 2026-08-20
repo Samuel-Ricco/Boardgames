@@ -460,7 +460,6 @@
      decide cosa sta con cosa. Nel profilo erano lontani dal loro uso. -->
 <div id="gruppilayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="gru-h">
-    <button id="gru-x" type="button">chiudi &times;</button>
     <p class="eyebrow">etichette</p>
     <h2 id="gru-h">I tuoi gruppi</h2>
     <p class="mia-nota">Un gioco pu&ograve; stare in pi&ugrave; gruppi, e i gruppi
@@ -480,6 +479,16 @@
       <p class="eyebrow" id="gru-quale"></p>
       <ul id="gru-elenco" class="gru-elenco"></ul>
     </div>
+
+    <!-- In fondo, non in alto, e con due parole invece di una croce.
+         "annulla" butta via quello che stavi scrivendo nel campo del
+         gruppo nuovo: e' l'unica cosa qui dentro che non e' gia'
+         salvata, e un pulsante che promettesse di disfare il resto
+         direbbe una bugia. -->
+    <p class="add-foot">
+      <button id="gru-x" type="button" class="secondario">annulla</button>
+      <button id="gru-ok" type="button" class="primario">fatto</button>
+    </p>
   </div>
 </div>
 
@@ -517,7 +526,7 @@
      cambia solo se il gioco arriva gia' scritto. -->
 <div id="partitalayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="pa-h">
-    <button id="pa-x" type="button">chiudi &times;</button>
+
     <p class="eyebrow">una serata</p>
     <h2 id="pa-h">Segna una partita</h2>
 
@@ -546,8 +555,9 @@
     </div>
 
     <p class="add-foot pa-foot">
-      <button id="pa-salva" type="button">salva la partita</button>
-      <button id="pa-togli" type="button">elimina</button>
+      <button id="pa-x" type="button" class="secondario">annulla</button>
+      <button id="pa-salva" type="button" class="primario">salva la partita</button>
+      <button id="pa-togli" type="button" class="distruttivo">elimina</button>
     </p>
   </div>
 </div>

@@ -616,19 +616,51 @@ function dieFace(n, body, pip){
    disegnata come cerchio a parte invece che con l'arco: a novantasei
    pixel non si distingue, e si evita di ragionare sull'orientamento
    dell'arco in un sistema con la y capovolta. */
+/* IL MEEPLE, UNA SAGOMA SOLA.
+
+   Il giro parte dal piede sinistro e va in senso orario: gamba su,
+   fianco, sotto il braccio, la mano, sopra il braccio, spalla, collo,
+   mezzo giro di testa -- e tutto specchiato dall'altra parte -- poi
+   giu' per la gamba destra, la pianta, e su per la V fino al cavallo,
+   che non arriva mai piu' in alto della vita.
+
+   Tutto in curve, perche' un meeple e' tornito e non ritagliato. Il
+   primo tentativo lo aveva fatto in tre pezzi separati e le gambe
+   erano un triangolo col taglio in mezzo: a centoventi pixel sembrava
+   un birillo.
+
+   Le stesse coordinate stanno in js/app.js: e' lo stesso personaggio, uno
+   dipinto su canvas e uno estruso in tre dimensioni, e se divergono si
+   vedono due meeple diversi nella stessa schermata. */
 function sagomaMeeple(x, s, cx, cy){
-  const p = function(px, py){ x.lineTo(cx + px*s, cy - py*s); };
+  const P = function(px, py){ return [cx + px*s, cy - py*s]; };
+  const m = function(px, py){ const q = P(px,py); x.moveTo(q[0], q[1]); };
+  const l = function(px, py){ const q = P(px,py); x.lineTo(q[0], q[1]); };
+  const c = function(ax, ay, bx, by, px, py){
+    const a = P(ax,ay), b = P(bx,by), q = P(px,py);
+    x.bezierCurveTo(a[0],a[1], b[0],b[1], q[0],q[1]);
+  };
   x.beginPath();
-  x.moveTo(cx - 0.50*s, cy + 0.90*s);
-  p(-0.34,-0.05); p(-0.95, 0.12); p(-0.95, 0.42);
-  p(-0.40, 0.36); p(-0.42, 0.62);
-  p( 0.42, 0.62);
-  p( 0.40, 0.36); p( 0.95, 0.42); p( 0.95, 0.12);
-  p( 0.34,-0.05); p( 0.50,-0.90);
+  m(-0.40,-1.00);
+  c(-0.36,-0.62, -0.32,-0.36, -0.22,-0.14);
+  c(-0.20,-0.02, -0.22,0.06, -0.30,0.14);
+  c(-0.52,0.14, -0.84,0.18, -0.90,0.32);
+  c(-0.96,0.46, -0.78,0.56, -0.58,0.52);
+  c(-0.44,0.49, -0.34,0.45, -0.26,0.40);
+  c(-0.28,0.58, -0.24,0.72, -0.15,0.80);
+  c(-0.46,0.92, -0.42,1.36, 0.00,1.36);
+  c(0.42,1.36, 0.46,0.92, 0.15,0.80);
+  c(0.24,0.72, 0.28,0.58, 0.26,0.40);
+  c(0.34,0.45, 0.44,0.49, 0.58,0.52);
+  c(0.78,0.56, 0.96,0.46, 0.90,0.32);
+  c(0.84,0.18, 0.52,0.14, 0.30,0.14);
+  c(0.22,0.06, 0.20,-0.02, 0.22,-0.14);
+  c(0.32,-0.36, 0.36,-0.62, 0.40,-1.00);
+  l(0.14,-1.00);
+  c(0.12,-0.62, 0.08,-0.42, 0.00,-0.30);
+  c(-0.08,-0.42, -0.12,-0.62, -0.14,-1.00);
+  l(-0.40,-1.00);
   x.closePath();
-  x.fill();
-  x.beginPath();
-  x.arc(cx, cy - 0.78*s, 0.42*s, 0, Math.PI*2);
   x.fill();
 }
 
@@ -690,7 +722,7 @@ function targhetta(nome){
   const testo = String(nome || '');
   const H = 128, pad = 24;
   const mis = cnv(8, 8)[1];
-  mis.font = '600 82px "Poppins", system-ui, sans-serif';
+  mis.font = '600 96px "Poppins", system-ui, sans-serif';
   mis.letterSpacing = '2px';
   const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + pad * 2);
 

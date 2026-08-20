@@ -1171,6 +1171,52 @@ tinto al 10% funziona dentro una scheda chiara; sopra la stanza, che è già col
 crema, sparisce. Imbuto, lampada, contatore e binario sono carta chiara con
 sfocatura dietro e ombra leggera.
 
+### Tre livelli con un nome, e niente componenti vecchi in giro
+
+`.primario` (terracotta, l'azione) · `.secondario` (grigio tenue) ·
+`.distruttivo` (rosso, in due tempi). Chi aggiunge un pulsante **sceglie che
+cos'è** invece di copiare lo stile del vicino.
+
+Vanno scritti `button.primario` e non `.primario`: le regole di contorno tipo
+`.add-foot button` pesano una classe più un elemento e vincerebbero. Stesso peso
+più la posizione in fondo al foglio, e nessun `!important` — che qui vorrebbe
+dire rinunciare a poter fare eccezioni più avanti.
+
+**I componenti vecchi non esistono più**: 55 blocchi di comando e 4 di campo
+sono stati ripuliti alla fonte dal bordo da un pixel e rimessi nei raggi. Se ne
+trovi ancora uno squadrato, è rimasto indietro — non è una variante.
+
+### Il piede di un pannello, non una croce in un angolo
+
+`annulla` a sinistra, l'azione a destra, la riga in fondo. Vale per i gruppi,
+per la partita e per qualunque pannello futuro.
+
+Attenzione a cosa promette «annulla». Nel pannello dei gruppi **tutto è già
+salvato mentre lo fai**, quindi lì annulla butta via solo il nome che stavi
+scrivendo nel campo del gruppo nuovo: un pulsante che promettesse di disfare il
+resto direbbe una bugia. Nella partita invece c'è un modulo vero, e annulla
+chiude senza salvare.
+
+### Il fuoco non si ruba
+
+Il pannello della vista prendeva da solo il fuoco sul campo di ricerca
+all'apertura, e l'anello dell'accento si accendeva senza che nessuno avesse
+toccato niente — sembrava un errore, non un invito. Il contorno di fuoco sta su
+`:focus-visible`, cioè lo vede solo chi naviga da tastiera.
+
+### Il meeple è una sagoma sola
+
+Il giro parte dal piede sinistro e va in senso orario: gamba, fianco, sotto il
+braccio, la mano, sopra il braccio, spalla, collo, mezzo giro di testa —
+specchiato dall'altra parte — poi giù per la gamba destra e su per la V, che non
+arriva mai più in alto della vita. Tutto in curve: un meeple è tornito, non
+ritagliato.
+
+**Le stesse coordinate stanno in `js/art.js` (`sagomaMeeple`, dipinto su canvas)
+e in `js/app.js` (`meepleShape`, estruso in 3D).** Se divergono si vedono due
+meeple diversi nella stessa schermata. Un primo tentativo lo aveva fatto in tre
+pezzi separati e le gambe uscivano come un triangolo col taglio in mezzo.
+
 ### Le icone
 
 Un corredo solo in SVG: tratto 1.6, estremi tondi, riquadro 24, e prendono il

@@ -611,14 +611,43 @@ function thinSpine(seed){
   });
 }
 
+/* IL MEEPLE, UNA SAGOMA SOLA.
+
+   Il giro parte dal piede sinistro e va in senso orario: gamba su,
+   fianco, sotto il braccio, la mano, sopra il braccio, spalla, collo,
+   mezzo giro di testa -- e tutto specchiato dall'altra parte -- poi
+   giu' per la gamba destra, la pianta, e su per la V fino al cavallo,
+   che non arriva mai piu' in alto della vita.
+
+   Tutto in curve, perche' un meeple e' tornito e non ritagliato. Il
+   primo tentativo lo aveva fatto in tre pezzi separati e le gambe
+   erano un triangolo col taglio in mezzo: a centoventi pixel sembrava
+   un birillo.
+
+   Le stesse coordinate stanno in js/art.js: e' lo stesso personaggio, uno
+   dipinto su canvas e uno estruso in tre dimensioni, e se divergono si
+   vedono due meeple diversi nella stessa schermata. */
 function meepleShape(){
   const s = new THREE.Shape();
-  s.moveTo(-0.50,-0.90);
-  s.lineTo(-0.34,-0.05); s.lineTo(-0.95, 0.12); s.lineTo(-0.95, 0.42);
-  s.lineTo(-0.40, 0.36); s.lineTo(-0.42, 0.72);
-  s.absarc(0, 0.78, 0.42, Math.PI, 0, true);
-  s.lineTo( 0.40, 0.36); s.lineTo( 0.95, 0.42); s.lineTo( 0.95, 0.12);
-  s.lineTo( 0.34,-0.05); s.lineTo( 0.50,-0.90);
+  s.moveTo(-0.40, -1.00);
+  s.bezierCurveTo(-0.36,-0.62, -0.32,-0.36, -0.22,-0.14);
+  s.bezierCurveTo(-0.20,-0.02, -0.22,0.06, -0.30,0.14);
+  s.bezierCurveTo(-0.52,0.14, -0.84,0.18, -0.90,0.32);
+  s.bezierCurveTo(-0.96,0.46, -0.78,0.56, -0.58,0.52);
+  s.bezierCurveTo(-0.44,0.49, -0.34,0.45, -0.26,0.40);
+  s.bezierCurveTo(-0.28,0.58, -0.24,0.72, -0.15,0.80);
+  s.bezierCurveTo(-0.46,0.92, -0.42,1.36, 0.00,1.36);
+  s.bezierCurveTo(0.42,1.36, 0.46,0.92, 0.15,0.80);
+  s.bezierCurveTo(0.24,0.72, 0.28,0.58, 0.26,0.40);
+  s.bezierCurveTo(0.34,0.45, 0.44,0.49, 0.58,0.52);
+  s.bezierCurveTo(0.78,0.56, 0.96,0.46, 0.90,0.32);
+  s.bezierCurveTo(0.84,0.18, 0.52,0.14, 0.30,0.14);
+  s.bezierCurveTo(0.22,0.06, 0.20,-0.02, 0.22,-0.14);
+  s.bezierCurveTo(0.32,-0.36, 0.36,-0.62, 0.40,-1.00);
+  s.lineTo(0.14, -1.00);
+  s.bezierCurveTo(0.12,-0.62, 0.08,-0.42, 0.00,-0.30);
+  s.bezierCurveTo(-0.08,-0.42, -0.12,-0.62, -0.14,-1.00);
+  s.lineTo(-0.40, -1.00);
   s.closePath();
   return s;
 }
@@ -629,7 +658,8 @@ function meepleShape(){
 function makeMeeple(col, s){
   const geo = comune('meeple', function(){
     const g = new THREE.ExtrudeGeometry(meepleShape(), {
-      depth: .34, bevelEnabled: true, bevelSize: .04, bevelThickness: .04, bevelSegments: 2
+      depth: .34, bevelEnabled: true, bevelSize: .04, bevelThickness: .04,
+      bevelSegments: 2, curveSegments: 8
     });
     g.center();
     return g;
@@ -2952,6 +2982,21 @@ function apriGestioneGruppi(){
   q('#gruppilayer').setAttribute('aria-hidden', 'false');
 }
 
+/* "fatto" chiude e basta: qui dentro tutto e' gia' salvato mentre lo
+   fai. "annulla" butta via l'unica cosa che non lo e' -- il nome del
+   gruppo che stavi scrivendo. Un pulsante che promettesse di disfare il
+   resto direbbe una bugia. */
+function bindPiedeGruppi(){
+  const ok = q('#gru-ok');
+  if (ok) ok.addEventListener('click', chiudiGestioneGruppi);
+  const no = q('#gru-x');
+  if (no) no.addEventListener('click', function(){
+    const campo = q('#gru-nuovo');
+    if (campo) campo.value = '';
+    chiudiGestioneGruppi();
+  });
+}
+
 function chiudiGestioneGruppi(){
   q('#gruppilayer').classList.remove('on');
   q('#gruppilayer').setAttribute('aria-hidden', 'true');
@@ -3048,7 +3093,7 @@ function bindGruppi(){
 
   bindViste();
   q('#mia-gestisci').addEventListener('click', apriGestioneGruppi);
-  q('#gru-x').addEventListener('click', chiudiGestioneGruppi);
+  // `#gru-x` lo aggancia bindPiedeGruppi: prima svuota il campo
   q('#gruppilayer').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   q('#gru-piu').addEventListener('click', function(){
@@ -3336,8 +3381,9 @@ function apriVista(){
   q('#vista').setAttribute('aria-hidden', 'false');
   q('#vista-apri').setAttribute('aria-expanded', 'true');
   nomeMobileCorrente();
-  const inp = q('#cerca');
-  if (inp && window.innerWidth > 760) setTimeout(function(){ inp.focus(); }, 60);
+  /* Non si ruba il fuoco all'apertura. Lo faceva, e il campo si
+     accendeva del suo contorno senza che nessuno avesse toccato niente:
+     sembrava un errore, non un invito. Chi vuole cercare ci clicca. */
 }
 
 function chiudiVista(){
@@ -4867,6 +4913,7 @@ async function boot(){
   bindVista();
   bindRail();
   bindCuore();
+  bindPiedeGruppi();
   bindStanza();
   bindMobili();
   bindGruppi();

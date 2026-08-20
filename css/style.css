@@ -112,8 +112,8 @@ body.ready header{opacity:1; transform:none}
   font-family:var(--ff-text); font-size:13px; font-weight:500;
   letter-spacing:0; text-transform:none;
   color:var(--ink-soft); background:rgba(242,241,237,.88); cursor:pointer;
-  border:1px solid var(--line); padding:8px 11px;
-  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  border:0; padding:8px 11px;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); border-radius:var(--r-s);
 }
 .tool:hover{color:var(--ink); border-color:var(--accent)}
 .tool b{color:var(--accent); font-weight:500}
@@ -134,15 +134,16 @@ body.ready header{opacity:1; transform:none}
   color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em; font-size:11px;
 }
 #cerca-x{
-  position:absolute; right:5px; display:none; border:0; background:none; cursor:pointer;
-  color:var(--ink-soft); font-size:16px; line-height:1; padding:1px 4px;
+  position:absolute; right:5px; display:none; border:0; background:rgba(51,53,43,.06); cursor:pointer;
+  color:var(--ink-soft); font-size:16px; line-height:1; padding:1px 4px; border-radius:var(--r-s);
 }
 body.cerca #cerca-x{display:block}
 #cerca-x:hover{color:var(--wood)}
 /* Il contatore e' la porta dell'elenco, e adesso lo dice: "la mia
    collezione: 10". Un numero da solo non si capiva che fosse un
    pulsante, e nemmeno di cosa fosse il numero. */
-#conta{cursor:pointer; color:var(--ink)}
+#conta{cursor:pointer; color:var(--ink); border-radius:var(--r-s);
+}
 #conta:hover{color:var(--accent); border-color:var(--accent)}
 #conta b{font-family:var(--ff-display); font-size:10.8px; letter-spacing:0; color:var(--ink)}
 #conta:hover b{color:var(--accent)}
@@ -157,7 +158,7 @@ body.cerca #cerca-x{display:block}
 .gruppi button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:none; border:1px solid var(--line); padding:6px 9px;
+  background:rgba(51,53,43,.06); border:0; padding:6px 9px; border-radius:var(--r-s);
 }
 .gruppi button:hover{color:var(--ink); border-color:var(--accent)}
 .gruppi button.on{color:#f2f1ed; background:var(--wood); border-color:var(--wood)}
@@ -169,7 +170,7 @@ body.cerca #cerca-x{display:block}
 /* --- preferiti ---------------------------------------------------- */
 #p-pref{
   font-family:var(--ff-text); font-size:15px; line-height:1; cursor:pointer;
-  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:6px 9px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:6px 9px; border-radius:var(--r-s);
 }
 #p-pref:hover{color:var(--accent); border-color:var(--accent)}
 #p-pref[aria-pressed="true"]{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
@@ -213,7 +214,7 @@ body.visita .visita-only{display:inline-flex !important}
 .scegli-lib button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed;
-  background:var(--accent); border:1px solid var(--accent); padding:6px 8px;
+  background:var(--accent); border:0; padding:6px 8px; border-radius:var(--r-s);
 }
 .scegli-lib button:hover{background:var(--ink); border-color:var(--ink)}
 .scegli-lib button:disabled{opacity:.4; cursor:default}
@@ -233,7 +234,7 @@ body.visita .visita-only{display:inline-flex !important}
 .viste button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:none; border:0; padding:11px 6px 12px;
+  background:rgba(51,53,43,.06); border:0; padding:11px 6px 12px; border-radius:var(--r-s);
 }
 .viste button:hover{color:var(--ink)}
 .viste button.on{color:var(--ink)}
@@ -253,7 +254,7 @@ body.visita .visita-only{display:inline-flex !important}
 #mia-gestisci{
   flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:6px 10px;
+  color:var(--ink-soft); background:var(--card); border:0; padding:6px 10px; border-radius:var(--r-s);
 }
 #mia-gestisci:hover{color:var(--accent); border-color:var(--accent)}
 
@@ -274,7 +275,7 @@ body.visita .visita-only{display:inline-flex !important}
 .gru-elenco button{
   flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:6px 9px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:6px 9px; border-radius:var(--r-s);
 }
 .gru-elenco button:hover{color:var(--ink); border-color:var(--accent)}
 .gru-elenco button.on{color:#f2f1ed; background:var(--wood); border-color:var(--wood)}
@@ -302,7 +303,7 @@ body.visita .visita-only{display:inline-flex !important}
 .riga-nome .stella{color:var(--accent); font-style:normal; font-size:14px; vertical-align:2px}
 .riga-menu{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:7px 10px;
-  color:var(--ink-soft); background:none; border:1px solid var(--line);
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
 }
 .riga-menu:hover{color:var(--ink); border-color:var(--accent)}
 .riga-menu[aria-expanded="true"]{color:#f2f1ed; background:var(--ink); border-color:var(--ink)}
@@ -348,8 +349,8 @@ body.visita .visita-only{display:inline-flex !important}
 .cartella-tit{
   width:100%; display:flex; align-items:baseline; gap:10px; cursor:pointer;
   font-family:var(--ff-display); font-weight:400; font-size:15.8px; letter-spacing:0;
-  color:var(--ink); text-align:left; background:none; border:0;
-  padding:8px 0; border-bottom:2px solid var(--accent);
+  color:var(--ink); text-align:left; background:rgba(51,53,43,.06); border:0;
+  padding:8px 0; border-bottom:2px solid var(--accent); border-radius:var(--r-s);
 }
 .cartella-tit:hover{color:var(--accent)}
 .cartella-tit span{
@@ -406,8 +407,8 @@ body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--wood)}
 #sortmenu{display:flex; flex-direction:column; border:1px solid var(--line); margin:8px 0 0}
 #sortmenu button{
   font-family:var(--ff-text); font-size:12px; text-align:left; cursor:pointer;
-  background:none; border:0; border-bottom:1px solid rgba(51,53,43,.10);
-  color:var(--ink-soft); padding:11px 14px;
+  background:rgba(51,53,43,.06); border:0; border-bottom:1px solid rgba(51,53,43,.10);
+  color:var(--ink-soft); padding:11px 14px; border-radius:var(--r-s);
 }
 #sortmenu button:last-child{border-bottom:0}
 #sortmenu button:hover{background:rgba(200,106,60,.10); color:var(--ink)}
@@ -428,8 +429,8 @@ body.dentro .dentro-only{display:inline-flex !important}
 #sezioni button{
   font-family:var(--ff-text); font-size:13px; font-weight:500;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:none; border:0; padding:9px 10px 7px;
-  border-bottom:2px solid transparent;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:9px 10px 7px;
+  border-bottom:2px solid transparent; border-radius:var(--r-s);
 }
 #sezioni button:hover{color:var(--ink)}
 #sezioni button.on{color:var(--ink); border-bottom-color:var(--accent)}
@@ -458,7 +459,8 @@ body.elenco #mia{display:block}
 /* il contatore e' un pulsante: mentre l'elenco e' aperto, e' acceso */
 body.elenco #conta{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
 body.elenco #conta b, body.elenco #conta span{color:#f2f1ed}
-#conta{cursor:pointer}
+#conta{cursor:pointer; border-radius:var(--r-s);
+}
 /* con l'elenco davanti, scaffale e imbuto non servono */
 body.elenco #rail{opacity:0 !important}
 body.elenco #vista-apri{opacity:0 !important; pointer-events:none}
@@ -480,7 +482,7 @@ body.sez-catalogo #catalogo{display:block}
 .cat-cerca button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed; background:var(--accent);
-  border:1px solid var(--accent); padding:0 16px;
+  border:0; padding:0 16px; border-radius:var(--r-s);
 }
 .cat-cerca button:hover{background:var(--ink); border-color:var(--ink)}
 .cat-cerca button.chiaro{
@@ -528,7 +530,7 @@ body.sez-catalogo #catalogo{display:block}
 .cat-azioni button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; white-space:nowrap;
-  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:8px 11px;
+  color:var(--ink-soft); background:var(--card); border:0; padding:8px 11px; border-radius:var(--r-s);
 }
 .cat-azioni button:hover{color:var(--ink); border-color:var(--accent)}
 .cat-azioni .apri{color:var(--accent); border-color:rgba(200,106,60,.45)}
@@ -552,7 +554,7 @@ body.sez-catalogo #catalogo{display:block}
 #cat-piu{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:var(--card); border:1px solid var(--line); padding:12px 26px;
+  background:var(--card); border:0; padding:12px 26px; border-radius:var(--r-s);
 }
 #cat-piu:hover{color:var(--ink); border-color:var(--accent)}
 #cat-piu:disabled{cursor:default; opacity:.5}
@@ -572,8 +574,8 @@ body.sez-catalogo #catalogo{display:block}
   flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:none; border:0; border-top:2px solid transparent;
-  padding:9px 4px 10px; margin-top:-1px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-top:2px solid transparent;
+  padding:9px 4px 10px; margin-top:-1px; border-radius:var(--r-s);
 }
 #tabbar button b{font-size:15px; line-height:1; font-weight:400}
 #tabbar button canvas{width:15px; height:15px; display:block}
@@ -598,7 +600,7 @@ body.sez-profilo #profilo{display:block}
 #pro-cambia, .pro-lin{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:none; border:0; border-bottom:1px solid var(--line); padding:3px 0;
+  background:rgba(51,53,43,.06); border:0; border-bottom:1px solid var(--line); padding:3px 0; border-radius:var(--r-s);
 }
 #pro-cambia:hover, .pro-lin:hover{color:var(--accent); border-color:var(--accent)}
 .pro-fondo{display:flex; flex-wrap:wrap; gap:18px; margin:0}
@@ -618,7 +620,7 @@ body.sez-profilo #profilo{display:block}
 #pro-copia{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:var(--card); border:1px solid var(--line); padding:7px 11px;
+  background:var(--card); border:0; padding:7px 11px; border-radius:var(--r-s);
 }
 #pro-copia:hover{color:var(--ink); border-color:var(--accent)}
 .pro-nota{margin:9px 0 14px; font-size:11.5px; line-height:1.6; color:rgba(51,53,43,.5); max-width:44ch}
@@ -637,22 +639,22 @@ body.sez-profilo #profilo{display:block}
 }
 .pastiglie{display:flex; flex-wrap:wrap; gap:7px}
 .pastiglie button{
-  width:28px; height:28px; cursor:pointer; border:1px solid var(--line); padding:0;
+  width:28px; height:28px; cursor:pointer; border:0; padding:0;
   font-family:var(--ff-display); font-size:10.8px; line-height:26px; color:var(--ink);
-  background:var(--card);
+  background:var(--card); border-radius:var(--r-s);
 }
 .pastiglie button.on{outline:2px solid var(--accent); outline-offset:1px}
 .pro-lab-fondo{display:flex; gap:10px; margin:18px 0 0}
 #lab-salva, #ami-go, #nick-ok{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed;
-  background:var(--accent); border:1px solid var(--accent); padding:11px 18px;
+  background:var(--accent); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 #lab-salva:hover, #ami-go:hover, #nick-ok:hover{background:var(--ink); border-color:var(--ink)}
 #lab-annulla{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:var(--card); border:1px solid var(--line); padding:11px 18px;
+  background:var(--card); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 #lab-annulla:hover{color:var(--ink); border-color:var(--accent)}
 
@@ -665,7 +667,7 @@ body.sez-profilo #profilo{display:block}
   width:100%; display:flex; align-items:center; gap:12px; cursor:pointer;
   font-family:var(--ff-display); font-weight:400; font-size:18.7px;
   letter-spacing:0; color:var(--ink); text-align:left;
-  background:none; border:0; padding:20px 0;
+  background:rgba(51,53,43,.06); border:0; padding:20px 0; border-radius:var(--r-s);
 }
 .pro-tit:hover{color:var(--accent)}
 .pro-tit .quanti{
@@ -696,7 +698,7 @@ body.sez-profilo #profilo{display:block}
 .pro-gente button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; white-space:nowrap;
-  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:7px 10px;
+  color:var(--ink-soft); background:var(--card); border:0; padding:7px 10px; border-radius:var(--r-s);
 }
 .pro-gente button:hover{color:var(--ink); border-color:var(--accent)}
 .pro-gente button.si{color:var(--accent); border-color:rgba(200,106,60,.5)}
@@ -733,7 +735,7 @@ body.sez-profilo #profilo{display:block}
 .gio-gioco{
   width:100%; display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px;
   margin:0; padding:10px 0; cursor:pointer; text-align:left;
-  background:none; border:0; border-bottom:1px solid var(--line);
+  background:rgba(51,53,43,.06); border:0; border-bottom:1px solid var(--line); border-radius:var(--r-s);
 }
 .gio-gioco:hover b{color:var(--accent)}
 .gio-gioco::after{
@@ -769,7 +771,7 @@ body.sez-profilo #profilo{display:block}
 #mia-salva{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed;
-  background:var(--accent); border:1px solid var(--accent); padding:11px 18px;
+  background:var(--accent); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 #mia-salva:hover{background:var(--ink); border-color:var(--ink)}
 
@@ -796,7 +798,7 @@ body.sez-profilo #profilo{display:block}
 .pa-chi button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; white-space:nowrap;
-  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:7px 9px;
+  color:var(--ink-soft); background:var(--card); border:0; padding:7px 9px; border-radius:var(--r-s);
 }
 .pa-chi button:hover{color:var(--ink); border-color:var(--accent)}
 .pa-chi button.vince.on{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
@@ -814,19 +816,19 @@ body.sez-profilo #profilo{display:block}
 #pa-piu{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:var(--card); border:1px solid var(--line); padding:9px 12px;
+  background:var(--card); border:0; padding:9px 12px; border-radius:var(--r-s);
 }
 #pa-piu:hover{color:var(--ink); border-color:var(--accent)}
 .pa-foot #pa-salva{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed;
-  background:var(--accent); border:1px solid var(--accent); padding:11px 18px;
+  background:var(--accent); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 .pa-foot #pa-salva:hover{background:var(--ink); border-color:var(--ink)}
 .pa-foot #pa-togli{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--wood);
-  background:none; border:1px solid rgba(194,86,47,.5); padding:10px 14px;
+  background:none; border:1px solid rgba(200,106,60,.5); padding:10px 14px; border-radius:var(--r-s);
 }
 .pa-foot #pa-togli:hover{background:var(--wood); color:#fff; border-color:var(--wood)}
 .pa-foot #pa-togli[hidden]{display:none}
@@ -834,7 +836,7 @@ body.sez-profilo #profilo{display:block}
 #p-segna{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:9px 12px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:9px 12px; border-radius:var(--r-s);
 }
 #p-segna:hover{color:var(--accent); border-color:var(--accent)}
 
@@ -883,7 +885,7 @@ body.visita #visita{transform:translate(-50%,84px)}
 #vis-torna{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:none; border:1px solid var(--line); padding:7px 10px;
+  background:rgba(51,53,43,.06); border:0; padding:7px 10px; border-radius:var(--r-s);
 }
 #vis-torna:hover{color:var(--accent); border-color:var(--accent)}
 
@@ -938,7 +940,7 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
 #vista .eyebrow{margin:0 0 4px}
 #vista-x{
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
-  color:var(--ink-soft); background:none; border:0; padding:4px 6px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:4px 6px; border-radius:var(--r-s);
 }
 #vista-x:hover{color:var(--wood)}
 .vista-tit{
@@ -948,7 +950,7 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
 .vista-riga{
   display:block; width:100%; text-align:left; cursor:pointer; margin:8px 0 0;
   font-family:var(--ff-display); font-size:11.5px; letter-spacing:0; color:var(--ink);
-  background:none; border:1px solid var(--line); padding:9px 11px;
+  background:rgba(51,53,43,.06); border:0; padding:9px 11px; border-radius:var(--r-s);
 }
 .vista-riga:hover{color:var(--accent); border-color:var(--accent)}
 
@@ -957,15 +959,15 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
 .aggiungi{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--accent);
-  background:none; border:1px dashed var(--accent); padding:6px 10px;
+  background:none; border:1px dashed var(--accent); padding:6px 10px; border-radius:var(--r-s);
 }
 .aggiungi:hover{background:var(--accent); color:#f2f1ed; border-style:solid}
 
 #stanza-apri{
   position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
   font-size:17px; line-height:1; cursor:pointer; color:var(--ink-soft);
-  background:var(--card); border:1px solid var(--line); padding:8px 11px 10px;
-  opacity:0; transition:opacity .5s ease;
+  background:var(--card); border:0; padding:8px 11px 10px;
+  opacity:0; transition:opacity .5s ease; border-radius:var(--r-s);
 }
 body.browse #stanza-apri{opacity:1}
 #stanza-apri:hover{color:var(--accent); border-color:var(--accent)}
@@ -990,7 +992,7 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
 #stanza .eyebrow{margin:0 0 14px}
 #stanza-x{
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
-  color:var(--ink-soft); background:none; border:0; padding:4px 6px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:4px 6px; border-radius:var(--r-s);
 }
 #stanza-x:hover{color:var(--wood)}
 .st-riga{display:flex; align-items:center; gap:12px; margin:0 0 11px}
@@ -1018,7 +1020,7 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
 #st-reset{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:none; border:1px solid var(--line); padding:7px 10px;
+  background:rgba(51,53,43,.06); border:0; padding:7px 10px; border-radius:var(--r-s);
 }
 #st-reset:hover{color:var(--wood); border-color:var(--wood)}
 
@@ -1052,14 +1054,14 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
 #mobili .eyebrow{margin:0 0 12px}
 #mobili-x{
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
-  color:var(--ink-soft); background:none; border:0; padding:4px 6px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:4px 6px; border-radius:var(--r-s);
 }
 #mobili-x:hover{color:var(--wood)}
 #mobili-lista{list-style:none; margin:0; padding:0}
 #mobili-lista li{display:flex; align-items:center; gap:8px; margin:0 0 8px}
 #mobili-lista input{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:13px; color:var(--ink);
-  background:var(--bg); border:1px solid var(--line); padding:8px 10px;
+  background:rgba(51,53,43,.05); border:0; padding:8px 10px; border-radius:var(--r-s);
 }
 #mobili-lista input:focus{outline:none; border-color:var(--accent)}
 #mobili-lista .quanti{
@@ -1068,7 +1070,7 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
 }
 #mobili-lista button{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:5px 8px;
-  color:var(--ink-soft); background:none; border:1px solid var(--line);
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
 }
 #mobili-lista button:hover{color:var(--wood); border-color:var(--wood)}
 #mobili-lista button.ok{color:var(--accent); border-color:rgba(200,106,60,.45); font-size:13px}
@@ -1079,7 +1081,7 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
 #mobili-piu{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed;
-  background:var(--accent); border:1px solid var(--accent); padding:8px 12px;
+  background:var(--accent); border:0; padding:8px 12px; border-radius:var(--r-s);
 }
 #mobili-piu:hover{background:var(--ink); border-color:var(--ink)}
 /* La barra e' un comando, quindi va presa: due pixel di altezza non si
@@ -1186,7 +1188,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   position:absolute; z-index:2; top:-1px; right:-1px;
   background:var(--accent); color:#f2f1ed; border:0; cursor:pointer;
   font-family:var(--ff-text); font-weight:700; font-size:13px;
-  letter-spacing:0; text-transform:none; padding:9px 13px;
+  letter-spacing:0; text-transform:none; padding:9px 13px; border-radius:var(--r-s);
 }
 #close:hover{background:var(--ink)}
 
@@ -1264,7 +1266,7 @@ body.review .pan-foot{opacity:1}
 .pan-foot button{font-size:10px; letter-spacing:.1em; padding:9px 10px}
 #p-mia{
   font-family:var(--ff-text); font-weight:700; text-transform:none;
-  cursor:pointer; color:#f2f1ed; background:var(--accent); border:1px solid var(--accent);
+  cursor:pointer; color:#f2f1ed; background:var(--accent); border:0; border-radius:var(--r-s);
 }
 #p-mia:hover{background:var(--ink); border-color:var(--ink)}
 body.visita #p-mia{display:none !important}
@@ -1273,22 +1275,22 @@ body.visita #p-mia{display:none !important}
 #p-fuori{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:9px 10px;
+  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:9px 10px; border-radius:var(--r-s);
 }
 #p-fuori:hover{color:var(--ink); border-color:var(--accent)}
 body.visita #p-fuori{display:none !important}
 #del{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--wood); background:none; border:1px solid rgba(194,86,47,.5);
-  padding:7px 11px; align-items:center; gap:6px;
+  color:var(--wood); background:none; border:1px solid rgba(200,106,60,.5);
+  padding:7px 11px; align-items:center; gap:6px; border-radius:var(--r-s);
 }
 #del:hover{background:var(--wood); color:#fff; border-color:var(--wood)}
 #edit{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--accent); background:none; border:1px solid var(--line);
-  padding:7px 11px; align-items:center; gap:6px;
+  color:var(--accent); background:rgba(51,53,43,.06); border:0;
+  padding:7px 11px; align-items:center; gap:6px; border-radius:var(--r-s);
 }
 #edit:hover{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
 /* armato: il secondo clic esegue davvero */
@@ -1316,9 +1318,9 @@ body.visita #p-fuori{display:none !important}
 @media (max-width:560px){ .gate-pick{grid-template-columns:1fr} }
 .gate-pick button{
   font-family:var(--ff-text); text-align:left; cursor:pointer;
-  background:rgba(242,241,237,.6); border:1px solid var(--line);
+  background:rgba(242,241,237,.6); border:0;
   padding:20px 18px; color:var(--ink-soft);
-  transition:border-color .2s ease, background .2s ease, transform .2s ease;
+  transition:border-color .2s ease, background .2s ease, transform .2s ease; border-radius:var(--r-s);
 }
 .gate-pick button:hover{border-color:var(--accent); background:rgba(200,106,60,.08); transform:translateY(-2px)}
 .gate-pick button b{
@@ -1352,25 +1354,25 @@ body.visita #p-fuori{display:none !important}
 #add-x{
   position:absolute; top:-1px; right:-1px; background:var(--accent); color:#f2f1ed;
   border:0; cursor:pointer; font-family:var(--ff-text); font-weight:700;
-  font-size:13px; letter-spacing:0; text-transform:none; padding:9px 13px;
+  font-size:13px; letter-spacing:0; text-transform:none; padding:9px 13px; border-radius:var(--r-s);
 }
 .add-card h2{margin:0 0 18px; font-family:var(--ff-display); font-weight:400;
   font-size:28.8px; line-height:.95; letter-spacing:0}
 .add-search{display:flex; gap:8px}
 .add-search input{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:15px; color:var(--ink);
-  background:rgba(51,53,43,.04); border:1px solid var(--line); padding:11px 13px;
+  background:rgba(51,53,43,.04); border:0; padding:11px 13px; border-radius:var(--r-s);
 }
 .add-search input:focus{outline:none; border-color:var(--accent)}
 .add-search button, .add-form button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; background:var(--accent); color:#f2f1ed;
-  border:0; padding:11px 16px;
+  border:0; padding:11px 16px; border-radius:var(--r-s);
 }
 .add-search button:hover, .add-form button:hover{background:var(--ink)}
 .add-msg{margin:12px 0 0; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
 .add-msg:empty{margin:0}
-.add-msg.warn{color:#a8432a}
+.add-msg.warn{color:var(--wood)}
 .add-msg code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px;
   background:rgba(51,53,43,.07); padding:2px 5px; color:var(--ink)}
 
@@ -1379,7 +1381,7 @@ body.visita #p-fuori{display:none !important}
 #add-res button{
   width:100%; display:flex; align-items:baseline; justify-content:space-between; gap:12px;
   font-family:var(--ff-text); text-align:left; cursor:pointer;
-  background:none; border:0; color:var(--ink-soft); padding:11px 4px;
+  background:rgba(51,53,43,.06); border:0; color:var(--ink-soft); padding:11px 4px; border-radius:var(--r-s);
 }
 #add-res button:hover{background:rgba(200,106,60,.08); color:var(--ink)}
 #add-res button b{font-weight:500; font-size:15px; color:var(--ink)}
@@ -1404,7 +1406,7 @@ body.visita #p-fuori{display:none !important}
 .add-form input{
   min-width:0; width:100%;
   font-family:var(--ff-text); font-size:14px; color:var(--ink);
-  background:rgba(51,53,43,.04); border:1px solid var(--line); padding:8px 10px;
+  background:rgba(51,53,43,.04); border:0; padding:8px 10px; border-radius:var(--r-s);
 }
 .add-form input:focus{outline:none; border-color:var(--accent)}
 .add-form button{grid-column:1/-1; margin-top:6px}
@@ -1412,18 +1414,18 @@ body.visita #p-fuori{display:none !important}
 .add-form textarea{
   min-width:0; width:100%; resize:vertical; min-height:120px;
   font-family:var(--ff-text); font-size:14px; line-height:1.6; color:var(--ink);
-  background:rgba(51,53,43,.04); border:1px solid var(--line); padding:10px;
+  background:rgba(51,53,43,.04); border:0; padding:10px; border-radius:var(--r-s);
 }
 .add-form textarea:focus{outline:none; border-color:var(--accent)}
 .add-form textarea::placeholder{color:rgba(51,53,43,.34)}
 .add-form input[type=file]{
-  padding:7px 9px; font-size:12px; cursor:pointer; color:var(--ink-soft);
+  padding:7px 9px; font-size:12px; cursor:pointer; color:var(--ink-soft); border-radius:var(--r-s);
 }
 .add-form input[type=file]::file-selector-button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; margin-right:10px;
   background:rgba(200,106,60,.12); color:var(--accent);
-  border:1px solid var(--line); padding:6px 10px;
+  border:0; padding:6px 10px; border-radius:var(--r-s);
 }
 .add-form input[type=file]::file-selector-button:hover{background:var(--accent); color:#f2f1ed}
 #m-file-nota{font-size:10px; letter-spacing:0; text-transform:none; line-height:1.5;
@@ -1433,7 +1435,7 @@ body.visita #p-fuori{display:none !important}
   align-items:center; gap:10px}
 .add-foot button{
   font-family:var(--ff-text); font-size:11px; letter-spacing:.1em; cursor:pointer;
-  background:none; border:1px solid var(--line); color:var(--ink-soft); padding:6px 10px;
+  background:rgba(51,53,43,.06); border:0; color:var(--ink-soft); padding:6px 10px; border-radius:var(--r-s);
 }
 .add-foot button:hover{border-color:var(--accent); color:var(--accent)}
 
@@ -1693,7 +1695,7 @@ body.elenco #conta{background:var(--accent); color:#fff}
 /* --- la navigazione ------------------------------------------------ */
 #sezioni button, #tabbar button{
   font-family:var(--ff); font-weight:500; letter-spacing:0;
-  text-transform:none; font-size:14px; border:0; background:none;
+  text-transform:none; font-size:14px; border:0; background:rgba(51,53,43,.06);
   color:var(--ink-soft); cursor:pointer; border-radius:var(--r-s);
   padding:8px 12px; transition:color .2s var(--ease), background-color .2s var(--ease);
 }
@@ -1836,3 +1838,209 @@ body.elenco #conta b{color:#fff}
 }
 .pan-foot{display:flex; flex-wrap:wrap; gap:9px; margin:0;
   border-top:1px solid var(--line); background:var(--card)}
+
+/* ===================================================================
+   CORREZIONI DOPO LA PROVA A SCHERMO
+   Tutto quello che era rimasto indietro, in un posto solo.
+   =================================================================== */
+
+/* --- libreria ------------------------------------------------------ */
+
+/* Il contatore e l'imbuto galleggiano sulla scena: devono farsi notare
+   quel tanto che basta, non prendersi l'angolo. */
+#conta{padding:8px 13px; font-size:13px}
+#conta b{font-size:14px}
+#vista-apri{padding:8px}
+#vista-apri .ico, #vista-apri svg{width:17px; height:17px}
+#stanza-apri{padding:8px}
+#stanza-apri .ico{width:17px; height:17px}
+
+/* Il binario stava su una pastiglia bianca che sul pavimento chiaro
+   sembrava una macchia. Non serve una superficie: bastano il contrasto
+   del testo e la barra. */
+#rail{
+  background:none; box-shadow:none; backdrop-filter:none;
+  -webkit-backdrop-filter:none; padding:6px 10px;
+}
+#rail-txt{color:var(--ink); opacity:.55; font-size:12px}
+.rail-bar{background:rgba(51,53,43,.20)}
+
+/* L'anello arancione era il fuoco del campo di ricerca, che il pannello
+   prendeva DA SOLO all'apertura: un contorno acceso senza che nessuno
+   avesse toccato niente. Il fuoco si vede solo a chi naviga da tastiera
+   (`:focus-visible`), che e' l'unico a cui serve. */
+#cerca:focus, #cat-q:focus, #add-q:focus, .add-card input:focus,
+.add-card textarea:focus, #mobili-lista input:focus, #nick-in:focus, #pa-note:focus{
+  box-shadow:none;
+}
+#cerca:focus-visible, #cat-q:focus-visible, #add-q:focus-visible,
+.add-card input:focus-visible, .add-card textarea:focus-visible,
+#mobili-lista input:focus-visible, #nick-in:focus-visible, #pa-note:focus-visible{
+  box-shadow:0 0 0 2px var(--accent);
+}
+
+/* La lista degli ordinamenti era un riquadro squadrato dentro un
+   pannello stondato. */
+#sortmenu{border:0; border-radius:var(--r-m); overflow:hidden; background:rgba(51,53,43,.04)}
+#sortmenu button{border-radius:0; border-bottom:1px solid rgba(51,53,43,.07)}
+#sortmenu button:last-child{border-bottom:0}
+
+/* --- i pannelli: arredi, mobili, gruppi, partita ------------------- */
+#stanza button, #mobili button, #gruppilayer button, #partitalayer button,
+#addlayer button, #profilo button, #catalogo button, #mia button{
+  border-radius:var(--r-s);
+}
+#stanza .st-riga button, .st-tinte button{border-radius:50%}
+#mobili-lista input, #stanza input[type=text]{border-radius:var(--r-s)}
+
+/* --- collezione ---------------------------------------------------- */
+
+/* Il fondo dell'elenco era la stanza a piena tinta: sotto al testo
+   diventava una lastra grigia. Va verso la carta, che e' il colore di
+   una pagina che si legge. */
+#mia, #catalogo, #profilo{background:#e7e5e0}
+
+/* La finestrella delle azioni era trasparente: si leggeva attraverso e
+   non si capiva dove finisse, e prendere una voce era un tiro a segno. */
+.riga-azioni{
+  background:var(--card); box-shadow:0 10px 34px rgba(51,53,43,.20);
+  border:0; border-radius:var(--r-m);
+}
+
+/* Le pastiglie dei gruppi e i comandi dell'elenco stavano nello stesso
+   contenitore senza saper convivere: con un gruppo in piu' finivano
+   uno sopra l'altro. Adesso sono due righe, e i filtri stanno per conto
+   loro sopra ai comandi. */
+.mia-barra{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  margin:14px 0 0;
+}
+#mia-gruppi.gruppi.filtro{
+  flex:1 1 100%; margin:0 0 4px; gap:8px;
+}
+#mia-gestisci, .aggiungi{flex:0 0 auto; margin:0}
+
+/* --- i tre livelli, con un nome ------------------------------------
+   Finora la gerarchia dei comandi era implicita nel selettore. Adesso
+   ha tre classi, e chi aggiunge un pulsante sceglie che cos'e' invece
+   di copiare lo stile del vicino. */
+.primario{
+  background:var(--accent); color:#fff; font-weight:600;
+  padding:12px 20px; font-size:14px; border:0; border-radius:var(--r-s);
+  box-shadow:var(--ombra-lieve);
+}
+.primario:hover{background:#b85c31; color:#fff}
+.secondario{
+  background:rgba(51,53,43,.07); color:var(--ink); font-weight:500;
+  padding:12px 20px; font-size:14px; border:0; border-radius:var(--r-s);
+}
+.secondario:hover{background:rgba(51,53,43,.12); color:var(--ink)}
+.distruttivo{
+  background:rgba(190,60,40,.10); color:#a8341f; font-weight:500;
+  padding:12px 18px; font-size:14px; border:0; border-radius:var(--r-s);
+}
+.distruttivo:hover{background:rgba(190,60,40,.18); color:#8e2b19}
+.distruttivo.armed{background:#a8341f; color:#fff}
+
+/* Il piede di un pannello: annulla a sinistra, l'azione a destra, e la
+   riga sta in fondo -- non una croce in un angolo. */
+.add-foot{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  margin:22px 0 0; padding:16px 0 0; border-top:1px solid var(--line);
+}
+.add-foot .primario{margin-left:auto}
+.pa-foot .distruttivo{flex:0 0 auto}
+
+/* --- catalogo ------------------------------------------------------
+   I due comandi stavano a destra su schermo largo e finivano SOTTO su
+   telefono, dove la griglia si riduceva a due colonne. La colonna dei
+   comandi resta anche li': si stringe, non se ne va. */
+@media (max-width:879px){
+  .righe > li{grid-template-columns:56px 1fr auto; gap:12px}
+  .cat-azioni{align-items:flex-end}
+  .cat-azioni button{font-size:12px; padding:8px 10px}
+}
+.cat-azioni button{
+  font-weight:500; background:rgba(51,53,43,.06); color:var(--ink); border:0;
+  border-radius:var(--r-s);
+}
+.cat-azioni button:hover{background:rgba(51,53,43,.11)}
+.cat-azioni .apri{background:rgba(200,106,60,.12); color:var(--accent)}
+.cat-azioni .apri:hover{background:rgba(200,106,60,.20)}
+.cat-azioni .pref.on{background:var(--accent); color:#fff}
+.cat-azioni .dentro{background:rgba(200,106,60,.12); color:var(--accent)}
+
+/* --- profilo --------------------------------------------------------
+   Era la schermata rimasta piu' indietro: tutti i campi e i comandi
+   avevano ancora il filo da un pixel e lo sfondo trasparente. */
+#profilo input[type=text], #profilo input:not([type=range]), #profilo textarea,
+#partitalayer input:not([type=range]), #partitalayer textarea,
+#gruppilayer input, #recelayer input, #recelayer textarea{
+  font-family:var(--ff); font-size:14px; color:var(--ink);
+  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  padding:12px 14px;
+}
+#profilo button, #partitalayer button, #gruppilayer button, #recelayer button{
+  font-family:var(--ff); font-weight:500; letter-spacing:0; text-transform:none;
+  border:0; border-radius:var(--r-s); cursor:pointer;
+}
+#profilo button:not(.primario):not(.secondario):not(.distruttivo),
+#partitalayer button:not(.primario):not(.secondario):not(.distruttivo),
+#gruppilayer button:not(.primario):not(.secondario):not(.distruttivo),
+#recelayer button:not(.primario):not(.secondario):not(.distruttivo){
+  background:rgba(51,53,43,.06); color:var(--ink); padding:10px 14px; font-size:14px;
+}
+#profilo button:not(.primario):hover, #partitalayer button:not(.primario):hover,
+#gruppilayer button:not(.primario):hover, #recelayer button:not(.primario):hover{
+  background:rgba(51,53,43,.11);
+}
+/* il codice amico e' un dato da copiare, non un comando */
+.pro-cod b, #pro-codice{
+  background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
+  padding:12px 16px; letter-spacing:.14em; font-weight:600;
+}
+
+/* --- gli spazi della pagina account ------------------------------- */
+.pro-blocco, .pro-sezione{margin:26px 0 0}
+.pro-testa{display:flex; align-items:flex-start; gap:18px; flex-wrap:wrap}
+.pro-aggiungi{display:flex; gap:10px; align-items:center; margin:14px 0 0}
+.pro-aggiungi input{flex:1 1 auto; min-width:0}
+.pro-msg{margin:10px 0 0; font-size:13px; color:var(--ink-soft)}
+
+/* I tre livelli devono battere le regole di contorno (`.add-foot button`
+   e simili) che hanno una classe piu' un elemento. `button.primario` fa
+   lo stesso peso e arriva dopo, quindi vince -- senza `!important`, che
+   qui vorrebbe dire rinunciare a poter fare eccezioni piu' avanti. */
+button.primario{background:var(--accent); color:#fff; font-weight:600; padding:12px 20px}
+button.primario:hover{background:#b85c31; color:#fff}
+button.secondario{background:rgba(51,53,43,.07); color:var(--ink); padding:12px 20px}
+button.secondario:hover{background:rgba(51,53,43,.13); color:var(--ink)}
+button.distruttivo{background:rgba(190,60,40,.10); color:#a8341f; padding:12px 18px}
+button.distruttivo:hover{background:rgba(190,60,40,.18); color:#8e2b19}
+button.distruttivo.armed{background:#a8341f; color:#fff}
+
+/* Nel piede, l'azione sta a destra e quello che annulla a sinistra:
+   e' l'ordine che si legge su qualunque finestra di sistema. */
+.add-foot button.primario{margin-left:auto}
+.add-foot button.distruttivo{margin-left:0; order:-1}
+.pa-foot{flex-wrap:wrap}
+
+/* Su schermo stretto i due comandi finivano SOTTO al titolo, perche'
+   una regola li faceva spanciare su tutta la riga (`grid-column:1/-1`).
+   Restano nella loro colonna: si stringono, non se ne vanno. E' la
+   stessa cosa che fa una riga di impostazioni su un telefono -- il
+   comando sta a destra del suo nome, sempre. */
+@media (max-width:879px){
+  .righe > li{grid-template-columns:56px minmax(0,1fr) auto}
+  /* Le colonne vanno dette per nome: con `grid-row:1` e la colonna in
+     automatico, il primo posto libero era il PRIMO -- i comandi
+     finivano a sinistra e il titolo spinto a destra. */
+  .righe > li .cat-cop{grid-column:1; grid-row:1}
+  .righe > li .cat-dati{grid-column:2; grid-row:1}
+  .righe > li .cat-azioni{
+    grid-column:3; grid-row:1; align-self:center;
+    flex-direction:column; align-items:stretch; gap:6px;
+  }
+  .cat-azioni button{font-size:12px; padding:8px 10px; white-space:nowrap}
+  .righe > li .cat-rec{grid-column:1 / -1}
+}
