@@ -12,19 +12,31 @@ armadio con le ante e la scena è notturna.
 Due cartelle affiancate, **un solo repository**. Entrambe sotto
 `C:/Users/Windows/_Claude/`:
 
-| cartella | ramo | com'è il mobile |
+| cartella | ramo | cos'è |
 |---|---|---|
-| `dado-e-trap` | `main` | armadio con le ante, scena notturna |
-| `new_dado-e-trap` | `libreria` | **libreria a cubi, stanza chiara** — si lavora qui |
+| `new_dado-e-trap` | `libreria` | **si lavora qui** |
+| `dado-e-trap` | `main` | vecchia copia dell'armadio: è rimasta indietro |
+
+**Dal 2026-08-20 `main` è la libreria a cubi.** Il ramo `libreria` è stato
+portato su `main` in avanzamento lineare — non c'era divergenza, `main` non aveva
+un solo commit che `libreria` non avesse già — e da allora i due rami puntano
+allo stesso commit. L'armadio con le ante e la scena notturna non sono più da
+nessuna parte se non nella storia.
+
+La cartella `dado-e-trap` ha ancora la copia vecchia nel suo working tree: se
+serve, va aggiornata con un `git pull`. Oppure si butta: non ci lavora nessuno.
 
 Remote: <https://github.com/Samuel-Ricco/Boardgames.git>. L'auth passa dal Git
 Credential Manager, `gh` non è installato. Pubblicato su GitHub Pages a
-<https://samuel-ricco.github.io/Boardgames/>, che serve `main` — quindi online si
-vede ancora l'armadio.
+<https://samuel-ricco.github.io/Boardgames/>, che serve `main`.
+
+**Perché online l'accesso con Google può non funzionare:** i Redirect URLs di
+Supabase autorizzano `http://localhost:8124`. L'indirizzo di GitHub Pages va
+aggiunto lì, se no il login parte, arriva a Google e non riesce a tornare
+indietro — esattamente come su una porta sbagliata in locale.
 
 Server locale: `python -m http.server 8124 --directory <cartella>`. **La porta
-8124 non è casuale**: è l'unica autorizzata nei Redirect URLs di Supabase, e su
-altre porte il login parte, va su Google e non riesce a tornare indietro. E non
+8124 non è casuale**: è l'unica autorizzata nei Redirect URLs di Supabase. E non
 puo' essere la **8125**, che e' del proxy BGG: si pesterebbero i piedi.
 
 ```
