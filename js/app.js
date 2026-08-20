@@ -2010,8 +2010,17 @@ function updateRail(){
     bar.setAttribute('aria-valuemax', n);
     bar.setAttribute('aria-valuenow', Math.round(state.scroll) + 1);
   }
-  q('#rail-thumb').style.transform = 'translateX(' + (t * (100 * max)) + '%)';
-  q('#rail-thumb').style.width = (100 / n) + '%';
+  /* Il cursore non arriva mai a filo dei capi della traccia: resta un
+     margine uguale ai due lati (`MARG`). Senza, alla prima e all'ultima
+     libreria l'arancione andava a sbattere contro il bordo e sembrava
+     tagliato -- e non si capiva piu' se fosse arrivato in fondo o
+     fosse finito sotto. */
+  const MARG = 6;                      // per cento, per lato
+  const utile = 100 - MARG * 2;
+  const th = q('#rail-thumb');
+  th.style.width = (utile / n) + '%';
+  th.style.left = (MARG + (state.scroll / n) * utile) + '%';
+  th.style.transform = 'none';
 }
 
 /* --- la barra in basso si trascina --------------------------------
@@ -2031,9 +2040,14 @@ function bindRail(){
     const max = maxScroll();
     if (!max) return;
     const r = bar.getBoundingClientRect();
-    const t = clamp((e.clientX - r.left) / r.width, 0, 1);
-    state.scrollTo = t * max;
-    state.scroll = t * max;              // sotto il dito non si insegue, si sta
+    /* Si mira al CENTRO del cursore, e sulla stessa corsa utile che usa
+       `updateRail` -- margine compreso. Con la corsa piena il cursore
+       si sfilava da sotto il dito proprio ai due capi, che e' dove si
+       va a sbattere piu' spesso. */
+    const MARG = .06, utile = 1 - MARG * 2, n = max + 1;
+    const p = (e.clientX - r.left) / r.width;
+    state.scrollTo = clamp(((p - MARG) / utile) * n - .5, 0, max);
+    state.scroll = state.scrollTo;       // sotto il dito non si insegue, si sta
     updateRail();
     rifaiOmbre();
   }

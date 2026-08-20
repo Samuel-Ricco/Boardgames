@@ -1312,6 +1312,30 @@ uscire dal mobile accanto: né col trascinamento (il `clamp` è su
 relativo). Verificato: un trascinamento da un bordo all'altro dello schermo
 sposta di uno, e un colpo secco pure.
 
+**La traccia del binario non si fa con i bordi.** L'area da prendere col dito
+veniva da due bordi trasparenti da dodici pixel attorno a una riga alta quattro.
+Con `box-sizing:border-box` — che qui vale per tutto — quei ventiquattro pixel si
+mangiano l'altezza dichiarata: **la scatola di riempimento resta alta zero**, e
+con `background-clip:padding-box` la traccia non c'è proprio. Si vedeva soltanto
+finché una scorciatoia `background:` rimetteva il clip a `border-box` e il grigio
+riempiva i bordi — una traccia alta ventotto pixel, per sbaglio. Adesso
+l'elemento *è* l'area da prendere e la riga sottile è un `::before` in mezzo.
+
+Da ricordare in generale: **`background:` è una scorciatoia e riazzera quello che
+non nomina**, `background-clip` compreso. Quando serve toccare solo il colore si
+usa `background-color`.
+
+**Il cursore non arriva mai a filo dei capi** (`MARG`, 6% per lato): alla prima e
+all'ultima libreria l'arancione sbatteva contro il bordo e sembrava tagliato. Il
+margine vale anche per il **trascinamento**, che mira al centro del cursore sulla
+stessa corsa utile — se no ai due capi il cursore si sfilava da sotto il dito,
+che è proprio dove ci si va a sbattere più spesso.
+
+**Al centro c'è la barra, non il gruppo.** `#rail` era centrato per intero, testo
+compreso: siccome il «1 / 3» sta a sinistra, la barra finiva spostata a destra di
+mezza scritta. Il numero è sfilato dal flusso e appeso a sinistra, così l'unica
+cosa in fila è la barra — ed è lei quella che l'occhio misura.
+
 **Il binario è una pastiglia sola**, con `flex-wrap:nowrap`: prima erano due
 elementi liberi dentro un flex che poteva avvolgere, e su schermo stretto il
 «1 / 3» si staccava e finiva sopra la barra.

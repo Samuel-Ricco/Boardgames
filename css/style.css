@@ -2255,3 +2255,66 @@ body.arreda #stanza{transform:none}
   display:flex; flex-direction:column; align-items:flex-start; gap:9px; margin:0 0 16px;
 }
 #stanza .st-riga.alto>span:first-child{flex:none; font-size:11px; letter-spacing:.05em; padding:0}
+
+/* --- IL BINARIO: LA BARRA AL CENTRO, NON IL GRUPPO ------------------
+   `#rail` era centrato per intero, testo compreso: siccome il "1 / 3"
+   sta a sinistra, la BARRA finiva spostata a destra di mezza scritta.
+   Adesso il numero e' sfilato dal flusso e appeso a sinistra, cosi'
+   l'unica cosa in fila e' la barra -- ed e' lei a stare in mezzo, che
+   e' quello che l'occhio misura.
+
+   La traccia e' anche un po' piu' larga: con il margine ai capi il
+   cursore ha meno corsa, e a duecento pixel i passi diventavano corti. */
+#rail{position:fixed; padding:14px 0}
+#rail-txt{
+  position:absolute; right:100%; top:50%; transform:translateY(-50%);
+  margin-right:14px;
+}
+.rail-bar{width:min(260px,58vw); max-width:none; flex:0 0 auto}
+#rail-thumb{transition:left .18s var(--ease), width .18s var(--ease)}
+.rail-bar.presa #rail-thumb{transition:none}
+
+/* `background:` e' una SCORCIATOIA, e come tutte le scorciatoie
+   riazzera quello che non nomina -- compreso `background-clip`. E' lui
+   a tenere sottile la traccia: la riga e' alta quattro pixel e l'area
+   da prendere col dito viene da due bordi trasparenti da dodici. Con la
+   scorciatoia usata piu' sotto il clip tornava a `border-box` e il
+   grigio riempiva anche i bordi: una traccia alta ventotto pixel.
+   Qui si usa `background-color`, che non tocca il resto. */
+.rail-bar{background:none; background-color:rgba(51,53,43,.28); background-clip:padding-box}
+.rail-bar:hover{background-color:rgba(51,53,43,.34)}
+
+/* il numero non va a capo: appeso fuori dal flusso, la larghezza
+   disponibile e' quella che e' e "1 / 3" si spezzava in tre righe */
+#rail-txt{white-space:nowrap}
+
+/* --- LA TRACCIA NON SI FA CON I BORDI ------------------------------
+
+   L'area da prendere col dito veniva da due bordi trasparenti da dodici
+   pixel attorno a una riga alta quattro. Con `box-sizing:border-box`
+   -- che qui vale per tutto -- quei ventiquattro pixel di bordo si
+   mangiano l'altezza dichiarata: la scatola di riempimento resta alta
+   ZERO, e con `background-clip:padding-box` la traccia semplicemente
+   non c'e'. Si vedeva solo finche' una scorciatoia `background:`
+   rimetteva il clip a `border-box` e il grigio riempiva i bordi: una
+   traccia alta ventotto pixel, per sbaglio.
+
+   Adesso l'elemento E' l'area da prendere -- alto ventotto, senza bordi
+   -- e la riga sottile e' un `::before` in mezzo. Due mestieri, due
+   cose. */
+.rail-bar{
+  position:relative; width:min(260px,58vw); max-width:none; flex:0 0 auto;
+  height:28px; border:0; padding:0; border-radius:0;
+  background:none; background-color:transparent;
+  cursor:pointer; touch-action:none; pointer-events:auto;
+}
+.rail-bar::before{
+  content:''; position:absolute; left:0; right:0; top:50%; height:4px;
+  margin-top:-2px; border-radius:999px; background:rgba(51,53,43,.26);
+}
+.rail-bar:hover::before{background:rgba(51,53,43,.34)}
+#rail-thumb{
+  position:absolute; top:50%; margin-top:-2px; height:4px;
+  border-radius:999px; background:var(--accent);
+}
+.rail-bar:hover #rail-thumb, .rail-bar.presa #rail-thumb{background:#b85c31}
