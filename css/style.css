@@ -2135,20 +2135,42 @@ body.vista-tutti #mia-gruppi, body.vista-tutti #mia-gestisci{display:none !impor
    scorta servono al primo fotogramma e a chi non ha WebGL. */
 :root{--y-alto:96px; --y-basso:640px}
 
-#vista-apri, #vista{
+/* I DUE COMANDI STANNO IN ALTO, UNO PER LATO.
+
+   La lampada ha preso il posto dell'imbuto a sinistra e l'imbuto e'
+   passato a destra, alla stessa quota: il nome della libreria sta in
+   mezzo fra i due, e la riga in alto si legge come una riga sola --
+   arreda, nome, filtra.
+
+   In basso resta il solo binario, che cosi' non ha piu' niente accanto
+   con cui contendersi l'angolo. */
+#vista-apri{
+  left:auto; right:clamp(12px,2.4vw,28px);
   top:var(--y-alto); bottom:auto;
   transform:translateY(-50%);
 }
-#vista{transform:translateY(-50%)}
-body.vista #vista{transform:translateY(-50%)}
-/* il pannello si apre sotto all'imbuto, non centrato su di lui */
-#vista{top:calc(var(--y-alto) + 30px); transform:none}
+/* i pannelli si aprono SOTTO al loro pulsante, allineati al suo lato */
+#vista{
+  left:auto; right:clamp(12px,2.4vw,28px);
+  top:calc(var(--y-alto) + 30px); bottom:auto; transform:none;
+}
 body.vista #vista{transform:none}
 
-#stanza-apri, #stanza{
-  top:var(--y-basso); bottom:auto; transform:translateY(-50%);
+#stanza-apri{
+  left:clamp(12px,2.4vw,28px); right:auto;
+  top:var(--y-alto); bottom:auto;
+  transform:translateY(-50%);
 }
-#stanza{top:auto; bottom:calc(100% - var(--y-basso) + 30px); transform:none}
+/* La larghezza va ridetta: su schermo stretto una media query lo faceva
+   a tutta pagina, perche' li' saliva dal basso come un cassetto. Adesso
+   e' una finestrella ancorata a un pulsante in alto, e un cassetto a
+   tutta larghezza appeso in alto a sinistra non e' ne' l'uno ne'
+   l'altro. */
+#stanza{
+  left:clamp(12px,2.4vw,28px); right:auto;
+  top:calc(var(--y-alto) + 30px); bottom:auto; transform:none;
+  width:min(320px, calc(100vw - 24px));
+}
 body.arreda #stanza{transform:none}
 
 #rail{
@@ -2203,3 +2225,33 @@ body.arreda #stanza{transform:none}
   color:var(--ink-soft); padding-top:6px;
 }
 .pro-lab-riga .pastiglie{gap:9px}
+
+/* Sei tinte per riga, non cinque piu' una. L'etichetta si stringe e i
+   bollini pure quel tanto che basta: una riga spezzata in 5+1 fa
+   sembrare l'ultima tinta un ripensamento invece di una scelta come le
+   altre. */
+/* L'etichetta va SOPRA i bollini, non a fianco. Di fianco si mangiava
+   settanta pixel su duecentottanta e le sei tinte finivano 5+1 -- con
+   l'ultima che sembra un ripensamento invece di una scelta come le
+   altre. Sopra, la riga e' tutta loro: ci stanno in sei e possono
+   anche essere piu' grandi, che sul tocco non guasta.
+
+   Vale per le tre righe di colore: quella della luce ha un cursore e
+   quella degli arredi ha delle parole, e tutte e due stanno meglio in
+   linea. */
+#stanza .st-riga:not(.luce):not(.alto){
+  display:flex; flex-direction:column; align-items:flex-start; gap:9px;
+  margin:0 0 16px;
+}
+#stanza .st-riga:not(.luce):not(.alto)>span:first-child{
+  flex:none; font-size:11px; letter-spacing:.05em;
+}
+#stanza .pastiglie{gap:9px}
+#st-scaffali button, #st-muro button, #st-pavimento button{width:34px; height:34px}
+
+/* Anche gli arredi con l'etichetta sopra: con le tre righe di colore
+   incolonnate cosi', l'unica rimasta a fianco sembrava un errore. */
+#stanza .st-riga.alto{
+  display:flex; flex-direction:column; align-items:flex-start; gap:9px; margin:0 0 16px;
+}
+#stanza .st-riga.alto>span:first-child{flex:none; font-size:11px; letter-spacing:.05em; padding:0}
