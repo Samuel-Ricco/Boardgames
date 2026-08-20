@@ -258,12 +258,30 @@ body.visita #p-pref{display:none !important}
 .riga-menu:hover{color:var(--ink); border-color:var(--amber)}
 .riga-menu[aria-expanded="true"]{color:#fdfaf4; background:var(--ink); border-color:var(--ink)}
 
-.riga-info, .riga-azioni{grid-column:1 / -1}
+.riga-info{grid-column:1 / -1}
 .riga-info[hidden], .riga-azioni[hidden]{display:none}
+
+/* Le azioni non sono piu' una fascia sotto la riga: sono una finestrella
+   ancorata al tasto che le apre. Sotto la riga scivolavano via dal punto
+   in cui si era premuto -- tanto piu' con le informazioni aperte -- e
+   allargavano l'elenco a ogni tocco, che e' il modo migliore di perdere
+   il segno mentre si scorre. */
+.riga-menuwrap{position:relative; flex:none}
 .riga-azioni{
-  display:flex; flex-wrap:wrap; gap:7px; margin:2px 0 6px;
-  padding:12px 0 4px; border-top:1px dashed var(--line);
+  position:absolute; z-index:6; top:calc(100% + 7px); right:0;
+  display:flex; flex-direction:column; align-items:stretch; gap:2px;
+  min-width:196px; padding:6px;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+  animation:apreMenu .16s ease-out both;
 }
+@keyframes apreMenu{
+  from{opacity:0; transform:translateY(-6px)}
+  to{opacity:1; transform:none}
+}
+.riga-azioni button{width:100%; text-align:left; border-color:transparent}
+.riga-azioni button:hover{border-color:var(--line)}
+/* sulle ultime righe la finestrella uscirebbe dal fondo: sale */
+.righe.compatta > li:nth-last-child(-n+2) .riga-azioni{top:auto; bottom:calc(100% + 7px)}
 .riga-info{margin:2px 0 6px; padding:12px 0 2px; border-top:1px dashed var(--line)}
 .riga-info .cat-chi{margin:0}
 .riga-info .cat-spec{margin:8px 0 0}
@@ -902,10 +920,15 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
 }
 body.browse #stanza-apri{opacity:1}
 #stanza-apri:hover{color:var(--amber); border-color:var(--amber)}
-/* solo nella libreria, e non in casa d'altri */
+/* Solo nella libreria, e non in casa d'altri.
+
+   `!important` non e' decorativo: `#stanza-apri` porta `dentro-only`, e
+   quella regola e' gia' `display:inline-flex !important` -- senza, il
+   pulsante dell'arredo restava acceso sopra l'elenco e sopra il
+   catalogo, dove non arreda niente. */
 body.sez-catalogo #stanza-apri, body.sez-profilo #stanza-apri,
 body.visita #stanza-apri, body.elenco #stanza-apri,
-body.review #stanza-apri, body.arreda #stanza-apri{display:none}
+body.review #stanza-apri, body.arreda #stanza-apri{display:none !important}
 
 #stanza{
   position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
@@ -1027,21 +1050,35 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
 
 /* --- pannello della recensione -------------------------------- */
 /* incernierato a sinistra: si apre come l'anta di un armadio */
+/* La scheda ESCE DALLA SCATOLA.
+
+   Prima si apriva come un'anta incernierata sul bordo dello schermo:
+   un bel gesto, ma partiva da un punto che con il gioco non c'entrava
+   niente -- si apriva una scatola a sinistra e la scheda spuntava da
+   destra. Adesso parte piccola dal punto in cui la scatola sta davvero
+   sullo schermo e cresce fino al suo posto: `--da-x` e `--da-y` sono lo
+   scarto fra il centro del pannello e la scatola, e li scrive
+   `ancoraPannello()` proiettando la posizione 3D con la camera.
+
+   A zero valgono zero, quindi senza JS -- o senza WebGL -- la scheda
+   fa comunque una comparsa sensata dal proprio centro. */
 #panel{
+  --da-x:0px; --da-y:0px;
   position:fixed; z-index:4; top:50%; right:clamp(16px,3vw,48px);
   width:min(430px,40vw); max-height:76vh; margin-top:-30vh;
-  transform-origin:left center;
-  transform:perspective(1500px) rotateY(-84deg);
+  transform-origin:center center;
+  transform:perspective(1400px) translate(var(--da-x), var(--da-y)) scale(.26) rotateY(-34deg);
   opacity:0; visibility:hidden;
   background:var(--card); border:1px solid var(--line);
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
   box-shadow:var(--shadow);
   display:flex; flex-direction:column;
-  transition:transform .62s cubic-bezier(.22,.9,.26,1), opacity .3s ease, visibility 0s .62s;
+  transition:transform .58s cubic-bezier(.22,.9,.26,1), opacity .26s ease, visibility 0s .58s;
 }
 body.review #panel{
-  transform:perspective(1500px) rotateY(0deg); opacity:1; visibility:visible;
-  transition:transform .62s cubic-bezier(.22,.9,.26,1), opacity .3s ease .05s, visibility 0s;
+  transform:perspective(1400px) translate(0px,0px) scale(1) rotateY(0deg);
+  opacity:1; visibility:visible;
+  transition:transform .58s cubic-bezier(.22,.9,.26,1), opacity .22s ease, visibility 0s;
 }
 #panel::before{ /* il filo d'ottone lungo la cerniera */
   content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
@@ -1112,10 +1149,11 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   #panel{
     top:auto; bottom:calc(50px + env(safe-area-inset-bottom));
     right:0; left:0; width:auto; margin:0; max-height:60vh;
-    transform-origin:bottom center; transform:perspective(1200px) rotateX(74deg);
+    transform-origin:bottom center;
+    transform:translate(var(--da-x), var(--da-y)) scale(.3);
     border-left:0; border-right:0; border-bottom:0;
   }
-  body.review #panel{transform:perspective(1200px) rotateX(0deg)}
+  body.review #panel{transform:translate(0px,0px) scale(1)}
   #panel::before{left:0; right:0; bottom:auto; width:auto; height:2px}
   .pan-scroll{padding-top:36px}
   #close{top:0; right:0}

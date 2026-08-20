@@ -282,7 +282,13 @@ Le aperture sono **due, distinte**:
 - la **riga** apre le informazioni — che gioco è, dove sta, cosa ne pensi, in
   che gruppi è;
 - il **tasto a tre righe** apre le azioni — preferito, in libreria, togli, vai
-  allo scaffale.
+  allo scaffale — in una **finestrella ancorata al tasto**, non in una fascia
+  sotto la riga. Sotto la riga le azioni scivolavano via dal punto in cui si era
+  premuto (tanto più con le informazioni già aperte) e allargavano l'elenco a
+  ogni tocco, che è il modo migliore di perdere il segno mentre si scorre. Il
+  tasto e la finestrella stanno nello stesso involucro (`.riga-menuwrap`), se no
+  l'ancoraggio sarebbe alla riga e non al pulsante. Sulle ultime due righe si
+  apre verso l'alto. Una alla volta, e si chiude cliccando fuori o con Escape.
 
 Sono due domande diverse, «che gioco è» e «cosa ci faccio», e mescolarle voleva
 dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti.
@@ -294,6 +300,34 @@ dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti
   una pastiglia di gruppo faceva sparire quello che si stava guardando.
 - **Ogni gruppo è una tendina**, e quale sia aperta se lo ricorda. Si parte
   aperte: un elenco di soli titoli chiusi non fa vedere niente al primo colpo.
+
+## La scheda esce dalla scatola
+
+Prima il pannello della recensione si apriva come un'anta incernierata sul bordo
+dello schermo. Bel gesto, ma partiva da un punto che con il gioco non c'entrava
+niente: aprivi una scatola a sinistra e la scheda spuntava da destra.
+
+Adesso parte **piccola dal punto in cui la scatola sta sullo schermo** e cresce
+fino al suo posto. `ancoraPannello()` proietta la posizione 3D della scatola con
+la camera e scrive lo scarto dal centro del pannello in `--da-x` / `--da-y`; il
+resto lo fa una transizione CSS.
+
+- Si usano **`offsetLeft`/`offsetWidth`, non `getBoundingClientRect()`**: il
+  pannello a riposo è già trasformato (parte piccolo e ruotato) e il rect
+  restituirebbe l'ingombro della trasformazione, non quello del posto in cui
+  deve arrivare. Gli offset le trasformazioni non le vedono.
+- A zero le due variabili valgono zero, quindi **senza JS o senza WebGL** la
+  scheda fa comunque una comparsa sensata dal proprio centro.
+
+## `dentro-only` ha un `!important`, e vince su tutto
+
+`.dentro-only` è `display:inline-flex !important`, quindi **qualunque regola che
+provi a nascondere un comando "solo in questa schermata" perde contro di lei** se
+non è a sua volta `!important`. È costato il pulsante dell'arredo acceso sopra
+l'elenco e sopra il catalogo, dove non arreda niente: la regola che lo nascondeva
+c'era, scritta e commentata, e non ha mai funzionato.
+
+Vale per ogni comando futuro che porti quella classe.
 
 ## Non ridisegnare la lista sotto il dito
 

@@ -1731,7 +1731,32 @@ function removeFocused(){
 }
 
 /* --- pannello -------------------------------------------------- */
+/* Da dove deve partire la scheda: il punto in cui la scatola sta sullo
+   schermo, in scarto dal centro del pannello.
+
+   `offsetWidth`/`offsetHeight` e non `getBoundingClientRect()`: il
+   pannello e' gia' trasformato (parte piccolo e ruotato) e il rect
+   restituirebbe l'ingombro della trasformazione, non quello del posto
+   in cui deve arrivare. Gli offset le trasformazioni non le vedono. */
+function ancoraPannello(box){
+  const el = q('#panel');
+  if (!el) return;
+  if (!box || !camera){ el.style.removeProperty('--da-x'); el.style.removeProperty('--da-y'); return; }
+
+  const p = new THREE.Vector3();
+  box.getWorldPosition(p);
+  p.project(camera);
+  const sx = (p.x * .5 + .5) * window.innerWidth;
+  const sy = (-p.y * .5 + .5) * window.innerHeight;
+
+  const cx = el.offsetLeft + el.offsetWidth / 2;
+  const cy = el.offsetTop + el.offsetHeight / 2;
+  el.style.setProperty('--da-x', Math.round(sx - cx) + 'px');
+  el.style.setProperty('--da-y', Math.round(sy - cy) + 'px');
+}
+
 function showPanel(game){
+  ancoraPannello(state.focused);
   q('#p-title').textContent = game.title;
 
   const by = [];
@@ -2399,6 +2424,13 @@ function apriMia(){
   q('#mialayer').setAttribute('aria-hidden', 'false');
   setTimeout(function(){ q('#mia-testo').focus(); }, 60);
 }
+
+// Escape chiude la finestrella prima di ogni altra cosa: e' l'ultima
+// aperta, ed e' quella che ci si aspetta di chiudere per prima
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  if (document.querySelector('.riga-azioni:not([hidden])')) chiudiAzioni(null);
+});
 
 function chiudiMia(){
   q('#mialayer').classList.remove('on');
@@ -3395,9 +3427,15 @@ function rigaMia(g){
     '<div class="cat-cop">' + cop + '</div>' +
     '<h3 class="riga-nome">' + esc(g.title) +
       (g.preferito ? ' <i class="stella">&#9733;</i>' : '') + '</h3>' +
-    '<button type="button" class="riga-menu" data-fa="menu" aria-expanded="false" ' +
-      'aria-label="cosa posso farci">&#9776;</button>' +
-    '<div class="riga-azioni" hidden></div>' +
+    /* Il tasto e le sue azioni stanno nello stesso involucro: la
+       finestrella si ancora al PULSANTE, non alla riga -- se no, con le
+       informazioni aperte sotto, uscirebbe mezzo schermo piu' in giu'
+       di dove si e' premuto. */
+    '<div class="riga-menuwrap">' +
+      '<button type="button" class="riga-menu" data-fa="menu" aria-expanded="false" ' +
+        'aria-label="cosa posso farci">&#9776;</button>' +
+      '<div class="riga-azioni" hidden></div>' +
+    '</div>' +
     '<div class="riga-info" hidden></div>' +
   '</li>';
 }
@@ -3453,7 +3491,7 @@ function disegnaMia(){
   const l = lista();
   const dove = LIB.ospitePresso();
   q('#mia-eyebrow').textContent = dove && dove.nick
-    ? 'la libreria di ' + dove.nick : 'la tua libreria';
+    ? 'la collezione di ' + dove.nick : 'la tua collezione';
 
   const gruppi = LIB.gruppi();
   const aCartelle = state.vista === 'gruppi' && !state.gruppo && gruppi.length > 0;
@@ -3650,12 +3688,25 @@ function apriRigaMia(li){
   box.hidden = !su;
 }
 
+/* Una finestrella alla volta. Aperte in due si contendono lo stesso
+   angolo e non si capisce piu' di quale riga siano -- e' la stessa
+   ragione per cui i pannelli grandi hanno `chiudiPannelli`. */
+function chiudiAzioni(tranne){
+  qa('.riga-azioni').forEach(function(b){
+    if (b === tranne) return;
+    b.hidden = true;
+    const btn = b.parentNode && b.parentNode.querySelector('.riga-menu');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  });
+}
+
 function apriAzioni(li){
   const g = LIB.get(li.getAttribute('data-id'));
   if (!g) return;
   const box = li.querySelector('.riga-azioni');
   const btn = li.querySelector('.riga-menu');
   const su = box.hidden;
+  chiudiAzioni(su ? box : null);
   if (su) box.innerHTML = contenutoAzioni(g);
   box.hidden = !su;
   btn.setAttribute('aria-expanded', su ? 'true' : 'false');
@@ -3929,10 +3980,13 @@ function bindProfilo(){
     }
 
     const li = e.target.closest('li[data-id]');
-    if (!li) return;
+    // fuori da una riga: se c'era una finestrella aperta, si chiude
+    if (!li){ chiudiAzioni(null); return; }
     const id = li.getAttribute('data-id');
 
     if (e.target.closest('[data-fa="menu"]')){ apriAzioni(li); return; }
+    // dentro un'altra riga, ma non nella sua finestrella: quella aperta va via
+    if (!e.target.closest('.riga-azioni')) chiudiAzioni(null);
 
     if (e.target.closest('[data-fa="scaffale"]')){ apriSulloScaffale(id); return; }
     const dentro = e.target.closest('[data-fa="dentro"]');
