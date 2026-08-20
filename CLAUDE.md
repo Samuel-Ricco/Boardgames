@@ -7,6 +7,11 @@ una esce, si apre e mostra la recensione. Niente build, niente dipendenze.
 Questo ramo è la variante «libreria» del progetto: su `main` il mobile è un
 armadio con le ante e la scena è notturna.
 
+Accanto a questo file c'è **`contest_boardgame.md`**: racconta *cosa è successo*
+— le decisioni prese e da chi, i difetti trovati verificando, lo stato dei dati
+e cosa resta aperto. Questo file racconta *com'è fatto* il sito. Si leggono nei
+due ordini a seconda di cosa serve, ma dopo un contesto perso conviene questo.
+
 ## Dove sta cosa
 
 Due cartelle affiancate, **un solo repository**. Entrambe sotto
