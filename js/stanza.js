@@ -37,22 +37,26 @@ const LEGNI = [
   { v: '#e6e0d6', n: 'laccato' }
 ];
 
+/* Le prime tinte erano tutte a mezzo passo dal bianco: sul muro, sotto
+   una luce diffusa, si leggevano tutte uguali. Adesso hanno un colore
+   vero -- restano intonaci, non fluorescenze, ma si distinguono. */
 const MURI = [
   { v: '#e9e2d7', n: 'calce' },
-  { v: '#e8dcc9', n: 'sabbia' },
-  { v: '#d8ded8', n: 'salvia' },
-  { v: '#cfd7dd', n: 'cenere azzurra' },
-  { v: '#dcd6e4', n: 'glicine' },
-  { v: '#3b3531', n: 'notte' }
+  { v: '#e8c98f', n: 'ocra' },
+  { v: '#9dbd93', n: 'salvia' },
+  { v: '#8fb4cf', n: 'cenere azzurra' },
+  { v: '#b79ed8', n: 'glicine' },
+  { v: '#b4685a', n: 'terracotta' },
+  { v: '#2f3a46', n: 'notte' }
 ];
 
 const PAVIMENTI = [
   { v: '#cbbba4', n: 'rovere sbiancato' },
-  { v: '#b9a689', n: 'castagno' },
-  { v: '#8d6f4e', n: 'parquet scuro' },
-  { v: '#c9c4bc', n: 'cemento' },
-  { v: '#9aa39a', n: 'verde scuro' },
-  { v: '#6e5544', n: 'cotto' }
+  { v: '#c08f45', n: 'castagno' },
+  { v: '#7a4f28', n: 'parquet scuro' },
+  { v: '#c2beb6', n: 'cemento' },
+  { v: '#6b8c5e', n: 'verde' },
+  { v: '#b0552b', n: 'cotto' }
 ];
 
 /* I cinque arredi, piu' il misto di prima e il niente. "Niente" non e'
@@ -68,12 +72,19 @@ const ARREDI = [
   { v: 'niente',  n: 'niente' }
 ];
 
+/* Il minimo era 0.35 e non era buio: era una stanza un po' meno
+   accesa. La sera vera arriva molto piu' giu', e il salto fra 0.08 e
+   1.6 e' abbastanza ampio da far sembrare due stanze diverse la stessa
+   stanza. */
+const LUCE_MIN = 0.08;
+const LUCE_MAX = 1.60;
+
 let ora = Object.assign({}, DEFAULT);
 let miei = true;              // stiamo guardando la propria stanza?
 
 function normalizza(s){
   const o = Object.assign({}, DEFAULT, s || {});
-  o.luce = Math.max(0.35, Math.min(1.5, parseFloat(o.luce) || 1));
+  o.luce = Math.max(LUCE_MIN, Math.min(LUCE_MAX, parseFloat(o.luce) || 1));
   const dentro = function(lista, v, d){
     return lista.some(function(x){ return x.v === v; }) ? v : d;
   };
@@ -132,6 +143,7 @@ function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, AR
 
 return {
   DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI,
+  LUCE_MIN: LUCE_MIN, LUCE_MAX: LUCE_MAX,
   corrente: corrente, miaStanza: miaStanza, normalizza: normalizza,
   daProfilo: daProfilo, daAltri: daAltri, cambia: cambia, salva: salva,
   tavolozze: aiValori

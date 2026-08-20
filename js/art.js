@@ -666,6 +666,32 @@ function avatar(av, S){
    apposta: qualunque soggetto riconoscibile, a quattro centimetri di
    altezza sullo schermo, diventa una macchia sporca. Forme piatte nei
    colori della stanza si leggono anche piccole. */
+/* Il nome del mobile, da appendere sopra al mobile. Sfondo trasparente:
+   si legge come scritta sulla parete, non come cartello appeso -- un
+   cartello vero avrebbe voluto una cornice, un'ombra e uno spessore, e
+   sopra una libreria ce n'e' gia' abbastanza.
+
+   La larghezza del canvas segue la lunghezza del testo invece di essere
+   fissa: con un canvas fisso, "Party games" e "A" venivano stirati in
+   modo diverso sullo stesso piano. */
+function targhetta(nome){
+  const testo = String(nome || '').toUpperCase();
+  const H = 128, pad = 24;
+  const mis = cnv(8, 8)[1];
+  mis.font = '600 84px "Bebas Neue", Haettenschweiler, "Arial Narrow", sans-serif';
+  mis.letterSpacing = '6px';
+  const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + pad * 2);
+
+  const cx = cnv(larg, H), c = cx[0], x = cx[1];
+  x.font = mis.font;
+  x.letterSpacing = '6px';
+  x.textAlign = 'center';
+  x.textBaseline = 'middle';
+  x.fillStyle = 'rgba(44,36,27,.82)';
+  x.fillText(testo, larg / 2, H * .54);
+  return c;
+}
+
 function quadro(seed){
   const S = 256, cx = cnv(S, S), c = cx[0], x = cx[1];
   const rnd = function(n){
@@ -707,7 +733,7 @@ function quadro(seed){
 
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
-  avatar: avatar, quadro: quadro,
+  avatar: avatar, quadro: quadro, targhetta: targhetta,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,
   spine: spine, cardboard: cardboard, inside: inside,

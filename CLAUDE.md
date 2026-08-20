@@ -509,6 +509,62 @@ chiave `sb-<progetto>-auth-token` di `localStorage` in un'altra chiave, si
 ricarica, si prova, e poi la si rimette. `AUTH.esci()` no — quello invalida il
 refresh token sul server e tocca rifare l'accesso da Google.
 
+## Cose imparate arredando
+
+- **Un menu contestuale alla volta** (`chiudiPannelli`). Due pannelli aperti
+  insieme si contendono lo stesso angolo di schermo e nessuno dei due dice più a
+  cosa si riferisce: si poteva aprire il menu della stanza sopra la scheda delle
+  librerie.
+- **Le facce complanari si contendono i pixel.** I ripiani passano dentro i
+  montanti e le due facce davanti stavano esattamente sullo stesso piano: sui
+  legni chiari non si notava, sul wenge era una tramatura sporca lungo ogni
+  incrocio. I ripiani sono profondi `D - .02`, cioè un millimetro vero in meno,
+  che è anche come sono su un mobile fatto bene.
+- **Il quadro deve comprendere quello che sta sopra il mobile**: gli oggetti sul
+  cielo e la targhetta col nome. Senza, su schermo largo — dove a comandare è
+  l'altezza — il nome finiva fuori. Costa un mobile più piccolo, e il nome vale
+  il prezzo (`SOPRA`, `CIMA_VISTA`).
+- Gli oggetti sul cielo sono **scalati a 0.6**: sopra un mobile, vicino al
+  soffitto, non ci si mette una fila di libri alta come quella dentro — e così
+  resta posto per la targhetta.
+- **Un gioco nuovo va nel mobile che si sta guardando**, non nel primo cubo
+  libero in assoluto. Prima finiva sempre nella prima libreria, e chi ne creava
+  una seconda non riusciva a metterci niente finché la prima non era piena: la
+  libreria nuova c'era e non serviva a nulla (`collocaNuovo`).
+- **Creare una libreria porta all'ordine manuale.** Negli ordinamenti calcolati i
+  cubi si riempiono in sequenza e un mobile in più resta vuoto qualunque cosa si
+  faccia: chi ne crea uno sta dicendo «voglio decidere io dove vanno».
+- **Le tinte tenui sul muro si leggono tutte uguali.** Le prime erano a mezzo
+  passo dal bianco; sotto una luce diffusa non si distingueva la salvia dal
+  glicine. Restano intonaci, ma con un colore vero.
+- **La luce minima era una stanza un po' spenta, non il buio.** Adesso scende a
+  0.08, e soprattutto lo *sfondo* scende molto più in fretta della luce: era
+  quello a far sembrare tutto un filtro grigio.
+- **Non estrarre il nome di una colonna con una regex** dai messaggi d'errore:
+  Postgres dice `column giochi.preferito does not exist`, PostgREST dice
+  `Could not find the 'preferito' column of 'giochi'`, e un'unica espressione
+  che li prenda tutti e due prendeva la lettera sbagliata. Si cerca il nome che
+  si conosce dentro il messaggio.
+- **Un `false` dove c'era `undefined` viene spedito al server.** Il rollback di
+  `segnaPreferito` faceva `!!g.preferito`, quindi dopo un errore il campo
+  restava `false` e la modifica successiva provava a scriverlo su una colonna che
+  non c'era ancora, facendo fallire un salvataggio che non c'entrava niente.
+
+## Lo stile appartiene al mobile, la stanza alla stanza
+
+Legno e arredi stanno su `librerie.scaffali` e `librerie.arredo`; luce, muro e
+pavimento restano in `profili.stanza`. Due librerie in una stanza vera non sono
+per forza dello stesso legno, ma un pavimento diverso sotto ognuna sarebbe una
+stanza diversa per ognuna.
+
+- I materiali sono **uno per tinta** (`matsDi`, in cache): in scena possono
+  esserci due o tre legni insieme, e la tavolozza è chiusa, quindi al massimo sei
+  corredi.
+- Nulli entrambi vuol dire «come dice la stanza»: chi non tocca niente vede tutti
+  i mobili uguali, com'era.
+- Il pannello parla del **mobile che si sta guardando** (`libCorrente`), e
+  scorrendo si aggiorna da solo.
+
 ## Arredare la stanza
 
 `profili.stanza` (jsonb): luce, tre colori, uno stile di arredo. Sta nel profilo

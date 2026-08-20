@@ -138,6 +138,39 @@ body.cerca #cerca-x{display:block}
 .gruppi.filtro{margin:14px 0 0}
 .gruppi.filtro button.on{background:var(--amber); border-color:var(--amber)}
 #p-gruppi{padding-top:4px}
+
+/* --- preferiti ---------------------------------------------------- */
+#p-pref{
+  font-family:var(--ff-text); font-size:15px; line-height:1; cursor:pointer;
+  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:6px 9px;
+}
+#p-pref:hover{color:var(--amber); border-color:var(--amber)}
+#p-pref[aria-pressed="true"]{color:#fdfaf4; background:var(--amber); border-color:var(--amber)}
+body.visita #p-pref{display:none !important}
+.cat-azioni .pref{font-size:14px; line-height:1; padding:6px 9px}
+.cat-azioni .pref.on{color:#fdfaf4; background:var(--amber); border-color:var(--amber)}
+
+/* --- cartelle nell'elenco ----------------------------------------- */
+.cartella{margin:26px 0 0}
+.cartella:first-child{margin-top:14px}
+.cartella > h3{
+  margin:0 0 2px; font-family:var(--ff-display); font-weight:400; font-size:22px;
+  letter-spacing:.05em; color:var(--ink);
+  padding-bottom:6px; border-bottom:2px solid var(--amber);
+}
+.cartella > h3 span{
+  font-family:var(--ff-text); font-size:10px; font-weight:500; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-soft); margin-left:8px;
+}
+.cartella .righe{margin:0}
+
+/* --- di che mobile stiamo parlando -------------------------------- */
+.st-quale{
+  margin:2px 0 12px; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:rgba(44,36,27,.45);
+}
+.st-quale b{color:var(--amber); font-weight:500}
+.st-quale.sotto{margin:-2px 0 10px}
 /* la pastiglia "+ gruppo" diventa un campo sul posto: mandare l'utente
    in un'altra sezione per scrivere una parola e poi farlo tornare qui
    e' un giro che non serve a niente */

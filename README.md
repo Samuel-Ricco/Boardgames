@@ -302,6 +302,7 @@ pubbliche per progetto, e a proteggere i dati sono le regole in
 20260819210000_partite.sql                giocatori salvati, partite, partecipanti
 20260819220000_codice_riservato.sql       il codice amico non esce dalla riga
 20260820100000_stanza_librerie_gruppi.sql stanza arredabile, librerie con nome, gruppi
+20260820200000_preferiti_e_stile_libreria.sql preferiti, legno e arredi per mobile
 ```
 
 **`GRANT` e RLS sono due cose diverse** e servono entrambe: il primo dice se un

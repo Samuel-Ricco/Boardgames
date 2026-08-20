@@ -66,7 +66,15 @@ const PASSO_LIB = LIB_W + STACCO;          // da una libreria alla successiva
    mobile insieme mentre la collezione si allungava. */
 KAL.topY = RIGHE * KAL.passo + KAL.t;
 const SUOLO = KAL.topY - LIB_H;            // zero, per costruzione
-const CENTRO_Y = (KAL.topY + SUOLO) / 2;   // la mezzeria del mobile
+
+/* Sopra il mobile non c'e' solo aria: ci sono gli oggetti che poggiano
+   sul cielo e la targhetta col nome. Il quadro deve comprenderli, se no
+   su schermo largo -- dove a comandare e' l'altezza -- il nome della
+   libreria finisce fuori dallo schermo e non serve a niente.
+   Costa un mobile un po' piu' piccolo; il nome vale il prezzo. */
+const SOPRA = 2.75;
+const CIMA_VISTA = KAL.topY + SOPRA;
+const CENTRO_Y = (CIMA_VISTA + SUOLO) / 2;
 
 // riga 0 = quella in cima; cresce verso il basso
 const rigaY = r => KAL.topY - KAL.t - KAL.cell/2 - r * KAL.passo;
@@ -88,6 +96,7 @@ const state = {
   sezione: 'collezione',       // 'collezione' (la libreria 3D) o 'catalogo'
   q: '',                       // il testo cercato, '' se non si sta cercando
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
+  soloPreferiti: false,        // mostra solo i giochi segnati
   presa: null,                 // la scatola che si sta spostando a mano
   libs: 1,                     // quante librerie in fila lungo la parete
   scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
@@ -198,11 +207,18 @@ function legno(tinta, o){
   }, o));
 }
 
-function makeMats(){
-  const t = STANZA.corrente().scaffali;
-  const c = new THREE.Color(t);
-  MATS = {
-    vert:  legno(t, { lines:220, knots:2, rough:.70, bump:.05, rot: Math.PI/2 }),
+/* I materiali sono UNO PER TINTA, non uno solo: da quando ogni mobile
+   puo' avere il suo legno, in scena ce ne possono essere due o tre
+   diversi insieme. Si tengono in cache perche' le tinte vengono da una
+   tavolozza chiusa -- al massimo sei corredi -- e rigenerare tre
+   canvas a ogni ricostruzione del mobile si sentirebbe. */
+const MATS_PER_TINTA = {};
+
+function matsDi(tinta){
+  if (MATS_PER_TINTA[tinta]) return MATS_PER_TINTA[tinta];
+  const c = new THREE.Color(tinta);
+  MATS_PER_TINTA[tinta] = {
+    vert:  legno(tinta, { lines:220, knots:2, rough:.70, bump:.05, rot: Math.PI/2 }),
     // i ripiani un filo piu' chiari dei montanti, e con la vena girata:
     // e' cosi' che si vede su un mobile vero
     orizz: legno(esa(c.clone().lerp(new THREE.Color(0xffffff), .05)),
@@ -211,6 +227,24 @@ function makeMats(){
     fondo: legno(esa(c.clone().multiplyScalar(.88)),
                  { lines:160, knots:1, rough:.86, bump:.02 })
   };
+  return MATS_PER_TINTA[tinta];
+}
+
+/* Lo stile di un mobile: il suo, se ce l'ha, se no quello della stanza.
+   Luce, muro e pavimento restano della stanza -- quelli SONO la stanza,
+   e un pavimento diverso sotto ogni libreria sarebbe una stanza diversa
+   per ogni libreria. */
+function stileLib(l){
+  const L = LIB.librerie()[l];
+  const s = STANZA.corrente();
+  return {
+    scaffali: (L && L.scaffali) || s.scaffali,
+    arredo:   (L && L.arredo)   || s.arredo
+  };
+}
+
+function makeMats(){
+  MATS = matsDi(STANZA.corrente().scaffali);
 }
 
 function legnoPavimento(){
@@ -346,8 +380,12 @@ function applicaLuce(){
   if (fillLight) fillLight.intensity = .22 * Math.pow(l, 1.10);
   if (renderer)  renderer.toneMappingExposure = .90 * Math.pow(l, -.20);
 
+  /* Lo sfondo scende molto piu' della luce: e' quello che fa la
+     differenza fra "stanza in penombra" e "filtro grigio". Con il
+     fattore di prima, a luce minima la parete in fondo restava chiara e
+     tutto sembrava solo un po' spento. */
   const f = new THREE.Color(STANZA.corrente().muro)
-    .multiplyScalar(.42 + .58 * Math.min(1.25, l));
+    .multiplyScalar(.10 + .90 * Math.min(1.3, l));
   if (scene){
     scene.background = f;
     if (scene.fog) scene.fog.color = f.clone();
@@ -399,23 +437,52 @@ function buildCabinet(){
   const cima = KAL.topY, fondo = SUOLO;
   const g = new THREE.Group();
 
-  // tante librerie identiche quante ne servono, in fila lungo la parete
+  // tante librerie quante ne servono, in fila lungo la parete: identiche
+  // nella forma, non per forza nel legno
   for (let l = 0; l < state.libs; l++){
     const ox = libX(l);
+    const MATS = matsDi(stileLib(l).scaffali);
 
     // montanti: due esterni e uno per ogni divisione interna
     for (let c = 0; c <= COLS; c++){
       g.add(slab(T, H, D, MATS.vert, ox - W/2 + T/2 + c * KAL.passo, fondo + H/2, 0));
     }
 
-    // ripiani: cielo, fondo e uno per ogni divisione
+    /* Ripiani: cielo, fondo e uno per ogni divisione. La profondita' e'
+       due centesimi in meno di quella dei montanti, cioe' un millimetro
+       vero: i ripiani passano DENTRO i montanti, e con le facce davanti
+       esattamente sullo stesso piano le due superfici si contendevano i
+       pixel. Sui legni chiari non si notava, sul wenge era una
+       tramatura sporca lungo ogni incrocio. Un ripiano appena arretrato
+       e' anche piu' giusto: e' cosi' su un mobile vero. */
     for (let r = 0; r <= RIGHE; r++){
-      g.add(slab(W - T*2, T, D, MATS.orizz, ox, cima - T/2 - r * KAL.passo, 0));
+      g.add(slab(W - T*2, T, D - .02, MATS.orizz, ox, cima - T/2 - r * KAL.passo, 0));
     }
 
     // schienale sottile e arretrato: senza, i cubi si aprono sulla
     // parete e le scatole perdono il loro sfondo
     g.add(slab(W - T*2, H - T*2, .10, MATS.fondo, ox, fondo + H/2, -D/2 + .07));
+
+    /* Il nome, sopra il mobile. Sulla parete e non su un cartello
+       appeso: un cartello vero avrebbe voluto cornice, spessore e
+       ombra, e sopra una libreria c'e' gia' abbastanza roba.
+
+       Sta piu' in alto degli oggetti che poggiano sul cielo del mobile,
+       se no ci finisce dietro. `MeshBasic` apposta: e' informazione, e
+       deve restare leggibile anche con la stanza in penombra. */
+    const L = LIB.librerie()[l];
+    if (L && L.nome){
+      const c = ART.targhetta(L.nome);
+      const alt = 1.05, larg = alt * (c.width / c.height);
+      const targa = new THREE.Mesh(
+        new THREE.PlaneGeometry(Math.min(larg, W - .6), alt),
+        new THREE.MeshBasicMaterial({
+          map: ART.toTex(c), transparent: true, depthWrite: false
+        })
+      );
+      targa.position.set(ox, KAL.topY + SOPRA - .62, -KAL.d/2 + .02);
+      g.add(targa);
+    }
   }
 
   stanzaLarga(state.libs);
@@ -647,12 +714,22 @@ function riempiCubo(g, stile, seed, x, y){
 /* Sopra il mobile. Un mobile vero ha sempre qualcosa sopra, ed e'
    anche quello che fa capire dove finisce: senza, il cielo della
    libreria e' solo un bordo netto contro il muro. */
+/* Quello che poggia sul cielo del mobile e' piu' piccolo di quello che
+   sta nei cubi: sopra un mobile, vicino al soffitto, non ci si mette
+   una fila di libri alta come quella dentro. Ed e' anche cio' che
+   lascia posto alla targhetta col nome, che sta appena sopra. */
 function arrediSopra(g, stile, l){
   if (stile === 'niente') return;
   for (let i = 0; i < COLS; i++){
     const seed = 700 + l * 31 + i * 7;
     if (srnd(seed) < .34) continue;
-    riempiCubo(g, stile, seed, cubX(l, i), KAL.topY);
+    // costruito nell'origine e poi messo al suo posto: cosi' la scala
+    // rimpicciolisce l'oggetto e non lo trascina verso il centro
+    const sopra = new THREE.Group();
+    riempiCubo(sopra, stile, seed, 0, 0);
+    sopra.scale.setScalar(.6);
+    sopra.position.set(cubX(l, i), KAL.topY, 0);
+    g.add(sopra);
   }
 }
 
@@ -666,9 +743,8 @@ function buildProps(used){
      contorno. */
   if (!used){ propGroup = g; scene.add(g); return; }
 
-  const stile = STANZA.corrente().arredo;
-
   for (let l = 0; l < state.libs; l++){
+    const stile = stileLib(l).arredo;        // ogni mobile il suo
     arrediSopra(g, stile, l);
     for (let k = 0; k < PER_LIB; k++){
       const posto = l * PER_LIB + k;
@@ -693,7 +769,8 @@ function buildProps(used){
    che dispone scatole deve passare di qui, se no cercando un gioco la
    posizione sullo scaffale e quella nell'elenco non coincidono piu'. */
 function lista(){
-  return LIB.list(state.sort, state.q, state.gruppo);
+  const l = LIB.list(state.sort, state.q, state.gruppo);
+  return state.soloPreferiti ? l.filter(function(g){ return g.preferito; }) : l;
 }
 
 function homeOf(index, h){
@@ -863,7 +940,7 @@ function layout(){
      sotto il mobile. */
   const marg = aspect < .8 ? .3 : .9;
   const bw = LIB_W/2 + marg;
-  const bh = LIB_H/2 + marg;
+  const bh = (CIMA_VISTA - SUOLO)/2 + marg;
   state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
 
   /* Con una libreria sola non c'e' niente da scorrere: via il binario,
@@ -1048,6 +1125,56 @@ function segnaAlone(s){
    all'ordine manuale e si fotografa PRIMA la disposizione che si aveva
    sullo schermo: cosi' la mossa parte da quello che si vedeva, non da
    un rimescolamento. */
+/* Fotografa la disposizione che si ha sullo schermo dentro (libreria,
+   posto): serve a chi passa da un ordine calcolato a quello manuale,
+   perche' la mossa parta da quello che si vedeva e non da un
+   rimescolamento. Torna le righe toccate, da mandare al server. */
+function fissaOrdineCorrente(quali){
+  const l = quali || lista();
+  const tocchi = l.map(function(g, i){
+    const L = LIB.librerie()[Math.floor(i / PER_LIB)];
+    return L ? LIB.metti(g.id, L.id, i % PER_LIB) : null;
+  }).filter(Boolean);
+  LIB.mandaPosti(tocchi);
+  return tocchi;
+}
+
+/* Dove finisce un gioco APPENA AGGIUNTO.
+
+   Nel mobile che si sta guardando, nel suo primo cubo libero. Prima
+   finiva nel primo cubo libero in assoluto -- cioe' sempre nella prima
+   libreria -- e chi ne creava una seconda non riusciva a metterci
+   dentro niente finche' la prima non era piena: la libreria nuova
+   c'era, ma non serviva a nulla.
+
+   Se il mobile che si guarda e' pieno si passa agli altri in ordine,
+   invece di rifiutare: meglio un posto qualsiasi che nessun posto. */
+function collocaNuovo(game){
+  const librerie = LIB.librerie();
+  if (!librerie.length || !game) return;
+
+  const occupati = {};
+  LIB.all().forEach(function(g){
+    if (g.id !== game.id && g.libreria && g.posto !== null && g.posto !== undefined){
+      occupati[g.libreria + ':' + g.posto] = true;
+    }
+  });
+
+  const qui = clamp(Math.round(state.scroll), 0, librerie.length - 1);
+  const ordine = [qui];
+  for (let i = 0; i < librerie.length; i++) if (i !== qui) ordine.push(i);
+
+  for (let i = 0; i < ordine.length; i++){
+    const L = librerie[ordine[i]];
+    for (let p = 0; p < PER_LIB; p++){
+      if (occupati[L.id + ':' + p]) continue;
+      LIB.metti(game.id, L.id, p);
+      LIB.mandaPosti([LIB.get(game.id)]);
+      return;
+    }
+  }
+}
+
 function posaScatola(p){
   const prima = state.sort;
   if (!LIB.librerie().length){ flash('nessuna libreria: non so dove metterla'); return; }
@@ -1059,15 +1186,8 @@ function posaScatola(p){
 
   p.box.userData.busy = false;          // da qui in poi la muove applyLibrary
 
-  /* Chi arriva da un ordine calcolato porta con se' la disposizione che
-     aveva sullo schermo: la mossa parte da quello che si vedeva, non da
-     un rimescolamento. */
   const fotografa = function(){
-    if (prima === 'mio') return [];
-    return p.l.map(function(g, i){
-      const L = LIB.librerie()[Math.floor(i / PER_LIB)];
-      return L ? LIB.metti(g.id, L.id, i % PER_LIB) : null;
-    }).filter(Boolean);
+    return prima === 'mio' ? [] : fissaOrdineCorrente(p.l);
   };
 
   const concludi = function(tocchi){
@@ -1372,6 +1492,14 @@ function showPanel(game){
   q('#p-eyebrow').textContent = dove && dove.nick
     ? 'la recensione di ' + dove.nick : 'la recensione';
 
+  const pref = q('#p-pref');
+  if (pref){
+    const si = !!(game && game.preferito);
+    pref.setAttribute('aria-pressed', si ? 'true' : 'false');
+    pref.innerHTML = si ? '&#9733;' : '&#9734;';   // stella piena o vuota
+    pref.title = si ? 'togli dai preferiti' : 'segnalo fra i preferiti';
+  }
+
   disegnaGruppiScheda(game);
   disegnaGiocate(game);
 
@@ -1448,6 +1576,9 @@ function updateRail(){
   const L = LIB.librerie()[Math.round(state.scroll)];
   const nome = q('#rail-nome');
   if (nome) nome.textContent = L ? L.nome : 'nuova libreria';
+
+  // col pannello aperto, cambiando mobile cambiano legno e arredi mostrati
+  if (document.body.classList.contains('arreda')) disegnaStanza();
 
   const max = maxScroll();
   if (!max) return;                       // niente da scorrere: il binario e' nascosto dal CSS
@@ -1759,6 +1890,7 @@ function updateConta(){
 
 /* --- aggiunta -------------------------------------------------- */
 function openAdd(){
+  chiudiPannelli('add');
   chiudiModifica();
   q('#m-review').value = '';
   q('#m-pub').checked = false;
@@ -1917,6 +2049,7 @@ function capoversi(testo){
 function apriMia(){
   const g = state.focused && state.focused.userData.game;
   if (!g || LIB.ospitePresso()) return;
+  chiudiPannelli('mia');
   q('#mia-gioco').textContent = g.title;
   q('#mia-voto').value = g.score || '';
   q('#mia-testo').value = (g.review || []).join(String.fromCharCode(10, 10));
@@ -1991,6 +2124,7 @@ async function addManual(){
     chiudiModifica();
   } else {
     game = LIB.add(g);
+    collocaNuovo(game);          // nel mobile che si sta guardando
   }
 
   /* Il catalogo. Pubblicare vuol dire che quella recensione esce dalla
@@ -2254,6 +2388,7 @@ async function mettiInLibreria(v, btn){
       try { gioco.cover = await CATALOGO.copertina(g); } catch(err){}
     }
     const messo = LIB.add(gioco);
+    collocaNuovo(messo);
     if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare
       await loadCovers(true);
       applyLibrary({ animate: true });
@@ -2365,13 +2500,20 @@ function disegnaGruppiFiltro(){
   const el = q('#mia-gruppi');
   if (!el) return;
   const tutti = LIB.gruppi();
-  el.innerHTML = tutti.length
-    ? '<button type="button" data-g=""' + (state.gruppo ? '' : ' class="on"') + '>tutti</button>' +
-      tutti.map(function(G){
-        return '<button type="button" data-g="' + esc(G.id) + '"' +
-               (state.gruppo === G.id ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
-      }).join('')
-    : '';
+  const quanti = LIB.all().filter(function(g){ return g.preferito; }).length;
+
+  el.innerHTML =
+    (tutti.length
+      ? '<button type="button" data-g=""' + (state.gruppo ? '' : ' class="on"') + '>tutti</button>' +
+        tutti.map(function(G){
+          return '<button type="button" data-g="' + esc(G.id) + '"' +
+                 (state.gruppo === G.id ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
+        }).join('')
+      : '') +
+    // i preferiti non sono un gruppo: sono un taglio trasversale ai
+    // gruppi, e restano premibili anche quando di gruppi non ce n'e' uno
+    (quanti ? '<button type="button" data-pref="1"' +
+              (state.soloPreferiti ? ' class="on"' : '') + '>&#9733; preferiti</button>' : '');
 }
 
 function disegnaGruppiProfilo(){
@@ -2429,6 +2571,14 @@ function bindGruppi(){
   q('#p-gruppi').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   q('#mia-gruppi').addEventListener('click', function(e){
+    const p = e.target.closest('button[data-pref]');
+    if (p){
+      state.soloPreferiti = !state.soloPreferiti;
+      state.scrollTo = state.scroll = 0;
+      ridisponi();
+      disegnaMia();
+      return;
+    }
     const b = e.target.closest('button[data-g]');
     if (b) setGruppo(b.getAttribute('data-g'));
   });
@@ -2497,6 +2647,7 @@ function disegnaMobili(){
 
 function apriMobili(){
   if (LIB.ospitePresso()) return;        // i mobili di un altro non si toccano
+  chiudiPannelli('mobili');
   disegnaMobili();
   document.body.classList.add('mobili');
   q('#mobili').setAttribute('aria-hidden', 'false');
@@ -2517,9 +2668,19 @@ function bindMobili(){
   q('#mobili-piu').addEventListener('click', function(){
     LIB.creaLibreria('').then(function(L){
       disegnaMobili();
-      applyLibrary({ animate: true });
+      /* Una libreria nuova esiste solo nell'ordine manuale: negli altri
+         i cubi si riempiono in sequenza e il mobile in piu' resta vuoto
+         qualunque cosa si faccia. Creandone una si sta dicendo "voglio
+         decidere io dove vanno", quindi ci si passa. */
+      if (state.sort !== 'mio'){
+        fissaOrdineCorrente();
+        setSort('mio');
+        flash('libreria "' + L.nome + '": ordine tuo, ora le scatole si spostano');
+      } else {
+        applyLibrary({ animate: true });
+        flash('libreria nuova: ' + L.nome);
+      }
       state.scrollTo = clamp(LIB.librerie().length - 1, 0, maxScroll());
-      flash('libreria nuova: ' + L.nome);
     }).catch(function(e){ flash('non creata: ' + e.message); });
   });
 
@@ -2575,27 +2736,60 @@ function salvaStanzaTraPoco(){
   }, 700);
 }
 
+/* Quale mobile si sta guardando: e' quello di cui si cambiano legno e
+   arredi. Il resto -- luce, muro, pavimento -- e' la stanza, e la
+   stanza e' una sola. */
+function libCorrente(){
+  const l = LIB.librerie();
+  if (!l.length) return null;
+  return l[clamp(Math.round(state.scroll), 0, l.length - 1)] || null;
+}
+
 function disegnaStanza(){
   const cur = STANZA.corrente();
+  const L = libCorrente();
+  const suo = {
+    scaffali: (L && L.scaffali) || cur.scaffali,
+    arredo:   (L && L.arredo)   || cur.arredo
+  };
+
   q('#st-luce').value = cur.luce;
   q('#st-luce-n').textContent = Math.round(cur.luce * 100) + '%';
+  q('#st-quale').textContent = L ? L.nome : 'questo mobile';
 
-  const gruppo = function(sel, lista, campo, testo){
+  const gruppo = function(sel, lista, valore, testo){
     q(sel).innerHTML = lista.map(function(x){
-      const on = cur[campo] === x.v ? ' class="on"' : '';
+      const on = valore === x.v ? ' class="on"' : '';
       const stile = testo ? '' : ' style="background:' + esc(x.v) + '"';
       return '<button type="button" data-v="' + esc(x.v) + '" title="' + esc(x.n) + '"' +
              on + stile + '>' + (testo ? esc(x.n) : '') + '</button>';
     }).join('');
   };
-  gruppo('#st-scaffali',  STANZA.LEGNI,     'scaffali',  false);
-  gruppo('#st-muro',      STANZA.MURI,      'muro',      false);
-  gruppo('#st-pavimento', STANZA.PAVIMENTI, 'pavimento', false);
-  gruppo('#st-arredo',    STANZA.ARREDI,    'arredo',    true);
+  gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false);
+  gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false);
+  gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false);
+  gruppo('#st-arredo',    STANZA.ARREDI,    suo.arredo,     true);
+}
+
+/* UN PANNELLO CONTESTUALE ALLA VOLTA.
+
+   Due pannelli aperti insieme si contendono lo stesso angolo di
+   schermo, e nessuno dei due dice piu' a cosa si riferisce: si poteva
+   aprire il menu della stanza mentre era aperta la scheda delle
+   librerie, e le due finestre si accavallavano. Aprirne uno chiude
+   tutti gli altri, sempre. */
+function chiudiPannelli(tranne){
+  if (tranne !== 'arreda')  chiudiArreda();
+  if (tranne !== 'mobili')  chiudiMobili();
+  if (tranne !== 'elenco')  chiudiElenco();
+  if (tranne !== 'mia')     chiudiMia();
+  if (tranne !== 'partita') chiudiPartita();
+  if (tranne !== 'add')     closeAdd();
 }
 
 function apriArreda(){
   if (LIB.ospitePresso()) return;          // in casa d'altri non si arreda
+  chiudiPannelli('arreda');
   disegnaStanza();
   document.body.classList.add('arreda');
   q('#stanza').setAttribute('aria-hidden', 'false');
@@ -2621,8 +2815,8 @@ function bindStanza(){
     salvaStanzaTraPoco();
   });
 
-  [['#st-scaffali','scaffali'], ['#st-muro','muro'],
-   ['#st-pavimento','pavimento'], ['#st-arredo','arredo']].forEach(function(par){
+  // muro e pavimento sono la stanza
+  [['#st-muro','muro'], ['#st-pavimento','pavimento']].forEach(function(par){
     q(par[0]).addEventListener('click', function(e){
       const b = e.target.closest('button[data-v]');
       if (!b) return;
@@ -2632,6 +2826,28 @@ function bindStanza(){
       disegnaStanza();
       applicaStanza();
       salvaStanzaTraPoco();
+    });
+  });
+
+  /* Legno e arredi sono del MOBILE che si sta guardando. Due librerie
+     in una stanza vera non sono per forza dello stesso legno, e chi
+     divide i giochi per scaffale vuole distinguerli anche da lontano. */
+  [['#st-scaffali','scaffali'], ['#st-arredo','arredo']].forEach(function(par){
+    q(par[0]).addEventListener('click', function(e){
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      const L = libCorrente();
+      if (!L){ flash('nessun mobile da arredare'); return; }
+      const patch = {};
+      patch[par[1]] = b.getAttribute('data-v');
+      q('#st-msg').textContent = 'sto salvando';
+      LIB.stileLibreria(L.id, patch).then(function(){
+        q('#st-msg').textContent = 'salvata';
+      }).catch(function(err){
+        q('#st-msg').textContent = 'non salvata: ' + err.message;
+      });
+      disegnaStanza();
+      applicaStanza();          // il cambio si vede subito, il salvataggio segue
     });
   });
 
@@ -2674,6 +2890,9 @@ function rigaMia(g){
       (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
     '</div>' +
     '<div class="cat-azioni">' +
+      (LIB.ospitePresso() ? '' :
+        '<button type="button" class="pref' + (g.preferito ? ' on' : '') + '" ' +
+        'data-fa="pref" aria-label="preferito">' + (g.preferito ? '&#9733;' : '&#9734;') + '</button>') +
       '<button type="button" class="apri">recensione</button>' +
       '<button type="button" data-fa="scaffale">sullo scaffale</button>' +
     '</div>' +
@@ -2681,21 +2900,55 @@ function rigaMia(g){
   '</li>';
 }
 
+/* L'elenco si divide in CARTELLE quando non si sta filtrando su un
+   gruppo solo: un'intestazione per gruppo, e in fondo quelli che non ne
+   hanno nessuno. Scegliendo un gruppo dalle pastiglie si vede solo
+   quello, che e' l'altra meta' della stessa domanda.
+
+   Un gioco che sta in due gruppi compare sotto tutti e due. Non e' un
+   errore da correggere: e' cosa vuol dire mettere delle etichette, ed
+   e' anche la differenza con i mobili, dove una scatola sta in un posto
+   solo perche' e' un posto fisico. */
 function disegnaMia(){
   disegnaGruppiFiltro();
   const l = lista();
   const dove = LIB.ospitePresso();
   q('#mia-eyebrow').textContent = dove && dove.nick
     ? 'la libreria di ' + dove.nick : 'la tua libreria';
-  q('#mia-list').innerHTML = l.map(rigaMia).join('');
+
+  const gruppi = LIB.gruppi();
+  const aCartelle = !state.gruppo && gruppi.length > 0;
+
+  if (!aCartelle){
+    q('#mia-list').innerHTML = l.map(rigaMia).join('');
+  } else {
+    const senza = l.filter(function(g){ return !LIB.gruppiDi(g.id).length; });
+    let html = gruppi.map(function(G){
+      const dentro = l.filter(function(g){ return LIB.gruppiDi(g.id).indexOf(G.id) >= 0; });
+      if (!dentro.length) return '';
+      return '<div class="cartella"><h3>' + esc(G.nome) +
+             '<span>' + dentro.length + '</span></h3>' +
+             '<ol class="righe">' + dentro.map(rigaMia).join('') + '</ol></div>';
+    }).join('');
+    if (senza.length){
+      html += '<div class="cartella"><h3>senza gruppo<span>' + senza.length + '</span></h3>' +
+              '<ol class="righe">' + senza.map(rigaMia).join('') + '</ol></div>';
+    }
+    q('#mia-list').innerHTML = html;
+  }
+
+  const perche = [];
+  if (state.q) perche.push('per <b>' + esc(state.q) + '</b>');
+  if (state.soloPreferiti) perche.push('fra i preferiti');
   q('#mia-msg').innerHTML = l.length
     ? '<b>' + l.length + '</b> ' + (l.length === 1 ? 'gioco' : 'giochi') +
-      (state.q ? ' per <b>' + esc(state.q) + '</b>' : '') +
+      (perche.length ? ' ' + perche.join(', ') : '') +
       '. Tocca una riga per leggere la recensione.'
-    : (state.q ? 'Nessun gioco per <b>' + esc(state.q) + '</b>.' : 'La libreria e\' vuota.');
+    : (perche.length ? 'Niente ' + perche.join(', ') + '.' : 'La libreria e\' vuota.');
 }
 
 function apriElenco(){
+  chiudiPannelli('elenco');
   if (state.phase === 'focus' || state.phase === 'review') unfocus();
   document.body.classList.add('elenco');
   q('#mia').setAttribute('aria-hidden', 'false');
@@ -2990,8 +3243,13 @@ function bindProfilo(){
   q('#mia-list').addEventListener('click', function(e){
     const li = e.target.closest('li[data-id]');
     if (!li) return;
-    if (e.target.closest('[data-fa="scaffale"]')){
-      apriSulloScaffale(li.getAttribute('data-id'));
+    const id = li.getAttribute('data-id');
+
+    if (e.target.closest('[data-fa="scaffale"]')){ apriSulloScaffale(id); return; }
+    if (e.target.closest('[data-fa="pref"]')){
+      const g = LIB.get(id);
+      if (g) LIB.segnaPreferito(id, !g.preferito);
+      disegnaMia();
       return;
     }
     apriRigaMia(li);
@@ -3197,6 +3455,7 @@ function disegnaGiocatori(){
 /* --- l'editor --------------------------------------------------- */
 function apriPartita(dati){
   if (PARTITE.problema()){ flash(PARTITE.problema()); return; }
+  chiudiPannelli('partita');
   paCorrente = Object.assign({ id: null, bgg: '', titolo: '', giocata_il: oggiIso(),
                                ora: '', note: '', chi: [] }, dati || {});
   paCorrente.chi = (paCorrente.chi || []).map(function(x){ return Object.assign({}, x); });
@@ -3390,6 +3649,18 @@ function bindPartite(){
 
   /* Dalla scatola aperta: il gioco arriva gia' scritto, ed e' il punto
      -- appena finito di giocare non si ha voglia di ricercarlo. */
+  q('#p-pref').addEventListener('click', function(e){
+    e.stopPropagation();
+    const g = state.focused && state.focused.userData.game;
+    if (!g) return;
+    const si = !g.preferito;
+    LIB.segnaPreferito(g.id, si);
+    // ottimista: la stella cambia subito, la riga parte dietro
+    e.currentTarget.setAttribute('aria-pressed', si ? 'true' : 'false');
+    e.currentTarget.innerHTML = si ? '&#9733;' : '&#9734;';
+    if (document.body.classList.contains('elenco')) disegnaMia();
+  });
+
   q('#p-mia').addEventListener('click', function(e){
     e.stopPropagation();
     apriMia();

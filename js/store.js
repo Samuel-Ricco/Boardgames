@@ -33,7 +33,7 @@ const DA_DB = {
   giocatori:'players', durata:'time', eta:'age', peso:'weight',
   voto:'score', tag:'tags', recensione:'review', copertina:'cover',
   arte:'art', wrap:'wrap', ink:'ink', posizione:'pos',
-  libreria:'libreria', posto:'posto'
+  libreria:'libreria', posto:'posto', preferito:'preferito'
 };
 const A_DB = {};
 Object.keys(DA_DB).forEach(function(k){ A_DB[DA_DB[k]] = k; });
@@ -387,6 +387,37 @@ async function mandaModifica(c, g, prima){
   }
 }
 
+/* --- preferiti ---------------------------------------------------
+   Un voto alto e un preferito non sono la stessa cosa: un gioco puo'
+   valere 7 ed essere quello che tiri fuori sempre. */
+function preferito(id){
+  const g = get(id);
+  return !!(g && g.preferito);
+}
+
+async function segnaPreferito(id, si){
+  const g = get(id);
+  if (!g || visitata) return null;
+  /* Non `!!g.preferito`: se era undefined va rimesso undefined. Un
+     `false` al posto di un undefined viene spedito al server dalla
+     modifica successiva, e su una colonna che non c'e' ancora fa
+     fallire un salvataggio che non c'entrava niente. */
+  const prima = g.preferito;
+  g.preferito = !!si;
+  salvaLocale();
+
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || !remota) return g;
+  const r = await c.from('giochi').update({ preferito: !!si })
+    .eq('proprietario', AUTH.stato().id).eq('id', id);
+  if (r.error){
+    g.preferito = prima;
+    salvaLocale();
+    onErrore('preferito non salvato: ' + messaggio(r.error));
+  }
+  return g;
+}
+
 /* ============================================================
    LE LIBRERIE
 
@@ -432,6 +463,30 @@ async function creaLibreria(nome){
   if (r.error) throw r.error;
   librerie.push(r.data);
   return r.data;
+}
+
+/* Lo stile di UN mobile: il legno e gli oggetti nei cubi vuoti. Nulli
+   vuol dire "come dice la stanza", ed e' il caso di chi non ha mai
+   toccato niente. */
+async function stileLibreria(id, patch){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const L = librerie.find(function(x){ return x.id === id; });
+  if (!L) throw new Error('libreria sconosciuta');
+
+  const prima = { scaffali: L.scaffali, arredo: L.arredo };
+  Object.keys(patch).forEach(function(k){ L[k] = patch[k]; });
+
+  const r = await c.from('librerie').update(patch)
+    .eq('proprietario', AUTH.stato().id).eq('id', id);
+  if (r.error){
+    L.scaffali = prima.scaffali; L.arredo = prima.arredo;
+    if (r.error.code === '42703' || r.error.code === 'PGRST204'){
+      throw new Error('manca la migrazione preferiti_e_stile_libreria');
+    }
+    throw r.error;
+  }
+  return L;
 }
 
 async function rinominaLibreria(id, nome){
@@ -684,10 +739,21 @@ function messaggio(err){
   if (err && (err.code === '42501' || /row-level security/i.test(m))){
     return 'il database dice di no, questo account non e\' admin';
   }
-  // 42703: colonna inesistente. Capita una volta sola, quando una
-  // migrazione e' nel repo ma non e' ancora stata applicata al progetto.
-  if (err && (err.code === '42703' || /posizione/.test(m))){
-    return 'manca la colonna `posizione`: applica la migrazione ordine_manuale';
+  /* Colonna inesistente: succede una volta sola, quando una migrazione
+     e' nel repo ma non e' ancora applicata al progetto. Il messaggio di
+     Postgres dice quale colonna manca; qui si dice quale MIGRAZIONE, che
+     e' l'unica cosa su cui si possa agire. */
+  if (err && (err.code === '42703' || err.code === 'PGRST204')){
+    /* Non si estrae il nome della colonna con una regex: Postgres dice
+       `column giochi.preferito does not exist` e PostgREST dice
+       `Could not find the 'preferito' column of 'giochi'`, e un'unica
+       espressione che le prenda tutte e due prendeva la lettera
+       sbagliata. Si cerca il nome che si conosce dentro il messaggio,
+       che e' l'unica cosa che funziona con tutti e due. */
+    if (/posizione/.test(m)) return 'manca la migrazione ordine_manuale';
+    if (/preferito|scaffali|arredo/.test(m)) return 'manca la migrazione preferiti_e_stile_libreria';
+    if (/libreria|posto|stanza/.test(m)) return 'manca la migrazione stanza_librerie_gruppi';
+    return 'manca una colonna: controlla le migrazioni non applicate';
   }
   return m;
 }
@@ -717,6 +783,8 @@ return {
   sync: sync, all: all, list: list, get: get,
   add: add, update: update, remove: remove, riordina: riordina,
   scollega: scollega, reset: reset, esporta: esporta, touched: touched,
+  preferito: preferito, segnaPreferito: segnaPreferito,
+  stileLibreria: stileLibreria,
   visita: visita, torna: torna, ospitePresso: ospitePresso,
   librerie: elencoLibrerie, caricaLibrerie: caricaLibrerie,
   creaLibreria: creaLibreria, rinominaLibreria: rinominaLibreria,
