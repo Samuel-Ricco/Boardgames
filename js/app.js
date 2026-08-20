@@ -87,6 +87,7 @@ const state = {
   px: 0, py: 0, tx: 0, ty: 0,
   sezione: 'collezione',       // 'collezione' (la libreria 3D) o 'catalogo'
   q: '',                       // il testo cercato, '' se non si sta cercando
+  gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   presa: null,                 // la scatola che si sta spostando a mano
   libs: 1,                     // quante librerie in fila lungo la parete
   scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
@@ -692,7 +693,7 @@ function buildProps(used){
    che dispone scatole deve passare di qui, se no cercando un gioco la
    posizione sullo scaffale e quella nell'elenco non coincidono piu'. */
 function lista(){
-  return LIB.list(state.sort, state.q);
+  return LIB.list(state.sort, state.q, state.gruppo);
 }
 
 function homeOf(index, h){
@@ -1371,6 +1372,7 @@ function showPanel(game){
   q('#p-eyebrow').textContent = dove && dove.nick
     ? 'la recensione di ' + dove.nick : 'la recensione';
 
+  disegnaGruppiScheda(game);
   disegnaGiocate(game);
 
   const panel = q('#panel');
@@ -1750,7 +1752,7 @@ function updateConta(){
   const tot = LIB.all().length;
   const el = q('#conta');
   if (!el) return;
-  el.innerHTML = state.q
+  el.innerHTML = (state.q || state.gruppo)
     ? '<b>' + lista().length + '</b> <span>di ' + tot + '</span>'
     : '<b>' + tot + '</b> <span>' + (tot === 1 ? 'gioco' : 'giochi') + '</span>';
 }
@@ -2293,6 +2295,169 @@ function bindCatalogo(){
 }
 
 /* ===============================================================
+   I GRUPPI
+   ===============================================================
+
+   Etichette, non contenitori. Una libreria risponde a "dove sta", un
+   gruppo a "che cos'e'": Root sta nel mobile del salotto ed e' insieme
+   "strategico" e "asimmetrico".
+
+   Per questo non si vedono sullo scaffale ma nella SCHEDA -- dove si
+   accendono e si spengono col dito -- e in cima all'ELENCO, dove
+   filtrano. Stessa forma nei due posti, perche' sono la stessa cosa. */
+
+function disegnaGruppiScheda(game){
+  const el = q('#p-gruppi');
+  if (!el) return;
+  // in casa d'altri le etichette si leggono, non si spostano
+  const suoi = LIB.gruppiDi(game ? game.id : '');
+  const altrui = !!LIB.ospitePresso();
+  const tutti = LIB.gruppi();
+
+  if (!game || (altrui && !suoi.length)){ el.innerHTML = ''; return; }
+
+  el.innerHTML = tutti
+    .filter(function(G){ return !altrui || suoi.indexOf(G.id) >= 0; })
+    .map(function(G){
+      const on = suoi.indexOf(G.id) >= 0;
+      return '<button type="button" data-g="' + esc(G.id) + '"' +
+             (on ? ' class="on"' : '') + (altrui ? ' disabled' : '') + '>' +
+             esc(G.nome) + '</button>';
+    }).join('') +
+    (altrui ? '' : '<button type="button" class="nuovo" data-g="+">+ gruppo</button>');
+}
+
+/* Creare un gruppo dalla scheda: la pastiglia diventa un campo, sul
+   posto. Mandare l'utente in un'altra sezione per scrivere una parola
+   e poi farlo tornare qui e' un giro che non serve a niente. */
+function nuovoGruppoInLinea(btn, game){
+  const li = document.createElement('input');
+  li.type = 'text'; li.maxLength = 30; li.placeholder = 'nome del gruppo';
+  li.className = 'gruppo-nuovo';
+  li.setAttribute('aria-label', 'nome del gruppo nuovo');
+  btn.replaceWith(li);
+  li.focus();
+
+  const chiudi = function(){ disegnaGruppiScheda(game); };
+  li.addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Escape'){ chiudi(); return; }
+    if (e.key !== 'Enter') return;
+    const nome = li.value.trim();
+    if (!nome){ chiudi(); return; }
+    li.disabled = true;
+    LIB.creaGruppo(nome).then(function(G){
+      return LIB.segnaGruppo(game.id, G.id, true);
+    }).then(function(){
+      disegnaGruppiScheda(game);
+      disegnaGruppiFiltro();
+      disegnaGruppiProfilo();
+      flash('gruppo "' + nome + '" creato');
+    }).catch(function(err){
+      flash('non creato: ' + err.message);
+      chiudi();
+    });
+  });
+  li.addEventListener('blur', function(){ setTimeout(chiudi, 120); });
+}
+
+function disegnaGruppiFiltro(){
+  const el = q('#mia-gruppi');
+  if (!el) return;
+  const tutti = LIB.gruppi();
+  el.innerHTML = tutti.length
+    ? '<button type="button" data-g=""' + (state.gruppo ? '' : ' class="on"') + '>tutti</button>' +
+      tutti.map(function(G){
+        return '<button type="button" data-g="' + esc(G.id) + '"' +
+               (state.gruppo === G.id ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
+      }).join('')
+    : '';
+}
+
+function disegnaGruppiProfilo(){
+  const el = q('#pro-gruppi');
+  if (!el) return;
+  const quanti = {};
+  LIB.all().forEach(function(g){
+    LIB.gruppiDi(g.id).forEach(function(id){ quanti[id] = (quanti[id] || 0) + 1; });
+  });
+  const tutti = LIB.gruppi();
+  el.innerHTML = tutti.map(function(G){
+    return '<li data-id="' + esc(G.id) + '">' +
+      '<span class="chi"><b>' + esc(G.nome) + '</b>' +
+      '<span>' + (quanti[G.id] || 0) + ' ' + ((quanti[G.id] || 0) === 1 ? 'gioco' : 'giochi') + '</span></span>' +
+      '<span class="fa"><button type="button" class="no" data-fa="via">togli</button></span>' +
+    '</li>';
+  }).join('');
+  quanti('#conta-gruppi', tutti.length);
+}
+
+function setGruppo(id){
+  if (state.gruppo === id) return;
+  state.gruppo = id || '';
+  disegnaGruppiFiltro();
+  state.scrollTo = state.scroll = 0;
+  ridisponi();
+}
+
+function bindGruppi(){
+  q('#p-gruppi').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-g]');
+    if (!b || b.disabled) return;
+    e.stopPropagation();
+    const game = state.focused && state.focused.userData.game;
+    if (!game) return;
+
+    if (b.getAttribute('data-g') === '+'){ nuovoGruppoInLinea(b, game); return; }
+
+    const id = b.getAttribute('data-g');
+    const dentro = !b.classList.contains('on');
+    b.classList.toggle('on', dentro);          // ottimista: si vede subito
+    LIB.segnaGruppo(game.id, id, dentro).then(function(){
+      disegnaGruppiProfilo();
+      if (state.gruppo) ridisponi();
+    }).catch(function(err){
+      b.classList.toggle('on', !dentro);
+      flash('non riuscito: ' + err.message);
+    });
+  });
+  q('#p-gruppi').addEventListener('pointerup', function(e){ e.stopPropagation(); });
+
+  q('#mia-gruppi').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-g]');
+    if (b) setGruppo(b.getAttribute('data-g'));
+  });
+
+  q('#gru-piu').addEventListener('click', function(){
+    const v = q('#gru-nuovo').value.trim();
+    if (!v) return;
+    LIB.creaGruppo(v).then(function(){
+      q('#gru-nuovo').value = '';
+      proMsg('#gru-msg', '');
+      disegnaGruppiProfilo();
+      disegnaGruppiFiltro();
+    }).catch(function(e){ proMsg('#gru-msg', esc(e.message), true); });
+  });
+  q('#gru-nuovo').addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Enter') q('#gru-piu').click();
+  });
+
+  q('#pro-gruppi').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-fa="via"]');
+    if (!b) return;
+    const id = b.closest('li').getAttribute('data-id');
+    b.disabled = true;
+    LIB.togliGruppo(id).then(function(){
+      if (state.gruppo === id) setGruppo('');
+      disegnaGruppiProfilo();
+      disegnaGruppiFiltro();
+      flash('gruppo tolto: i giochi restano dove sono');
+    }).catch(function(err){ b.disabled = false; flash('non tolto: ' + err.message); });
+  });
+}
+
+/* ===============================================================
    I MOBILI
    ===============================================================
 
@@ -2512,6 +2677,7 @@ function rigaMia(g){
 }
 
 function disegnaMia(){
+  disegnaGruppiFiltro();
   const l = lista();
   const dove = LIB.ospitePresso();
   q('#mia-eyebrow').textContent = dove && dove.nick
@@ -2588,6 +2754,7 @@ function apriProfilo(){
      titoli seguiti dal vuoto non spiegano niente a nessuno. */
   PARTITE.caricaGiocatori().then(disegnaGiocatori);
   PARTITE.carica().then(disegnaPartite);
+  disegnaGruppiProfilo();
 
   if (!PROFILO.mio()){
     proMsg('#pro-amici-msg', esc(PROFILO.problema() || 'profilo non disponibile'), true);
@@ -3160,6 +3327,7 @@ async function tornaACasa(){
   STANZA.daProfilo();
   applicaStanza();
   disegnaMobili();
+  disegnaGruppiFiltro();
   state.scrollTo = state.scroll = 0;
   await loadCovers();
   applyLibrary({});
@@ -3535,6 +3703,7 @@ async function boot(){
   setProg(.40, 'apro la libreria');
   const lib = await LIB.sync();
   await LIB.caricaLibrerie();     // i mobili prima delle scatole: decidono dove vanno
+  await LIB.caricaGruppi();
   buildFlatList();
   setProg(.56, 'stampo le copertine');
   await loadCovers();
@@ -3546,6 +3715,7 @@ async function boot(){
   bindTools();
   bindStanza();
   bindMobili();
+  bindGruppi();
   setSort(state.sort);
   requestAnimationFrame(frame);
   setProg(1, 'ci siamo');

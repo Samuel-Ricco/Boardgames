@@ -166,12 +166,14 @@ async function visita(uid, nick){
   if (r.error) throw r.error;
   visitata = { id: uid, nick: nick || '', games: (r.data || []).map(daRiga) };
   await caricaLibrerie(uid);          // i suoi mobili, con i suoi nomi
+  await caricaGruppi(uid);            // e le sue etichette
   return visitata;
 }
 
 function torna(){
   visitata = null;
   caricaLibrerie();                   // e si tornano a leggere i propri
+  caricaGruppi();
 }
 function ospitePresso(){ return visitata; }
 
@@ -238,9 +240,13 @@ function corrisponde(g, q){
   });
 }
 
-function list(order, q){
-  return all().filter(function(g){ return corrisponde(g, q); })
-              .sort(ORDERS[order] || ORDERS.aggiunta);
+function list(order, q, gruppo){
+  return all()
+    .filter(function(g){
+      if (gruppo && gruppiDi(g.id).indexOf(gruppo) < 0) return false;
+      return corrisponde(g, q);
+    })
+    .sort(ORDERS[order] || ORDERS.aggiunta);
 }
 
 function get(id){
@@ -487,6 +493,116 @@ async function mandaPosti(giochi){
   }
 }
 
+/* ============================================================
+   I GRUPPI
+
+   Etichette, non contenitori. Una libreria risponde a "dove sta", un
+   gruppo a "che cos'e'": Root sta nel mobile del salotto ed e' insieme
+   "strategico" e "asimmetrico". Per questo un gioco ne ha quanti ne
+   vuole, e per questo i gruppi non si vedono sullo scaffale -- si
+   vedono nella scheda e nell'elenco, che e' dove uno cerca per
+   categoria.
+   ============================================================ */
+let gruppi = [];             // [{id, nome, colore}]
+let appartiene = {};         // id del gioco -> [id dei gruppi]
+
+function elencoGruppi(){ return gruppi; }
+function gruppiDi(id){ return appartiene[id] || []; }
+
+async function caricaGruppi(chi){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  const di = chi || (AUTH.stato().dentro ? AUTH.stato().id : null);
+  if (!c || !di){ gruppi = []; appartiene = {}; return gruppi; }
+  try {
+    // il filtro sul proprietario si scrive: la lettura e' aperta agli amici
+    const g = await c.from('gruppi').select('*').eq('proprietario', di).order('nome');
+    if (g.error) throw g.error;
+    const m = await c.from('giochi_gruppi').select('gruppo,gioco').eq('proprietario', di);
+    if (m.error) throw m.error;
+
+    gruppi = g.data || [];
+    appartiene = {};
+    (m.data || []).forEach(function(x){
+      (appartiene[x.gioco] = appartiene[x.gioco] || []).push(x.gruppo);
+    });
+  } catch(e){
+    gruppi = []; appartiene = {};
+    onErrore('gruppi non letti: ' + messaggio(e));
+  }
+  return gruppi;
+}
+
+async function creaGruppo(nome){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const t = String(nome || '').trim();
+  if (!t) throw new Error('serve un nome');
+  const r = await c.from('gruppi')
+    .insert({ proprietario: AUTH.stato().id, nome: t }).select().single();
+  if (r.error){
+    if (r.error.code === '23505') throw new Error('"' + t + '" c\'e\' gia\'');
+    throw r.error;
+  }
+  gruppi.push(r.data);
+  gruppi.sort(function(a,b){ return String(a.nome).localeCompare(String(b.nome), 'it'); });
+  return r.data;
+}
+
+async function rinominaGruppo(id, nome){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const t = String(nome || '').trim();
+  if (!t) throw new Error('serve un nome');
+  const r = await c.from('gruppi').update({ nome: t })
+    .eq('proprietario', AUTH.stato().id).eq('id', id);
+  if (r.error){
+    if (r.error.code === '23505') throw new Error('"' + t + '" c\'e\' gia\'');
+    throw r.error;
+  }
+  const G = gruppi.find(function(x){ return x.id === id; });
+  if (G) G.nome = t;
+}
+
+/* Togliere un gruppo non tocca i giochi: sparisce l'etichetta, non
+   quello che era etichettato. Le righe di `giochi_gruppi` se ne vanno
+   in cascata. */
+async function togliGruppo(id){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const r = await c.from('gruppi').delete()
+    .eq('proprietario', AUTH.stato().id).eq('id', id);
+  if (r.error) throw r.error;
+  gruppi = gruppi.filter(function(x){ return x.id !== id; });
+  Object.keys(appartiene).forEach(function(k){
+    appartiene[k] = appartiene[k].filter(function(x){ return x !== id; });
+  });
+}
+
+/* Mettere e togliere un gioco da un gruppo. Ottimista come il resto:
+   l'etichetta compare subito e la riga parte dietro. */
+async function segnaGruppo(gioco, gruppo, dentro){
+  const c = AUTH.attivo() ? AUTH.client() : null;
+  if (!c || visitata) throw new Error('non si puo\'');
+  const ora = appartiene[gioco] || (appartiene[gioco] = []);
+
+  if (dentro){
+    if (ora.indexOf(gruppo) < 0) ora.push(gruppo);
+    const r = await c.from('giochi_gruppi').insert({
+      gruppo: gruppo, proprietario: AUTH.stato().id, gioco: gioco
+    });
+    // 23505: c'era gia'. Non e' un errore, e' lo stesso stato voluto.
+    if (r.error && r.error.code !== '23505'){
+      appartiene[gioco] = ora.filter(function(x){ return x !== gruppo; });
+      throw r.error;
+    }
+  } else {
+    appartiene[gioco] = ora.filter(function(x){ return x !== gruppo; });
+    const r = await c.from('giochi_gruppi').delete()
+      .eq('proprietario', AUTH.stato().id).eq('gruppo', gruppo).eq('gioco', gioco);
+    if (r.error){ ora.push(gruppo); throw r.error; }
+  }
+}
+
 /* --- riordinare a mano ------------------------------------------
    `ids` e' l'ordine nuovo, per intero. Si scrivono solo le righe che
    cambiano davvero: uno scambio fra due scatole ne tocca due, e non ha
@@ -605,6 +721,9 @@ return {
   librerie: elencoLibrerie, caricaLibrerie: caricaLibrerie,
   creaLibreria: creaLibreria, rinominaLibreria: rinominaLibreria,
   togliLibreria: togliLibreria, metti: metti, mandaPosti: mandaPosti,
+  gruppi: elencoGruppi, gruppiDi: gruppiDi, caricaGruppi: caricaGruppi,
+  creaGruppo: creaGruppo, rinominaGruppo: rinominaGruppo,
+  togliGruppo: togliGruppo, segnaGruppo: segnaGruppo,
   eRemota: function(){ return remota; },
   suErrore: function(fn){ onErrore = fn; },
   orders: Object.keys(ORDERS)

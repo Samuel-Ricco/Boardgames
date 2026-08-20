@@ -133,6 +133,31 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
   conseguenza, se no il legno si stira.
 
+## I gruppi sono etichette, non contenitori
+
+Una libreria risponde a «dove sta», un gruppo a «che cos'è»: Root sta nel mobile
+del salotto ed è insieme «strategico» e «asimmetrico». Un gioco ne ha quanti ne
+vuole, e i gruppi attraversano i mobili.
+
+- **Per questo non si vedono sullo scaffale.** Uno scaffale mostra dove stanno le
+  cose; le etichette stanno nella **scheda** — dove si accendono col dito — e in
+  cima all'**elenco**, dove filtrano. Stessa forma nei due posti, perché sono la
+  stessa cosa: chi l'ha capita una volta l'ha capita.
+- `giochi_gruppi` ripete `proprietario` apposta: serve alla chiave esterna verso
+  `giochi`, che ha chiave `(proprietario, id)`.
+- **Creare un gruppo dalla scheda non porta via da dove si è**: la pastiglia
+  «+ gruppo» diventa un campo sul posto. Mandare qualcuno in un'altra sezione per
+  scrivere una parola e poi farlo tornare indietro è un giro che non serve.
+- Assegnare è **ottimista** come il resto: la pastiglia si accende subito, la
+  riga parte dietro, e se il database rifiuta si spegne di nuovo.
+- Su `insert` un `23505` non è un errore: vuol dire che l'etichetta c'era già,
+  cioè esattamente lo stato voluto.
+- **Togliere un gruppo non tocca i giochi**: sparisce l'etichetta, non quello che
+  era etichettato.
+- Il filtro vive in `state.gruppo` e passa da `LIB.list(ordine, testo, gruppo)`,
+  come la ricerca: tutto quello che decide *quali giochi esistono* sta in un
+  posto solo.
+
 ## Le librerie sono mobili, non conteggi
 
 Fino alla migrazione `stanza_librerie_gruppi` le librerie erano **calcolate** dal

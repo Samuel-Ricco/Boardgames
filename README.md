@@ -186,6 +186,17 @@ I **giocatori** sono nomi salvati, non account: al tavolo c'è quasi sempre
 qualcuno che sul sito non c'è. Chi invece è un amico viene proposto da solo, così
 non lo si riscrive ogni volta.
 
+## I gruppi
+
+Etichette con il nome che vuoi — *party games*, *strategici*, *da due* — che
+attraversano le librerie: un gioco può stare in più gruppi, e un gruppo può
+pescare da mobili diversi.
+
+Si mettono dalla scheda del gioco, dove le pastiglie si accendono col dito, e da
+lì si crea anche un gruppo nuovo senza andare da nessun'altra parte. In cima
+all'elenco della libreria le stesse pastiglie servono a filtrare. Si rinominano e
+si tolgono dal profilo; toglierne uno non tocca i giochi, sparisce l'etichetta.
+
 ## Ordinare, cercare, contare
 
 - **Quattro ordinamenti**: il mio, data di aggiunta, nome, voto.

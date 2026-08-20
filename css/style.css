@@ -121,6 +121,32 @@ body.cerca #cerca-x{display:block}
 #conta b{font-family:var(--ff-display); font-size:15px; letter-spacing:.06em; color:var(--ink)}
 #conta span{color:var(--ink-soft)}
 
+/* --- i gruppi -----------------------------------------------------
+   Etichette. Nella scheda si accendono e si spengono col dito; in cima
+   all'elenco filtrano. Stessa forma nei due posti perche' sono la
+   stessa cosa, e chi l'ha capita una volta l'ha capita. */
+.gruppi{display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 0}
+.gruppi:empty{display:none}
+.gruppi button{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  background:none; border:1px solid var(--line); padding:6px 9px;
+}
+.gruppi button:hover{color:var(--ink); border-color:var(--amber)}
+.gruppi button.on{color:#fdfaf4; background:var(--rust); border-color:var(--rust)}
+.gruppi button.nuovo{color:var(--amber); border-style:dashed}
+.gruppi.filtro{margin:14px 0 0}
+.gruppi.filtro button.on{background:var(--amber); border-color:var(--amber)}
+#p-gruppi{padding-top:4px}
+/* la pastiglia "+ gruppo" diventa un campo sul posto: mandare l'utente
+   in un'altra sezione per scrivere una parola e poi farlo tornare qui
+   e' un giro che non serve a niente */
+.gruppo-nuovo{
+  font-family:var(--ff-text); font-size:11px; letter-spacing:.06em; color:var(--ink);
+  background:var(--bg); border:1px solid var(--amber); padding:5px 8px; width:150px;
+}
+.gruppo-nuovo:focus{outline:none}
+
 /* Pubblicare nel catalogo e' una cosa da admin: la recensione diventa
    quella del sito, e il catalogo e' uno solo. Sulla propria collezione
    comanda chiunque sia entrato, qui no. */

@@ -129,6 +129,7 @@
     <div class="score"><b id="p-score"></b><i>/10</i><small>il voto della<br>ludoteca</small></div>
     <div class="body" id="p-body"></div>
     <div class="tags" id="p-tags"></div>
+    <div class="gruppi" id="p-gruppi"></div>
     <div class="giocate" id="p-giocate"></div>
     <p class="pan-link">
       <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
@@ -177,6 +178,7 @@
   <div class="cat-in">
     <div class="cat-testa">
       <p class="eyebrow" id="mia-eyebrow">la tua libreria</p>
+      <div id="mia-gruppi" class="gruppi filtro"></div>
       <p id="mia-msg"></p>
     </div>
     <ol id="mia-list" class="righe"></ol>
@@ -284,6 +286,22 @@
           <input id="gio-nuovo" type="text" placeholder="un nome" autocomplete="off"
                  maxlength="40" aria-label="nome del giocatore">
           <button id="gio-piu" type="button">aggiungi</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pro-blocco">
+      <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-gruppi">
+        Gruppi <span class="quanti" id="conta-gruppi"></span></button></h3>
+      <div class="pro-dentro" id="blocco-gruppi" hidden>
+        <p class="pro-msg">Etichette, non scaffali: un gioco pu&ograve; stare in pi&ugrave; gruppi,
+          e i gruppi attraversano le librerie. Si mettono dalla scheda del gioco.</p>
+        <ul id="pro-gruppi" class="pro-gente"></ul>
+        <p id="gru-msg" class="pro-msg"></p>
+        <div class="pro-aggiungi">
+          <input id="gru-nuovo" type="text" placeholder="party games, strategici&hellip;"
+                 autocomplete="off" maxlength="30" aria-label="nome del gruppo">
+          <button id="gru-piu" type="button">crea</button>
         </div>
       </div>
     </section>
