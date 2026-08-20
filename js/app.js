@@ -630,23 +630,25 @@ function thinSpine(seed){
 function meepleShape(){
   const s = new THREE.Shape();
   s.moveTo(-0.40, -1.00);
-  s.bezierCurveTo(-0.36,-0.62, -0.32,-0.36, -0.22,-0.14);
-  s.bezierCurveTo(-0.20,-0.02, -0.22,0.06, -0.30,0.14);
-  s.bezierCurveTo(-0.52,0.14, -0.84,0.18, -0.90,0.32);
-  s.bezierCurveTo(-0.96,0.46, -0.78,0.56, -0.58,0.52);
-  s.bezierCurveTo(-0.44,0.49, -0.34,0.45, -0.26,0.40);
-  s.bezierCurveTo(-0.28,0.58, -0.24,0.72, -0.15,0.80);
-  s.bezierCurveTo(-0.46,0.92, -0.42,1.36, 0.00,1.36);
-  s.bezierCurveTo(0.42,1.36, 0.46,0.92, 0.15,0.80);
-  s.bezierCurveTo(0.24,0.72, 0.28,0.58, 0.26,0.40);
-  s.bezierCurveTo(0.34,0.45, 0.44,0.49, 0.58,0.52);
-  s.bezierCurveTo(0.78,0.56, 0.96,0.46, 0.90,0.32);
-  s.bezierCurveTo(0.84,0.18, 0.52,0.14, 0.30,0.14);
-  s.bezierCurveTo(0.22,0.06, 0.20,-0.02, 0.22,-0.14);
-  s.bezierCurveTo(0.32,-0.36, 0.36,-0.62, 0.40,-1.00);
-  s.lineTo(0.14, -1.00);
-  s.bezierCurveTo(0.12,-0.62, 0.08,-0.42, 0.00,-0.30);
-  s.bezierCurveTo(-0.08,-0.42, -0.12,-0.62, -0.14,-1.00);
+  s.bezierCurveTo(-0.44,-0.72, -0.42,-0.44, -0.36,-0.24);
+  s.bezierCurveTo(-0.42,-0.16, -0.48,-0.10, -0.58,-0.07);
+  s.bezierCurveTo(-0.78,-0.09, -0.98,-0.08, -1.02,0.02);
+  s.bezierCurveTo(-1.10,0.10, -1.08,0.30, -0.90,0.32);
+  s.bezierCurveTo(-0.72,0.34, -0.56,0.32, -0.44,0.37);
+  s.bezierCurveTo(-0.38,0.40, -0.35,0.41, -0.33,0.44);
+  s.bezierCurveTo(-0.30,0.51, -0.25,0.56, -0.21,0.59);
+  s.bezierCurveTo(-0.50,0.70, -0.46,1.06, 0.00,1.06);
+  s.bezierCurveTo(0.46,1.06, 0.50,0.70, 0.21,0.59);
+  s.bezierCurveTo(0.25,0.56, 0.30,0.51, 0.33,0.44);
+  s.bezierCurveTo(0.35,0.41, 0.38,0.40, 0.44,0.37);
+  s.bezierCurveTo(0.56,0.32, 0.72,0.34, 0.90,0.32);
+  s.bezierCurveTo(1.08,0.30, 1.10,0.10, 1.02,0.02);
+  s.bezierCurveTo(0.98,-0.08, 0.78,-0.09, 0.58,-0.07);
+  s.bezierCurveTo(0.48,-0.10, 0.42,-0.16, 0.36,-0.24);
+  s.bezierCurveTo(0.42,-0.44, 0.44,-0.72, 0.40,-1.00);
+  s.lineTo(0.15, -1.00);
+  s.bezierCurveTo(0.14,-0.74, 0.10,-0.50, 0.00,-0.36);
+  s.bezierCurveTo(-0.10,-0.50, -0.14,-0.74, -0.15,-1.00);
   s.lineTo(-0.40, -1.00);
   s.closePath();
   return s;
@@ -2675,6 +2677,7 @@ function setSezione(s){
      su un contenuto che non c'entrava piu' niente. */
   if (s !== 'collezione') chiudiPannelli('');
   state.sezione = s;
+  document.body.classList.toggle('sez-collezione', s === 'collezione');
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
   document.body.classList.toggle('sez-profilo',  s === 'profilo');
   qa('#sezioni button, #tabbar button').forEach(function(b){
@@ -3580,6 +3583,7 @@ function contenutoAzioni(g){
    e' anche la differenza con i mobili, dove una scatola sta in un posto
    solo perche' e' un posto fisico. */
 function disegnaMia(){
+  segnaVista();
   disegnaGruppiFiltro();
   const l = lista();
   const dove = LIB.ospitePresso();
@@ -3649,11 +3653,20 @@ function disegnaViste(){
   if (ind) ind.style.transform = 'translateX(' + (state.vista === 'tutti' ? 100 : 0) + '%)';
 }
 
+/* I filtri per gruppo appartengono alla vista a cartelle. Nell'elenco
+   intero restavano accesi e filtravano una lista che i gruppi non li
+   mostra nemmeno: due comandi che dicono cose diverse sulla stessa
+   schermata. */
+function segnaVista(){
+  document.body.classList.toggle('vista-tutti', state.vista === 'tutti');
+}
+
 function setVista(v){
   if (v !== 'gruppi' && v !== 'tutti') return;
   if (v === state.vista){ disegnaViste(); return; }
   state.vista = v;
   try { localStorage.setItem('dado-vista', v); } catch(e){}
+  segnaVista();
   disegnaMia();
   // l'elenco entra dal lato da cui si e' arrivati
   const lista = q('#mia-list');
@@ -3790,6 +3803,8 @@ function chiudiAzioni(tranne){
     b.hidden = true;
     const btn = b.parentNode && b.parentNode.querySelector('.riga-menu');
     if (btn) btn.setAttribute('aria-expanded', 'false');
+    const li = b.closest('li');
+    if (li) li.classList.remove('menu-su');
   });
 }
 
@@ -3803,6 +3818,11 @@ function apriAzioni(li){
   if (su) box.innerHTML = contenutoAzioni(g);
   box.hidden = !su;
   btn.setAttribute('aria-expanded', su ? 'true' : 'false');
+  /* La riga aperta sale sopra tutte. Ogni riga ha il suo involucro
+     posizionato, e chi viene dopo si disegna sopra a chi viene prima:
+     senza questo, i pulsanti delle righe sotto passavano DAVANTI al
+     menu aperto, che sembrava trasparente e non lo era. */
+  li.classList.toggle('menu-su', su);
 }
 
 /* ===============================================================

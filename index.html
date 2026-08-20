@@ -257,15 +257,24 @@
 <section id="profilo" aria-hidden="true" aria-label="il tuo profilo">
   <div class="pro-in">
 
+    <p class="eyebrow pro-occhiello">il tuo profilo</p>
+
+    <!-- La faccia e chi sei stanno FIANCO A FIANCO, sempre: e' la
+         forma di un profilo su qualunque cosa, e sotto la faccia da
+         sola non si capisce di chi sia. Il resto -- codice, nick,
+         uscita -- scende sotto, perche' sono comandi e non identita'. -->
     <div class="pro-testa">
       <div class="pro-faccia">
         <canvas id="pro-avatar" width="160" height="160" aria-hidden="true"></canvas>
         <button id="pro-cambia" type="button">cambia faccia</button>
       </div>
       <div class="pro-chi">
-        <p class="eyebrow">il tuo profilo</p>
         <h2 id="pro-nick">&nbsp;</h2>
         <p class="pro-mail" id="pro-mail"></p>
+      </div>
+    </div>
+
+    <div class="pro-dati">
         <p class="pro-cod">
           <span>codice amico</span>
           <b id="pro-codice">&mdash;</b>
@@ -277,7 +286,6 @@
           <button id="pro-rinomina" type="button" class="pro-lin">cambia nick</button>
           <button id="pro-esci" type="button" class="pro-lin esci">esci dall&rsquo;account</button>
         </p>
-      </div>
     </div>
 
     <!-- costruttore del meeple: si apre da "cambia faccia" -->

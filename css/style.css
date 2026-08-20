@@ -2044,3 +2044,88 @@ button.distruttivo.armed{background:#a8341f; color:#fff}
   .cat-azioni button{font-size:12px; padding:8px 10px; white-space:nowrap}
   .righe > li .cat-rec{grid-column:1 / -1}
 }
+
+/* ===================================================================
+   SECONDO GIRO DI CORREZIONI
+   =================================================================== */
+
+/* --- la testata era trasparente ------------------------------------
+   Scorrendo una sezione il testo della pagina le passava sotto e i due
+   si compenetravano. Non serve una barra piena: serve una SUPERFICIE --
+   carta velata con la sfocatura dietro, come qualunque testata che
+   resta ferma mentre il contenuto scorre. */
+header{
+  background:rgba(234,232,227,.82);
+  backdrop-filter:blur(16px) saturate(1.2);
+  -webkit-backdrop-filter:blur(16px) saturate(1.2);
+  border-bottom:1px solid rgba(51,53,43,.08);
+  padding-top:12px; padding-bottom:12px;
+}
+/* sulla scena la testata puo' restare piu' leggera: li' dietro non
+   scorre niente, e coprire la stanza sarebbe un peccato */
+body.sez-collezione:not(.elenco) header{
+  background:rgba(234,232,227,.55); border-bottom-color:transparent;
+}
+
+/* --- il marchio, piu' grande --------------------------------------- */
+.brand b{font-size:clamp(21px,2.8vw,27px); font-weight:600; letter-spacing:-.02em}
+
+/* --- imbuto e stanza: quadrati davvero -----------------------------
+   Avevano un'imbottitura uguale sui quattro lati, che pero' con
+   un'icona non quadrata dentro non basta a fare un quadrato. */
+#vista-apri, #stanza-apri{
+  width:40px; height:40px; padding:0;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+#vista-apri .ico, #vista-apri svg, #stanza-apri .ico, #stanza-apri svg{
+  width:19px; height:19px;
+}
+@media (pointer:coarse){
+  #vista-apri, #stanza-apri{width:44px; height:44px; min-height:0}
+}
+
+/* --- il binario: piu' su e piu' leggibile -------------------------- */
+#rail{bottom:38px}
+#rail-txt{color:var(--ink); opacity:1; font-weight:600; font-size:13px}
+.rail-bar{background:rgba(51,53,43,.28)}
+.rail-bar i{background:var(--accent)}
+@media (max-width:879px){
+  #rail{bottom:calc(74px + env(safe-area-inset-bottom))}
+}
+
+/* --- in "tutti i giochi" i gruppi non c'entrano --------------------
+   I filtri per gruppo appartengono alla vista a cartelle. Nell'elenco
+   intero restavano accesi e filtravano una lista che non li mostra:
+   due comandi che dicono cose diverse sulla stessa schermata. */
+body.vista-tutti #mia-gruppi, body.vista-tutti #mia-gestisci{display:none !important}
+
+/* --- la finestrella delle azioni non deve finire sotto le righe -----
+   Non era trasparente: era COPERTA. Ogni riga ha il suo involucro
+   posizionato, e le righe che vengono dopo si disegnano sopra a quelle
+   di prima -- quindi i pulsanti delle righe sotto passavano davanti al
+   menu aperto. La riga aperta sale sopra tutte. */
+.righe.compatta > li.menu-su{position:relative; z-index:30}
+.riga-azioni{z-index:31}
+
+/* --- il profilo ----------------------------------------------------- */
+.pro-occhiello{margin:0 0 14px}
+.pro-testa{
+  display:flex; align-items:center; gap:18px; flex-wrap:nowrap; margin:0;
+}
+.pro-faccia{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:10px}
+#pro-avatar{
+  width:104px; height:104px; border-radius:50%; overflow:hidden;
+  display:block; background:rgba(51,53,43,.06);
+}
+#pro-cambia{font-size:12px; padding:8px 12px}
+.pro-chi{flex:1 1 auto; min-width:0}
+#pro-nick{margin:0; font-size:clamp(24px,5vw,32px); font-weight:600; letter-spacing:-.02em; line-height:1.1}
+.pro-mail{margin:4px 0 0; font-size:13px; color:var(--ink-soft); overflow-wrap:anywhere}
+.pro-dati{margin:26px 0 0}
+.pro-cod{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0}
+.pro-nota{margin:12px 0 0; font-size:13px; color:var(--ink-soft); line-height:1.6}
+.pro-fondo{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 0}
+@media (max-width:420px){
+  #pro-avatar{width:84px; height:84px}
+  .pro-testa{gap:14px}
+}

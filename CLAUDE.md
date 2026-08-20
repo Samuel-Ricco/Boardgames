@@ -1204,6 +1204,31 @@ all'apertura, e l'anello dell'accento si accendeva senza che nessuno avesse
 toccato niente — sembrava un errore, non un invito. Il contorno di fuoco sta su
 `:focus-visible`, cioè lo vede solo chi naviga da tastiera.
 
+### La testata è una superficie, non un velo
+
+Era trasparente, e scorrendo una sezione il testo della pagina le passava sotto:
+i due si compenetravano. Ora è carta velata con la sfocatura dietro. Sulla
+libreria resta più leggera — lì dietro non scorre niente, e coprire la stanza
+sarebbe un peccato — e `body.sez-collezione` esiste apposta per distinguere i
+due casi.
+
+### Un menu non era trasparente: era coperto
+
+La finestrella delle azioni sembrava semitrasparente. Non lo era: lo sfondo è
+opaco, ma **ogni riga ha il suo involucro posizionato**, e chi viene dopo si
+disegna sopra a chi viene prima — quindi i pulsanti delle righe sotto passavano
+davanti al menu aperto. La riga aperta prende la classe `menu-su` e sale a
+`z-index:30`.
+
+È il tipo di difetto che si diagnostica male a occhio: il colore calcolato era
+già `rgb(242,241,237)`, cioè pieno. Il numero da guardare era un altro.
+
+### I filtri dei gruppi stanno solo dove i gruppi si vedono
+
+In «tutti i giochi» restavano accesi e filtravano una lista che i gruppi non li
+mostra nemmeno: due comandi che dicono cose diverse sulla stessa schermata.
+`body.vista-tutti` li toglie.
+
 ### Il meeple è una sagoma sola
 
 Il giro parte dal piede sinistro e va in senso orario: gamba, fianco, sotto il
