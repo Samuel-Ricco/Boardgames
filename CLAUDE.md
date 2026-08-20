@@ -158,6 +158,15 @@ vuole, e i gruppi attraversano i mobili.
   come la ricerca: tutto quello che decide *quali giochi esistono* sta in un
   posto solo.
 
+**Non chiamare una variabile locale come una funzione che c'è già.** In
+`disegnaGruppiProfilo` una `const quanti = {}` copriva la funzione `quanti()`:
+la chiamata più sotto diventava un `TypeError` che interrompeva `apriProfilo()`
+a metà, e il sintomo era che **tutti** i contatori del profilo restavano vuoti —
+non solo quello dei gruppi. Un'eccezione dentro una funzione chiamata in fila si
+porta via tutto quello che viene dopo, e il posto dove si vede il guasto non è
+quello dove sta. `disegnaMobili` aveva lo stesso nome per la stessa ragione: lì
+non esplodeva perché la funzione non veniva chiamata, ma era una trappola armata.
+
 ## Le librerie sono mobili, non conteggi
 
 Fino alla migrazione `stanza_librerie_gruppi` le librerie erano **calcolate** dal

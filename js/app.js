@@ -2377,15 +2377,20 @@ function disegnaGruppiFiltro(){
 function disegnaGruppiProfilo(){
   const el = q('#pro-gruppi');
   if (!el) return;
-  const quanti = {};
+  // NON chiamarlo `quanti`: c'e' gia' una funzione con quel nome, e una
+  // const locale la copre. La chiamata piu' sotto diventava un
+  // TypeError che interrompeva apriProfilo() a meta' -- ed e' il motivo
+  // per cui erano vuoti TUTTI i contatori, non solo questo.
+  const perGruppo = {};
   LIB.all().forEach(function(g){
-    LIB.gruppiDi(g.id).forEach(function(id){ quanti[id] = (quanti[id] || 0) + 1; });
+    LIB.gruppiDi(g.id).forEach(function(id){ perGruppo[id] = (perGruppo[id] || 0) + 1; });
   });
   const tutti = LIB.gruppi();
   el.innerHTML = tutti.map(function(G){
+    const n = perGruppo[G.id] || 0;
     return '<li data-id="' + esc(G.id) + '">' +
       '<span class="chi"><b>' + esc(G.nome) + '</b>' +
-      '<span>' + (quanti[G.id] || 0) + ' ' + ((quanti[G.id] || 0) === 1 ? 'gioco' : 'giochi') + '</span></span>' +
+      '<span>' + n + ' ' + (n === 1 ? 'gioco' : 'giochi') + '</span></span>' +
       '<span class="fa"><button type="button" class="no" data-fa="via">togli</button></span>' +
     '</li>';
   }).join('');
@@ -2474,16 +2479,16 @@ function disegnaMobili(){
   const el = q('#mobili-lista');
   if (!el) return;
   const l = LIB.librerie();
-  const quanti = {};
+  const perLibreria = {};             // vedi disegnaGruppiProfilo: non chiamarlo `quanti`
   LIB.all().forEach(function(g){
-    if (g.libreria) quanti[g.libreria] = (quanti[g.libreria] || 0) + 1;
+    if (g.libreria) perLibreria[g.libreria] = (perLibreria[g.libreria] || 0) + 1;
   });
 
   el.innerHTML = l.map(function(L){
     return '<li data-id="' + esc(L.id) + '">' +
       '<input type="text" value="' + esc(L.nome) + '" maxlength="30" ' +
         'aria-label="nome della libreria">' +
-      '<span class="quanti">' + (quanti[L.id] || 0) + '</span>' +
+      '<span class="quanti">' + (perLibreria[L.id] || 0) + '</span>' +
       (l.length > 1 ? '<button type="button" data-fa="via" aria-label="togli">&times;</button>' : '') +
     '</li>';
   }).join('');
