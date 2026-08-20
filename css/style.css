@@ -2450,3 +2450,70 @@ body.arreda #stanza{transform:none}
   padding:9px 13px; font-size:13px; overflow:visible; text-overflow:clip;
 }
 .pro-io .ico{width:15px; height:15px}
+
+/* --- IL BINARIO SI TOCCA SOLO DOVE SERVE ---------------------------
+
+   Era invisibile fuori dalla libreria ma **restava cliccabile**:
+   `opacity:0` nasconde, non disattiva. Nel catalogo, nel profilo e
+   sopra l'elenco c'era una striscia larga mezzo schermo che, presa,
+   faceva scorrere una scena che nessuno stava guardando -- e siccome
+   non si vedeva, sembrava che il sito reagisse da solo.
+
+   La regola giusta e' al contrario: NIENTE tocca il binario, e i
+   puntatori si riaccendono solo dove il binario si vede davvero.
+   Cosi' una schermata nuova non se lo porta dietro per dimenticanza. */
+#rail, .rail-bar{pointer-events:none}
+body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-bar{
+  pointer-events:auto;
+}
+
+/* --- LE PARTITE HANNO TRE LIVELLI, E SI DEVONO VEDERE ---------------
+
+   Sezione > gioco > serata. Prima erano tutti e tre riquadri tinti
+   della stessa misura, uno dentro l'altro: aperta la sezione non si
+   capiva se «Root» fosse un fratello di «Partite» o un suo figlio.
+
+   Si scende di livello in tre modi insieme, perche' uno solo non
+   basta a farlo leggere: un RIENTRO, un filo verticale che dice a chi
+   appartiene quel rientro, e un peso di testo minore. Il fondo tinto
+   resta solo al livello di mezzo -- il gioco -- che e' quello che si
+   apre e si chiude. */
+#pro-partite{margin:12px 0 0}
+
+/* livello 2: il gioco */
+.gio-gruppo{
+  margin:0 0 8px; padding-left:14px;
+  border-left:2px solid rgba(51,53,43,.12);
+}
+.gio-gruppo:last-child{margin-bottom:0}
+.gio-gioco{
+  border-bottom:0; border-radius:var(--r-s);
+  padding:11px 13px; gap:4px 10px;
+  background:rgba(51,53,43,.055);
+}
+.gio-gioco b{
+  font-family:var(--ff); font-weight:600; font-size:14px; letter-spacing:0;
+}
+.gio-gioco span{
+  font-size:12px; letter-spacing:0; text-transform:none; color:var(--ink-soft);
+}
+.gio-gioco::after{
+  content:''; margin-left:auto; width:7px; height:7px; flex:none;
+  border-right:1.6px solid var(--ink-soft); border-bottom:1.6px solid var(--ink-soft);
+  transform:rotate(45deg) translate(-2px,-2px);
+  transition:transform .2s var(--ease);
+}
+.gio-gioco[aria-expanded="true"]::after{transform:rotate(-135deg) translate(-2px,-2px)}
+
+/* livello 3: la singola serata */
+.gio-gruppo .giocate{
+  margin:6px 0 0 10px; padding-left:14px;
+  border-left:2px solid rgba(51,53,43,.08);
+}
+.gio-gruppo .giocate li{
+  padding:9px 0; border-bottom:1px solid rgba(51,53,43,.07);
+}
+.gio-gruppo .giocate li:last-child{border-bottom:0}
+.gio-gruppo .gio-testa b{font-size:13px; font-weight:500}
+.gio-gruppo .gio-testa span{font-size:11px; letter-spacing:.04em; text-transform:none}
+.gio-gruppo .gio-chi{font-size:12.5px; margin-top:3px}

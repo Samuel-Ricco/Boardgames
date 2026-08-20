@@ -803,6 +803,29 @@ stanza diversa per ognuna.
 - Il pannello parla del **mobile che si sta guardando** (`libCorrente`), e
   scorrendo si aggiorna da solo.
 
+## Nascondere non è disattivare
+
+Il binario delle librerie era invisibile fuori dalla libreria — `opacity:0` — ma
+**restava cliccabile**. Nel catalogo, nel profilo e sopra l'elenco c'era una
+striscia larga mezzo schermo che, presa, faceva scorrere una scena che nessuno
+stava guardando: e siccome non si vedeva, sembrava che il sito reagisse da solo.
+
+La regola è scritta al contrario apposta: **niente tocca il binario**, e i
+puntatori si riaccendono solo dove il binario si vede davvero. Così una schermata
+nuova non se lo porta dietro per dimenticanza. Vale per qualunque cosa venga
+nascosta con l'opacità.
+
+## Le partite hanno tre livelli, e si devono vedere
+
+Sezione → gioco → serata. Erano tre riquadri tinti della stessa misura uno dentro
+l'altro: aperta la sezione non si capiva se «Root» fosse un fratello di «Partite»
+o un suo figlio.
+
+Si scende di livello in **tre modi insieme**, perché uno solo non basta a farlo
+leggere: un **rientro**, un **filo verticale** che dice a chi appartiene quel
+rientro, e un **peso di testo** minore. Il fondo tinto resta solo al livello di
+mezzo — il gioco — che è quello che si apre e si chiude.
+
 ## Un pannello solo per la libreria
 
 Erano due — «la stanza» (luce e colori) e «i tuoi mobili» (nome, crea, togli) —
