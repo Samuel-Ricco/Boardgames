@@ -182,7 +182,10 @@
   <div class="cat-in">
     <div class="cat-testa">
       <p class="eyebrow" id="mia-eyebrow">la tua libreria</p>
-      <div id="mia-gruppi" class="gruppi filtro"></div>
+      <div class="mia-barra">
+        <div id="mia-gruppi" class="gruppi filtro"></div>
+        <button id="mia-gestisci" type="button" class="dentro-only">gestisci gruppi</button>
+      </div>
       <p id="mia-msg"></p>
     </div>
     <ol id="mia-list" class="righe"></ol>
@@ -290,22 +293,6 @@
           <input id="gio-nuovo" type="text" placeholder="un nome" autocomplete="off"
                  maxlength="40" aria-label="nome del giocatore">
           <button id="gio-piu" type="button">aggiungi</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="pro-blocco">
-      <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-gruppi">
-        Gruppi <span class="quanti" id="conta-gruppi"></span></button></h3>
-      <div class="pro-dentro" id="blocco-gruppi" hidden>
-        <p class="pro-msg">Etichette, non scaffali: un gioco pu&ograve; stare in pi&ugrave; gruppi,
-          e i gruppi attraversano le librerie. Si mettono dalla scheda del gioco.</p>
-        <ul id="pro-gruppi" class="pro-gente"></ul>
-        <p id="gru-msg" class="pro-msg"></p>
-        <div class="pro-aggiungi">
-          <input id="gru-nuovo" type="text" placeholder="party games, strategici&hellip;"
-                 autocomplete="off" maxlength="30" aria-label="nome del gruppo">
-          <button id="gru-piu" type="button">crea</button>
         </div>
       </div>
     </section>
@@ -430,6 +417,34 @@
       <button id="exp" type="button">esporta js/data.js</button>
       <button id="rst" type="button">ripristina</button>
     </p>
+  </div>
+</div>
+
+<!-- GESTIRE I GRUPPI. Sta qui e non nel profilo: i gruppi servono
+     mentre si guarda l'elenco dei propri giochi, ed e' li' che si
+     decide cosa sta con cosa. Nel profilo erano lontani dal loro uso. -->
+<div id="gruppilayer" aria-hidden="true">
+  <div class="add-card" role="dialog" aria-labelledby="gru-h">
+    <button id="gru-x" type="button">chiudi &times;</button>
+    <p class="eyebrow">etichette</p>
+    <h2 id="gru-h">I tuoi gruppi</h2>
+    <p class="mia-nota">Un gioco pu&ograve; stare in pi&ugrave; gruppi, e i gruppi
+      attraversano le librerie: rispondono a <b>che cos&rsquo;&egrave;</b>, non a
+      dove sta.</p>
+
+    <div class="pro-aggiungi">
+      <input id="gru-nuovo" type="text" placeholder="party games, strategici&hellip;"
+             autocomplete="off" maxlength="30" aria-label="nome del gruppo">
+      <button id="gru-piu" type="button">crea</button>
+    </div>
+    <p id="gru-msg" class="pro-msg"></p>
+
+    <ul id="pro-gruppi" class="pro-gente"></ul>
+
+    <div id="gru-giochi" hidden>
+      <p class="eyebrow" id="gru-quale"></p>
+      <ul id="gru-elenco" class="gru-elenco"></ul>
+    </div>
   </div>
 </div>
 

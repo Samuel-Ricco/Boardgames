@@ -133,6 +133,53 @@ Il ciclo di rendering non si ferma mai; le fasi decidono cosa viene animato.
   sono larghi 1 e vengono stirati, con la ripetizione della venatura riscalata di
   conseguenza, se no il legno si stira.
 
+## La libreria è una vetrina, l'elenco è la collezione
+
+`libreria` nulla vuol dire **«ce l'ho ma non è in mostra»**. Sugli scaffali va
+solo quello che si sceglie (`listaScaffale()`), e l'elenco resta il posto dove
+c'è tutto. È anche l'unica risposta sensata a una collezione da duecento giochi,
+che in diciassette mobili non la guarda nessuno.
+
+- Si mette e si toglie **dall'elenco**, ed è lì che si sceglie in quale mobile:
+  è il senso di avere più librerie. Con un mobile solo non c'è niente da
+  scegliere e si fa e basta; con più di uno il pulsante si apre nei nomi, sul
+  posto — una finestra di scelta per un gesto da un clic sarebbe sproporzionata.
+- I mobili **esistono anche vuoti**: sono mobili, non contenitori che compaiono
+  quando servono. Per questo `libs` parte da `librerie.length + 1` anche negli
+  ordinamenti calcolati.
+- Un gioco appena aggiunto va in vetrina, nel mobile che si sta guardando: si è
+  appena scelto di averlo, lo si vuole vedere.
+
+## Rinominare vuole una conferma
+
+Salvare all'uscita dal campo faceva partire una scrittura anche a chi ci
+cliccava dentro per sbaglio, e soprattutto **non si capiva se era andata**: il
+nome sopra la libreria è l'unica prova, e va aggiornato subito. La spunta si
+accende solo se c'è davvero qualcosa da salvare, e dopo il salvataggio si
+richiama `buildCabinet()` — la targhetta è dentro il mobile, non nell'interfaccia.
+
+## Trascinare fra due mobili su un telefono
+
+La libreria riempie lo schermo da bordo a bordo: del mobile accanto non si vede
+niente, e non c'era modo di portarci una scatola.
+
+- Prendendo una scatola la camera **arretra di un quarto** (`state.zoom`). Poco:
+  quello che si sta spostando deve restare grande abbastanza da vedere dove lo
+  si mette.
+- Avvicinandosi al bordo dello schermo la vista **scorre** verso il mobile
+  accanto. Sta nel ciclo di rendering e non in `muoviPresa` perché deve
+  continuare **anche a dito fermo**: sul bordo si aspetta, non si sfrega. E
+  subito dopo va richiamata `muoviPresa`, perché la scena si è spostata sotto la
+  scatola e il cubo mirato non è più quello di un attimo fa.
+
+## Non ridisegnare la lista sotto il dito
+
+Nell'elenco dei giochi di un gruppo, ogni tocco ridisegnava tutto: il pulsante
+appena premuto veniva staccato dal documento e il tocco successivo cadeva su un
+nodo che non c'era più — segnandone due di fila, il secondo non arrivava. Si
+aggiorna **solo il numero, in posto**. Vale per qualunque elenco su cui si
+tocchi più volte di seguito.
+
 ## I gruppi sono etichette, non contenitori
 
 Una libreria risponde a «dove sta», un gruppo a «che cos'è»: Root sta nel mobile
@@ -140,8 +187,12 @@ del salotto ed è insieme «strategico» e «asimmetrico». Un gioco ne ha quant
 vuole, e i gruppi attraversano i mobili.
 
 - **Per questo non si vedono sullo scaffale.** Uno scaffale mostra dove stanno le
-  cose; le etichette stanno nella **scheda** — dove si accendono col dito — e in
-  cima all'**elenco**, dove filtrano. Stessa forma nei due posti, perché sono la
+  cose; le etichette stanno nella **scheda**, nella riga aperta dell'elenco, e in
+  cima all'elenco dove filtrano.
+- **Si gestiscono dall'elenco, non dal profilo.** Nel profilo erano lontane dal
+  loro uso: i gruppi servono mentre si guarda la propria collezione, ed è lì che
+  si decide cosa sta con cosa. «Gestisci gruppi» apre creazione, rinomina e
+  l'elenco di chi ci sta dentro. Stessa forma nei due posti, perché sono la
   stessa cosa: chi l'ha capita una volta l'ha capita.
 - `giochi_gruppi` ripete `proprietario` apposta: serve alla chiave esterna verso
   `giochi`, che ha chiave `(proprietario, id)`.

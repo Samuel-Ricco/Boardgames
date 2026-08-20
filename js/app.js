@@ -98,6 +98,7 @@ const state = {
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   soloPreferiti: false,        // mostra solo i giochi segnati
   presa: null,                 // la scatola che si sta spostando a mano
+  zoom: 1,                     // quanto la camera e' arretrata: 1 = normale
   libs: 1,                     // quante librerie in fila lungo la parete
   scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
   dragging: false,
@@ -773,6 +774,17 @@ function lista(){
   return state.soloPreferiti ? l.filter(function(g){ return g.preferito; }) : l;
 }
 
+/* Quello che sta SUGLI SCAFFALI, che non e' tutta la collezione.
+
+   Da quando si sceglie cosa esporre, `libreria` nulla vuol dire "ce
+   l'ho ma non e' in mostra": la libreria diventa una vetrina invece di
+   un magazzino, e l'elenco resta il posto dove c'e' tutto. E' anche
+   l'unica risposta sensata a una collezione da duecento giochi, che in
+   diciassette mobili non la guarda nessuno. */
+function listaScaffale(){
+  return lista().filter(function(g){ return !!g.libreria; });
+}
+
 function homeOf(index, h){
   const l = Math.floor(index / PER_LIB), k = index % PER_LIB;
   // poggiata sul piano del cubo, un filo dentro rispetto al fronte
@@ -807,7 +819,13 @@ function disposizione(list){
 
   if (!manuale){
     for (let i = 0; i < list.length; i++) posti[i] = i;
-    return { posti: posti, libs: Math.max(1, Math.ceil((list.length + 1) / PER_LIB)) };
+    return {
+      posti: posti,
+      // i mobili esistono anche quando sono vuoti: sono mobili, non
+      // contenitori che compaiono quando servono
+      libs: Math.max(LIB.librerie().length + 1,
+                     Math.ceil((list.length + 1) / PER_LIB))
+    };
   }
 
   const ordine = {};
@@ -842,7 +860,7 @@ function disposizione(list){
 
 function applyLibrary(opts){
   opts = opts || {};
-  const list = lista();
+  const list = listaScaffale();
   const disp = disposizione(list);
   const posti = disp.posti;
 
@@ -1084,6 +1102,14 @@ function iniziaPresa(box){
     box.scale.setScalar(lerp(s0, 1.12, easeOut(p)));
   });
   box.rotation.set(-.06, .12, .04);
+
+  /* La camera arretra un poco. Su un telefono la libreria riempie lo
+     schermo da bordo a bordo: senza allargare il quadro, del mobile
+     accanto non si vede niente e non c'e' modo di portarci una scatola.
+     E' poco -- un quarto -- perche' quello che si sta spostando deve
+     restare grande abbastanza da vedere dove lo si mette. */
+  const z0 = state.zoom;
+  tween(.32, function(p){ state.zoom = lerp(z0, 1.26, easeOut(p)); });
   muoviPresa();
 }
 
@@ -1149,6 +1175,64 @@ function fissaOrdineCorrente(quali){
 
    Se il mobile che si guarda e' pieno si passa agli altri in ordine,
    invece di rifiutare: meglio un posto qualsiasi che nessun posto. */
+/* --- mettere un gioco in vetrina, e toglierlo --------------------
+   Dal proprio elenco: e' li' che c'e' tutta la collezione, ed e' li'
+   che si decide cosa far vedere. Se le librerie sono piu' d'una si
+   sceglie quale, perche' e' il senso di avere piu' mobili. */
+function primoLibero(libId, tranne){
+  const presi = {};
+  LIB.all().forEach(function(g){
+    if (g.id !== tranne && g.libreria === libId && g.posto !== null && g.posto !== undefined){
+      presi[g.posto] = true;
+    }
+  });
+  for (let i = 0; i < PER_LIB; i++) if (!presi[i]) return i;
+  return -1;
+}
+
+function mettiSuScaffale(id, libId){
+  const p = primoLibero(libId, id);
+  if (p < 0){
+    flash('quel mobile e\' pieno: dodici cubi, dodici giochi');
+    disegnaMia();
+    return;
+  }
+  LIB.metti(id, libId, p);
+  LIB.mandaPosti([LIB.get(id)]);
+  disegnaMia();
+  ridisponi();
+  const L = LIB.librerie().find(function(x){ return x.id === libId; });
+  flash('"' + (LIB.get(id) || {}).title + '" in ' + ((L && L.nome) || 'libreria'));
+}
+
+function togliDaScaffale(id){
+  LIB.metti(id, null, null);
+  LIB.mandaPosti([LIB.get(id)]);
+  disegnaMia();
+  ridisponi();
+  flash('tolto dallo scaffale: resta nella tua collezione');
+}
+
+/* Con un mobile solo non c'e' niente da scegliere e si fa e basta. Con
+   piu' di uno il pulsante si apre nei nomi delle librerie, sul posto:
+   una finestra di scelta per un gesto da un clic sarebbe sproporzionata. */
+function scegliLibreria(btn, id){
+  const l = LIB.librerie();
+  if (!l.length){ flash('crea prima una libreria, dal nome in basso'); return; }
+  if (l.length === 1){ mettiSuScaffale(id, l[0].id); return; }
+
+  const box = document.createElement('span');
+  box.className = 'scegli-lib';
+  box.innerHTML = l.map(function(L){
+    const liberi = PER_LIB - LIB.all().filter(function(g){
+      return g.libreria === L.id && g.posto !== null && g.posto !== undefined;
+    }).length;
+    return '<button type="button" data-l="' + esc(L.id) + '"' +
+           (liberi <= 0 ? ' disabled title="pieno"' : '') + '>' + esc(L.nome) + '</button>';
+  }).join('') + '<button type="button" data-l="" class="lascia">annulla</button>';
+  btn.replaceWith(box);
+}
+
 function collocaNuovo(game){
   const librerie = LIB.librerie();
   if (!librerie.length || !game) return;
@@ -1241,6 +1325,9 @@ function finiscePresa(annulla, subito){
   if (alone) alone.visible = false;
   document.body.classList.remove('presa');
   document.body.style.cursor = '';
+
+  const z0 = state.zoom;
+  tween(.34, function(p){ state.zoom = lerp(z0, 1, easeInOut(p)); });
 
   // il cubo di partenza e' quello, non l'indice nella lista
   const partenza = p.box.userData.cubo;
@@ -1685,7 +1772,8 @@ function bindInput(){
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
       finiscePresa(true); chiudiMia(); chiudiPartita(); chiudiElenco();
-      chiudiArreda(); chiudiMobili(); unfocus(); closeAdd(); return;
+      chiudiArreda(); chiudiMobili(); chiudiGestioneGruppi();
+      unfocus(); closeAdd(); return;
     }
     if (e.key === 'Backspace' && LIB.ospitePresso() && state.phase === 'browse'){
       e.preventDefault(); tornaACasa(); return;
@@ -2219,7 +2307,10 @@ function setSezione(s){
      l'elenco: tornando indietro ci si ritrovava un pannello a meta'
      schermo di cui non si ricordava piu' il perche'. */
   if (s !== 'collezione' && (state.phase === 'focus' || state.phase === 'review')) unfocus();
-  if (s !== 'collezione') chiudiElenco();
+  /* Ogni pannello contestuale appartiene alla schermata da cui si e'
+     aperto: restava aperto passando al catalogo o al profilo, sospeso
+     su un contenuto che non c'entrava piu' niente. */
+  if (s !== 'collezione') chiudiPannelli('');
   state.sezione = s;
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
   document.body.classList.toggle('sez-profilo',  s === 'profilo');
@@ -2486,7 +2577,6 @@ function nuovoGruppoInLinea(btn, game){
     }).then(function(){
       disegnaGruppiScheda(game);
       disegnaGruppiFiltro();
-      disegnaGruppiProfilo();
       flash('gruppo "' + nome + '" creato');
     }).catch(function(err){
       flash('non creato: ' + err.message);
@@ -2516,7 +2606,45 @@ function disegnaGruppiFiltro(){
               (state.soloPreferiti ? ' class="on"' : '') + '>&#9733; preferiti</button>' : '');
 }
 
-function disegnaGruppiProfilo(){
+let gruppoAperto = null;        // di quale gruppo si stanno scegliendo i giochi
+
+function apriGestioneGruppi(){
+  if (LIB.ospitePresso()) return;
+  chiudiPannelli('gruppi');
+  gruppoAperto = null;
+  q('#gru-giochi').hidden = true;
+  q('#gru-msg').innerHTML = '';
+  disegnaGruppiElenco();
+  q('#gruppilayer').classList.add('on');
+  q('#gruppilayer').setAttribute('aria-hidden', 'false');
+}
+
+function chiudiGestioneGruppi(){
+  q('#gruppilayer').classList.remove('on');
+  q('#gruppilayer').setAttribute('aria-hidden', 'true');
+}
+
+/* I giochi di un gruppo, con l'interruttore per ognuno. Tutta la
+   collezione e non solo quello che sta in vetrina: un'etichetta vale
+   anche per un gioco che al momento non e' sugli scaffali. */
+function disegnaGiochiDelGruppo(){
+  const box = q('#gru-giochi');
+  if (!gruppoAperto){ box.hidden = true; return; }
+  const G = LIB.gruppi().find(function(x){ return x.id === gruppoAperto; });
+  if (!G){ gruppoAperto = null; box.hidden = true; return; }
+
+  box.hidden = false;
+  q('#gru-quale').textContent = 'chi sta in "' + G.nome + '"';
+  q('#gru-elenco').innerHTML = LIB.list('nome', '').map(function(g){
+    const dentro = LIB.gruppiDi(g.id).indexOf(G.id) >= 0;
+    return '<li data-id="' + esc(g.id) + '">' +
+      '<span class="nome">' + esc(g.title) + '</span>' +
+      '<button type="button"' + (dentro ? ' class="on"' : '') + '>' +
+      (dentro ? 'dentro' : 'aggiungi') + '</button></li>';
+  }).join('');
+}
+
+function disegnaGruppiElenco(){
   const el = q('#pro-gruppi');
   if (!el) return;
   // NON chiamarlo `quanti`: c'e' gia' una funzione con quel nome, e una
@@ -2533,10 +2661,13 @@ function disegnaGruppiProfilo(){
     return '<li data-id="' + esc(G.id) + '">' +
       '<span class="chi"><b>' + esc(G.nome) + '</b>' +
       '<span>' + n + ' ' + (n === 1 ? 'gioco' : 'giochi') + '</span></span>' +
-      '<span class="fa"><button type="button" class="no" data-fa="via">togli</button></span>' +
-    '</li>';
+      '<span class="fa">' +
+        '<button type="button" class="quali" data-fa="quali">' +
+        (gruppoAperto === G.id ? 'chiudi' : 'giochi') + '</button>' +
+        '<button type="button" class="no" data-fa="via">togli</button>' +
+      '</span></li>';
   }).join('');
-  quanti('#conta-gruppi', tutti.length);
+  disegnaGiochiDelGruppo();
 }
 
 function setGruppo(id){
@@ -2561,7 +2692,6 @@ function bindGruppi(){
     const dentro = !b.classList.contains('on');
     b.classList.toggle('on', dentro);          // ottimista: si vede subito
     LIB.segnaGruppo(game.id, id, dentro).then(function(){
-      disegnaGruppiProfilo();
       if (state.gruppo) ridisponi();
     }).catch(function(err){
       b.classList.toggle('on', !dentro);
@@ -2583,14 +2713,20 @@ function bindGruppi(){
     if (b) setGruppo(b.getAttribute('data-g'));
   });
 
+  q('#mia-gestisci').addEventListener('click', apriGestioneGruppi);
+  q('#gru-x').addEventListener('click', chiudiGestioneGruppi);
+  q('#gruppilayer').addEventListener('pointerup', function(e){ e.stopPropagation(); });
+
   q('#gru-piu').addEventListener('click', function(){
     const v = q('#gru-nuovo').value.trim();
     if (!v) return;
-    LIB.creaGruppo(v).then(function(){
+    LIB.creaGruppo(v).then(function(G){
       q('#gru-nuovo').value = '';
       proMsg('#gru-msg', '');
-      disegnaGruppiProfilo();
+      gruppoAperto = G.id;            // appena creato, si sceglie chi ci va
+      disegnaGruppiElenco();
       disegnaGruppiFiltro();
+      disegnaMia();
     }).catch(function(e){ proMsg('#gru-msg', esc(e.message), true); });
   });
   q('#gru-nuovo').addEventListener('keydown', function(e){
@@ -2599,16 +2735,57 @@ function bindGruppi(){
   });
 
   q('#pro-gruppi').addEventListener('click', function(e){
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    const id = li.getAttribute('data-id');
+
+    if (e.target.closest('[data-fa="quali"]')){
+      gruppoAperto = (gruppoAperto === id) ? null : id;
+      disegnaGruppiElenco();
+      return;
+    }
     const b = e.target.closest('button[data-fa="via"]');
     if (!b) return;
-    const id = b.closest('li').getAttribute('data-id');
     b.disabled = true;
     LIB.togliGruppo(id).then(function(){
       if (state.gruppo === id) setGruppo('');
-      disegnaGruppiProfilo();
+      if (gruppoAperto === id) gruppoAperto = null;
+      disegnaGruppiElenco();
       disegnaGruppiFiltro();
+      disegnaMia();
       flash('gruppo tolto: i giochi restano dove sono');
     }).catch(function(err){ b.disabled = false; flash('non tolto: ' + err.message); });
+  });
+
+  // dentro/fuori dal gruppo aperto, un gioco per riga
+  q('#gru-elenco').addEventListener('click', function(e){
+    const b = e.target.closest('button');
+    if (!b || !gruppoAperto) return;
+    const id = b.closest('li').getAttribute('data-id');
+    const dentro = !b.classList.contains('on');
+    b.classList.toggle('on', dentro);
+    b.textContent = dentro ? 'dentro' : 'aggiungi';
+    const G = gruppoAperto;
+    LIB.segnaGruppo(id, G, dentro).then(function(){
+      /* NON si ridisegna l'elenco dei giochi. Sostituirlo a ogni tocco
+         stacca dal documento il pulsante appena premuto, e il tocco
+         successivo cade su un nodo che non c'e' piu': segnandone due di
+         fila, il secondo non arrivava. Si aggiorna solo il numero, in
+         posto. */
+      const li = q('#pro-gruppi li[data-id="' + G + '"]');
+      if (li){
+        const n = LIB.all().filter(function(x){
+          return LIB.gruppiDi(x.id).indexOf(G) >= 0;
+        }).length;
+        li.querySelector('.chi span').textContent = n + ' ' + (n === 1 ? 'gioco' : 'giochi');
+      }
+      disegnaGruppiFiltro();
+      disegnaMia();
+    }).catch(function(err){
+      b.classList.toggle('on', !dentro);
+      b.textContent = dentro ? 'aggiungi' : 'dentro';
+      flash('non riuscito: ' + err.message);
+    });
   });
 }
 
@@ -2629,7 +2806,7 @@ function disegnaMobili(){
   const el = q('#mobili-lista');
   if (!el) return;
   const l = LIB.librerie();
-  const perLibreria = {};             // vedi disegnaGruppiProfilo: non chiamarlo `quanti`
+  const perLibreria = {};             // vedi disegnaGruppiElenco: non chiamarlo `quanti`
   LIB.all().forEach(function(g){
     if (g.libreria) perLibreria[g.libreria] = (perLibreria[g.libreria] || 0) + 1;
   });
@@ -2638,6 +2815,8 @@ function disegnaMobili(){
     return '<li data-id="' + esc(L.id) + '">' +
       '<input type="text" value="' + esc(L.nome) + '" maxlength="30" ' +
         'aria-label="nome della libreria">' +
+      '<button type="button" class="ok" data-fa="ok" aria-label="conferma il nome" ' +
+        'disabled>&#10003;</button>' +
       '<span class="quanti">' + (perLibreria[L.id] || 0) + '</span>' +
       (l.length > 1 ? '<button type="button" data-fa="via" aria-label="togli">&times;</button>' : '') +
     '</li>';
@@ -2684,21 +2863,46 @@ function bindMobili(){
     }).catch(function(e){ flash('non creata: ' + e.message); });
   });
 
-  // rinomina quando si esce dal campo o si preme invio: salvare a ogni
-  // tasto vorrebbe dire una scrittura per lettera
-  q('#mobili-lista').addEventListener('change', function(e){
+  /* La rinomina vuole una conferma esplicita. Salvare all'uscita dal
+     campo faceva partire una scrittura anche a chi ci cliccava dentro
+     per sbaglio, e soprattutto non si capiva se era andata: il nome
+     sopra la libreria e' l'unica prova, e va aggiornato subito. */
+  const confermaNome = function(li){
+    const inp = li.querySelector('input');
+    const ok = li.querySelector('[data-fa="ok"]');
+    const id = li.getAttribute('data-id');
+    ok.disabled = true;
+    LIB.rinominaLibreria(id, inp.value).then(function(){
+      buildCabinet();               // la targhetta sopra il mobile e' li' dentro
+      applyLibrary({});
+      updateRail();
+      flash('libreria rinominata');
+    }).catch(function(err){
+      ok.disabled = false;
+      flash('non rinominata: ' + err.message);
+    });
+  };
+
+  q('#mobili-lista').addEventListener('input', function(e){
     if (e.target.tagName !== 'INPUT') return;
-    const id = e.target.closest('li').getAttribute('data-id');
-    LIB.rinominaLibreria(id, e.target.value)
-      .then(function(){ updateRail(); })
-      .catch(function(err){ flash('non rinominata: ' + err.message); disegnaMobili(); });
+    const li = e.target.closest('li');
+    const L = LIB.librerie().find(function(x){ return x.id === li.getAttribute('data-id'); });
+    // il segno di spunta si accende solo se c'e' davvero qualcosa da salvare
+    li.querySelector('[data-fa="ok"]').disabled =
+      !e.target.value.trim() || (L && e.target.value === L.nome);
   });
   q('#mobili-lista').addEventListener('keydown', function(e){
     e.stopPropagation();
-    if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.blur();
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT'){
+      const li = e.target.closest('li');
+      if (!li.querySelector('[data-fa="ok"]').disabled) confermaNome(li);
+    }
   });
 
   q('#mobili-lista').addEventListener('click', function(e){
+    const ok = e.target.closest('button[data-fa="ok"]');
+    if (ok){ confermaNome(ok.closest('li')); return; }
+
     const b = e.target.closest('button[data-fa="via"]');
     if (!b) return;
     const id = b.closest('li').getAttribute('data-id');
@@ -2706,8 +2910,9 @@ function bindMobili(){
     LIB.togliLibreria(id).then(function(){
       disegnaMobili();
       state.scrollTo = clamp(state.scrollTo, 0, maxScroll());
+      buildCabinet();
       applyLibrary({ animate: true });
-      flash('libreria tolta: i giochi sono rifluiti nei cubi liberi');
+      flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
     }).catch(function(err){ b.disabled = false; flash('non tolta: ' + err.message); });
   });
 }
@@ -2785,6 +2990,7 @@ function chiudiPannelli(tranne){
   if (tranne !== 'mia')     chiudiMia();
   if (tranne !== 'partita') chiudiPartita();
   if (tranne !== 'add')     closeAdd();
+  if (tranne !== 'gruppi')  chiudiGestioneGruppi();
 }
 
 function apriArreda(){
@@ -2873,6 +3079,8 @@ function bindStanza(){
    a 390 px e' gia' piena. */
 
 function rigaMia(g){
+  const L = g.libreria && LIB.librerie().find(function(x){ return x.id === g.libreria; });
+  const dove = L ? L.nome : '';
   const chi = [g.designer, g.publisher].filter(Boolean).map(esc).join(' &middot; ');
   const spec = [[g.players, 'giocatori'], [g.time, 'minuti'],
                 [g.year, 'anno'], [g.score, 'voto']]
@@ -2885,16 +3093,20 @@ function rigaMia(g){
   return '<li data-id="' + esc(g.id) + '">' +
     '<div class="cat-cop">' + cop + '</div>' +
     '<div class="cat-dati">' +
-      '<h3>' + esc(g.title) + '</h3>' +
+      '<h3>' + esc(g.title) + (g.preferito ? ' <i class="stella">&#9733;</i>' : '') + '</h3>' +
       (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
       (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
+      '<p class="cat-dove">' + (dove ? 'in <b>' + esc(dove) + '</b>' : 'non in libreria') + '</p>' +
     '</div>' +
     '<div class="cat-azioni">' +
       (LIB.ospitePresso() ? '' :
         '<button type="button" class="pref' + (g.preferito ? ' on' : '') + '" ' +
         'data-fa="pref" aria-label="preferito">' + (g.preferito ? '&#9733;' : '&#9734;') + '</button>') +
-      '<button type="button" class="apri">recensione</button>' +
-      '<button type="button" data-fa="scaffale">sullo scaffale</button>' +
+      '<button type="button" class="apri">scheda</button>' +
+      (LIB.ospitePresso() ? '' : (g.libreria
+        ? '<button type="button" data-fa="scaffale">vai allo scaffale</button>' +
+          '<button type="button" data-fa="fuori" class="fuori">togli</button>'
+        : '<button type="button" data-fa="dentro" class="dentro">in libreria</button>')) +
     '</div>' +
     '<div class="cat-rec"></div>' +
   '</li>';
@@ -2937,13 +3149,14 @@ function disegnaMia(){
     q('#mia-list').innerHTML = html;
   }
 
+  const inVetrina = l.filter(function(g){ return !!g.libreria; }).length;
   const perche = [];
   if (state.q) perche.push('per <b>' + esc(state.q) + '</b>');
   if (state.soloPreferiti) perche.push('fra i preferiti');
   q('#mia-msg').innerHTML = l.length
     ? '<b>' + l.length + '</b> ' + (l.length === 1 ? 'gioco' : 'giochi') +
       (perche.length ? ' ' + perche.join(', ') : '') +
-      '. Tocca una riga per leggere la recensione.'
+      ', <b>' + inVetrina + '</b> sugli scaffali. Tocca una riga per la scheda.'
     : (perche.length ? 'Niente ' + perche.join(', ') + '.' : 'La libreria e\' vuota.');
 }
 
@@ -2980,9 +3193,19 @@ function apriRigaMia(li){
   li.querySelector('.apri').textContent = aperta ? 'chiudi' : 'recensione';
   if (!aperta) return;
   const testo = (g.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('');
+  /* Le etichette anche qui: cliccando un gioco si deve poterlo mettere
+     in un gruppo senza passare da nessun'altra parte. */
+  const tutti = LIB.gruppi();
+  const suoi = LIB.gruppiDi(g.id);
+  const chip = (LIB.ospitePresso() || !tutti.length) ? '' :
+    '<div class="gruppi riga-gruppi">' + tutti.map(function(G){
+      return '<button type="button" data-g="' + esc(G.id) + '"' +
+             (suoi.indexOf(G.id) >= 0 ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
+    }).join('') + '</div>';
+
   li.querySelector('.cat-rec').innerHTML =
     (g.score ? '<p class="voto">' + esc(g.score) + '<i>/10</i></p>' : '') +
-    (testo || '<p class="vuoto">Nessuna recensione, per ora.</p>');
+    (testo || '<p class="vuoto">Nessuna recensione, per ora.</p>') + chip;
 }
 
 /* ===============================================================
@@ -3012,7 +3235,6 @@ function apriProfilo(){
      titoli seguiti dal vuoto non spiegano niente a nessuno. */
   PARTITE.caricaGiocatori().then(disegnaGiocatori);
   PARTITE.carica().then(disegnaPartite);
-  disegnaGruppiProfilo();
 
   if (!PROFILO.mio()){
     proMsg('#pro-amici-msg', esc(PROFILO.problema() || 'profilo non disponibile'), true);
@@ -3246,6 +3468,29 @@ function bindProfilo(){
     const id = li.getAttribute('data-id');
 
     if (e.target.closest('[data-fa="scaffale"]')){ apriSulloScaffale(id); return; }
+    const dentro = e.target.closest('[data-fa="dentro"]');
+    if (dentro){ scegliLibreria(dentro, id); return; }
+    if (e.target.closest('[data-fa="fuori"]')){ togliDaScaffale(id); return; }
+    // le pastiglie dei gruppi dentro la riga aperta
+    const chip = e.target.closest('.riga-gruppi button[data-g]');
+    if (chip){
+      const gid = chip.getAttribute('data-g');
+      const dentro = !chip.classList.contains('on');
+      chip.classList.toggle('on', dentro);
+      LIB.segnaGruppo(id, gid, dentro).then(function(){
+        disegnaGruppiFiltro();
+      }).catch(function(err){
+        chip.classList.toggle('on', !dentro);
+        flash('non riuscito: ' + err.message);
+      });
+      return;
+    }
+    const scelto = e.target.closest('.scegli-lib button[data-l]');
+    if (scelto){
+      const v = scelto.getAttribute('data-l');
+      if (v) mettiSuScaffale(id, v); else disegnaMia();
+      return;
+    }
     if (e.target.closest('[data-fa="pref"]')){
       const g = LIB.get(id);
       if (g) LIB.segnaPreferito(id, !g.preferito);
@@ -3763,7 +4008,7 @@ function frame(now){
   if (state.phase === 'browse'){
     const before = Math.round(state.scroll);
     state.scroll += (state.scrollTo - state.scroll) * Math.min(1, dt * 7);
-    camBase.set(camXFor(state.scroll), CENTRO_Y, state.distShelf);
+    camBase.set(camXFor(state.scroll), CENTRO_Y, state.distShelf * state.zoom);
     if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)) updateRail();
   }
 
@@ -3795,6 +4040,25 @@ function frame(now){
 
   if (state.focused) focusLight.position.copy(state.focused.position).add(new THREE.Vector3(1.2, 2.2, 3.4));
   focusLight.intensity = state.focusLight * 1.1;
+
+  /* Con una scatola in mano, avvicinandosi al bordo dello schermo la
+     vista scorre verso il mobile accanto -- come quando si trascina un
+     file sul bordo di una finestra. Sta qui e non in `muoviPresa`
+     perche' deve continuare anche a dito fermo: sul bordo si aspetta,
+     non si sfrega.
+
+     Dopo, `muoviPresa` va richiamata: la scena si e' spostata sotto la
+     scatola, quindi il cubo mirato non e' piu' quello di un attimo fa. */
+  if (state.presa && state.phase === 'browse'){
+    const bordo = .70;
+    const fuori = Math.abs(state.px) - bordo;
+    if (fuori > 0){
+      const verso = state.px > 0 ? 1 : -1;
+      state.scrollTo = clamp(
+        state.scrollTo + verso * (fuori / (1 - bordo)) * dt * 2.2, 0, maxScroll());
+    }
+    muoviPresa();
+  }
 
   if (state.phase === 'browse' && !state.dragging && !state.presa){
     const hit = pick();

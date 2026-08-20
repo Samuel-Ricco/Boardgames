@@ -150,6 +150,61 @@ body.visita #p-pref{display:none !important}
 .cat-azioni .pref{font-size:14px; line-height:1; padding:6px 9px}
 .cat-azioni .pref.on{color:#fdfaf4; background:var(--amber); border-color:var(--amber)}
 
+/* dove sta un gioco, e come si sceglie dove metterlo */
+.cat-dove{
+  margin:7px 0 0; font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+  color:rgba(44,36,27,.45);
+}
+.cat-dove b{color:var(--amber); font-weight:500}
+.cat-dati h3 .stella{color:var(--amber); font-style:normal; font-size:15px; vertical-align:2px}
+.cat-azioni .dentro{color:var(--amber); border-color:rgba(154,106,21,.45)}
+.cat-azioni .fuori:hover{color:var(--rust); border-color:var(--rust)}
+.scegli-lib{display:flex; flex-wrap:wrap; gap:5px; max-width:190px}
+.scegli-lib button{
+  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; cursor:pointer; color:#fdfaf4;
+  background:var(--amber); border:1px solid var(--amber); padding:6px 8px;
+}
+.scegli-lib button:hover{background:var(--ink); border-color:var(--ink)}
+.scegli-lib button:disabled{opacity:.4; cursor:default}
+.scegli-lib button.lascia{
+  color:var(--ink-soft); background:none; border-color:var(--line);
+}
+.scegli-lib button.lascia:hover{color:var(--ink); background:none; border-color:var(--amber)}
+
+/* la barra sopra l'elenco: filtri a sinistra, gestione a destra */
+.mia-barra{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:14px 0 0}
+.mia-barra .gruppi{margin:0; flex:1; min-width:0}
+#mia-gestisci{
+  flex:none; font-family:var(--ff-text); font-size:10px; font-weight:700;
+  letter-spacing:.13em; text-transform:uppercase; cursor:pointer;
+  color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:6px 10px;
+}
+#mia-gestisci:hover{color:var(--amber); border-color:var(--amber)}
+
+#gruppilayer{
+  position:fixed; inset:0; z-index:9; display:flex; align-items:center;
+  justify-content:center; padding:20px; background:rgba(90,74,50,.42);
+  opacity:0; visibility:hidden; transition:opacity .3s ease, visibility 0s .3s;
+}
+#gruppilayer.on{opacity:1; visibility:visible; transition:opacity .3s ease, visibility 0s}
+#gru-giochi{margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line)}
+#gru-giochi .eyebrow{margin:0 0 10px}
+.gru-elenco{list-style:none; margin:0; padding:0; max-height:38vh; overflow:auto}
+.gru-elenco li{
+  display:flex; align-items:center; gap:10px; padding:7px 0;
+  border-bottom:1px solid var(--line);
+}
+.gru-elenco .nome{flex:1; min-width:0; font-size:13.5px; color:var(--ink); overflow-wrap:anywhere}
+.gru-elenco button{
+  flex:none; font-family:var(--ff-text); font-size:10px; font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
+  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:6px 9px;
+}
+.gru-elenco button:hover{color:var(--ink); border-color:var(--amber)}
+.gru-elenco button.on{color:#fdfaf4; background:var(--rust); border-color:var(--rust)}
+.pro-gente button.quali{color:var(--amber); border-color:rgba(154,106,21,.45)}
+
 /* --- cartelle nell'elenco ----------------------------------------- */
 .cartella{margin:26px 0 0}
 .cartella:first-child{margin-top:14px}
@@ -829,6 +884,10 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
   color:var(--ink-soft); background:none; border:1px solid var(--line);
 }
 #mobili-lista button:hover{color:var(--rust); border-color:var(--rust)}
+#mobili-lista button.ok{color:var(--amber); border-color:rgba(154,106,21,.45); font-size:13px}
+#mobili-lista button.ok:hover{color:#fdfaf4; background:var(--amber); border-color:var(--amber)}
+#mobili-lista button.ok:disabled{opacity:.3; cursor:default}
+#mobili-lista button.ok:disabled:hover{color:var(--ink-soft); background:none; border-color:var(--line)}
 #mobili-msg{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(44,36,27,.45)}
 #mobili-piu{
   font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;

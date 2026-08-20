@@ -186,16 +186,23 @@ I **giocatori** sono nomi salvati, non account: al tavolo c'è quasi sempre
 qualcuno che sul sito non c'è. Chi invece è un amico viene proposto da solo, così
 non lo si riscrive ogni volta.
 
+## Cosa sta in libreria
+
+Gli scaffali non mostrano tutta la collezione: mostrano quello che scegli tu.
+Dall'elenco dei tuoi giochi metti un gioco in vetrina — scegliendo in quale
+libreria — oppure lo togli, e resta comunque tuo. È la differenza fra un
+magazzino e una vetrina, e con duecento giochi è anche l'unica cosa sensata.
+
 ## I gruppi
 
 Etichette con il nome che vuoi — *party games*, *strategici*, *da due* — che
 attraversano le librerie: un gioco può stare in più gruppi, e un gruppo può
 pescare da mobili diversi.
 
-Si mettono dalla scheda del gioco, dove le pastiglie si accendono col dito, e da
-lì si crea anche un gruppo nuovo senza andare da nessun'altra parte. In cima
-all'elenco della libreria le stesse pastiglie servono a filtrare. Si rinominano e
-si tolgono dal profilo; toglierne uno non tocca i giochi, sparisce l'etichetta.
+Si mettono dalla scheda del gioco e dalla riga aperta nell'elenco, dove le
+pastiglie si accendono col dito. In cima all'elenco le stesse pastiglie filtrano,
+e **gestisci gruppi** apre creazione, rinomina e l'elenco di chi ci sta dentro.
+Toglierne uno non tocca i giochi: sparisce l'etichetta.
 
 ## Ordinare, cercare, contare
 
