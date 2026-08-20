@@ -1207,11 +1207,13 @@ function mettiSuScaffale(id, libId){
 }
 
 function togliDaScaffale(id){
+  const g = LIB.get(id);
   LIB.metti(id, null, null);
   LIB.mandaPosti([LIB.get(id)]);
   disegnaMia();
-  ridisponi();
-  flash('tolto dallo scaffale: resta nella tua collezione');
+  ridisponi();                 // chiude la scatola aperta e rifa' gli scaffali
+  flash('"' + ((g && g.title) || 'il gioco') + '" e\' uscito dallo scaffale: ' +
+        'resta nella tua collezione');
 }
 
 /* Con un mobile solo non c'e' niente da scegliere e si fa e basta. Con
@@ -1793,9 +1795,24 @@ function bindInput(){
     apriModifica(g);
   });
 
+  /* Due gesti diversi che prima erano uno solo.
+
+     "dallo scaffale" toglie la scatola dalla vetrina e la lascia nella
+     collezione: e' reversibile, si rimette dall'elenco in un clic, e
+     quindi non chiede niente. "elimina" butta via il gioco per sempre,
+     resta rosso e resta in due tempi. Chiamarli tutti e due "togli"
+     voleva dire che il gesto innocuo e quello irreversibile avevano lo
+     stesso nome e lo stesso posto. */
+  q('#p-fuori').addEventListener('click', function(e){
+    e.stopPropagation();
+    const g = state.focused && state.focused.userData.game;
+    if (!g) return;
+    togliDaScaffale(g.id);
+  });
+
   armaBottone(q('#del'),
-    '<span aria-hidden="true">&#9003;</span> togli',
-    'sicuro?', removeFocused);
+    '<span aria-hidden="true">&#9003;</span> elimina',
+    'sicuro? sparisce', removeFocused);
   q('#panel').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   let rt;

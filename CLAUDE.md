@@ -140,7 +140,13 @@ solo quello che si sceglie (`listaScaffale()`), e l'elenco resta il posto dove
 c'è tutto. È anche l'unica risposta sensata a una collezione da duecento giochi,
 che in diciassette mobili non la guarda nessuno.
 
-- Si mette e si toglie **dall'elenco**, ed è lì che si sceglie in quale mobile:
+- **Uscire dallo scaffale e sparire dalla collezione sono due gesti diversi**, e
+  nel pannello della recensione hanno due pulsanti: *dallo scaffale* è
+  reversibile in un clic dall'elenco e non chiede niente; *elimina* butta via il
+  gioco, resta rosso e resta in due tempi. Prima si chiamavano tutti e due
+  «togli», cioè il gesto innocuo e quello irreversibile avevano lo stesso nome e
+  lo stesso posto.
+- Si mette e si toglie anche **dall'elenco**, ed è lì che si sceglie in quale mobile:
   è il senso di avere più librerie. Con un mobile solo non c'è niente da
   scegliere e si fa e basta; con più di uno il pulsante si apre nei nomi, sul
   posto — una finestra di scelta per un gesto da un clic sarebbe sproporzionata.

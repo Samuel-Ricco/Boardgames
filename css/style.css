@@ -1157,6 +1157,15 @@ body.review .pan-foot{opacity:1}
 }
 #p-mia:hover{background:var(--ink); border-color:var(--ink)}
 body.visita #p-mia{display:none !important}
+/* togliere dallo scaffale e' reversibile e non chiede conferma:
+   eliminare no, e infatti resta rosso e in due tempi */
+#p-fuori{
+  font-family:var(--ff-text); font-size:10px; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  color:var(--ink-soft); background:none; border:1px solid var(--line); padding:9px 10px;
+}
+#p-fuori:hover{color:var(--ink); border-color:var(--amber)}
+body.visita #p-fuori{display:none !important}
 #del{
   font-family:var(--ff-text); font-size:11px; font-weight:700;
   letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
