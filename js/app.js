@@ -3978,7 +3978,7 @@ function disegnaPastiglie(){
   };
   gruppo('#lab-corpi', PROFILO.CORPI, 'corpo', false);
   gruppo('#lab-fondi', PROFILO.FONDI, 'fondo', false);
-  gruppo('#lab-segni', [0,1,2,3,4,5,6], 'segno', true);
+  // il dado in filigrana non si sceglie piu': non si vedeva
   // l'anteprima e' la faccia grande in cima: si prova sul posto vero
   disegnaFaccia(q('#pro-avatar'), labAvatar, 160);
 }

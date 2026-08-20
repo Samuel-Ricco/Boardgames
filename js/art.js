@@ -661,7 +661,13 @@ function sagomaMeeple(x, s, cx, cy){
   x.fill();
 }
 
-// i puntini di un dado, in filigrana dietro al meeple
+/* I puntini di un dado, in filigrana dietro al meeple.
+
+   NON SI USA PIU'. Con il meeple ridisegnato -- pieno, con le braccia
+   che attraversano tutto il quadrato -- della filigrana restavano due
+   angoli, e nel ritaglio tondo del profilo nemmeno quelli. Si sceglieva
+   un numero che nessuno poteva vedere. Resta qui perche' e' un disegno
+   buono, se un giorno torna un posto dove si veda. */
 function filigranaDado(x, n, S){
   if (!n) return;
   const POS = {
@@ -688,11 +694,14 @@ function avatar(av, S){
   x.fillRect(0, 0, S, S);
 
   x.fillStyle = av.corpo || '#c1552c';
-  filigranaDado(x, av.segno || 0, S);
 
-  // il meeple non e' centrato sul quadrato ma un filo piu' in basso:
-  // la testa tonda tira l'occhio in alto e cosi' torna in mezzo
-  sagomaMeeple(x, S * .40, S/2, S * .56);
+  /* Il meeple sta PIU' LARGO nel quadrato di prima: a 0.40 arrivava a
+     filo del bordo e dentro un ritaglio tondo -- che e' come si vede
+     nel profilo -- le mani venivano tagliate via.
+
+     E non e' centrato ma un filo piu' in basso: la testa tonda tira
+     l'occhio in alto, e cosi' torna in mezzo. */
+  sagomaMeeple(x, S * .31, S/2, S * .53);
 
   grain(x, S, S, 8);
   return c;

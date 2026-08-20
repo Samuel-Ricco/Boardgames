@@ -1242,6 +1242,34 @@ e in `js/app.js` (`meepleShape`, estruso in 3D).** Se divergono si vedono due
 meeple diversi nella stessa schermata. Un primo tentativo lo aveva fatto in tre
 pezzi separati e le gambe uscivano come un triangolo col taglio in mezzo.
 
+### Una tinta è un bollino, una voce è una parola
+
+Nel pannello della stanza convivono due tipi di pastiglia: i **bollini** delle
+tinte e le **voci** degli arredi. Una regola sola che le rendeva tutte tonde
+sembrava innocua, ma su un pulsante di testo un raggio del 50% dà un'**ellisse**
+— era quel contorno ovale attorno a «cornici».
+
+I bollini sono tondi e la loro selezione è un **anello staccato**
+(`box-shadow` doppio): serve lo stacco, se no su una tinta chiara l'anello ci si
+confonde dentro. Le voci sono pastiglie allungate e la loro selezione è il
+**pieno**. In nessuno dei due casi è un `outline` che gira attorno alla forma.
+
+### Il meeple del profilo sta dentro un cerchio
+
+Sta a 0.31 del lato e non a 0.40. Non è una questione di gusto: la faccia del
+profilo è **ritagliata tonda**, e a 0.40 il meeple arrivava a filo del quadrato
+— il cerchio gli tagliava via le mani.
+
+Il **dado in filigrana non si sceglie più**: con il meeple ridisegnato, pieno e
+con le braccia che attraversano tutto il quadrato, della filigrana restavano due
+angoli, e nel ritaglio tondo nemmeno quelli. Si sceglieva un numero che nessuno
+poteva vedere. `filigranaDado` resta in `art.js` perché è un disegno buono, se un
+giorno torna un posto dove si veda.
+
+Le tinte sono **sedici meeple e dodici fondi**. Erano otto e quattro, e i quattro
+fondi erano quattro sfumature dello stesso beige: non una scelta, l'illusione di
+una scelta.
+
 ### Le icone
 
 Un corredo solo in SVG: tratto 1.6, estremi tondi, riquadro 24, e prendono il

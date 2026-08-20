@@ -1890,7 +1890,6 @@ body.elenco #conta b{color:#fff}
 #addlayer button, #profilo button, #catalogo button, #mia button{
   border-radius:var(--r-s);
 }
-#stanza .st-riga button, .st-tinte button{border-radius:50%}
 #mobili-lista input, #stanza input[type=text]{border-radius:var(--r-s)}
 
 /* --- collezione ---------------------------------------------------- */
@@ -2165,3 +2164,42 @@ body.arreda #stanza{transform:none}
    didascalia dell'immagine invece di chi sei. */
 .pro-testa{gap:26px}
 @media (max-width:420px){ .pro-testa{gap:20px} }
+
+/* --- LE PASTIGLIE: TINTE E VOCI SONO DUE COSE DIVERSE ---------------
+
+   Una regola sola le aveva rese tutte tonde, e su un pulsante di testo
+   un raggio del 50% da' un'ELLISSE -- quella era la "selezione a
+   cerchio" attorno a CORNICI. Una tinta e' un bollino, e un bollino e'
+   tondo; una voce e' una parola, e una parola sta in una pastiglia.
+
+   La selezione non e' un contorno che gira attorno alla forma: sulle
+   tinte e' un anello staccato -- serve lo stacco, se no su un colore
+   chiaro l'anello ci si confonde -- e sulle voci e' il pieno. */
+.pastiglie.tinte button, #st-scaffali button, #st-muro button, #st-pavimento button{
+  width:30px; height:30px; border-radius:50%; padding:0; border:0;
+  box-shadow:inset 0 0 0 1px rgba(51,53,43,.14);
+}
+.pastiglie.tinte button.on, #st-scaffali button.on,
+#st-muro button.on, #st-pavimento button.on{
+  outline:none;
+  box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent);
+}
+
+.pastiglie.testo button{
+  width:auto; height:auto; border-radius:999px; padding:8px 14px;
+  font-family:var(--ff); font-size:13px; font-weight:500;
+  letter-spacing:0; text-transform:none; line-height:1.2;
+  color:var(--ink-soft); background:rgba(51,53,43,.06);
+}
+.pastiglie.testo button:hover{background:rgba(51,53,43,.11); color:var(--ink)}
+.pastiglie.testo button.on{
+  outline:none; background:var(--accent); color:#fff; font-weight:600;
+}
+
+/* nel laboratorio le tinte sono tante: vanno a capo con ordine */
+.pro-lab-riga{display:flex; align-items:flex-start; gap:14px; margin:0 0 14px}
+.pro-lab-riga>span:first-child{
+  flex:0 0 62px; font-size:11px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--ink-soft); padding-top:6px;
+}
+.pro-lab-riga .pastiglie{gap:9px}

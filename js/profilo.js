@@ -36,9 +36,25 @@ function cli(){
 /* Le tinte disponibili stanno qui e non nell'interfaccia: il profilo sa
    di che colori e' fatta una faccia, e chi la disegna glieli chiede.
    Sono le stesse con cui avatarDa() sceglie quella di partenza. */
-const CORPI = ['#c1552c', '#9a6a15', '#3f4f63', '#4d5a48', '#6a3a3a',
-               '#57406a', '#2c241b', '#a8432a'];
-const FONDI = ['#efe3cb', '#e0d2b6', '#d9c9ad', '#e8dcc6'];
+/* Sedici colori di meeple e dodici di fondo. Erano otto e quattro, e i
+   quattro fondi si distinguevano appena l'uno dall'altro: quattro
+   sfumature dello stesso beige non sono una scelta, sono un'illusione
+   di scelta.
+
+   Sono le tinte dei meeple veri -- rosso, blu, giallo, verde, viola,
+   nero, bianco -- portate un passo verso il basso, cosi' stanno insieme
+   al resto del sito senza diventare fluorescenti. */
+const CORPI = [
+  '#c1552c', '#a8341f', '#d08a3a', '#c9a227',
+  '#6a7f3f', '#3f6b4a', '#2f7d72', '#2f6690',
+  '#3f4f63', '#54487f', '#7b3f6b', '#8e6a4b',
+  '#6a3a3a', '#33352b', '#8d8d84', '#efe9dd'
+];
+const FONDI = [
+  '#f2f1ed', '#efe3cb', '#e6dcc3', '#dcd6c4',
+  '#cfccc8', '#c7af98', '#cbbfae', '#bfc4b4',
+  '#a6a89c', '#b9c2c6', '#c9b6b0', '#8e8e83'
+];
 
 /* La faccia predefinita. Non e' casuale davvero: viene dall'uuid, cosi'
    due persone diverse partono quasi sempre da un meeple diverso e
