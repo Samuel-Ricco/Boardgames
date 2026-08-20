@@ -1116,40 +1116,99 @@ formato dello schermo, e la posizione della scatola in primo piano è espressa i
 
 ## Estetica (vincoli fissi)
 
-- **Crema e verde molto scuro**, direzione editoriale. `--bg #eae6db` (la
-  stanza), `--ink #2a2a22` (il testo), `--amber #8a7638` (interattivi),
-  `--rust #9c5138` (etichette). `--bg` deve restare **uguale a `SFONDO`** in
-  `js/app.js`: è la stessa tinta a tenere insieme caricamento, cancello e mondo
-  dietro.
-- Font: **Instrument Serif** per titoli e numeri, **Inter** per il testo.
-  Entrambi in `fonts/`, licenza OFL, scaricati e committati — niente risorse
-  esterne, mai. Sono anche i font disegnati su canvas, quindi
-  `document.fonts.ready` va aspettato **prima** di generare le texture.
-- **Maiuscole e minuscole, non tutto maiuscolo.** Bebas Neue era condensato e
-  senza minuscole: viveva di capitali e di spaziatura positiva. Un serif
-  editoriale è l'opposto — vuole il testo com'è scritto e la spaziatura a zero.
-  Passando da uno all'altro **le misure non si portano dietro**: agli stessi px
-  un serif di larghezza normale è molto più largo di un condensato, e i titoli
-  escono dal quadro. Tutte le regole che usano `--ff-display` sono state
-  riscalate di **0.82** e la loro `letter-spacing` azzerata.
-- Resta maiuscolo solo il **dorso** delle scatole: è alto sessanta pixel su una
-  striscia che a schermo ne vale otto, e lì contano le sagome delle lettere.
-- Il **mobile scuro contro la parete chiara** è l'immagine del sito. Il rovere
-  sbiancato di prima — chiaro su chiaro — la annullava: la libreria spariva nel
-  muro invece di stagliarcisi contro. I legni sono tirati verso l'oliva e il
-  valore di partenza è `ebano oliva`; chi vuole il chiaro ce l'ha ancora, le
-  tavolozze restano chiuse e ogni tinta resta un legno o un intonaco che esiste.
-- **Una curva sola per tutto il sito** (`--ease`): parte decisa e si posa piano.
-  Le cose entrano dal basso, a scaglioni, e le prime dodici righe sono le uniche
-  ritardate — ritardare la duecentesima vuol dire farla comparire tre secondi
-  dopo che ci sei arrivato sopra. Niente rimbalzi e niente rotazioni: qui si
-  parla di mobili e di carta, e il movimento deve leggersi come una pagina che
-  si volta.
-- Le sezioni si accendono con `display`, quindi vogliono una **`animation` e non
-  una `transition`**: una transizione su un elemento che passa da `none` a
-  `block` non parte proprio.
-- `prefers-reduced-motion` è rispettato. Non è una cortesia: per qualcuno il
-  movimento sullo schermo è nausea vera, e il sistema operativo lo sa già.
+### La tavolozza: sei tinte, e basta
+
+`--bg #cfccc8` (grigio caldo, la stanza) · `--card #f2f1ed` (le schede) ·
+`--ink-soft #747760` (oliva) · `--sage #a6a89c` · `--sand #c7af98` ·
+`--wood #8e6a4b` · `--accent #c86a3c` (terracotta: **tutto quello che si tocca**).
+
+`--ink #33352b` è **l'unica derivata**, e c'è un motivo: l'oliva della tavolozza
+sul fondo fa 2,6 a 1 di contrasto, cioè illeggibile per un testo. È lo stesso
+colore portato al buio quanto basta — 8,5 a 1 — e resta della stessa famiglia.
+
+`--bg` deve restare **uguale a `SFONDO`** in `js/app.js`. Le tavolozze della
+stanza (`js/stanza.js`) escono dalle stesse sei tinte: un mobile di un colore che
+non esiste da nessun'altra parte del sito era metà del problema.
+
+### Un font solo
+
+**Poppins**, cinque pesi, in `fonts/`, licenza OFL, committato — niente risorse
+esterne, mai. È anche il font disegnato su canvas (`FF` in `js/art.js`), quindi
+`document.fonts.ready` va aspettato **prima** di generare le texture.
+
+**La gerarchia la fa il peso, non la famiglia.** Prima ce n'erano due e ogni
+schermata sembrava composta da due mani diverse.
+
+Attenzione alle misure: sono nate su Bebas Neue, che era **condensato**. Poppins
+è di larghezza normale e agli stessi px occupa molto di più. Le regole che usano
+`--ff-display` stanno a **0.72** delle misure originali. Chi ne aggiunge una parta
+da lì, non dai numeri vecchi.
+
+### I comandi: un posto solo che decide come è fatto un pulsante
+
+In fondo al foglio c'è la sezione **I COMANDI**. Prima ogni pulsante aveva il suo
+bordo da un pixel, il suo maiuscolo e la sua spaziatura: dodici dialetti nella
+stessa pagina, ed **è quello — non i colori — che faceva sembrare il sito di
+dieci anni fa**.
+
+Tre livelli soli, come sulle piattaforme Apple: **pieno** (terracotta, l'azione
+principale), **tinto** (terracotta al 10-18%, le secondarie), **nudo** (solo
+testo). Più il rosso, per quello che distrugge, che resta in due tempi.
+
+- **Niente maiuscolo forzato e niente spaziatura larga sui comandi.** Un pulsante
+  si legge come una frase. Sono state ripulite 35 regole: il maiuscolo tracciato
+  resta solo alle **etichette** di sezione, dove è un'etichetta e non un comando,
+  e anche lì la spaziatura è scesa a .07em.
+- **Il peso fa la gerarchia, non il bordo.** Un filo attorno a ogni cosa rende
+  tutto ugualmente importante, cioè niente.
+- **Bersagli da 44 px sul tocco** (`@media (pointer:coarse)`), che è la misura di
+  un dito.
+- **La pressione si vede**: `scale(.96)`, e il ritorno più lento della partenza.
+- Raggi in scala: `--r-s` comandi, `--r-m` schede, `--r-l` il pannello.
+
+**Quello che galleggia sulla scena è una superficie, non una tinta.** Un fondo
+tinto al 10% funziona dentro una scheda chiara; sopra la stanza, che è già color
+crema, sparisce. Imbuto, lampada, contatore e binario sono carta chiara con
+sfocatura dietro e ombra leggera.
+
+### Le icone
+
+Un corredo solo in SVG: tratto 1.6, estremi tondi, riquadro 24, e prendono il
+colore del testo — quindi seguono da sole lo stato del comando che le contiene.
+Prima erano **glifi Unicode**, che li disegna il sistema operativo: una faccia di
+sole su Windows e su un telefono sono due disegni diversi, ed era la parte più
+visibilmente scoordinata dell'interfaccia. Le poche stelle rimaste nel JS stanno
+*dentro* al testo, dove un SVG in linea scombinerebbe la linea di base.
+
+### Il movimento
+
+Una curva sola (`--ease`): parte decisa e si posa piano. Le cose entrano dal
+basso, a scaglioni, e solo le prime dodici righe sono ritardate — ritardare la
+duecentesima vuol dire farla comparire tre secondi dopo che ci sei arrivato
+sopra. Niente rimbalzi e niente rotazioni: qui si parla di mobili e di carta.
+
+Le sezioni si accendono con `display`, quindi vogliono una **`animation` e non
+una `transition`**: una transizione su un elemento che passa da `none` a `block`
+non parte proprio. `prefers-reduced-motion` è rispettato.
+
+## Un gesto vale una libreria, mai due
+
+Con il tiro alzato per rendere lo scorrimento più comodo, un trascinamento lungo
+ne attraversava anche tre; e il **colpo secco sommava un mobile a dove il dito
+era già arrivato**, aggiungendone un altro sopra. La vista partiva e si fermava
+due mobili più in là di dove volevi, cioè esattamente il modo di non trovare più
+niente.
+
+Alla pressione si fotografa `partenzaLib`, e per tutto il gesto la vista non può
+uscire dal mobile accanto: né col trascinamento (il `clamp` è su
+`partenza ± 1`), né col colpo (che va a `partenza ± 1` in assoluto, non in
+relativo). Verificato: un trascinamento da un bordo all'altro dello schermo
+sposta di uno, e un colpo secco pure.
+
+**Il binario è una pastiglia sola**, con `flex-wrap:nowrap`: prima erano due
+elementi liberi dentro un flex che poteva avvolgere, e su schermo stretto il
+«1 / 3» si staccava e finiva sopra la barra.
+
 
 ## Il backend (Supabase)
 

@@ -35,7 +35,7 @@ js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             legno, cartone, dadi, copertine di ripiego
 js/app.js             scena 3D, catalogo, animazioni, interazione
 img/                  le copertine delle scatole
-fonts/                Instrument Serif e Inter, sottoinsieme latino
+fonts/                Poppins in cinque pesi, sottoinsieme latino
 vendor/               three.js r152 e supabase-js, committati nel repo
 supabase/migrations/  lo schema del database
 tools/bgg-lib.mjs     il poco che serve per parlare con la XML API
@@ -331,7 +331,7 @@ Il credito compare sotto al titolo in ogni recensione. Se un editore chiede di
 toglierla, basta cancellare il campo `cover` dalla sua voce: la scatola torna a
 usare la copertina disegnata e non si rompe niente.
 
-I font sono Instrument Serif e Inter, licenza SIL Open Font. three.js è MIT.
+Il font è Poppins, licenza SIL Open Font. three.js è MIT.
 
 ## Rimasto da fare
 

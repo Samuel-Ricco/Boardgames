@@ -43,10 +43,10 @@ function imgTex(im){
 
 const rnd = (a,b) => a + Math.random()*(b-a);
 
-// La faccia dei titoli disegnati su canvas. Deve restare la stessa del
-// CSS (--ff-display), se no i titoli sulle scatole e quelli nella
-// pagina sembrano di due siti diversi.
-const SERIF = "'Instrument Serif', Georgia, serif";
+// La faccia dei titoli disegnati su canvas. E' LA STESSA del CSS -- ce
+// n'e' una sola in tutto il sito -- se no i titoli sulle scatole e
+// quelli nella pagina sembrano di due mani diverse.
+const FF = "'Poppins', system-ui, sans-serif";
 
 // Testo con crenatura allargata: il canvas non ha letter-spacing
 // prima di Chrome 99, quindi le lettere vanno piazzate a mano.
@@ -220,7 +220,7 @@ function coverRoot(){
 
   // titolo
   x.fillStyle = '#f3e3bd';
-  x.font = "128px " + SERIF;
+  x.font = "600 104px " + FF;
   x.textBaseline = 'alphabetic'; x.textAlign = 'left';
   x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 14; x.shadowOffsetY = 3;
   spaced(x, 'Root', S/2, 486, 6, 'center');
@@ -340,7 +340,7 @@ function coverScythe(){
 
   // titolo
   x.fillStyle = '#f2e3be';
-  x.font = "116px " + SERIF;
+  x.font = "600 96px " + FF;
   x.textBaseline = 'alphabetic'; x.textAlign = 'left';
   x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 16; x.shadowOffsetY = 3;
   spaced(x, 'Scythe', S/2, 462, 6, 'center');
@@ -451,7 +451,7 @@ function coverTitolo(game){
   let size = 104;
   x.textBaseline = 'alphabetic'; x.textAlign = 'left';
   do {
-    x.font = size + "px " + SERIF;
+    x.font = "600 " + size + "px " + FF;
     size -= 4;
   } while (size > 30 && x.measureText(title).width + title.length*3 > W - 90);
 
@@ -496,7 +496,7 @@ function spine(game, vertical){
   /* Sul dorso il maiuscolo resta: e' alto sessanta pixel su una
      striscia che a schermo ne vale otto, e li' contano le sagome delle
      lettere piu' della finezza. */
-  x.font = "58px " + SERIF;
+  x.font = "600 52px " + FF;
   x.textBaseline = 'middle'; x.textAlign = 'left';
   spaced(x, game.title.toUpperCase(), 0, 2, 5, 'center');
   x.restore();
@@ -690,7 +690,7 @@ function targhetta(nome){
   const testo = String(nome || '');
   const H = 128, pad = 24;
   const mis = cnv(8, 8)[1];
-  mis.font = '96px "Instrument Serif", Georgia, serif';
+  mis.font = '600 82px "Poppins", system-ui, sans-serif';
   mis.letterSpacing = '2px';
   const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + pad * 2);
 

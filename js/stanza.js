@@ -22,9 +22,9 @@ const STANZA = (function(){
        cambiare, cosi' chi non tocca niente non vede niente cambiare */
 const DEFAULT = {
   luce: 1,
-  scaffali: '#41402f',
-  muro: '#eae6db',
-  pavimento: '#d6d0c1',
+  scaffali: '#8e6a4b',
+  muro: '#cfccc8',
+  pavimento: '#c7af98',
   arredo: 'misto'
 };
 
@@ -33,35 +33,38 @@ const DEFAULT = {
    sbiancato di prima -- chiaro su chiaro -- la annullava: la libreria
    spariva nel muro invece di stagliarcisi contro. Restano essenze
    vere, e chi vuole il chiaro ce l'ha ancora. */
+/* Le tinte vengono dalla tavolozza del sito, non da un campionario di
+   essenze: sono le stesse sei che stanno nel CSS, piu' due gradazioni
+   dello stesso marrone. Un mobile di un colore che non esiste da
+   nessun'altra parte del sito era meta' del problema. */
 const LEGNI = [
-  { v: '#41402f', n: 'ebano oliva' },
-  { v: '#5a4636', n: 'wenge' },
-  { v: '#8a6642', n: 'noce' },
-  { v: '#a8713c', n: 'ciliegio' },
-  { v: '#c9b085', n: 'rovere chiaro' },
-  { v: '#e4ded1', n: 'laccato' }
+  { v: '#8e6a4b', n: 'noce' },
+  { v: '#5c4530', n: 'noce scuro' },
+  { v: '#747760', n: 'oliva' },
+  { v: '#a6a89c', n: 'salvia' },
+  { v: '#c7af98', n: 'sabbia' },
+  { v: '#c86a3c', n: 'terracotta' }
 ];
 
 /* Le prime tinte erano tutte a mezzo passo dal bianco: sul muro, sotto
    una luce diffusa, si leggevano tutte uguali. Adesso hanno un colore
    vero -- restano intonaci, non fluorescenze, ma si distinguono. */
 const MURI = [
-  { v: '#eae6db', n: 'crema' },
-  { v: '#ddd6c4', n: 'lino' },
-  { v: '#c9c4a8', n: 'salvia chiara' },
-  { v: '#a9a58c', n: 'oliva' },
-  { v: '#b4685a', n: 'terracotta' },
-  { v: '#8fa5b0', n: 'cenere azzurra' },
-  { v: '#2f2f27', n: 'oliva scuro' }
+  { v: '#cfccc8', n: 'grigio caldo' },
+  { v: '#c7af98', n: 'sabbia' },
+  { v: '#a6a89c', n: 'salvia' },
+  { v: '#747760', n: 'oliva' },
+  { v: '#c86a3c', n: 'terracotta' },
+  { v: '#33352b', n: 'oliva scuro' }
 ];
 
 const PAVIMENTI = [
-  { v: '#d6d0c1', n: 'rovere sbiancato' },
-  { v: '#c2beb6', n: 'cemento' },
-  { v: '#c08f45', n: 'castagno' },
-  { v: '#7a4f28', n: 'parquet scuro' },
-  { v: '#8b8a6e', n: 'verde oliva' },
-  { v: '#b0552b', n: 'cotto' }
+  { v: '#c7af98', n: 'sabbia' },
+  { v: '#cfccc8', n: 'cemento chiaro' },
+  { v: '#a6a89c', n: 'salvia' },
+  { v: '#8e6a4b', n: 'noce' },
+  { v: '#747760', n: 'oliva' },
+  { v: '#c86a3c', n: 'cotto' }
 ];
 
 /* I cinque arredi, piu' il misto di prima e il niente. "Niente" non e'

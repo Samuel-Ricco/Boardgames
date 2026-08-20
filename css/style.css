@@ -6,41 +6,56 @@
 /* I font stanno nel repo, non su Google: il sito deve funzionare
    anche senza rete. Servono anche a js/art.js, che scrive i titoli
    delle scatole su canvas. Sottoinsieme latino, licenza SIL OFL. */
-/* Instrument Serif, licenza OFL, scaricato e committato come tutto il
-   resto: il sito deve funzionare a rete staccata. Ha preso il posto di
-   Bebas Neue -- che era condensato e tutto maiuscolo, cioe' l'opposto
-   di un serif editoriale -- e il corsivo serve davvero, per le poche
-   parole che vanno dette a voce piu' bassa. */
-@font-face{
-  font-family:'Instrument Serif'; font-style:normal; font-weight:400; font-display:swap;
-  src:url(../fonts/instrument-serif-latin.woff2) format('woff2');
-}
-@font-face{
-  font-family:'Instrument Serif'; font-style:italic; font-weight:400; font-display:swap;
-  src:url(../fonts/instrument-serif-latin-italic.woff2) format('woff2');
-}
-@font-face{
-  font-family:'Inter'; font-style:normal; font-weight:100 900; font-display:swap;
-  src:url(../fonts/inter-latin.woff2) format('woff2');
-}
+/* UN FONT SOLO, in cinque pesi. Poppins: geometrico, morbido, e sta
+   bene sia grande che a undici pixel -- che e' l'unica ragione per cui
+   un font solo puo' bastare a tutto un sito.
+
+   La gerarchia la fa il PESO, non la famiglia. Prima ce n'erano due (un
+   serif da titoli e un grottesco da testo) e ogni schermata sembrava
+   composta da due mani diverse.
+
+   Licenza OFL, scaricato e committato come tutto il resto: il sito deve
+   funzionare a rete staccata. */
+@font-face{font-family:'Poppins'; font-style:normal; font-weight:300; font-display:swap;
+  src:url(../fonts/poppins-300.woff2) format('woff2')}
+@font-face{font-family:'Poppins'; font-style:normal; font-weight:400; font-display:swap;
+  src:url(../fonts/poppins-400.woff2) format('woff2')}
+@font-face{font-family:'Poppins'; font-style:normal; font-weight:500; font-display:swap;
+  src:url(../fonts/poppins-500.woff2) format('woff2')}
+@font-face{font-family:'Poppins'; font-style:normal; font-weight:600; font-display:swap;
+  src:url(../fonts/poppins-600.woff2) format('woff2')}
+@font-face{font-family:'Poppins'; font-style:normal; font-weight:700; font-display:swap;
+  src:url(../fonts/poppins-700.woff2) format('woff2')}
 
 :root{
   /* Stanza chiara, rovere sbiancato. --bg deve restare uguale allo
      sfondo della scena 3D (SFONDO in js/app.js): e' la stessa tinta a
      tenere insieme il caricamento, il cancello e il mondo dietro. */
-  --bg:#eae6db;          /* la stanza: crema */
-  --ink:#2a2a22;         /* verde molto scuro, quasi nero: il testo */
-  --ink-soft:rgba(42,42,34,.60);
-  --amber:#8a7638;       /* ocra spento: accenti e interattivi */
-  --rust:#9c5138;        /* terracotta: etichette */
-  --card:rgba(247,244,236,.97);
-  --line:rgba(42,42,34,.16);
-  --shadow:0 24px 60px rgba(42,42,34,.16);
-  --ff-display:'Instrument Serif',Georgia,'Times New Roman',serif;
+  /* LA TAVOLOZZA, sei tinte e basta.
+
+     `--ink` e' l'unica derivata: l'oliva della tavolozza (#747760) sul
+     fondo (#cfccc8) fa 2,6 a 1 di contrasto, cioe' illeggibile per un
+     testo. E' lo stesso colore portato al buio quanto basta -- 8,5 a 1
+     -- e resta della stessa famiglia. */
+  --bg:#cfccc8;          /* grigio caldo: la stanza */
+  --card:#f2f1ed;        /* la scheda: quasi bianco, ma caldo */
+  --ink:#33352b;         /* oliva scurito: il testo */
+  --ink-soft:#747760;    /* oliva: il testo secondario */
+  --sage:#a6a89c;        /* salvia: superfici quiete */
+  --sand:#c7af98;        /* sabbia */
+  --wood:#8e6a4b;        /* marrone: il legno */
+  --accent:#c86a3c;      /* terracotta: tutto quello che si tocca */
+  --line:rgba(51,53,43,.14);
+  --shadow:0 18px 44px rgba(51,53,43,.14);
+  --ombra-lieve:0 1px 2px rgba(51,53,43,.08), 0 4px 12px rgba(51,53,43,.06);
+  /* i raggi, in scala: comandi, schede, fogli */
+  --r-s:10px; --r-m:14px; --r-l:20px;
   /* Una curva sola per tutto il sito. Parte decisa e si posa piano:
      e' quella che fa sembrare le cose *arrivate* invece che comparse. */
   --ease:cubic-bezier(.22,.72,.24,1);
-  --ff-text:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ff:'Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ff-display:var(--ff);
+  --ff-text:var(--ff);
 }
 
 *{box-sizing:border-box}
@@ -64,7 +79,7 @@ canvas{display:block}
    suggerimenti dal fondo, ma tagliavano la stanza in orizzontale e si
    vedevano come due bande slavate. */
 #vig{position:fixed; inset:0; z-index:1; pointer-events:none;
-  background:radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(58,56,44,.26) 100%)}
+  background:radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(51,53,43,.26) 100%)}
 
 /* --- interfaccia --------------------------------------------- */
 header{
@@ -81,27 +96,27 @@ header{
 body.ready header{opacity:1; transform:none}
 .brand{display:flex; align-items:baseline; gap:12px; pointer-events:auto}
 .brand b{
-  font-family:var(--ff-display); font-weight:400;
-  font-size:clamp(19.7px,2.79vw,27.9px); letter-spacing:0; line-height:1;
+  font-family:var(--ff); font-weight:600;
+  font-size:clamp(17px,2.1vw,21px); letter-spacing:-.015em; line-height:1.15;
 }
-.brand b i{color:var(--amber); font-style:normal}
+.brand b i{color:var(--accent); font-style:normal}
 .brand span{
-  font-size:11px; letter-spacing:.22em; text-transform:uppercase;
-  color:var(--ink-soft); display:none;
+  font-size:11px; letter-spacing:.02em; text-transform:none;
+  color:var(--ink-soft); display:none; font-weight:400;
 }
 @media (min-width:760px){ .brand span{display:inline} }
 
 /* --- barra degli strumenti in alto a destra -------------------- */
 .tools{display:flex; align-items:center; gap:8px; pointer-events:auto}
 .tool{
-  font-family:var(--ff-text); font-size:11px; font-weight:500;
-  letter-spacing:.14em; text-transform:uppercase;
-  color:var(--ink-soft); background:rgba(247,244,236,.88); cursor:pointer;
+  font-family:var(--ff-text); font-size:13px; font-weight:500;
+  letter-spacing:0; text-transform:none;
+  color:var(--ink-soft); background:rgba(242,241,237,.88); cursor:pointer;
   border:1px solid var(--line); padding:8px 11px;
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
 }
-.tool:hover{color:var(--ink); border-color:var(--amber)}
-.tool b{color:var(--amber); font-weight:500}
+.tool:hover{color:var(--ink); border-color:var(--accent)}
+.tool b{color:var(--accent); font-weight:500}
 
 /* --- ricerca e contatore ---------------------------------------
    Su schermo largo il campo sta sempre in vista; sotto gli 880 px
@@ -114,23 +129,23 @@ body.ready header{opacity:1; transform:none}
   font-size:13px; color:var(--ink); padding:9px 26px 9px 10px;
   background:none; border:1px solid var(--line);
 }
-#cerca:focus{outline:none; border-color:var(--amber)}
+#cerca:focus{outline:none; border-color:var(--accent)}
 #cerca::placeholder{
-  color:var(--ink-soft); text-transform:uppercase; letter-spacing:.14em; font-size:11px;
+  color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em; font-size:11px;
 }
 #cerca-x{
   position:absolute; right:5px; display:none; border:0; background:none; cursor:pointer;
   color:var(--ink-soft); font-size:16px; line-height:1; padding:1px 4px;
 }
 body.cerca #cerca-x{display:block}
-#cerca-x:hover{color:var(--rust)}
+#cerca-x:hover{color:var(--wood)}
 /* Il contatore e' la porta dell'elenco, e adesso lo dice: "la mia
    collezione: 10". Un numero da solo non si capiva che fosse un
    pulsante, e nemmeno di cosa fosse il numero. */
 #conta{cursor:pointer; color:var(--ink)}
-#conta:hover{color:var(--amber); border-color:var(--amber)}
-#conta b{font-family:var(--ff-display); font-size:12.3px; letter-spacing:0; color:var(--ink)}
-#conta:hover b{color:var(--amber)}
+#conta:hover{color:var(--accent); border-color:var(--accent)}
+#conta b{font-family:var(--ff-display); font-size:10.8px; letter-spacing:0; color:var(--ink)}
+#conta:hover b{color:var(--accent)}
 #conta span{color:var(--ink-soft)}
 
 /* --- i gruppi -----------------------------------------------------
@@ -140,15 +155,15 @@ body.cerca #cerca-x{display:block}
 .gruppi{display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 0}
 .gruppi:empty{display:none}
 .gruppi button{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:none; border:1px solid var(--line); padding:6px 9px;
 }
-.gruppi button:hover{color:var(--ink); border-color:var(--amber)}
-.gruppi button.on{color:#f7f4ec; background:var(--rust); border-color:var(--rust)}
-.gruppi button.nuovo{color:var(--amber); border-style:dashed}
+.gruppi button:hover{color:var(--ink); border-color:var(--accent)}
+.gruppi button.on{color:#f2f1ed; background:var(--wood); border-color:var(--wood)}
+.gruppi button.nuovo{color:var(--accent); border-style:dashed}
 .gruppi.filtro{margin:14px 0 0}
-.gruppi.filtro button.on{background:var(--amber); border-color:var(--amber)}
+.gruppi.filtro button.on{background:var(--accent); border-color:var(--accent)}
 #p-gruppi{padding-top:4px}
 
 /* --- preferiti ---------------------------------------------------- */
@@ -156,8 +171,8 @@ body.cerca #cerca-x{display:block}
   font-family:var(--ff-text); font-size:15px; line-height:1; cursor:pointer;
   color:var(--ink-soft); background:none; border:1px solid var(--line); padding:6px 9px;
 }
-#p-pref:hover{color:var(--amber); border-color:var(--amber)}
-#p-pref[aria-pressed="true"]{color:#f7f4ec; background:var(--amber); border-color:var(--amber)}
+#p-pref:hover{color:var(--accent); border-color:var(--accent)}
+#p-pref[aria-pressed="true"]{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
 body.visita #p-pref{display:none !important}
 
 /* IN CASA DI UN AMICO IL SITO E' UNA LIBRERIA E BASTA.
@@ -177,35 +192,35 @@ body.visita #tabbar  [data-sez="profilo"]{display:none !important}
 body.visita .visita-only{display:inline-flex !important}
 #p-cuore{align-items:center; gap:7px}
 #p-cuore .cuore{font-size:15px; line-height:1}
-#p-cuore[aria-pressed="true"]{color:var(--rust); border-color:var(--rust)}
+#p-cuore[aria-pressed="true"]{color:var(--wood); border-color:var(--wood)}
 #p-cuore[aria-pressed="true"] .cuore::before{content:'\2665'}
 #p-cuore[aria-pressed="true"] .cuore{font-size:0}
 #p-cuore[aria-pressed="true"] .cuore::before{font-size:15px}
-#p-cuore-n{font-family:var(--ff-display); font-size:11.5px; letter-spacing:0}
+#p-cuore-n{font-family:var(--ff-display); font-size:10.1px; letter-spacing:0}
 .cat-azioni .pref{font-size:14px; line-height:1; padding:6px 9px}
-.cat-azioni .pref.on{color:#f7f4ec; background:var(--amber); border-color:var(--amber)}
+.cat-azioni .pref.on{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
 
 /* dove sta un gioco, e come si sceglie dove metterlo */
 .cat-dove{
-  margin:7px 0 0; font-size:10px; letter-spacing:.13em; text-transform:uppercase;
-  color:rgba(42,42,34,.45);
+  margin:7px 0 0; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+  color:rgba(51,53,43,.45);
 }
-.cat-dove b{color:var(--amber); font-weight:500}
-.cat-dati h3 .stella{color:var(--amber); font-style:normal; font-size:15px; vertical-align:2px}
-.cat-azioni .dentro{color:var(--amber); border-color:rgba(138,118,56,.45)}
-.cat-azioni .fuori:hover{color:var(--rust); border-color:var(--rust)}
+.cat-dove b{color:var(--accent); font-weight:500}
+.cat-dati h3 .stella{color:var(--accent); font-style:normal; font-size:15px; vertical-align:2px}
+.cat-azioni .dentro{color:var(--accent); border-color:rgba(200,106,60,.45)}
+.cat-azioni .fuori:hover{color:var(--wood); border-color:var(--wood)}
 .scegli-lib{display:flex; flex-wrap:wrap; gap:5px; max-width:190px}
 .scegli-lib button{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.1em;
-  text-transform:uppercase; cursor:pointer; color:#f7f4ec;
-  background:var(--amber); border:1px solid var(--amber); padding:6px 8px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:#f2f1ed;
+  background:var(--accent); border:1px solid var(--accent); padding:6px 8px;
 }
 .scegli-lib button:hover{background:var(--ink); border-color:var(--ink)}
 .scegli-lib button:disabled{opacity:.4; cursor:default}
 .scegli-lib button.lascia{
   color:var(--ink-soft); background:none; border-color:var(--line);
 }
-.scegli-lib button.lascia:hover{color:var(--ink); background:none; border-color:var(--amber)}
+.scegli-lib button.lascia:hover{color:var(--ink); background:none; border-color:var(--accent)}
 
 /* --- le due viste dell'elenco ------------------------------------
    L'indicatore segue il dito mentre si scorre invece di saltare alla
@@ -216,15 +231,15 @@ body.visita .visita-only{display:inline-flex !important}
   margin:14px 0 0; border-bottom:1px solid var(--line);
 }
 .viste button{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.16em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:none; border:0; padding:11px 6px 12px;
 }
 .viste button:hover{color:var(--ink)}
 .viste button.on{color:var(--ink)}
 .viste .ind{
   position:absolute; left:0; bottom:-1px; width:50%; height:2px;
-  background:var(--amber); transform:translateX(0);
+  background:var(--accent); transform:translateX(0);
   transition:transform .3s cubic-bezier(.22,.9,.26,1);
 }
 .viste.trascina .ind{transition:none}
@@ -236,11 +251,11 @@ body.visita .visita-only{display:inline-flex !important}
 .mia-barra{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:14px 0 0}
 .mia-barra .gruppi{margin:0; flex:1; min-width:0}
 #mia-gestisci{
-  flex:none; font-family:var(--ff-text); font-size:10px; font-weight:700;
-  letter-spacing:.13em; text-transform:uppercase; cursor:pointer;
+  flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:6px 10px;
 }
-#mia-gestisci:hover{color:var(--amber); border-color:var(--amber)}
+#mia-gestisci:hover{color:var(--accent); border-color:var(--accent)}
 
 #gruppilayer{
   position:fixed; inset:0; z-index:9; display:flex; align-items:center;
@@ -257,13 +272,13 @@ body.visita .visita-only{display:inline-flex !important}
 }
 .gru-elenco .nome{flex:1; min-width:0; font-size:13.5px; color:var(--ink); overflow-wrap:anywhere}
 .gru-elenco button{
-  flex:none; font-family:var(--ff-text); font-size:10px; font-weight:700;
-  letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
+  flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:none; border:1px solid var(--line); padding:6px 9px;
 }
-.gru-elenco button:hover{color:var(--ink); border-color:var(--amber)}
-.gru-elenco button.on{color:#f7f4ec; background:var(--rust); border-color:var(--rust)}
-.pro-gente button.quali{color:var(--amber); border-color:rgba(138,118,56,.45)}
+.gru-elenco button:hover{color:var(--ink); border-color:var(--accent)}
+.gru-elenco button.on{color:#f2f1ed; background:var(--wood); border-color:var(--wood)}
+.pro-gente button.quali{color:var(--accent); border-color:rgba(200,106,60,.45)}
 
 /* --- righe compatte -----------------------------------------------
    Nome e copertina, e basta. Una riga che mostra gia' tutto obbliga a
@@ -278,19 +293,19 @@ body.visita .visita-only{display:inline-flex !important}
 .righe.compatta > li{
   grid-template-columns:52px 1fr auto; align-items:center; gap:14px; padding:11px 0;
 }
-.righe.compatta > li:hover .riga-nome{color:var(--amber)}
+.righe.compatta > li:hover .riga-nome{color:var(--accent)}
 .righe.compatta .cat-cop{width:52px; cursor:pointer}
 .riga-nome{
   margin:0; cursor:pointer; font-family:var(--ff-display); font-weight:400;
-  font-size:17.2px; letter-spacing:0; line-height:1.15; color:var(--ink);
+  font-size:15.1px; letter-spacing:0; line-height:1.15; color:var(--ink);
 }
-.riga-nome .stella{color:var(--amber); font-style:normal; font-size:14px; vertical-align:2px}
+.riga-nome .stella{color:var(--accent); font-style:normal; font-size:14px; vertical-align:2px}
 .riga-menu{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:7px 10px;
   color:var(--ink-soft); background:none; border:1px solid var(--line);
 }
-.riga-menu:hover{color:var(--ink); border-color:var(--amber)}
-.riga-menu[aria-expanded="true"]{color:#f7f4ec; background:var(--ink); border-color:var(--ink)}
+.riga-menu:hover{color:var(--ink); border-color:var(--accent)}
+.riga-menu[aria-expanded="true"]{color:#f2f1ed; background:var(--ink); border-color:var(--ink)}
 
 .riga-info{grid-column:1 / -1}
 .riga-info[hidden], .riga-azioni[hidden]{display:none}
@@ -321,10 +336,10 @@ body.visita .visita-only{display:inline-flex !important}
 .riga-info .cat-spec{margin:8px 0 0}
 .riga-info .cat-dove{margin:8px 0 0}
 .riga-info .voto{
-  font-family:var(--ff-display); font-size:27.9px; line-height:.9; color:var(--ink); margin:12px 0 8px;
+  font-family:var(--ff-display); font-size:24.5px; line-height:.9; color:var(--ink); margin:12px 0 8px;
 }
 .riga-info .voto i{font-style:normal; font-size:14px; color:var(--ink-soft)}
-.riga-info p{font-size:14px; color:rgba(42,42,34,.88); margin:0 0 10px; max-width:62ch}
+.riga-info p{font-size:14px; color:rgba(51,53,43,.88); margin:0 0 10px; max-width:62ch}
 .riga-info .vuoto{color:var(--ink-soft); font-size:13px}
 
 /* --- cartelle nell'elenco: ogni gruppo e' una tendina -------------- */
@@ -332,13 +347,13 @@ body.visita .visita-only{display:inline-flex !important}
 .cartella:first-child{margin-top:10px}
 .cartella-tit{
   width:100%; display:flex; align-items:baseline; gap:10px; cursor:pointer;
-  font-family:var(--ff-display); font-weight:400; font-size:18px; letter-spacing:0;
+  font-family:var(--ff-display); font-weight:400; font-size:15.8px; letter-spacing:0;
   color:var(--ink); text-align:left; background:none; border:0;
-  padding:8px 0; border-bottom:2px solid var(--amber);
+  padding:8px 0; border-bottom:2px solid var(--accent);
 }
-.cartella-tit:hover{color:var(--amber)}
+.cartella-tit:hover{color:var(--accent)}
 .cartella-tit span{
-  font-family:var(--ff-text); font-size:10px; font-weight:500; letter-spacing:.14em;
+  font-family:var(--ff-text); font-size:10px; font-weight:500; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft);
 }
 .cartella-tit::after{
@@ -352,16 +367,16 @@ body.visita .visita-only{display:inline-flex !important}
 /* --- di che mobile stiamo parlando -------------------------------- */
 .st-quale{
   margin:2px 0 12px; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
-  color:rgba(42,42,34,.45);
+  color:rgba(51,53,43,.45);
 }
-.st-quale b{color:var(--amber); font-weight:500}
+.st-quale b{color:var(--accent); font-weight:500}
 .st-quale.sotto{margin:-2px 0 10px}
 /* la pastiglia "+ gruppo" diventa un campo sul posto: mandare l'utente
    in un'altra sezione per scrivere una parola e poi farlo tornare qui
    e' un giro che non serve a niente */
 .gruppo-nuovo{
   font-family:var(--ff-text); font-size:11px; letter-spacing:.06em; color:var(--ink);
-  background:var(--bg); border:1px solid var(--amber); padding:5px 8px; width:150px;
+  background:var(--bg); border:1px solid var(--accent); padding:5px 8px; width:150px;
 }
 .gruppo-nuovo:focus{outline:none}
 
@@ -371,19 +386,19 @@ body.visita .visita-only{display:inline-flex !important}
 #m-pub-riga{display:none !important}
 body.admin #m-pub-riga{display:flex !important; align-items:flex-start; gap:10px;
   font-size:12.5px; line-height:1.5; color:var(--ink-soft)}
-#m-pub-riga input{width:16px; height:16px; margin-top:2px; accent-color:var(--amber); flex:none}
+#m-pub-riga input{width:16px; height:16px; margin-top:2px; accent-color:var(--accent); flex:none}
 #m-pub-riga b{color:var(--ink); font-weight:500}
-#m-pub-riga small{display:block; margin-top:2px; font-size:11px; color:rgba(42,42,34,.5)}
+#m-pub-riga small{display:block; margin-top:2px; font-size:11px; color:rgba(51,53,43,.5)}
 /* mentre si tiene in mano una scatola non si va da nessuna parte:
    il suggerimento a fondo pagina parla di un gesto che non e' quello */
 /* il chip dice chi sei e basta: entrati non e' piu' un pulsante */
 #mode.chip{color:var(--ink)}
 #mode.chip:disabled{cursor:default; opacity:1}
 #mode.chip:disabled:hover{color:var(--ink); border-color:var(--line)}
-body.admin #mode.chip{background:var(--rust); color:#fff; border-color:var(--rust)}
-body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--rust)}
+body.admin #mode.chip{background:var(--wood); color:#fff; border-color:var(--wood)}
+body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--wood)}
 #esci{color:var(--ink-soft)}
-#esci:hover{color:var(--rust); border-color:var(--rust)}
+#esci:hover{color:var(--wood); border-color:var(--wood)}
 
 /* L'ordinamento non e' piu' una tendina in testata: e' una lista dentro
    al pannello della vista, sempre aperta -- li' dentro non deve
@@ -391,12 +406,12 @@ body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--rust)}
 #sortmenu{display:flex; flex-direction:column; border:1px solid var(--line); margin:8px 0 0}
 #sortmenu button{
   font-family:var(--ff-text); font-size:12px; text-align:left; cursor:pointer;
-  background:none; border:0; border-bottom:1px solid rgba(42,42,34,.10);
+  background:none; border:0; border-bottom:1px solid rgba(51,53,43,.10);
   color:var(--ink-soft); padding:11px 14px;
 }
 #sortmenu button:last-child{border-bottom:0}
-#sortmenu button:hover{background:rgba(138,118,56,.10); color:var(--ink)}
-#sortmenu button.on{color:var(--amber)}
+#sortmenu button:hover{background:rgba(200,106,60,.10); color:var(--ink)}
+#sortmenu button.on{color:var(--accent)}
 #sortmenu button.on::after{content:' \2022'}
 
 /* Gli strumenti di modifica valgono per chiunque sia entrato: la
@@ -411,13 +426,13 @@ body.dentro .dentro-only{display:inline-flex !important}
    un altro riquadro alla testata, che e' gia' piena. */
 #sezioni{display:flex; gap:4px; pointer-events:auto}
 #sezioni button{
-  font-family:var(--ff-text); font-size:11px; font-weight:500;
-  letter-spacing:.16em; text-transform:uppercase; cursor:pointer;
+  font-family:var(--ff-text); font-size:13px; font-weight:500;
+  letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:none; border:0; padding:9px 10px 7px;
   border-bottom:2px solid transparent;
 }
 #sezioni button:hover{color:var(--ink)}
-#sezioni button.on{color:var(--ink); border-bottom-color:var(--amber)}
+#sezioni button.on{color:var(--ink); border-bottom-color:var(--accent)}
 /* un ospite non ha nessuna libreria: la voce che porta a una libreria
    vuota sarebbe una promessa che il sito non puo' mantenere */
 body.ospite #sezioni [data-sez="collezione"]{display:none}
@@ -435,14 +450,14 @@ body.sez-catalogo #vista-apri, body.sez-profilo #vista-apri{opacity:0 !important
 #mia{
   position:fixed; inset:0; z-index:2; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(234,230,219,.975);
+  background:rgba(207,204,200,.975);
 }
 body.elenco #mia{display:block}
 #mia-msg{margin:12px 0 0; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
 #mia-msg b{color:var(--ink); font-weight:500}
 /* il contatore e' un pulsante: mentre l'elenco e' aperto, e' acceso */
-body.elenco #conta{background:var(--amber); color:#f7f4ec; border-color:var(--amber)}
-body.elenco #conta b, body.elenco #conta span{color:#f7f4ec}
+body.elenco #conta{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
+body.elenco #conta b, body.elenco #conta span{color:#f2f1ed}
 #conta{cursor:pointer}
 /* con l'elenco davanti, scaffale e imbuto non servono */
 body.elenco #rail{opacity:0 !important}
@@ -451,7 +466,7 @@ body.elenco #vista-apri{opacity:0 !important; pointer-events:none}
 #catalogo{
   position:fixed; inset:0; z-index:2; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(234,230,219,.975);
+  background:rgba(207,204,200,.975);
 }
 body.sez-catalogo #catalogo{display:block}
 .cat-in{max-width:900px; margin:0 auto; padding:96px clamp(16px,4vw,40px) 80px}
@@ -461,19 +476,19 @@ body.sez-catalogo #catalogo{display:block}
   flex:1; min-width:0; font-family:var(--ff-text); font-size:14px; color:var(--ink);
   background:var(--card); border:1px solid var(--line); padding:11px 13px;
 }
-#cat-q:focus{outline:none; border-color:var(--amber)}
+#cat-q:focus{outline:none; border-color:var(--accent)}
 .cat-cerca button{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:#f7f4ec; background:var(--amber);
-  border:1px solid var(--amber); padding:0 16px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:#f2f1ed; background:var(--accent);
+  border:1px solid var(--accent); padding:0 16px;
 }
 .cat-cerca button:hover{background:var(--ink); border-color:var(--ink)}
 .cat-cerca button.chiaro{
   color:var(--ink-soft); background:var(--card); border-color:var(--line);
 }
-.cat-cerca button.chiaro:hover{color:var(--ink); background:var(--card); border-color:var(--amber)}
+.cat-cerca button.chiaro:hover{color:var(--ink); background:var(--card); border-color:var(--accent)}
 #cat-msg{margin:12px 0 0; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
-#cat-msg.warn{color:var(--rust)}
+#cat-msg.warn{color:var(--wood)}
 #cat-msg b{color:var(--ink); font-weight:500}
 
 /* Una riga per gioco: copertina a sinistra, scheda a destra. */
@@ -484,39 +499,39 @@ body.sez-catalogo #catalogo{display:block}
 }
 .righe > li:last-child{border-bottom:1px solid var(--line)}
 .cat-cop{
-  width:88px; aspect-ratio:1/1; overflow:hidden; background:rgba(42,42,34,.06);
+  width:88px; aspect-ratio:1/1; overflow:hidden; background:rgba(51,53,43,.06);
   display:flex; align-items:center; justify-content:center;
 }
 .cat-cop img{width:100%; height:100%; object-fit:cover; display:block}
 .cat-cop .senza{
-  font-family:var(--ff-display); font-size:24.6px; color:rgba(42,42,34,.22);
+  font-family:var(--ff-display); font-size:21.6px; color:rgba(51,53,43,.22);
 }
 .cat-dati h3{
   margin:0; font-family:var(--ff-display); font-weight:400;
-  font-size:19.7px; letter-spacing:0; line-height:1.1; color:var(--ink);
+  font-size:17.3px; letter-spacing:0; line-height:1.1; color:var(--ink);
 }
 .cat-dati h3 .bollo{
   display:inline-block; margin-left:9px; vertical-align:3px;
   font-family:var(--ff-text); font-style:normal; font-size:9px; font-weight:700;
-  letter-spacing:.16em; text-transform:uppercase;
-  color:#f7f4ec; background:var(--rust); padding:3px 6px;
+  letter-spacing:.07em; text-transform:uppercase;
+  color:#f2f1ed; background:var(--wood); padding:3px 6px;
 }
 .cat-chi{margin:6px 0 0; font-size:13px; color:var(--ink-soft)}
 .cat-chi b{color:var(--ink); font-weight:500}
 .cat-spec{list-style:none; display:flex; flex-wrap:wrap; gap:14px; margin:9px 0 0; padding:0}
 .cat-spec li{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft)}
 .cat-spec b{
-  font-family:var(--ff-display); font-size:12.3px; letter-spacing:0;
+  font-family:var(--ff-display); font-size:10.8px; letter-spacing:0;
   color:var(--ink); margin-right:5px;
 }
 .cat-azioni{display:flex; flex-direction:column; gap:7px; align-items:stretch}
 .cat-azioni button{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; white-space:nowrap;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; white-space:nowrap;
   color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:8px 11px;
 }
-.cat-azioni button:hover{color:var(--ink); border-color:var(--amber)}
-.cat-azioni .apri{color:var(--amber); border-color:rgba(138,118,56,.45)}
+.cat-azioni button:hover{color:var(--ink); border-color:var(--accent)}
+.cat-azioni .apri{color:var(--accent); border-color:rgba(200,106,60,.45)}
 .cat-azioni button:disabled{cursor:default; opacity:.55}
 .cat-azioni button:disabled:hover{color:var(--ink-soft); border-color:var(--line)}
 
@@ -525,9 +540,9 @@ body.sez-catalogo #catalogo{display:block}
 .cat-rec{grid-column:1 / -1; margin:4px 0 0; padding:16px 0 2px;
   border-top:1px dashed var(--line); display:none}
 .righe > li.aperta .cat-rec{display:block}
-.cat-rec p{margin:0 0 12px; font-size:15px; color:rgba(42,42,34,.88); max-width:64ch}
+.cat-rec p{margin:0 0 12px; font-size:15px; color:rgba(51,53,43,.88); max-width:64ch}
 .cat-rec .voto{
-  font-family:var(--ff-display); font-size:32.8px; line-height:.9; color:var(--ink);
+  font-family:var(--ff-display); font-size:28.8px; line-height:.9; color:var(--ink);
   margin:0 0 10px;
 }
 .cat-rec .voto i{font-style:normal; font-size:15px; color:var(--ink-soft)}
@@ -535,11 +550,11 @@ body.sez-catalogo #catalogo{display:block}
 
 .cat-fondo{margin:26px 0 0; text-align:center}
 #cat-piu{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.16em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:var(--card); border:1px solid var(--line); padding:12px 26px;
 }
-#cat-piu:hover{color:var(--ink); border-color:var(--amber)}
+#cat-piu:hover{color:var(--ink); border-color:var(--accent)}
 #cat-piu:disabled{cursor:default; opacity:.5}
 .cat-fondo.finito #cat-piu{display:none}
 
@@ -555,21 +570,21 @@ body.sez-catalogo #catalogo{display:block}
 }
 #tabbar button{
   flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
-  font-family:var(--ff-text); font-size:9px; font-weight:700;
-  letter-spacing:.16em; text-transform:uppercase; cursor:pointer;
+  font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:none; border:0; border-top:2px solid transparent;
   padding:9px 4px 10px; margin-top:-1px;
 }
 #tabbar button b{font-size:15px; line-height:1; font-weight:400}
 #tabbar button canvas{width:15px; height:15px; display:block}
-#tabbar button.on{color:var(--ink); border-top-color:var(--amber)}
-#tabbar button.on canvas{outline:1px solid var(--amber)}
+#tabbar button.on{color:var(--ink); border-top-color:var(--accent)}
+#tabbar button.on canvas{outline:1px solid var(--accent)}
 
 /* --- il profilo -------------------------------------------------- */
 #profilo{
   position:fixed; inset:0; z-index:2; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(234,230,219,.975);
+  background:rgba(207,204,200,.975);
 }
 body.sez-profilo #profilo{display:block}
 .pro-in{max-width:760px; margin:0 auto; padding:96px clamp(16px,4vw,40px) 80px}
@@ -581,32 +596,32 @@ body.sez-profilo #profilo{display:block}
   border:1px solid var(--line); box-shadow:var(--shadow);
 }
 #pro-cambia, .pro-lin{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:none; border:0; border-bottom:1px solid var(--line); padding:3px 0;
 }
-#pro-cambia:hover, .pro-lin:hover{color:var(--amber); border-color:var(--amber)}
+#pro-cambia:hover, .pro-lin:hover{color:var(--accent); border-color:var(--accent)}
 .pro-fondo{display:flex; flex-wrap:wrap; gap:18px; margin:0}
-.pro-lin.esci:hover{color:var(--rust); border-color:var(--rust)}
+.pro-lin.esci:hover{color:var(--wood); border-color:var(--wood)}
 .pro-chi{min-width:0}
 #pro-nick{
   margin:0; font-family:var(--ff-display); font-weight:400;
-  font-size:clamp(24.6px,4.1vw,36.1px); letter-spacing:0; line-height:1; color:var(--ink);
+  font-size:clamp(21.6px,3.6vw,31.7px); letter-spacing:0; line-height:1; color:var(--ink);
 }
 .pro-mail{margin:6px 0 0; font-size:13px; color:var(--ink-soft); overflow-wrap:anywhere}
 .pro-cod{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:16px 0 0}
-.pro-cod span{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-soft)}
+.pro-cod span{font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft)}
 .pro-cod b{
-  font-family:var(--ff-display); font-size:19.7px; letter-spacing:0; color:var(--ink);
+  font-family:var(--ff-display); font-size:17.3px; letter-spacing:0; color:var(--ink);
   background:var(--card); border:1px solid var(--line); padding:4px 12px 2px;
 }
 #pro-copia{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:var(--card); border:1px solid var(--line); padding:7px 11px;
 }
-#pro-copia:hover{color:var(--ink); border-color:var(--amber)}
-.pro-nota{margin:9px 0 14px; font-size:11.5px; line-height:1.6; color:rgba(42,42,34,.5); max-width:44ch}
+#pro-copia:hover{color:var(--ink); border-color:var(--accent)}
+.pro-nota{margin:9px 0 14px; font-size:11.5px; line-height:1.6; color:rgba(51,53,43,.5); max-width:44ch}
 
 /* il laboratorio della faccia */
 #pro-faccia-lab{
@@ -617,29 +632,29 @@ body.sez-profilo #profilo{display:block}
 .pro-lab-nota{margin:0 0 16px; font-size:12.5px; color:var(--ink-soft)}
 .pro-lab-riga{display:flex; align-items:center; gap:14px; margin:0 0 12px}
 .pro-lab-riga>span:first-child{
-  flex:none; width:56px; font-size:10px; letter-spacing:.16em;
+  flex:none; width:56px; font-size:10px; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft);
 }
 .pastiglie{display:flex; flex-wrap:wrap; gap:7px}
 .pastiglie button{
   width:28px; height:28px; cursor:pointer; border:1px solid var(--line); padding:0;
-  font-family:var(--ff-display); font-size:12.3px; line-height:26px; color:var(--ink);
+  font-family:var(--ff-display); font-size:10.8px; line-height:26px; color:var(--ink);
   background:var(--card);
 }
-.pastiglie button.on{outline:2px solid var(--amber); outline-offset:1px}
+.pastiglie button.on{outline:2px solid var(--accent); outline-offset:1px}
 .pro-lab-fondo{display:flex; gap:10px; margin:18px 0 0}
 #lab-salva, #ami-go, #nick-ok{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:#f7f4ec;
-  background:var(--amber); border:1px solid var(--amber); padding:11px 18px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:#f2f1ed;
+  background:var(--accent); border:1px solid var(--accent); padding:11px 18px;
 }
 #lab-salva:hover, #ami-go:hover, #nick-ok:hover{background:var(--ink); border-color:var(--ink)}
 #lab-annulla{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:var(--card); border:1px solid var(--line); padding:11px 18px;
 }
-#lab-annulla:hover{color:var(--ink); border-color:var(--amber)}
+#lab-annulla:hover{color:var(--ink); border-color:var(--accent)}
 
 .pro-blocco{margin:0; border-top:1px solid var(--line)}
 .pro-blocco:first-of-type{margin-top:34px}
@@ -648,13 +663,13 @@ body.sez-profilo #profilo{display:block}
    di dodici pixel. */
 .pro-tit{
   width:100%; display:flex; align-items:center; gap:12px; cursor:pointer;
-  font-family:var(--ff-display); font-weight:400; font-size:21.3px;
+  font-family:var(--ff-display); font-weight:400; font-size:18.7px;
   letter-spacing:0; color:var(--ink); text-align:left;
   background:none; border:0; padding:20px 0;
 }
-.pro-tit:hover{color:var(--amber)}
+.pro-tit:hover{color:var(--accent)}
 .pro-tit .quanti{
-  font-family:var(--ff-text); font-size:11px; font-weight:500; letter-spacing:.14em;
+  font-family:var(--ff-text); font-size:11px; font-weight:500; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft);
 }
 .pro-tit::after{
@@ -664,7 +679,7 @@ body.sez-profilo #profilo{display:block}
 .pro-dentro{padding:0 0 24px}
 .pro-dentro[hidden]{display:none}
 .pro-msg{margin:0 0 14px; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
-.pro-msg.warn{color:var(--rust)}
+.pro-msg.warn{color:var(--wood)}
 .pro-msg b{color:var(--ink); font-weight:500}
 
 .pro-gente{list-style:none; margin:0; padding:0}
@@ -679,13 +694,13 @@ body.sez-profilo #profilo{display:block}
 .pro-gente .chi span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft)}
 .pro-gente .fa{display:flex; gap:7px; flex:none}
 .pro-gente button{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
-  text-transform:uppercase; cursor:pointer; white-space:nowrap;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; white-space:nowrap;
   color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:7px 10px;
 }
-.pro-gente button:hover{color:var(--ink); border-color:var(--amber)}
-.pro-gente button.si{color:var(--amber); border-color:rgba(138,118,56,.5)}
-.pro-gente button.no:hover{color:var(--rust); border-color:var(--rust)}
+.pro-gente button:hover{color:var(--ink); border-color:var(--accent)}
+.pro-gente button.si{color:var(--accent); border-color:rgba(200,106,60,.5)}
+.pro-gente button.no:hover{color:var(--wood); border-color:var(--wood)}
 
 /* --- le partite --------------------------------------------------
    La stessa forma nel profilo e nel pannello della recensione: una
@@ -697,7 +712,7 @@ body.sez-profilo #profilo{display:block}
 .giocate li{
   padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer;
 }
-.giocate li:hover .gio-testa b{color:var(--amber)}
+.giocate li:hover .gio-testa b{color:var(--accent)}
 .gio-testa{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
 .gio-testa b{font-size:14px; font-weight:500; color:var(--ink)}
 .gio-testa span{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft)}
@@ -705,7 +720,7 @@ body.sez-profilo #profilo{display:block}
 .gio-chi i{font-style:normal}
 .gio-chi .vince{
   color:var(--ink); font-weight:500;
-  border-bottom:2px solid var(--amber); padding-bottom:1px;
+  border-bottom:2px solid var(--accent); padding-bottom:1px;
 }
 /* Un gruppo per gioco: "a Root abbiamo giocato tre volte e vince
    sempre Giulia" dice quello che uno vuole sapere; un elenco di serate
@@ -720,7 +735,7 @@ body.sez-profilo #profilo{display:block}
   margin:0; padding:10px 0; cursor:pointer; text-align:left;
   background:none; border:0; border-bottom:1px solid var(--line);
 }
-.gio-gioco:hover b{color:var(--amber)}
+.gio-gioco:hover b{color:var(--accent)}
 .gio-gioco::after{
   content:'+'; margin-left:auto; font-family:var(--ff-text); font-size:17px;
   line-height:1; color:var(--ink-soft);
@@ -729,13 +744,13 @@ body.sez-profilo #profilo{display:block}
 .gio-gruppo .giocate[hidden]{display:none}
 .gio-gruppo .giocate{padding-left:2px}
 .gio-gioco b{
-  font-family:var(--ff-display); font-weight:400; font-size:17.2px;
+  font-family:var(--ff-display); font-weight:400; font-size:15.1px;
   letter-spacing:0; color:var(--ink);
 }
 .gio-gioco span{
   font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-soft);
 }
-.gio-gioco .vinto{color:var(--amber)}
+.gio-gioco .vinto{color:var(--accent)}
 
 /* nel pannello della recensione lo spazio e' meno e il fondo e' chiaro */
 #p-giocate{margin:22px 0 0; padding-top:16px; border-top:1px solid var(--line)}
@@ -752,9 +767,9 @@ body.sez-profilo #profilo{display:block}
 .mia-nota{margin:0 0 16px; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
 .mia-nota b{color:var(--ink); font-weight:500}
 #mia-salva{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:#f7f4ec;
-  background:var(--amber); border:1px solid var(--amber); padding:11px 18px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:#f2f1ed;
+  background:var(--accent); border:1px solid var(--accent); padding:11px 18px;
 }
 #mia-salva:hover{background:var(--ink); border-color:var(--ink)}
 
@@ -777,15 +792,15 @@ body.sez-profilo #profilo{display:block}
   width:46px; flex:none; font-family:var(--ff-text); font-size:13px; text-align:center;
   color:var(--ink); background:var(--card); border:1px solid var(--line); padding:6px 4px;
 }
-.pa-chi .pos:focus{outline:none; border-color:var(--amber)}
+.pa-chi .pos:focus{outline:none; border-color:var(--accent)}
 .pa-chi button{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
-  text-transform:uppercase; cursor:pointer; white-space:nowrap;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; white-space:nowrap;
   color:var(--ink-soft); background:var(--card); border:1px solid var(--line); padding:7px 9px;
 }
-.pa-chi button:hover{color:var(--ink); border-color:var(--amber)}
-.pa-chi button.vince.on{background:var(--amber); color:#f7f4ec; border-color:var(--amber)}
-.pa-chi button.via:hover{color:var(--rust); border-color:var(--rust)}
+.pa-chi button:hover{color:var(--ink); border-color:var(--accent)}
+.pa-chi button.vince.on{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
+.pa-chi button.via:hover{color:var(--wood); border-color:var(--wood)}
 .pa-agg{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px}
 #pa-scelta{
   font-family:var(--ff-text); font-size:13px; color:var(--ink);
@@ -795,40 +810,40 @@ body.sez-profilo #profilo{display:block}
   flex:1; min-width:120px; font-family:var(--ff-text); font-size:13px; color:var(--ink);
   background:var(--card); border:1px solid var(--line); padding:9px 11px;
 }
-#pa-nuovo:focus, #pa-scelta:focus{outline:none; border-color:var(--amber)}
+#pa-nuovo:focus, #pa-scelta:focus{outline:none; border-color:var(--accent)}
 #pa-piu{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:var(--card); border:1px solid var(--line); padding:9px 12px;
 }
-#pa-piu:hover{color:var(--ink); border-color:var(--amber)}
+#pa-piu:hover{color:var(--ink); border-color:var(--accent)}
 .pa-foot #pa-salva{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:#f7f4ec;
-  background:var(--amber); border:1px solid var(--amber); padding:11px 18px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:#f2f1ed;
+  background:var(--accent); border:1px solid var(--accent); padding:11px 18px;
 }
 .pa-foot #pa-salva:hover{background:var(--ink); border-color:var(--ink)}
 .pa-foot #pa-togli{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.14em;
-  text-transform:uppercase; cursor:pointer; color:var(--rust);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--wood);
   background:none; border:1px solid rgba(194,86,47,.5); padding:10px 14px;
 }
-.pa-foot #pa-togli:hover{background:var(--rust); color:#fff; border-color:var(--rust)}
+.pa-foot #pa-togli:hover{background:var(--wood); color:#fff; border-color:var(--wood)}
 .pa-foot #pa-togli[hidden]{display:none}
 
 #p-segna{
-  font-family:var(--ff-text); font-size:11px; font-weight:700;
-  letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
+  font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:none; border:1px solid var(--line); padding:9px 12px;
 }
-#p-segna:hover{color:var(--amber); border-color:var(--amber)}
+#p-segna:hover{color:var(--accent); border-color:var(--accent)}
 
 .pro-aggiungi{display:flex; gap:8px; margin:18px 0 0}
 #ami-q{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:14px; color:var(--ink);
   background:var(--card); border:1px solid var(--line); padding:11px 13px;
 }
-#ami-q:focus{outline:none; border-color:var(--amber)}
+#ami-q:focus{outline:none; border-color:var(--accent)}
 
 /* --- scelta del nick -------------------------------------------- */
 #nick{
@@ -839,7 +854,7 @@ body.sez-profilo #profilo{display:block}
 .nick-in{max-width:460px; width:100%; text-align:center}
 .nick-in h2{
   margin:6px 0 10px; font-family:var(--ff-display); font-weight:400;
-  font-size:clamp(24.6px,4.92vw,36.1px); letter-spacing:0; color:var(--ink);
+  font-size:clamp(21.6px,4.32vw,31.7px); letter-spacing:0; color:var(--ink);
 }
 .nick-nota{margin:0 0 22px; font-size:13px; line-height:1.6; color:var(--ink-soft)}
 .nick-riga{display:flex; gap:8px}
@@ -847,8 +862,8 @@ body.sez-profilo #profilo{display:block}
   flex:1; min-width:0; font-family:var(--ff-text); font-size:16px; color:var(--ink);
   background:var(--card); border:1px solid var(--line); padding:13px 14px; text-align:center;
 }
-#nick-q:focus{outline:none; border-color:var(--amber)}
-#nick-msg{margin:14px 0 0; min-height:18px; font-size:12.5px; color:var(--rust)}
+#nick-q:focus{outline:none; border-color:var(--accent)}
+#nick-msg{margin:14px 0 0; min-height:18px; font-size:12.5px; color:var(--wood)}
 #nick-msg.ok{color:var(--ink-soft)}
 
 /* --- in casa di un amico ---------------------------------------- */
@@ -866,11 +881,11 @@ body.visita #visita{transform:translate(-50%,84px)}
 #visita span{font-size:12px; color:var(--ink-soft)}
 #visita b{font-weight:500; color:var(--ink)}
 #vis-torna{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:none; border:1px solid var(--line); padding:7px 10px;
 }
-#vis-torna:hover{color:var(--amber); border-color:var(--amber)}
+#vis-torna:hover{color:var(--accent); border-color:var(--accent)}
 
 /* in casa d'altri si guarda e basta: via tutto quello che modifica */
 body.visita #add,
@@ -907,8 +922,8 @@ body.visita #p-segna{display:none !important}
 }
 #vista-apri svg{width:18px; height:18px; display:block}
 body.browse #vista-apri{opacity:1}
-#vista-apri:hover{color:var(--amber); border-color:var(--amber)}
-body.vista #vista-apri{color:var(--amber); border-color:var(--amber)}
+#vista-apri:hover{color:var(--accent); border-color:var(--accent)}
+body.vista #vista-apri{color:var(--accent); border-color:var(--accent)}
 body.review #vista-apri, body.arreda #vista-apri, body.mobili #vista-apri{display:none}
 
 #vista{
@@ -925,26 +940,26 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
   color:var(--ink-soft); background:none; border:0; padding:4px 6px;
 }
-#vista-x:hover{color:var(--rust)}
+#vista-x:hover{color:var(--wood)}
 .vista-tit{
-  margin:16px 0 0; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  margin:16px 0 0; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
   color:var(--ink-soft);
 }
 .vista-riga{
   display:block; width:100%; text-align:left; cursor:pointer; margin:8px 0 0;
-  font-family:var(--ff-display); font-size:13.1px; letter-spacing:0; color:var(--ink);
+  font-family:var(--ff-display); font-size:11.5px; letter-spacing:0; color:var(--ink);
   background:none; border:1px solid var(--line); padding:9px 11px;
 }
-.vista-riga:hover{color:var(--amber); border-color:var(--amber)}
+.vista-riga:hover{color:var(--accent); border-color:var(--accent)}
 
 /* il "+" e' sceso qui dalla testata: si aggiunge un gioco da dove si
    guarda la collezione, che e' anche da dove ci si accorge che manca */
 .aggiungi{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; cursor:pointer; color:var(--amber);
-  background:none; border:1px dashed var(--amber); padding:6px 10px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--accent);
+  background:none; border:1px dashed var(--accent); padding:6px 10px;
 }
-.aggiungi:hover{background:var(--amber); color:#f7f4ec; border-style:solid}
+.aggiungi:hover{background:var(--accent); color:#f2f1ed; border-style:solid}
 
 #stanza-apri{
   position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
@@ -953,7 +968,7 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
   opacity:0; transition:opacity .5s ease;
 }
 body.browse #stanza-apri{opacity:1}
-#stanza-apri:hover{color:var(--amber); border-color:var(--amber)}
+#stanza-apri:hover{color:var(--accent); border-color:var(--accent)}
 /* Solo nella libreria, e non in casa d'altri.
 
    `!important` non e' decorativo: `#stanza-apri` porta `dentro-only`, e
@@ -977,18 +992,18 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
   color:var(--ink-soft); background:none; border:0; padding:4px 6px;
 }
-#stanza-x:hover{color:var(--rust)}
+#stanza-x:hover{color:var(--wood)}
 .st-riga{display:flex; align-items:center; gap:12px; margin:0 0 11px}
 .st-riga.alto{align-items:flex-start}
 .st-riga>span:first-child{
-  flex:none; width:66px; font-size:10px; letter-spacing:.15em;
+  flex:none; width:66px; font-size:10px; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft);
 }
 .st-riga.luce b{
   flex:none; width:38px; text-align:right; font-family:var(--ff-display);
-  font-size:11.5px; color:var(--ink);
+  font-size:10.1px; color:var(--ink);
 }
-#st-luce{flex:1; min-width:0; accent-color:var(--amber)}
+#st-luce{flex:1; min-width:0; accent-color:var(--accent)}
 .pastiglie.testo button{
   width:auto; height:auto; padding:5px 8px; font-family:var(--ff-text);
   font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
@@ -999,13 +1014,13 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   margin:16px 0 0; padding-top:12px; border-top:1px solid var(--line);
 }
-#st-msg{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(42,42,34,.45)}
+#st-msg{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(51,53,43,.45)}
 #st-reset{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
-  text-transform:uppercase; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:var(--ink-soft);
   background:none; border:1px solid var(--line); padding:7px 10px;
 }
-#st-reset:hover{color:var(--rust); border-color:var(--rust)}
+#st-reset:hover{color:var(--wood); border-color:var(--wood)}
 
 /* --- a che libreria siamo --------------------------------------
    Il binario e' orizzontale e sta in basso perche' orizzontale e' il
@@ -1022,8 +1037,8 @@ body.browse #rail{opacity:1}
 body.ferma #rail{opacity:0 !important; pointer-events:none}
 body.sez-catalogo #rail, body.sez-profilo #rail{opacity:0 !important}
 #rail-txt{
-  font-family:var(--ff-display); font-size:12.3px; letter-spacing:0;
-  color:var(--ink-soft);
+  flex:none; font-family:var(--ff); font-weight:600; font-size:13px;
+  letter-spacing:0; color:var(--ink-soft); font-variant-numeric:tabular-nums;
 }
 
 #mobili{
@@ -1039,46 +1054,47 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
   color:var(--ink-soft); background:none; border:0; padding:4px 6px;
 }
-#mobili-x:hover{color:var(--rust)}
+#mobili-x:hover{color:var(--wood)}
 #mobili-lista{list-style:none; margin:0; padding:0}
 #mobili-lista li{display:flex; align-items:center; gap:8px; margin:0 0 8px}
 #mobili-lista input{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:13px; color:var(--ink);
   background:var(--bg); border:1px solid var(--line); padding:8px 10px;
 }
-#mobili-lista input:focus{outline:none; border-color:var(--amber)}
+#mobili-lista input:focus{outline:none; border-color:var(--accent)}
 #mobili-lista .quanti{
   flex:none; width:26px; text-align:center; font-family:var(--ff-display);
-  font-size:11.5px; color:var(--ink-soft);
+  font-size:10.1px; color:var(--ink-soft);
 }
 #mobili-lista button{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:5px 8px;
   color:var(--ink-soft); background:none; border:1px solid var(--line);
 }
-#mobili-lista button:hover{color:var(--rust); border-color:var(--rust)}
-#mobili-lista button.ok{color:var(--amber); border-color:rgba(138,118,56,.45); font-size:13px}
-#mobili-lista button.ok:hover{color:#f7f4ec; background:var(--amber); border-color:var(--amber)}
+#mobili-lista button:hover{color:var(--wood); border-color:var(--wood)}
+#mobili-lista button.ok{color:var(--accent); border-color:rgba(200,106,60,.45); font-size:13px}
+#mobili-lista button.ok:hover{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
 #mobili-lista button.ok:disabled{opacity:.3; cursor:default}
 #mobili-lista button.ok:disabled:hover{color:var(--ink-soft); background:none; border-color:var(--line)}
-#mobili-msg{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(42,42,34,.45)}
+#mobili-msg{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(51,53,43,.45)}
 #mobili-piu{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.13em;
-  text-transform:uppercase; cursor:pointer; color:#f7f4ec;
-  background:var(--amber); border:1px solid var(--amber); padding:8px 12px;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; color:#f2f1ed;
+  background:var(--accent); border:1px solid var(--accent); padding:8px 12px;
 }
 #mobili-piu:hover{background:var(--ink); border-color:var(--ink)}
 /* La barra e' un comando, quindi va presa: due pixel di altezza non si
    centrano col dito, e l'area cliccabile viene da un padding con lo
    sfondo trasparente -- la riga sottile resta quella. */
 .rail-bar{
-  height:2px; width:min(280px,44vw); background:rgba(42,42,34,.16); position:relative;
+  flex:1 1 auto; min-width:88px; max-width:min(260px,42vw);
+  height:4px; border-radius:999px; background:rgba(51,53,43,.14); position:relative;
   pointer-events:auto; cursor:pointer; touch-action:none;
-  border-top:13px solid transparent; border-bottom:13px solid transparent;
+  border-top:12px solid transparent; border-bottom:12px solid transparent;
   background-clip:padding-box;
 }
-.rail-bar:hover i, .rail-bar.presa i{background:var(--rust)}
-.rail-bar:focus-visible{outline:1px solid var(--amber); outline-offset:6px}
-.rail-bar i{position:absolute; top:0; height:2px; background:var(--amber);
+.rail-bar:hover i, .rail-bar.presa i{background:var(--wood)}
+.rail-bar:focus-visible{outline:1px solid var(--accent); outline-offset:6px}
+.rail-bar i{position:absolute; top:0; height:4px; border-radius:999px; background:var(--accent);
   transition:transform .25s ease, width .25s ease}
 
 
@@ -1116,7 +1132,7 @@ body.review #panel{
 }
 #panel::before{ /* il filo d'ottone lungo la cerniera */
   content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
-  background:var(--amber); opacity:.85;
+  background:var(--accent); opacity:.85;
 }
 .pan-scroll{overflow:auto; padding:28px clamp(20px,2.4vw,30px); -webkit-overflow-scrolling:touch}
 .pan-scroll>*{opacity:0; transform:translateY(12px); transition:opacity .5s ease, transform .5s ease}
@@ -1130,47 +1146,47 @@ body.review .pan-scroll>*:nth-child(6){transition-delay:.60s}
 body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 
 .eyebrow{margin:0 0 6px; font-size:11px; letter-spacing:.3em; text-transform:uppercase;
-  color:var(--rust); font-weight:700}
+  color:var(--wood); font-weight:700}
 #p-title{margin:0; font-family:var(--ff-display); font-weight:400;
-  font-size:clamp(32.8px,3.77vw,45.9px); line-height:.9; letter-spacing:0}
+  font-size:clamp(28.8px,3.31vw,40.3px); line-height:.9; letter-spacing:0}
 .byline{margin:10px 0 20px; font-size:13px; color:var(--ink-soft)}
 .byline b{color:var(--ink); font-weight:500}
 .credit{display:inline-block; margin-top:4px; font-size:11px;
-  letter-spacing:.04em; color:rgba(42,42,34,.48)}
+  letter-spacing:.04em; color:rgba(51,53,43,.48)}
 
 .specs{list-style:none; margin:0 0 20px; padding:0; gap:1px;
   display:grid; grid-template-columns:repeat(4,1fr);
   background:var(--line); border:1px solid var(--line)}
-.specs li{background:rgba(42,42,34,.05); padding:10px 6px; text-align:center}
-.specs b{display:block; font-family:var(--ff-display); font-size:17.2px; letter-spacing:0;
-  color:var(--amber); line-height:1.2}
-.specs span{font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft)}
+.specs li{background:rgba(51,53,43,.05); padding:10px 6px; text-align:center}
+.specs b{display:block; font-family:var(--ff-display); font-size:15.1px; letter-spacing:0;
+  color:var(--accent); line-height:1.2}
+.specs span{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft)}
 
 .score{display:flex; align-items:baseline; gap:10px; margin:0 0 20px; padding-bottom:20px;
   border-bottom:1px solid var(--line)}
-.score b{font-family:var(--ff-display); font-size:45.9px; line-height:.8; color:var(--ink)}
+.score b{font-family:var(--ff-display); font-size:40.3px; line-height:.8; color:var(--ink)}
 .score i{font-style:normal; font-size:19px; color:var(--ink-soft)}
 .score small{margin-left:auto; text-align:right; line-height:1.5;
-  font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft)}
+  font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft)}
 
-.body p{margin:0 0 14px; font-size:15px; color:rgba(42,42,34,.88)}
+.body p{margin:0 0 14px; font-size:15px; color:rgba(51,53,43,.88)}
 .body p:first-child::first-letter{
-  font-family:var(--ff-display); font-size:39.4px; line-height:.76; float:left;
-  margin:8px 9px 0 0; color:var(--amber);
+  font-family:var(--ff-display); font-size:34.6px; line-height:.76; float:left;
+  margin:8px 9px 0 0; color:var(--accent);
 }
 .tags{display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0}
 .tags span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);
   border:1px solid var(--line); padding:5px 9px}
 .bgg{display:inline-block; margin-top:20px; font-size:12px; letter-spacing:.12em;
-  text-transform:uppercase; color:var(--amber); text-decoration:none;
+  text-transform:uppercase; color:var(--accent); text-decoration:none;
   border-bottom:1px solid var(--line); padding-bottom:3px}
-.bgg:hover{border-color:var(--amber)}
+.bgg:hover{border-color:var(--accent)}
 
 #close{
   position:absolute; z-index:2; top:-1px; right:-1px;
-  background:var(--amber); color:#f7f4ec; border:0; cursor:pointer;
-  font-family:var(--ff-text); font-weight:700; font-size:11px;
-  letter-spacing:.18em; text-transform:uppercase; padding:9px 13px;
+  background:var(--accent); color:#f2f1ed; border:0; cursor:pointer;
+  font-family:var(--ff-text); font-weight:700; font-size:13px;
+  letter-spacing:0; text-transform:none; padding:9px 13px;
 }
 #close:hover{background:var(--ink)}
 
@@ -1239,7 +1255,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .pan-foot{
   flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:8px;
   margin:0; padding:12px clamp(20px,2.4vw,30px);
-  border-top:1px solid var(--line); background:rgba(247,244,236,.7);
+  border-top:1px solid var(--line); background:rgba(242,241,237,.7);
   opacity:0; transition:opacity .4s ease .5s;
 }
 body.review .pan-foot{opacity:1}
@@ -1247,36 +1263,36 @@ body.review .pan-foot{opacity:1}
 /* con quattro pulsanti in fila le etichette lunghe non ci stanno */
 .pan-foot button{font-size:10px; letter-spacing:.1em; padding:9px 10px}
 #p-mia{
-  font-family:var(--ff-text); font-weight:700; text-transform:uppercase;
-  cursor:pointer; color:#f7f4ec; background:var(--amber); border:1px solid var(--amber);
+  font-family:var(--ff-text); font-weight:700; text-transform:none;
+  cursor:pointer; color:#f2f1ed; background:var(--accent); border:1px solid var(--accent);
 }
 #p-mia:hover{background:var(--ink); border-color:var(--ink)}
 body.visita #p-mia{display:none !important}
 /* togliere dallo scaffale e' reversibile e non chiede conferma:
    eliminare no, e infatti resta rosso e in due tempi */
 #p-fuori{
-  font-family:var(--ff-text); font-size:10px; font-weight:700;
-  letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:none; border:1px solid var(--line); padding:9px 10px;
 }
-#p-fuori:hover{color:var(--ink); border-color:var(--amber)}
+#p-fuori:hover{color:var(--ink); border-color:var(--accent)}
 body.visita #p-fuori{display:none !important}
 #del{
-  font-family:var(--ff-text); font-size:11px; font-weight:700;
-  letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
-  color:var(--rust); background:none; border:1px solid rgba(194,86,47,.5);
+  font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
+  color:var(--wood); background:none; border:1px solid rgba(194,86,47,.5);
   padding:7px 11px; align-items:center; gap:6px;
 }
-#del:hover{background:var(--rust); color:#fff; border-color:var(--rust)}
+#del:hover{background:var(--wood); color:#fff; border-color:var(--wood)}
 #edit{
-  font-family:var(--ff-text); font-size:11px; font-weight:700;
-  letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
-  color:var(--amber); background:none; border:1px solid var(--line);
+  font-family:var(--ff-text); font-size:13px; font-weight:700;
+  letter-spacing:0; text-transform:none; cursor:pointer;
+  color:var(--accent); background:none; border:1px solid var(--line);
   padding:7px 11px; align-items:center; gap:6px;
 }
-#edit:hover{background:var(--amber); color:#f7f4ec; border-color:var(--amber)}
+#edit:hover{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
 /* armato: il secondo clic esegue davvero */
-#del.armed, .add-foot button.armed{background:var(--rust); color:#fff; border-color:var(--rust)}
+#del.armed, .add-foot button.armed{background:var(--wood); color:#fff; border-color:var(--wood)}
 #del.armed{animation:pulse 1s steps(2) infinite}
 @keyframes pulse{0%{opacity:1}50%{opacity:.62}100%{opacity:1}}
 
@@ -1290,32 +1306,32 @@ body.visita #p-fuori{display:none !important}
 .gate-in{max-width:560px; text-align:center}
 .gate-logo{
   display:block; font-family:var(--ff-display); font-weight:400;
-  font-size:clamp(27.9px,4.92vw,42.6px); letter-spacing:0; line-height:1;
+  font-size:clamp(24.5px,4.32vw,37.4px); letter-spacing:0; line-height:1;
 }
-.gate-logo i{color:var(--amber); font-style:normal}
-.gate-q{margin:14px 0 30px; font-size:12px; letter-spacing:.26em;
+.gate-logo i{color:var(--accent); font-style:normal}
+.gate-q{margin:14px 0 30px; font-size:12px; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft)}
 .gate-pick{display:grid; grid-template-columns:1fr 1fr; gap:14px}
 .gate-pick.uno{grid-template-columns:1fr; max-width:420px; margin:0 auto}
 @media (max-width:560px){ .gate-pick{grid-template-columns:1fr} }
 .gate-pick button{
   font-family:var(--ff-text); text-align:left; cursor:pointer;
-  background:rgba(247,244,236,.6); border:1px solid var(--line);
+  background:rgba(242,241,237,.6); border:1px solid var(--line);
   padding:20px 18px; color:var(--ink-soft);
   transition:border-color .2s ease, background .2s ease, transform .2s ease;
 }
-.gate-pick button:hover{border-color:var(--amber); background:rgba(138,118,56,.08); transform:translateY(-2px)}
+.gate-pick button:hover{border-color:var(--accent); background:rgba(200,106,60,.08); transform:translateY(-2px)}
 .gate-pick button b{
   display:block; font-family:var(--ff-display); font-weight:400;
-  font-size:24.6px; letter-spacing:0; color:var(--ink); margin-bottom:6px;
+  font-size:21.6px; letter-spacing:0; color:var(--ink); margin-bottom:6px;
 }
 .gate-pick button.last b::after{
   content:'ultima volta'; float:right; font-family:var(--ff-text); font-size:9px;
-  letter-spacing:.18em; color:var(--amber); margin-top:9px;
+  letter-spacing:.18em; color:var(--accent); margin-top:9px;
 }
 .gate-pick button span{font-size:13px; line-height:1.5}
 .gate-note{margin:28px 0 0; font-size:11px; line-height:1.7;
-  color:rgba(42,42,34,.44)}
+  color:rgba(51,53,43,.44)}
 
 /* --- admin: cerca e aggiungi ----------------------------------- */
 #addlayer{
@@ -1334,21 +1350,21 @@ body.visita #p-fuori{display:none !important}
 /* un titolo lungo senza spazi non deve allargare la scheda */
 .add-card, .add-msg, #add-res button{overflow-wrap:anywhere}
 #add-x{
-  position:absolute; top:-1px; right:-1px; background:var(--amber); color:#f7f4ec;
+  position:absolute; top:-1px; right:-1px; background:var(--accent); color:#f2f1ed;
   border:0; cursor:pointer; font-family:var(--ff-text); font-weight:700;
-  font-size:11px; letter-spacing:.18em; text-transform:uppercase; padding:9px 13px;
+  font-size:13px; letter-spacing:0; text-transform:none; padding:9px 13px;
 }
 .add-card h2{margin:0 0 18px; font-family:var(--ff-display); font-weight:400;
-  font-size:32.8px; line-height:.95; letter-spacing:0}
+  font-size:28.8px; line-height:.95; letter-spacing:0}
 .add-search{display:flex; gap:8px}
 .add-search input{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:15px; color:var(--ink);
-  background:rgba(42,42,34,.04); border:1px solid var(--line); padding:11px 13px;
+  background:rgba(51,53,43,.04); border:1px solid var(--line); padding:11px 13px;
 }
-.add-search input:focus{outline:none; border-color:var(--amber)}
+.add-search input:focus{outline:none; border-color:var(--accent)}
 .add-search button, .add-form button{
-  font-family:var(--ff-text); font-size:11px; font-weight:700; letter-spacing:.16em;
-  text-transform:uppercase; cursor:pointer; background:var(--amber); color:#f7f4ec;
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; background:var(--accent); color:#f2f1ed;
   border:0; padding:11px 16px;
 }
 .add-search button:hover, .add-form button:hover{background:var(--ink)}
@@ -1356,16 +1372,16 @@ body.visita #p-fuori{display:none !important}
 .add-msg:empty{margin:0}
 .add-msg.warn{color:#a8432a}
 .add-msg code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px;
-  background:rgba(42,42,34,.07); padding:2px 5px; color:var(--ink)}
+  background:rgba(51,53,43,.07); padding:2px 5px; color:var(--ink)}
 
 #add-res{list-style:none; margin:14px 0 0; padding:0; max-height:38vh; overflow:auto}
-#add-res li{border-bottom:1px solid rgba(42,42,34,.12)}
+#add-res li{border-bottom:1px solid rgba(51,53,43,.12)}
 #add-res button{
   width:100%; display:flex; align-items:baseline; justify-content:space-between; gap:12px;
   font-family:var(--ff-text); text-align:left; cursor:pointer;
   background:none; border:0; color:var(--ink-soft); padding:11px 4px;
 }
-#add-res button:hover{background:rgba(138,118,56,.08); color:var(--ink)}
+#add-res button:hover{background:rgba(200,106,60,.08); color:var(--ink)}
 #add-res button b{font-weight:500; font-size:15px; color:var(--ink)}
 #add-res button span{font-size:12px; flex:none}
 #add-res button:disabled{opacity:.6; cursor:default}
@@ -1377,54 +1393,54 @@ body.visita #p-fuori{display:none !important}
 #addlayer.correzione #add-man{border-top:0; padding-top:0}
 
 #add-man{margin:18px 0 0; border-top:1px solid var(--line); padding-top:14px}
-#add-man summary{cursor:pointer; font-size:11px; letter-spacing:.16em;
-  text-transform:uppercase; color:var(--ink-soft)}
-#add-man summary:hover{color:var(--amber)}
+#add-man summary{cursor:pointer; font-size:13px; letter-spacing:0;
+  text-transform:none; color:var(--ink-soft)}
+#add-man summary:hover{color:var(--accent)}
 .add-form{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px}
 /* min-width:0, se no le celle della griglia prendono la larghezza
    naturale dell'input e la scheda esce di lato */
 .add-form label{display:flex; flex-direction:column; gap:5px; min-width:0; font-size:10px;
-  letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft)}
+  letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft)}
 .add-form input{
   min-width:0; width:100%;
   font-family:var(--ff-text); font-size:14px; color:var(--ink);
-  background:rgba(42,42,34,.04); border:1px solid var(--line); padding:8px 10px;
+  background:rgba(51,53,43,.04); border:1px solid var(--line); padding:8px 10px;
 }
-.add-form input:focus{outline:none; border-color:var(--amber)}
+.add-form input:focus{outline:none; border-color:var(--accent)}
 .add-form button{grid-column:1/-1; margin-top:6px}
 .add-form label.wide{grid-column:1/-1}
 .add-form textarea{
   min-width:0; width:100%; resize:vertical; min-height:120px;
   font-family:var(--ff-text); font-size:14px; line-height:1.6; color:var(--ink);
-  background:rgba(42,42,34,.04); border:1px solid var(--line); padding:10px;
+  background:rgba(51,53,43,.04); border:1px solid var(--line); padding:10px;
 }
-.add-form textarea:focus{outline:none; border-color:var(--amber)}
-.add-form textarea::placeholder{color:rgba(42,42,34,.34)}
+.add-form textarea:focus{outline:none; border-color:var(--accent)}
+.add-form textarea::placeholder{color:rgba(51,53,43,.34)}
 .add-form input[type=file]{
   padding:7px 9px; font-size:12px; cursor:pointer; color:var(--ink-soft);
 }
 .add-form input[type=file]::file-selector-button{
-  font-family:var(--ff-text); font-size:10px; font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; cursor:pointer; margin-right:10px;
-  background:rgba(138,118,56,.12); color:var(--amber);
+  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
+  text-transform:none; cursor:pointer; margin-right:10px;
+  background:rgba(200,106,60,.12); color:var(--accent);
   border:1px solid var(--line); padding:6px 10px;
 }
-.add-form input[type=file]::file-selector-button:hover{background:var(--amber); color:#f7f4ec}
+.add-form input[type=file]::file-selector-button:hover{background:var(--accent); color:#f2f1ed}
 #m-file-nota{font-size:10px; letter-spacing:0; text-transform:none; line-height:1.5;
-  color:rgba(42,42,34,.46)}
+  color:rgba(51,53,43,.46)}
 .add-foot{margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line);
-  font-size:11px; color:rgba(42,42,34,.5); display:flex; flex-wrap:wrap;
+  font-size:11px; color:rgba(51,53,43,.5); display:flex; flex-wrap:wrap;
   align-items:center; gap:10px}
 .add-foot button{
   font-family:var(--ff-text); font-size:11px; letter-spacing:.1em; cursor:pointer;
   background:none; border:1px solid var(--line); color:var(--ink-soft); padding:6px 10px;
 }
-.add-foot button:hover{border-color:var(--amber); color:var(--amber)}
+.add-foot button:hover{border-color:var(--accent); color:var(--accent)}
 
 /* --- messaggino di conferma ------------------------------------ */
 #flash{
   position:fixed; z-index:10; left:50%; bottom:26px; transform:translate(-50%,14px);
-  background:var(--card); border:1px solid var(--line); border-left:2px solid var(--amber);
+  background:var(--card); border:1px solid var(--line); border-left:2px solid var(--accent);
   padding:11px 16px; font-size:13px; color:var(--ink);
   opacity:0; visibility:hidden; pointer-events:none;
   transition:opacity .3s ease, transform .3s ease, visibility 0s .3s;
@@ -1454,7 +1470,7 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
 .f{
   position:absolute; inset:0; padding:11px; border-radius:12px;
   display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr);
-  background:linear-gradient(150deg,#f7f4ec,#e2d3b8);
+  background:linear-gradient(150deg,#f2f1ed,#e2d3b8);
   box-shadow:inset 0 0 0 1px rgba(80,60,35,.22), 0 2px 10px rgba(90,70,40,.10);
 }
 .f i{align-self:center; justify-self:center; width:13px; height:13px; border-radius:50%;
@@ -1467,12 +1483,12 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
 .f6{transform:rotateX(-90deg) translateZ(44px)}
 .load-txt{text-align:center}
 .load-txt b{display:block; font-family:var(--ff-display); font-weight:400;
-  font-size:24.6px; letter-spacing:0; line-height:1}
-.load-txt b i{color:var(--amber); font-style:normal}
-.load-txt span{display:block; margin-top:10px; font-size:11px; letter-spacing:.24em;
+  font-size:21.6px; letter-spacing:0; line-height:1}
+.load-txt b i{color:var(--accent); font-style:normal}
+.load-txt span{display:block; margin-top:10px; font-size:11px; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft)}
-.bar{width:180px; height:2px; background:rgba(42,42,34,.16); overflow:hidden}
-.bar i{display:block; height:100%; width:0; background:var(--amber); transition:width .3s ease}
+.bar{width:180px; height:2px; background:rgba(51,53,43,.16); overflow:hidden}
+.bar i{display:block; height:100%; width:0; background:var(--accent); transition:width .3s ease}
 
 /* --- fallback senza WebGL ------------------------------------- */
 #flat{display:none; position:fixed; inset:0; z-index:6; overflow:auto;
@@ -1480,11 +1496,11 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
 body.no3d{overflow:auto}
 body.no3d #flat{display:block}
 body.no3d #scene,body.no3d #vig,body.no3d #panel{display:none}
-#flat h1{font-family:var(--ff-display); font-weight:400; font-size:clamp(27.9px,5.74vw,52.5px);
+#flat h1{font-family:var(--ff-display); font-weight:400; font-size:clamp(24.5px,5.04vw,46.1px);
   letter-spacing:0; margin:0 0 6px}
 #flat .lead{color:var(--ink-soft); margin:0 0 44px; max-width:52ch}
 #flat article{border-top:1px solid var(--line); padding:28px 0; max-width:70ch}
-#flat h2{font-family:var(--ff-display); font-weight:400; font-size:29.5px;
+#flat h2{font-family:var(--ff-display); font-weight:400; font-size:25.9px;
   letter-spacing:0; margin:0 0 4px}
 #flat .byline{margin:0 0 14px}
 #flat img{display:block; width:100%; max-width:420px; height:auto;
@@ -1577,3 +1593,246 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
     scroll-behavior:auto !important;
   }
 }
+
+
+/* ===================================================================
+   I COMANDI
+
+   Un posto solo che decide com'e' fatto un pulsante in tutto il sito.
+   Prima ognuno aveva il suo bordo da un pixel, il suo maiuscolo e la
+   sua spaziatura: dodici dialetti nella stessa pagina, ed e' quello --
+   non i colori -- che faceva sembrare il sito di dieci anni fa.
+
+   Tre livelli soli, come sulle piattaforme Apple:
+
+     .cmd-pieno   l'azione principale: fondo terracotta, testo chiaro
+     .cmd-tinto   le secondarie: terracotta al 12%, testo terracotta
+     .cmd-nudo    le terziarie: solo testo
+
+   Le regole che valgono per tutti:
+
+   - **Niente maiuscolo forzato e niente spaziatura larga.** Un pulsante
+     si legge come una frase. Il maiuscolo tracciato resta solo alle
+     etichettine di sezione, dove e' un'etichetta e non un comando.
+   - **Il peso fa la gerarchia**, non il bordo. Un filo attorno a ogni
+     cosa e' quello che rende tutto ugualmente importante, cioe' niente.
+   - **Bersagli da 44 px sul tocco**, che e' la misura di un dito.
+     Sotto quella non e' un pulsante, e' un tiro a segno.
+   - **La pressione si vede subito**: rimpicciolisce di un filo e si
+     schiarisce. Il ritorno e' piu' lento della partenza.
+   =================================================================== */
+
+.tool, #conta, .riga-menu, .gruppi button, #sortmenu button, .vista-riga,
+.aggiungi, #stanza-apri, #vista-apri, .riga-azioni button, #mobili-lista button,
+.pan-azioni button, #close, .cartella-tit, #mia-gestisci, #vis-torna{
+  font-family:var(--ff); font-weight:500; letter-spacing:0;
+  text-transform:none; border-radius:var(--r-s);
+  border:0; cursor:pointer;
+  transition:background-color .2s var(--ease), color .2s var(--ease),
+             transform .12s var(--ease), opacity .2s var(--ease);
+}
+.tool:active, #conta:active, .riga-menu:active, .gruppi button:active,
+#sortmenu button:active, .vista-riga:active, .aggiungi:active,
+#stanza-apri:active, #vista-apri:active, .riga-azioni button:active,
+.pan-azioni button:active, #close:active, #vis-torna:active{
+  transform:scale(.96);
+}
+
+/* --- livello 1: pieno --------------------------------------------- */
+.aggiungi, #p-mia, #vis-torna{
+  background:var(--accent); color:#fff; font-weight:600;
+  padding:11px 18px; font-size:14px; border:0;
+  box-shadow:var(--ombra-lieve);
+}
+.aggiungi:hover, #p-mia:hover, #vis-torna:hover{background:#b85c31; color:#fff}
+
+/* --- livello 2: tinto --------------------------------------------- */
+.tool, #conta, .riga-menu, .gruppi button, .vista-riga, #stanza-apri,
+#vista-apri, .pan-azioni button, #mia-gestisci, #close{
+  background:rgba(200,106,60,.10); color:var(--accent);
+  padding:10px 15px; font-size:14px;
+}
+.tool:hover, #conta:hover, .riga-menu:hover, .gruppi button:hover,
+.vista-riga:hover, #stanza-apri:hover, #vista-apri:hover,
+.pan-azioni button:hover, #mia-gestisci:hover, #close:hover{
+  background:rgba(200,106,60,.18); color:var(--accent);
+}
+/* quello che e' spento sta in grigio, non in terracotta: il colore
+   dell'accento vuol dire "questo fa qualcosa adesso" */
+.gruppi button, #mia-gestisci, #close, .riga-menu{
+  background:rgba(51,53,43,.06); color:var(--ink-soft);
+}
+.gruppi button:hover, #mia-gestisci:hover, #close:hover, .riga-menu:hover{
+  background:rgba(51,53,43,.11); color:var(--ink);
+}
+.gruppi button.on, .gruppi.filtro button.on{
+  background:var(--accent); color:#fff; border:0;
+}
+.riga-menu[aria-expanded="true"]{background:var(--accent); color:#fff}
+
+/* --- livello 3: nudo ---------------------------------------------- */
+#sortmenu button, .riga-azioni button{
+  background:none; color:var(--ink); text-align:left;
+  padding:11px 13px; font-size:14px; border-radius:8px;
+}
+#sortmenu button:hover, .riga-azioni button:hover{background:rgba(51,53,43,.07)}
+#sortmenu button.on{color:var(--accent); font-weight:600}
+#sortmenu button.on::after{content:''}
+
+/* --- quello che distrugge resta rosso, e resta in due tempi -------- */
+#del, .pan-azioni #del{background:rgba(190,60,40,.10); color:#a8341f}
+#del:hover{background:rgba(190,60,40,.18); color:#8e2b19}
+#del.armed{background:#a8341f; color:#fff}
+
+/* --- il contatore e' il titolo della schermata, non un pulsantino -- */
+#conta{font-weight:500; gap:6px}
+#conta b{font-weight:600; font-size:15px; letter-spacing:0; color:inherit}
+#conta span{color:inherit; opacity:.75; font-size:13px}
+body.elenco #conta{background:var(--accent); color:#fff}
+
+/* --- la navigazione ------------------------------------------------ */
+#sezioni button, #tabbar button{
+  font-family:var(--ff); font-weight:500; letter-spacing:0;
+  text-transform:none; font-size:14px; border:0; background:none;
+  color:var(--ink-soft); cursor:pointer; border-radius:var(--r-s);
+  padding:8px 12px; transition:color .2s var(--ease), background-color .2s var(--ease);
+}
+#sezioni button:hover, #tabbar button:hover{color:var(--ink); background:rgba(51,53,43,.06)}
+#sezioni button.on, #tabbar button.on{color:var(--accent); font-weight:600; background:none}
+#sezioni button.on::after{display:none}
+
+/* --- superfici: raggi generosi, ombre morbide, nessun filo duro ---- */
+#panel, #vista, #stanza, #mobili, .riga-azioni, .add-card, #mia, #catalogo{
+  border-radius:var(--r-m); border:0; box-shadow:var(--shadow);
+}
+#mia, #catalogo{border-radius:0; box-shadow:none}
+.riga-azioni{border-radius:var(--r-m); padding:6px}
+#panel{border-radius:var(--r-l)}
+#panel::before{display:none}          /* il filo d'ottone era un bordo di troppo */
+
+/* --- i campi di testo ---------------------------------------------- */
+#cerca, #cat-q, #add-q, .add-card input, .add-card textarea, #mobili-lista input,
+#nick-in, #pa-note{
+  font-family:var(--ff); font-size:14px; color:var(--ink);
+  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  padding:12px 14px; transition:background-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+#cerca:focus, #cat-q:focus, #add-q:focus, .add-card input:focus,
+.add-card textarea:focus, #mobili-lista input:focus, #nick-in:focus, #pa-note:focus{
+  outline:none; background:rgba(51,53,43,.03);
+  box-shadow:0 0 0 2px var(--accent);
+}
+#cerca::placeholder, #cat-q::placeholder{
+  color:var(--ink-soft); text-transform:none; letter-spacing:0; font-size:14px;
+}
+
+/* --- le etichettine di sezione: leggere, non gridate --------------- */
+.eyebrow, .vista-tit{
+  font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-soft);
+}
+
+/* --- sul tocco i bersagli crescono: quarantaquattro pixel ---------- */
+@media (pointer:coarse){
+  .tool, #conta, .riga-menu, .gruppi button, #sortmenu button, .vista-riga,
+  .aggiungi, #stanza-apri, #vista-apri, .riga-azioni button,
+  .pan-azioni button, #close, #sezioni button, #tabbar button{
+    min-height:44px;
+  }
+}
+
+/* --- LE ICONE ------------------------------------------------------
+   Un corredo solo: tratto 1.6, estremi tondi, riquadro 24. Prendono il
+   colore del testo, quindi seguono da sole lo stato del comando che le
+   contiene -- non c'e' una regola di colore per ognuna. */
+.ico{
+  width:18px; height:18px; flex:none; display:block;
+  vertical-align:-3px;
+}
+button .ico + *{margin-left:2px}
+.pan-azioni button, #p-mia, #p-segna, #p-cuore, .riga-menu, #stanza-apri, #vista-apri{
+  display:inline-flex; align-items:center; gap:7px;
+}
+.riga-menu, #stanza-apri, #vista-apri, #close, #p-pref{padding:10px}
+#vista-apri svg{width:18px; height:18px}
+#p-cuore[aria-pressed="true"] .ico{fill:currentColor}
+#p-pref[aria-pressed="true"] .ico{fill:currentColor}
+
+/* --- QUELLO CHE GALLEGGIA SULLA SCENA ------------------------------
+   Un fondo tinto al dieci per cento funziona dentro una scheda bianca;
+   sopra la stanza, che e' gia' color crema, sparisce. I comandi che
+   stanno sulla scena sono superfici vere -- carta chiara, ombra
+   leggera, sfocatura dietro -- e non tinte di colore. E' anche il modo
+   in cui si distinguono da quelli che stanno DENTRO a un pannello. */
+#stanza-apri, #vista-apri, #conta{
+  background:rgba(242,241,237,.86); color:var(--ink);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:var(--ombra-lieve);
+}
+#stanza-apri:hover, #vista-apri:hover{background:#f2f1ed; color:var(--accent)}
+body.vista #vista-apri, body.arreda #stanza-apri{background:var(--accent); color:#fff}
+#conta{color:var(--ink)}
+#conta b{color:var(--accent)}
+#conta:hover{background:#f2f1ed}
+body.elenco #conta{background:var(--accent); color:#fff}
+body.elenco #conta b{color:#fff}
+
+/* Il binario sta sul pavimento della stanza, non su una scheda: deve
+   staccarsi da solo. */
+#rail{
+  background:rgba(242,241,237,.9);
+  box-shadow:0 2px 10px rgba(51,53,43,.10);
+}
+#rail-txt{color:var(--ink); opacity:.7}
+.rail-bar{background:rgba(51,53,43,.18)}
+
+/* Il cartello di quando sei in casa di un altro, con la stessa mano */
+#visita{
+  background:rgba(242,241,237,.9); border:0; border-radius:999px;
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:var(--ombra-lieve);
+}
+
+/* Il binario si stringe sul suo contenuto: con la barra a `flex:1` la
+   pastiglia si allargava fino ai bordi dello schermo e sembrava una
+   fascia, non un comando. */
+.rail-bar{flex:0 0 auto; width:min(200px,40vw); max-width:none}
+#rail{max-width:none; width:auto}
+#rail-txt{opacity:.85; font-size:12.5px}
+
+/* Le due viste dell'elenco parlano la stessa lingua dei comandi: niente
+   maiuscolo tracciato, il peso a fare la differenza. */
+.viste button{
+  font-family:var(--ff); font-weight:500; font-size:14px;
+  letter-spacing:0; text-transform:none; color:var(--ink-soft);
+  background:none; border:0; cursor:pointer; padding:11px 4px;
+  transition:color .2s var(--ease);
+}
+.viste button.on{color:var(--accent); font-weight:600}
+.viste .ind{background:var(--accent); height:2px; border-radius:999px}
+
+/* Anche i titoli delle cartelle: erano righe di capitali con un filo
+   sotto, cioe' l'estetica di un foglio di calcolo. */
+.cartella-tit{
+  font-family:var(--ff); font-weight:600; font-size:17px; letter-spacing:-.01em;
+  border-bottom:1px solid var(--line); border-radius:0; background:none;
+  padding:12px 2px; color:var(--ink);
+}
+.cartella-tit:hover{color:var(--accent); background:none}
+.cartella-tit span{
+  font-family:var(--ff); font-weight:500; font-size:12px;
+  letter-spacing:0; text-transform:none; color:var(--ink-soft);
+}
+
+/* La barra delle azioni e' cresciuta: con i bersagli da 44 px le voci
+   vanno su tre righe, e su un pannello alto il 60% dello schermo si
+   mangiava meta' della recensione -- il voto finiva tagliato. Il
+   pannello sale, la barra si stringe, e le due cose insieme rimettono
+   il testo dove si legge. */
+@media (max-width:879px){
+  #panel{max-height:82vh}
+  .pan-foot{padding:12px clamp(14px,3vw,20px) 14px; gap:8px}
+  .pan-scroll{padding:22px clamp(16px,3vw,22px) 8px}
+}
+.pan-foot{display:flex; flex-wrap:wrap; gap:9px; margin:0;
+  border-top:1px solid var(--line); background:var(--card)}

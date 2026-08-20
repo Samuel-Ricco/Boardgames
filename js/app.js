@@ -170,6 +170,15 @@ const lerp      = (a,b,t) => a + (b-a)*t;
 const clamp     = (v,a,b) => v < a ? a : (v > b ? b : v);
 
 /* --- utilita' -------------------------------------------------- */
+/* Le icone stanno qui e non nei glifi Unicode: quelli li disegna il
+   sistema operativo, quindi una faccia di sole su Windows e su un
+   telefono sono due disegni diversi -- ed era la parte piu'
+   visibilmente scoordinata dell'interfaccia. Tratto 1.6, estremi
+   tondi, riquadro 24: tutte uguali. */
+const ICO = {
+  menu: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>'
+};
+
 const q  = s => document.querySelector(s);
 const qa = s => Array.prototype.slice.call(document.querySelectorAll(s));
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -301,7 +310,7 @@ function slab(w, h, d, mat, x, y, z){
    farebbe solo sporcare i cubi di macchie. */
 /* Deve restare uguale a --bg nel CSS: e' la stessa tinta a tenere
    insieme il caricamento, il cancello e il mondo dietro. */
-const SFONDO = 0xeae6db;
+const SFONDO = 0xcfccc8;
 
 function buildRoom(){
   scene = new THREE.Scene();
@@ -1960,14 +1969,27 @@ function bindRail(){
 
 /* --- puntatore -------------------------------------------------- */
 /* Quanto rende un pixel di trascinamento. A 1 la scena seguiva il dito
-   uno a uno e cambiare mobile costava una schermata piena; a 2.4 basta
-   un gesto da pollice, e sotto la soglia del colpo secco resta comunque
-   preciso perche' alla fine ci si accosta al mobile piu' vicino. */
-const TIRO = 2.4;
+   uno a uno e cambiare mobile costava una schermata piena; a 2 basta un
+   gesto da pollice. */
+const TIRO = 2;
 /* Oltre questa velocita' al rilascio e' un COLPO, non un trascinamento:
    si passa al mobile accanto anche se il dito ha fatto pochi pixel --
    e' come si sfoglia. */
 const COLPO = 6;
+
+/* UN GESTO VALE UNA LIBRERIA, MAI DUE.
+
+   Con il tiro alzato, un trascinamento lungo ne attraversava anche tre;
+   e il colpo secco, che sommava un mobile a dove il dito era GIA'
+   arrivato, ne aggiungeva un altro sopra. Il risultato era una vista
+   che partiva e si fermava due mobili piu' in la' di dove volevi --
+   cioe' esattamente il modo di non trovare piu' niente.
+
+   Adesso alla pressione si fotografa da quale mobile si parte, e per
+   tutto il gesto la vista non puo' uscire da quello accanto: ne' col
+   trascinamento, ne' col colpo. Vale anche al contrario -- e' il
+   comportamento di qualunque cosa si sfogli. */
+let partenzaLib = 0;
 
 function bindInput(){
   const el = renderer.domElement;
@@ -1999,7 +2021,8 @@ function bindInput(){
       const vw = vh * camera.aspect;
       state.scrollTo = clamp(
         state.scrollTo - TIRO * (dx * vw / window.innerWidth) / PASSO_LIB,
-        0, maxScroll()
+        Math.max(0, partenzaLib - 1),
+        Math.min(maxScroll(), partenzaLib + 1)
       );
     }
   });
@@ -2007,6 +2030,7 @@ function bindInput(){
   el.addEventListener('pointerdown', function(e){
     downAt = performance.now(); downX = e.clientX; downY = e.clientY;
     lastX = e.clientX; moved = 0; vx = 0;
+    partenzaLib = Math.round(state.scroll);      // da qui non ci si allontana di piu' di uno
     state.dragging = true;
     if (el.setPointerCapture) try { el.setPointerCapture(e.pointerId); } catch(err){}
     norm(e); pointer.set(state.tx, state.ty);
@@ -2037,9 +2061,13 @@ function bindInput(){
     const wasDrag = moved > 9;
     state.dragging = false;
     if (wasDrag){
-      // un colpo secco vale un mobile intero, anche se corto
-      if (Math.abs(vx) > COLPO) scrollBy(vx > 0 ? -1 : 1);
-      else snapSoon();
+      /* Un colpo secco vale UN mobile a partire da dove si e' premuto,
+         non uno in piu' di dove il dito e' arrivato: sommarlo alla
+         posizione corrente era il secondo salto. */
+      if (Math.abs(vx) > COLPO){
+        state.scrollTo = clamp(partenzaLib + (vx > 0 ? -1 : 1), 0, maxScroll());
+        snapSoon();
+      } else snapSoon();
     }
 
     const dt = performance.now() - downAt;
@@ -3452,7 +3480,7 @@ function rigaMia(g){
        di dove si e' premuto. */
     '<div class="riga-menuwrap">' +
       '<button type="button" class="riga-menu" data-fa="menu" aria-expanded="false" ' +
-        'aria-label="cosa posso farci">&#9776;</button>' +
+        'aria-label="cosa posso farci">' + ICO.menu + '</button>' +
       '<div class="riga-azioni" hidden></div>' +
     '</div>' +
     '<div class="riga-info" hidden></div>' +
