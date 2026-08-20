@@ -3078,38 +3078,71 @@ function bindStanza(){
    sapere quanti sono: non serviva un altro pulsante in una testata che
    a 390 px e' gia' piena. */
 
+/* La riga: copertina, nome, e il tasto a tre righe. Niente altro.
+
+   Una riga che mostra gia' tutto obbliga a scorrere per contare i
+   propri giochi. Qui l'elenco si legge a colpo d'occhio e si apre solo
+   quello che interessa -- e sono due aperture diverse, non una:
+
+   - la RIGA apre le informazioni: che gioco e', dove sta, cosa ne
+     pensi, in che gruppi e';
+   - il TASTO A TRE RIGHE apre le azioni: preferito, in libreria,
+     togli, vai allo scaffale.
+
+   Sono due domande distinte, "che gioco e'" e "cosa ci faccio", e
+   mescolarle voleva dire che per leggere due righe di recensione ti
+   trovavi davanti quattro pulsanti. */
 function rigaMia(g){
-  const L = g.libreria && LIB.librerie().find(function(x){ return x.id === g.libreria; });
-  const dove = L ? L.nome : '';
-  const chi = [g.designer, g.publisher].filter(Boolean).map(esc).join(' &middot; ');
-  const spec = [[g.players, 'giocatori'], [g.time, 'minuti'],
-                [g.year, 'anno'], [g.score, 'voto']]
-    .filter(function(x){ return x[0]; })
-    .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
   const cop = g.cover
     ? '<img src="' + esc(g.cover) + '" alt="" loading="lazy">'
     : '<span class="senza">' + esc(String(g.title || '?').slice(0, 1).toUpperCase()) + '</span>';
 
   return '<li data-id="' + esc(g.id) + '">' +
     '<div class="cat-cop">' + cop + '</div>' +
-    '<div class="cat-dati">' +
-      '<h3>' + esc(g.title) + (g.preferito ? ' <i class="stella">&#9733;</i>' : '') + '</h3>' +
-      (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
-      (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
-      '<p class="cat-dove">' + (dove ? 'in <b>' + esc(dove) + '</b>' : 'non in libreria') + '</p>' +
-    '</div>' +
-    '<div class="cat-azioni">' +
-      (LIB.ospitePresso() ? '' :
-        '<button type="button" class="pref' + (g.preferito ? ' on' : '') + '" ' +
-        'data-fa="pref" aria-label="preferito">' + (g.preferito ? '&#9733;' : '&#9734;') + '</button>') +
-      '<button type="button" class="apri">scheda</button>' +
-      (LIB.ospitePresso() ? '' : (g.libreria
-        ? '<button type="button" data-fa="scaffale">vai allo scaffale</button>' +
-          '<button type="button" data-fa="fuori" class="fuori">togli</button>'
-        : '<button type="button" data-fa="dentro" class="dentro">in libreria</button>')) +
-    '</div>' +
-    '<div class="cat-rec"></div>' +
+    '<h3 class="riga-nome">' + esc(g.title) +
+      (g.preferito ? ' <i class="stella">&#9733;</i>' : '') + '</h3>' +
+    '<button type="button" class="riga-menu" data-fa="menu" aria-expanded="false" ' +
+      'aria-label="cosa posso farci">&#9776;</button>' +
+    '<div class="riga-azioni" hidden></div>' +
+    '<div class="riga-info" hidden></div>' +
   '</li>';
+}
+
+/* Le informazioni, costruite solo quando si aprono: con duecento giochi
+   nell'elenco, riempire tutte le schede in anticipo vuol dire generare
+   duecento blocchi che nessuno guardera'. */
+function contenutoInfo(g){
+  const L = g.libreria && LIB.librerie().find(function(x){ return x.id === g.libreria; });
+  const chi = [g.designer, g.publisher].filter(Boolean).map(esc).join(' &middot; ');
+  const spec = [[g.players, 'giocatori'], [g.time, 'minuti'], [g.year, 'anno']]
+    .filter(function(x){ return x[0]; })
+    .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
+  const testo = (g.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('');
+
+  const tutti = LIB.gruppi();
+  const suoi = LIB.gruppiDi(g.id);
+  const chip = (LIB.ospitePresso() || !tutti.length) ? '' :
+    '<div class="gruppi riga-gruppi">' + tutti.map(function(G){
+      return '<button type="button" data-g="' + esc(G.id) + '"' +
+             (suoi.indexOf(G.id) >= 0 ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
+    }).join('') + '</div>';
+
+  return (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
+         (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
+         '<p class="cat-dove">' + (L ? 'in <b>' + esc(L.nome) + '</b>' : 'non in libreria') + '</p>' +
+         (g.score ? '<p class="voto">' + esc(g.score) + '<i>/10</i></p>' : '') +
+         (testo || '<p class="vuoto">Nessuna recensione, per ora.</p>') +
+         chip;
+}
+
+function contenutoAzioni(g){
+  if (LIB.ospitePresso()) return '<p class="vuoto">In casa di un amico si guarda e basta.</p>';
+  return '<button type="button" class="pref' + (g.preferito ? ' on' : '') + '" data-fa="pref">' +
+           (g.preferito ? '&#9733; preferito' : '&#9734; preferito') + '</button>' +
+         (g.libreria
+           ? '<button type="button" data-fa="scaffale">vai allo scaffale</button>' +
+             '<button type="button" data-fa="fuori" class="fuori">togli dalla libreria</button>'
+           : '<button type="button" data-fa="dentro" class="dentro">metti in libreria</button>');
 }
 
 /* L'elenco si divide in CARTELLE quando non si sta filtrando su un
@@ -3134,18 +3167,29 @@ function disegnaMia(){
   if (!aCartelle){
     q('#mia-list').innerHTML = l.map(rigaMia).join('');
   } else {
-    const senza = l.filter(function(g){ return !LIB.gruppiDi(g.id).length; });
-    let html = gruppi.map(function(G){
-      const dentro = l.filter(function(g){ return LIB.gruppiDi(g.id).indexOf(G.id) >= 0; });
+    /* Ogni gruppo e' una tendina, e quale sia aperta se lo ricorda:
+       aperte tutte, con qualche gruppo, si torna a un elenco lungo come
+       prima. Si parte aperte pero': un elenco di soli titoli chiusi non
+       fa vedere niente al primo colpo. */
+    const cartella = function(id, nome, dentro){
       if (!dentro.length) return '';
-      return '<div class="cartella"><h3>' + esc(G.nome) +
-             '<span>' + dentro.length + '</span></h3>' +
-             '<ol class="righe">' + dentro.map(rigaMia).join('') + '</ol></div>';
+      let su = true;
+      try { su = localStorage.getItem('dado-cartella-' + id) !== '0'; } catch(e){}
+      return '<div class="cartella" data-c="' + esc(id) + '">' +
+        '<button type="button" class="cartella-tit" aria-expanded="' + (su ? 'true' : 'false') + '">' +
+          esc(nome) + '<span>' + dentro.length + '</span></button>' +
+        '<ol class="righe compatta"' + (su ? '' : ' hidden') + '>' +
+          dentro.map(rigaMia).join('') +
+        '</ol></div>';
+    };
+
+    let html = gruppi.map(function(G){
+      return cartella(G.id, G.nome, l.filter(function(g){
+        return LIB.gruppiDi(g.id).indexOf(G.id) >= 0;
+      }));
     }).join('');
-    if (senza.length){
-      html += '<div class="cartella"><h3>senza gruppo<span>' + senza.length + '</span></h3>' +
-              '<ol class="righe">' + senza.map(rigaMia).join('') + '</ol></div>';
-    }
+    html += cartella('__senza', 'senza gruppo',
+                     l.filter(function(g){ return !LIB.gruppiDi(g.id).length; }));
     q('#mia-list').innerHTML = html;
   }
 
@@ -3189,23 +3233,21 @@ function apriSulloScaffale(id){
 function apriRigaMia(li){
   const g = LIB.get(li.getAttribute('data-id'));
   if (!g) return;
-  const aperta = li.classList.toggle('aperta');
-  li.querySelector('.apri').textContent = aperta ? 'chiudi' : 'recensione';
-  if (!aperta) return;
-  const testo = (g.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('');
-  /* Le etichette anche qui: cliccando un gioco si deve poterlo mettere
-     in un gruppo senza passare da nessun'altra parte. */
-  const tutti = LIB.gruppi();
-  const suoi = LIB.gruppiDi(g.id);
-  const chip = (LIB.ospitePresso() || !tutti.length) ? '' :
-    '<div class="gruppi riga-gruppi">' + tutti.map(function(G){
-      return '<button type="button" data-g="' + esc(G.id) + '"' +
-             (suoi.indexOf(G.id) >= 0 ? ' class="on"' : '') + '>' + esc(G.nome) + '</button>';
-    }).join('') + '</div>';
+  const box = li.querySelector('.riga-info');
+  const su = box.hidden;
+  if (su) box.innerHTML = contenutoInfo(g);
+  box.hidden = !su;
+}
 
-  li.querySelector('.cat-rec').innerHTML =
-    (g.score ? '<p class="voto">' + esc(g.score) + '<i>/10</i></p>' : '') +
-    (testo || '<p class="vuoto">Nessuna recensione, per ora.</p>') + chip;
+function apriAzioni(li){
+  const g = LIB.get(li.getAttribute('data-id'));
+  if (!g) return;
+  const box = li.querySelector('.riga-azioni');
+  const btn = li.querySelector('.riga-menu');
+  const su = box.hidden;
+  if (su) box.innerHTML = contenutoAzioni(g);
+  box.hidden = !su;
+  btn.setAttribute('aria-expanded', su ? 'true' : 'false');
 }
 
 /* ===============================================================
@@ -3463,9 +3505,23 @@ function bindProfilo(){
   });
 
   q('#mia-list').addEventListener('click', function(e){
+    // le tendine dei gruppi
+    const tit = e.target.closest('.cartella-tit');
+    if (tit){
+      const su = tit.getAttribute('aria-expanded') === 'true';
+      tit.setAttribute('aria-expanded', su ? 'false' : 'true');
+      const ol = tit.nextElementSibling;
+      if (ol) ol.hidden = su;
+      const c = tit.closest('.cartella').getAttribute('data-c');
+      try { localStorage.setItem('dado-cartella-' + c, su ? '0' : '1'); } catch(err){}
+      return;
+    }
+
     const li = e.target.closest('li[data-id]');
     if (!li) return;
     const id = li.getAttribute('data-id');
+
+    if (e.target.closest('[data-fa="menu"]')){ apriAzioni(li); return; }
 
     if (e.target.closest('[data-fa="scaffale"]')){ apriSulloScaffale(id); return; }
     const dentro = e.target.closest('[data-fa="dentro"]');
@@ -3497,6 +3553,8 @@ function bindProfilo(){
       disegnaMia();
       return;
     }
+    // dentro un blocco gia' aperto non si apre e chiude a ogni clic
+    if (e.target.closest('.riga-info') || e.target.closest('.riga-azioni')) return;
     apriRigaMia(li);
   });
 

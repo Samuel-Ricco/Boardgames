@@ -172,6 +172,29 @@ niente, e non c'era modo di portarci una scatola.
   subito dopo va richiamata `muoviPresa`, perché la scena si è spostata sotto la
   scatola e il cubo mirato non è più quello di un attimo fa.
 
+## Righe compatte, e due aperture invece di una
+
+Nell'elenco una riga mostra **copertina, nome e un tasto a tre righe**, e basta.
+Una riga che mostra già tutto obbliga a scorrere per contare i propri giochi.
+
+Le aperture sono **due, distinte**:
+
+- la **riga** apre le informazioni — che gioco è, dove sta, cosa ne pensi, in
+  che gruppi è;
+- il **tasto a tre righe** apre le azioni — preferito, in libreria, togli, vai
+  allo scaffale.
+
+Sono due domande diverse, «che gioco è» e «cosa ci faccio», e mescolarle voleva
+dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti.
+
+- Il contenuto si costruisce **solo quando si apre**: con duecento giochi,
+  riempire tutte le schede in anticipo genera duecento blocchi che nessuno
+  guarderà.
+- Cliccando *dentro* un blocco già aperto non si richiude la riga: se no toccare
+  una pastiglia di gruppo faceva sparire quello che si stava guardando.
+- **Ogni gruppo è una tendina**, e quale sia aperta se lo ricorda. Si parte
+  aperte: un elenco di soli titoli chiusi non fa vedere niente al primo colpo.
+
 ## Non ridisegnare la lista sotto il dito
 
 Nell'elenco dei giochi di un gruppo, ogni tocco ridisegnava tutto: il pulsante

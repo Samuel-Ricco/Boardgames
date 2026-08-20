@@ -205,19 +205,71 @@ body.visita #p-pref{display:none !important}
 .gru-elenco button.on{color:#fdfaf4; background:var(--rust); border-color:var(--rust)}
 .pro-gente button.quali{color:var(--amber); border-color:rgba(154,106,21,.45)}
 
-/* --- cartelle nell'elenco ----------------------------------------- */
-.cartella{margin:26px 0 0}
-.cartella:first-child{margin-top:14px}
-.cartella > h3{
-  margin:0 0 2px; font-family:var(--ff-display); font-weight:400; font-size:22px;
-  letter-spacing:.05em; color:var(--ink);
-  padding-bottom:6px; border-bottom:2px solid var(--amber);
+/* --- righe compatte -----------------------------------------------
+   Nome e copertina, e basta. Una riga che mostra gia' tutto obbliga a
+   scorrere per contare i propri giochi; qui si legge l'elenco a colpo
+   d'occhio e si apre solo quello che interessa.
+
+   Due aperture distinte, e non un solo blocco che le contiene tutte e
+   due: la riga apre le INFORMAZIONI, il tasto a tre righe apre le
+   AZIONI. Sono due domande diverse -- "che gioco e'" e "cosa ci
+   faccio" -- e mescolarle voleva dire che per leggere due righe di
+   recensione ti trovavi davanti quattro pulsanti. */
+.righe.compatta > li{
+  grid-template-columns:52px 1fr auto; align-items:center; gap:14px; padding:11px 0;
 }
-.cartella > h3 span{
+.righe.compatta > li:hover .riga-nome{color:var(--amber)}
+.righe.compatta .cat-cop{width:52px; cursor:pointer}
+.riga-nome{
+  margin:0; cursor:pointer; font-family:var(--ff-display); font-weight:400;
+  font-size:21px; letter-spacing:.03em; line-height:1.15; color:var(--ink);
+}
+.riga-nome .stella{color:var(--amber); font-style:normal; font-size:14px; vertical-align:2px}
+.riga-menu{
+  flex:none; cursor:pointer; font-size:15px; line-height:1; padding:7px 10px;
+  color:var(--ink-soft); background:none; border:1px solid var(--line);
+}
+.riga-menu:hover{color:var(--ink); border-color:var(--amber)}
+.riga-menu[aria-expanded="true"]{color:#fdfaf4; background:var(--ink); border-color:var(--ink)}
+
+.riga-info, .riga-azioni{grid-column:1 / -1}
+.riga-info[hidden], .riga-azioni[hidden]{display:none}
+.riga-azioni{
+  display:flex; flex-wrap:wrap; gap:7px; margin:2px 0 6px;
+  padding:12px 0 4px; border-top:1px dashed var(--line);
+}
+.riga-info{margin:2px 0 6px; padding:12px 0 2px; border-top:1px dashed var(--line)}
+.riga-info .cat-chi{margin:0}
+.riga-info .cat-spec{margin:8px 0 0}
+.riga-info .cat-dove{margin:8px 0 0}
+.riga-info .voto{
+  font-family:var(--ff-display); font-size:34px; line-height:.9; color:var(--ink); margin:12px 0 8px;
+}
+.riga-info .voto i{font-style:normal; font-size:14px; color:var(--ink-soft)}
+.riga-info p{font-size:14px; color:rgba(44,36,27,.88); margin:0 0 10px; max-width:62ch}
+.riga-info .vuoto{color:var(--ink-soft); font-size:13px}
+
+/* --- cartelle nell'elenco: ogni gruppo e' una tendina -------------- */
+.cartella{margin:18px 0 0}
+.cartella:first-child{margin-top:10px}
+.cartella-tit{
+  width:100%; display:flex; align-items:baseline; gap:10px; cursor:pointer;
+  font-family:var(--ff-display); font-weight:400; font-size:22px; letter-spacing:.05em;
+  color:var(--ink); text-align:left; background:none; border:0;
+  padding:8px 0; border-bottom:2px solid var(--amber);
+}
+.cartella-tit:hover{color:var(--amber)}
+.cartella-tit span{
   font-family:var(--ff-text); font-size:10px; font-weight:500; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--ink-soft); margin-left:8px;
+  text-transform:uppercase; color:var(--ink-soft);
 }
+.cartella-tit::after{
+  content:'+'; margin-left:auto; font-family:var(--ff-text); font-size:17px;
+  line-height:1; color:var(--ink-soft);
+}
+.cartella-tit[aria-expanded="true"]::after{content:'\2013'}
 .cartella .righe{margin:0}
+.cartella .righe[hidden]{display:none}
 
 /* --- di che mobile stiamo parlando -------------------------------- */
 .st-quale{
