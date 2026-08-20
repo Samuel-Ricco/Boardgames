@@ -815,6 +815,44 @@ puntatori si riaccendono solo dove il binario si vede davvero. Così una scherma
 nuova non se lo porta dietro per dimenticanza. Vale per qualunque cosa venga
 nascosta con l'opacità.
 
+## Il modulo della partita
+
+- **Il gioco si cerca, non si scrive.** Prima si digitava il titolo a mano e a
+  fianco si chiedeva l'**id BGG**: un numero che nessuno sa a memoria, e senza il
+  quale la serata non si aggancia a niente. Ora si cerca e l'id arriva da solo
+  scegliendo un risultato. Si cerca **prima nella collezione** — è lì che stanno i
+  giochi a cui si gioca davvero — e solo dopo nel catalogo. Chi scrive un titolo
+  che non esiste da nessuna parte ha comunque la sua serata, senza aggancio:
+  `titolo` e `bgg` sono due colonne diverse apposta.
+- Le richieste al catalogo passano dalla rete: **ognuna prende un numero e la
+  risposta controlla di essere ancora l'ultima chiesta**, se no si butta via da
+  sola. Stessa regola del catalogo vero.
+- **Un giocatore nuovo si crea nella sua sezione**, non dentro il modulo. Qui c'è
+  la porta: chiude la partita, apre il profilo col cassetto dei giocatori già
+  aperto e il campo pronto. Crearlo di sfuggita vuol dire ritrovarselo dopo senza
+  sapere da dove esca.
+- Nella tendina stanno **insieme gli amici e i giocatori salvati**: al tavolo la
+  differenza non conta, conta chi c'era, e tenerli in due elenchi vuol dire
+  cercare due volte.
+
+### Le posizioni non si scrivono: si calcolano
+
+Chi segna i punti non deve anche contare chi è arrivato primo. Si ordina per
+punti e si assegna 1, 2, 3… con i **pari merito** che dividono la posizione — due
+a 61 sono primi tutti e due e il successivo è terzo, come si contano le
+classifiche ovunque.
+
+- **La corona segue i punti solo se i punti ci sono.** Ci sono giochi che non ne
+  hanno — si vince e basta — e lì la corona si mette a mano. Con i punti a
+  schermo toccarla è rifiutato con un messaggio: due comandi che dicono la stessa
+  cosa in modo diverso sono un modulo che si contraddice.
+- **Tolti i punti se ne vanno le corone che venivano dai punti**, non quelle
+  messe a mano: per questo ogni riga ricorda `daPunti`. Senza, svuotando i campi
+  restava addosso all'ultimo calcolato una corona che nessuno gli aveva messo.
+- Scrivendo i punti **la riga non si ridisegna**: si aggiornano numeri e corone
+  in posto. Rifare l'elenco sotto il dito staccherebbe il campo in cui si sta
+  scrivendo — è la stessa lezione dell'elenco dei gruppi.
+
 ## Le partite hanno tre livelli, e si devono vedere
 
 Sezione → gioco → serata. Erano tre riquadri tinti della stessa misura uno dentro

@@ -178,6 +178,8 @@ const clamp     = (v,a,b) => v < a ? a : (v > b ? b : v);
 const ICO = {
   menu:     '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>',
   cestino:  '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M10 7V5h4v2M6.5 7l.8 12h9.4l.8-12M10.5 10.5v5.5M13.5 10.5v5.5"/></svg>',
+  chiudi:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>',
+  corona:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8l3.5 3L12 5l4.5 6L20 8l-1.6 9H5.6zM5.6 20h12.8"/></svg>',
   maniglia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 9h12M6 15h12"/></svg>'
 };
 
@@ -4498,7 +4500,6 @@ function apriPartita(dati){
 
   q('#pa-h').textContent = paCorrente.id ? 'Correggi la partita' : 'Segna una partita';
   q('#pa-titolo').value = paCorrente.titolo || '';
-  q('#pa-bgg').value    = paCorrente.bgg || '';
   q('#pa-data').value   = paCorrente.giocata_il || '';
   q('#pa-ora').value    = paCorrente.ora ? String(paCorrente.ora).slice(0, 5) : '';
   q('#pa-note').value   = paCorrente.note || '';
@@ -4512,33 +4513,172 @@ function apriPartita(dati){
 }
 
 function chiudiPartita(){
+  chiudiSugg();
   q('#partitalayer').classList.remove('on');
   q('#partitalayer').setAttribute('aria-hidden', 'true');
   paCorrente = null;
 }
 
+/* --- dai punti alle posizioni -------------------------------------
+
+   Chi ha segnato i punti non deve anche contare chi e' arrivato primo:
+   lo fa il sito. Si ordina per punti e si assegna 1, 2, 3... con i
+   PARI MERITO che dividono la posizione -- due a 40 punti sono primi
+   tutti e due, e il successivo e' terzo, che e' come si contano le
+   classifiche ovunque.
+
+   La corona segue i punti solo se i punti ci sono. Ci sono giochi che
+   non ne hanno -- si vince e basta -- e li' la corona la si mette a
+   mano: per questo `posizione` puo' restare nulla, che vuol dire
+   "classifica non registrata" ed e' il caso normale. */
+function ricalcolaPosizioni(){
+  if (!paCorrente) return;
+  const conPunti = paCorrente.chi.filter(function(x){ return x.punti !== null && x.punti !== undefined && x.punti !== ''; });
+  if (!conPunti.length){
+    /* Tolti i punti, si tolgono anche le corone CHE VENIVANO DAI PUNTI.
+       Senza questo, svuotando i campi restava addosso all'ultimo
+       calcolato una corona che nessuno gli aveva messo -- e da li' in
+       poi il modulo diceva una cosa che non era vera. Una corona messa
+       a mano invece resta: non l'ha decisa la classifica. */
+    paCorrente.chi.forEach(function(x){
+      x.posizione = null;
+      if (x.daPunti){ x.vincitore = false; x.daPunti = false; }
+    });
+    return;                                   // niente punti: comanda la corona
+  }
+  const ordinati = paCorrente.chi.slice().sort(function(a, b){
+    const pa = a.punti === '' || a.punti == null ? -Infinity : Number(a.punti);
+    const pb = b.punti === '' || b.punti == null ? -Infinity : Number(b.punti);
+    return pb - pa;
+  });
+  let pos = 0, visti = 0, ultimo = null;
+  ordinati.forEach(function(x){
+    const v = (x.punti === '' || x.punti == null) ? null : Number(x.punti);
+    visti++;
+    if (v !== ultimo){ pos = visti; ultimo = v; }
+    x.posizione = v === null ? null : pos;
+    x.vincitore = (x.posizione === 1);
+    x.daPunti = true;                      // questa corona l'ha decisa la classifica
+  });
+}
+
 function disegnaTavolo(){
   if (!paCorrente) return;
   q('#pa-chi').innerHTML = paCorrente.chi.map(function(x, i){
-    return '<li data-i="' + i + '">' +
+    return '<li data-i="' + i + '"' + (x.vincitore ? ' class="vince"' : '') + '>' +
+      '<button type="button" class="corona' + (x.vincitore ? ' on' : '') + '" data-fa="vince" ' +
+        'aria-pressed="' + (x.vincitore ? 'true' : 'false') + '" ' +
+        'aria-label="ha vinto ' + esc(x.nome) + '">' + ICO.corona + '</button>' +
       '<span class="nome">' + esc(x.nome) + '</span>' +
-      '<input class="pos" type="text" inputmode="numeric" maxlength="2" ' +
-        'value="' + esc(x.posizione == null ? '' : x.posizione) + '" ' +
-        'placeholder="&ndash;" aria-label="posizione di ' + esc(x.nome) + '">' +
-      '<button type="button" class="vince' + (x.vincitore ? ' on' : '') +
-        '" data-fa="vince">vince</button>' +
-      '<button type="button" class="via" data-fa="via" aria-label="togli">&times;</button>' +
+      (x.posizione ? '<span class="posto">' + x.posizione + '&deg;</span>' : '') +
+      '<input class="punti" type="text" inputmode="numeric" maxlength="4" ' +
+        'value="' + esc(x.punti == null ? '' : x.punti) + '" ' +
+        'placeholder="punti" aria-label="punti di ' + esc(x.nome) + '">' +
+      '<button type="button" class="via" data-fa="via" aria-label="togli ' + esc(x.nome) + '">' +
+        ICO.chiudi + '</button>' +
     '</li>';
   }).join('');
 
-  // i salvati che non sono gia' al tavolo
+  /* Nella tendina stanno INSIEME i giocatori salvati e gli amici che non
+     lo sono ancora: al tavolo la differenza non conta -- conta chi
+     c'era -- e tenerli in due elenchi vuol dire cercare due volte. */
   const alTavolo = {};
   paCorrente.chi.forEach(function(x){ alTavolo[x.nome] = true; });
   const liberi = PARTITE.giocatori().filter(function(g){ return !alTavolo[g.nome]; });
-  q('#pa-scelta').innerHTML = '<option value="">dai salvati&hellip;</option>' +
-    liberi.map(function(g){
-      return '<option value="' + esc(g.id) + '">' + esc(g.nome) + '</option>';
-    }).join('');
+  const amici = (PARTITE.amiciDaAggiungere ? PARTITE.amiciDaAggiungere() : [])
+    .map(function(a){ return (a.profilo && (a.profilo.nick || a.profilo.nome)) || ''; })
+    .filter(function(n){ return n && !alTavolo[n]; });
+  q('#pa-scelta').innerHTML = '<option value="">scegli chi c\'era&hellip;</option>' +
+    (amici.length ? '<optgroup label="i tuoi amici">' + amici.map(function(n){
+      return '<option value="amico:' + esc(n) + '">' + esc(n) + '</option>';
+    }).join('') + '</optgroup>' : '') +
+    (liberi.length ? '<optgroup label="i tuoi giocatori">' +
+      liberi.map(function(g){
+        return '<option value="' + esc(g.id) + '">' + esc(g.nome) + '</option>';
+      }).join('') + '</optgroup>' : '');
+}
+
+/* Aggiorna posizioni e corone SENZA rifare l'elenco: chi sta scrivendo
+   i punti non deve vedersi il campo staccato da sotto le dita. */
+function aggiornaTavoloInPosto(){
+  qa('#pa-chi li').forEach(function(li){
+    const i = parseInt(li.getAttribute('data-i'), 10);
+    const x = paCorrente.chi[i];
+    if (!x) return;
+    li.classList.toggle('vince', !!x.vincitore);
+    const c = li.querySelector('.corona');
+    if (c){ c.classList.toggle('on', !!x.vincitore); c.setAttribute('aria-pressed', x.vincitore ? 'true' : 'false'); }
+    let p = li.querySelector('.posto');
+    if (x.posizione){
+      if (!p){ p = document.createElement('span'); p.className = 'posto';
+               li.insertBefore(p, li.querySelector('.punti')); }
+      p.textContent = x.posizione + '\u00b0';
+    } else if (p) p.remove();
+  });
+}
+
+/* --- il gioco si cerca -------------------------------------------
+
+   Prima si scriveva a mano il titolo e, a fianco, l'id BGG: un numero
+   che nessuno sa a memoria e che senza nessuno aggancia la serata al
+   catalogo. Adesso si cerca, e scegliendo un risultato l'id arriva da
+   solo -- e' quello a tenere insieme partite, recensioni e catalogo.
+
+   Si cerca PRIMA nella collezione, che e' dove stanno i giochi a cui si
+   gioca davvero, e solo dopo nel catalogo. Chi scrive un titolo che non
+   esiste da nessuna parte ha comunque la sua serata, senza aggancio:
+   `titolo` e `bgg` sono due colonne diverse apposta. */
+let paGiro = 0;
+
+function suggerisciGioco(testo){
+  const el = q('#pa-sugg'), campo = q('#pa-titolo');
+  const t = String(testo || '').trim();
+  if (t.length < 2){ el.hidden = true; el.innerHTML = ''; campo.setAttribute('aria-expanded','false'); return; }
+
+  const piatto = function(x){
+    return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+  const q1 = piatto(t);
+  const mie = LIB.all().filter(function(g){ return piatto(g.title).indexOf(q1) >= 0; })
+    .slice(0, 6)
+    .map(function(g){ return { titolo: g.title, bgg: g.bgg || '', dove: 'la tua collezione' }; });
+
+  mostraSugg(mie, false);
+
+  /* Il catalogo passa dalla rete e ci mette un paio di secondi: ogni
+     richiesta prende un numero e la risposta controlla di essere ancora
+     l'ultima chiesta, se no si butta via da sola. Stessa regola del
+     catalogo vero, e per lo stesso motivo. */
+  const mio = ++paGiro;
+  if (typeof CATALOGO === 'undefined' || !CATALOGO.cerca) return;
+  Promise.resolve(CATALOGO.cerca(t)).then(function(r){
+    if (mio !== paGiro || !paCorrente) return;
+    const g = (r && (r.giochi || r)) || [];
+    const gia = {};
+    mie.forEach(function(x){ gia[piatto(x.titolo)] = true; });
+    const dal = g.filter(function(x){ return !gia[piatto(x.title)]; }).slice(0, 6)
+      .map(function(x){ return { titolo: x.title, bgg: x.bgg || '', dove: 'catalogo' }; });
+    mostraSugg(mie.concat(dal), false);
+  }).catch(function(){});
+}
+
+function mostraSugg(elenco){
+  const el = q('#pa-sugg'), campo = q('#pa-titolo');
+  if (!elenco.length){ el.hidden = true; el.innerHTML = ''; campo.setAttribute('aria-expanded','false'); return; }
+  el.innerHTML = elenco.map(function(x, i){
+    return '<li><button type="button" role="option" data-i="' + i + '" ' +
+      'data-titolo="' + esc(x.titolo) + '" data-bgg="' + esc(x.bgg) + '">' +
+      '<b>' + esc(x.titolo) + '</b><span>' + esc(x.dove) + '</span></button></li>';
+  }).join('');
+  el.hidden = false;
+  campo.setAttribute('aria-expanded', 'true');
+}
+
+function chiudiSugg(){
+  const el = q('#pa-sugg');
+  if (!el) return;
+  el.hidden = true; el.innerHTML = '';
+  q('#pa-titolo').setAttribute('aria-expanded', 'false');
 }
 
 function metteAlTavolo(nome, idGiocatore){
@@ -4549,7 +4689,7 @@ function metteAlTavolo(nome, idGiocatore){
     return;
   }
   paCorrente.chi.push({ nome: t, giocatore: idGiocatore || null,
-                        posizione: null, vincitore: false });
+                        punti: null, posizione: null, vincitore: false });
   q('#pa-msg').textContent = '';
   disegnaTavolo();
 }
@@ -4558,7 +4698,7 @@ async function salvaPartita(){
   if (!paCorrente) return;
   const b = q('#pa-salva');
   paCorrente.titolo = q('#pa-titolo').value;
-  paCorrente.bgg    = q('#pa-bgg').value;
+  // l'id BGG non si chiede piu': lo mette il suggeritore scegliendo un gioco
   paCorrente.giocata_il = q('#pa-data').value || null;
   paCorrente.ora    = q('#pa-ora').value || null;
   paCorrente.note   = q('#pa-note').value.trim() || null;
@@ -4658,6 +4798,23 @@ function bindPartite(){
   q('#pa-x').addEventListener('click', chiudiPartita);
   q('#pa-salva').addEventListener('click', salvaPartita);
 
+  const tit = q('#pa-titolo');
+  let paT = 0;
+  tit.addEventListener('input', function(){
+    if (paCorrente){ paCorrente.titolo = tit.value; paCorrente.bgg = ''; }
+    clearTimeout(paT);
+    paT = setTimeout(function(){ suggerisciGioco(tit.value); }, 180);
+  });
+  tit.addEventListener('blur', function(){ setTimeout(chiudiSugg, 160); });
+  q('#pa-sugg').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-titolo]');
+    if (!b || !paCorrente) return;
+    paCorrente.titolo = b.getAttribute('data-titolo');
+    paCorrente.bgg = b.getAttribute('data-bgg') || '';
+    tit.value = paCorrente.titolo;
+    chiudiSugg();
+  });
+
   armaBottone(q('#pa-togli'), 'elimina', 'sicuro? tocca ancora', async function(){
     if (!paCorrente || !paCorrente.id) return;
     try {
@@ -4671,18 +4828,29 @@ function bindPartite(){
 
   q('#pa-piu').addEventListener('click', function(){
     const sel = q('#pa-scelta');
-    if (sel.value){
+    if (!sel.value) return;
+    if (sel.value.slice(0, 6) === 'amico:'){
+      // un amico che non e' ancora un giocatore salvato: entra col nome
+      metteAlTavolo(sel.value.slice(6), null);
+    } else {
       const g = PARTITE.giocatori().find(function(x){ return x.id === sel.value; });
       if (g) metteAlTavolo(g.nome, g.id);
-      sel.value = '';
-      return;
     }
-    metteAlTavolo(q('#pa-nuovo').value, null);
-    q('#pa-nuovo').value = '';
+    sel.value = '';
   });
-  q('#pa-nuovo').addEventListener('keydown', function(e){
-    e.stopPropagation();
-    if (e.key === 'Enter') q('#pa-piu').click();
+
+  /* Un giocatore nuovo si crea nella SUA sezione. Qui c'e' la porta:
+     si chiude la partita, si apre il profilo con il cassetto dei
+     giocatori gia' aperto e il campo pronto. Crearlo di sfuggita dentro
+     un modulo vuol dire ritrovarselo dopo senza sapere da dove esca. */
+  q('#pa-vai-giocatori').addEventListener('click', function(){
+    chiudiPartita();
+    setSezione('profilo');
+    const tit = q('[aria-controls="blocco-giocatori"]');
+    const blocco = q('#blocco-giocatori');
+    if (blocco && blocco.hidden && tit) tit.click();
+    const campo = q('#gio-nuovo');
+    if (campo) setTimeout(function(){ campo.focus(); }, 120);
   });
   qa('#partitalayer input, #partitalayer textarea').forEach(function(i){
     i.addEventListener('keydown', function(e){ e.stopPropagation(); });
@@ -4693,15 +4861,35 @@ function bindPartite(){
     const b = e.target.closest('button[data-fa]');
     if (!b || !paCorrente) return;
     const i = parseInt(b.closest('li').getAttribute('data-i'), 10);
-    if (b.getAttribute('data-fa') === 'via') paCorrente.chi.splice(i, 1);
-    else paCorrente.chi[i].vincitore = !paCorrente.chi[i].vincitore;
+    if (b.getAttribute('data-fa') === 'via'){
+      paCorrente.chi.splice(i, 1);
+      ricalcolaPosizioni();
+      disegnaTavolo();
+      return;
+    }
+    /* Con i punti la corona la decide la classifica, e toccarla a mano
+       vorrebbe dire dire due cose diverse nello stesso modulo. Senza
+       punti -- e ci sono giochi che non ne hanno -- si mette a mano. */
+    const conPunti = paCorrente.chi.some(function(x){ return x.punti != null && x.punti !== ''; });
+    if (conPunti){
+      q('#pa-msg').textContent = 'con i punti il primo lo decide la classifica';
+      return;
+    }
+    paCorrente.chi[i].vincitore = !paCorrente.chi[i].vincitore;
+    paCorrente.chi[i].daPunti = false;     // questa l'ha messa una persona
     disegnaTavolo();
   });
+  /* I punti ricalcolano le posizioni a ogni tasto, ma la riga NON si
+     ridisegna: rifare l'elenco sotto il dito sposterebbe il campo in
+     cui si sta scrivendo -- e' la stessa lezione dell'elenco dei
+     gruppi. Si aggiornano solo i numeri e le corone, in posto. */
   q('#pa-chi').addEventListener('input', function(e){
-    if (!e.target.classList.contains('pos') || !paCorrente) return;
+    if (!e.target.classList.contains('punti') || !paCorrente) return;
     const i = parseInt(e.target.closest('li').getAttribute('data-i'), 10);
     const v = e.target.value.trim();
-    paCorrente.chi[i].posizione = v === '' ? null : (parseInt(v, 10) || null);
+    paCorrente.chi[i].punti = v === '' ? null : (parseInt(v, 10) || 0);
+    ricalcolaPosizioni();
+    aggiornaTavoloInPosto();
   });
 
   /* Dalla scatola aperta: il gioco arriva gia' scritto, ed e' il punto

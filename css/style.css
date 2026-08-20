@@ -2517,3 +2517,83 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .gio-gruppo .gio-testa b{font-size:13px; font-weight:500}
 .gio-gruppo .gio-testa span{font-size:11px; letter-spacing:.04em; text-transform:none}
 .gio-gruppo .gio-chi{font-size:12.5px; margin-top:3px}
+
+/* ===================================================================
+   IL MODULO DELLA PARTITA
+   =================================================================== */
+
+/* --- i suggerimenti del gioco --------------------------------------
+   Prima la collezione, poi il catalogo: si gioca ai giochi che si hanno,
+   e la riga sotto dice da dove viene ognuno. */
+.pa-sugg{
+  list-style:none; margin:-4px 0 0; padding:6px; position:relative; z-index:3;
+  background:var(--card); border-radius:var(--r-m); box-shadow:0 10px 34px rgba(51,53,43,.18);
+  max-height:220px; overflow:auto;
+}
+.pa-sugg[hidden]{display:none}
+.pa-sugg button{
+  width:100%; display:flex; align-items:baseline; gap:10px; text-align:left;
+  background:none; border:0; border-radius:8px; cursor:pointer; padding:10px 12px;
+  font-family:var(--ff);
+}
+.pa-sugg button:hover{background:rgba(51,53,43,.07)}
+.pa-sugg b{font-size:14px; font-weight:500; color:var(--ink)}
+.pa-sugg span{margin-left:auto; font-size:11px; color:var(--ink-soft); flex:none}
+
+/* --- chi mettere al tavolo ------------------------------------------ */
+.pa-agg{display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin:12px 0 0}
+#pa-scelta{
+  flex:1 1 160px; min-width:0; font-family:var(--ff); font-size:14px; color:var(--ink);
+  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s); padding:11px 12px;
+}
+#pa-piu{flex:0 0 auto; padding:11px 15px; font-size:13px}
+#pa-vai-giocatori{
+  flex:0 0 auto; background:none; color:var(--accent); font-weight:500;
+  padding:11px 6px; font-size:13px; border:0; cursor:pointer;
+}
+#pa-vai-giocatori:hover{text-decoration:underline}
+
+/* --- il tavolo ------------------------------------------------------
+   Una riga per persona: corona, nome, posizione calcolata, punti.
+   La posizione non si scrive: la fa il sito dai punti. */
+.pa-chi{list-style:none; margin:14px 0 0; padding:0}
+.pa-chi li{
+  display:flex; align-items:center; gap:10px; padding:9px 11px; margin:0 0 7px;
+  background:rgba(51,53,43,.05); border-radius:var(--r-s);
+}
+.pa-chi li.vince{background:rgba(200,106,60,.12)}
+.pa-chi .nome{
+  flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:var(--ff); font-size:14px; font-weight:500; color:var(--ink);
+}
+.pa-chi li.vince .nome{color:var(--accent); font-weight:600}
+.pa-chi .posto{
+  flex:0 0 auto; font-size:12px; font-weight:600; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+.pa-chi .punti{
+  flex:0 0 66px; width:66px; text-align:center; font-family:var(--ff); font-size:13px;
+  background:var(--card); border:0; border-radius:var(--r-s); padding:9px 8px; color:var(--ink);
+}
+.pa-chi .punti:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
+.pa-chi .corona, .pa-chi .via{
+  flex:0 0 auto; width:32px; height:32px; padding:0; border:0; border-radius:var(--r-s);
+  background:none; color:var(--ink-soft); cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.pa-chi .corona:hover{background:rgba(200,106,60,.14); color:var(--accent)}
+.pa-chi .corona.on{color:var(--accent)}
+.pa-chi .corona.on .ico{fill:currentColor}
+.pa-chi .via:hover{background:rgba(190,60,40,.14); color:#a8341f}
+
+/* Il modulo della partita su schermo stretto: la riga del tavolo ha
+   quattro cose e va stretta, e le due porte per aggiungere qualcuno
+   stanno su righe diverse perche' fanno cose diverse. */
+@media (max-width:520px){
+  .pa-chi li{gap:7px; padding:8px 9px}
+  .pa-chi .punti{flex:0 0 58px; width:58px; padding:8px 6px}
+  .pa-chi .corona, .pa-chi .via{width:30px; height:30px}
+  .pa-agg{gap:8px}
+  #pa-scelta{flex:1 1 100%}
+  #pa-vai-giocatori{padding:11px 0}
+}

@@ -573,23 +573,35 @@
     <p class="eyebrow">una serata</p>
     <h2 id="pa-h">Segna una partita</h2>
 
+    <!-- Il gioco si CERCA, non si scrive. L'id BGG non si chiede piu' a
+         nessuno: e' un numero che nessuno sa a memoria, e arriva da solo
+         scegliendo un gioco dai suggerimenti. Chi digita e basta ha
+         comunque la sua serata, solo senza aggancio al catalogo. -->
     <div class="add-form pa-form">
-      <label class="wide">gioco <input id="pa-titolo" type="text" autocomplete="off"></label>
-      <label>id BGG <input id="pa-bgg" type="text" inputmode="numeric" autocomplete="off"></label>
+      <label class="wide">gioco
+        <input id="pa-titolo" type="text" autocomplete="off" role="combobox"
+               aria-autocomplete="list" aria-expanded="false" aria-controls="pa-sugg"
+               placeholder="cerca nella tua collezione o nel catalogo">
+      </label>
       <label>data <input id="pa-data" type="date"></label>
       <label>ora <input id="pa-ora" type="time"></label>
     </div>
+    <ul id="pa-sugg" class="pa-sugg" role="listbox" hidden></ul>
 
     <p class="eyebrow pa-eye">chi c&rsquo;era</p>
+
+    <!-- Si sceglie fra gli amici e i giocatori salvati. Un nome nuovo si
+         crea nella sua sezione, non qui: e' li' che vive, e crearlo di
+         sfuggita dentro un modulo vuol dire ritrovarselo senza sapere
+         da dove sia uscito. -->
+    <div class="pa-agg">
+      <select id="pa-scelta" aria-label="chi mettere al tavolo"></select>
+      <button id="pa-piu" type="button" class="secondario">metti al tavolo</button>
+      <button id="pa-vai-giocatori" type="button">aggiungi un giocatore</button>
+    </div>
+
     <ul id="pa-chi" class="pa-chi"></ul>
     <p id="pa-msg" class="add-msg"></p>
-
-    <div class="pa-agg">
-      <select id="pa-scelta" aria-label="giocatore salvato"></select>
-      <input id="pa-nuovo" type="text" placeholder="oppure un nome nuovo"
-             autocomplete="off" maxlength="40" aria-label="nome nuovo">
-      <button id="pa-piu" type="button">metti al tavolo</button>
-    </div>
 
     <div class="add-form">
       <label class="wide">note
