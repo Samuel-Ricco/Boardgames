@@ -1118,6 +1118,78 @@ sua cella, e si contano le macchie scure di ogni cella filtrando per area (un
 pallino ha raggio 12, cioè circa 450 pixel — sotto quella soglia è grana).
 Devono venire `[3,4,1,6,2,5]`.
 
+## Misurare invece di guardare
+
+Quattro tecniche che in questa sessione hanno cambiato la diagnosi, non solo
+confermata. Costano poco e si rifanno.
+
+### Contare i draw call divisi per passata
+
+Si avvolgono `gl.drawElements`, `gl.drawArrays` e **`gl.bindFramebuffer`**: ogni
+`bind` apre una passata, e i disegni si contano dentro quella. È così che è
+saltato fuori che **la passata d'ombra era il 55% del lavoro** — a occhio non si
+sarebbe mai visto.
+
+Attenzione: se la passata non c'è, non c'è nemmeno il `bind`, e una sonda che
+conta solo fra un `bind` e l'altro **perde tutto**. Serve anche un totale.
+
+Il numero di elementi da disegnare si può leggere anche dal **grafo di scena**,
+senza un solo fotogramma: materiale singolo → uno, array → uno per gruppo. Utile
+quando il pannello non compone.
+
+### Tarare un confronto di pixel sul suo rumore di fondo
+
+`ART.grain()` usa `Math.random()`: **due caricamenti dello stesso identico codice
+non danno mai la stessa immagine.** Uno scarto di 1,29 su una griglia 16×16 non
+vuol dire niente finché non si misura anche quello fra due caricamenti uguali —
+che è venuto 1,27. Senza il secondo numero il primo non è una prova.
+
+### Il baricentro dell'inchiostro, non il rettangolo
+
+Per centrare una figura: si disegna nera su bianco e si contano i pixel. Il
+meeple aveva l'**ingombro** centrato a 0,494 e il **baricentro** a 0,524 — le
+gambe sono piene e la testa è piccola, quindi la massa sta in basso, ed è la
+massa che l'occhio legge. Il rettangolo diceva «centrato» mentre non lo era.
+
+### Verificare un atlante a numeri
+
+Su un dado da venti pixel l'occhio non arbitra. Si controlla che le UV di ogni
+faccia cadano dentro la sua cella, e si contano le macchie scure per cella
+**filtrando per area** (un pallino ha raggio 12, cioè ~450 px: sotto quella
+soglia è grana). Devono venire `[3,4,1,6,2,5]`.
+
+## Due trappole del CSS che sono costate tempo
+
+- **`background:` è una scorciatoia e riazzera quello che non nomina**,
+  `background-clip` compreso. Se serve toccare solo il colore, `background-color`.
+- **`box-sizing:border-box` + bordi grossi = scatola di riempimento a zero.** Una
+  riga alta 4 px con 12 px di bordo trasparente per lato non ha spazio interno:
+  con `background-clip:padding-box` la traccia semplicemente non esiste. L'area
+  da toccare col dito si fa con l'altezza dell'elemento, e la riga sottile con un
+  `::before`. Due mestieri, due cose.
+- **`.dentro-only` è `display:inline-flex !important`** e vince su qualunque
+  regola che provi a nascondere un comando in una schermata sola.
+- **Un id batte una classe**: `.primario` su un pulsante che ha già una regola
+  `#suo-id` non fa niente. Le classi di livello si dichiarano `button.primario`,
+  e dentro i pannelli con id anche `#pannello button.primario`.
+
+## Quello che il pannello di anteprima fa e non si vede
+
+Oltre alle trappole già elencate sopra, in questa sessione:
+
+- **l'intro non finisce.** I frame arrivano col contagocce, i tween non arrivano
+  mai a `p >= 1`, e `state.phase` resta `intro` per parecchi minuti: tutto quello
+  che gira solo in `browse` non parte. Si sblocca pompando screenshot, oppure —
+  se serve una prova pulita — con un gancio `__dbg` temporaneo che salta l'intro.
+- **la sessione Supabase può scadere a metà lavoro.** È capitato: le chiavi
+  `dado-*` di `localStorage` restano, il token no, e il sito torna al cancello.
+  Rientrare tocca all'utente, e da lì in poi si verifica quello che si può senza
+  sessione (disegnare su canvas, leggere gli stili calcolati).
+- **una prova con eventi sintetici può mentire due volte**: gli elementi presi
+  prima di un ridisegno sono **staccati** e non reagiscono più, e i clic
+  sintetici non generano i `click` che un `pointerup` vero genera. Se un caso
+  «non fa niente», rileggere gli elementi prima di dare la colpa al codice.
+
 ## Vedere la scena quando l'anteprima non compone
 
 Il pannello a volte non disegna frame: niente screenshot, e senza frame anche le
@@ -1519,6 +1591,16 @@ settimana senza traffico, e si riattiva a mano dal pannello.
 
 ## Stato attuale
 
+**Aggiornato al 2026-08-21.** Per *cosa è successo* e *cosa resta aperto* vedi
+`contest_boardgame.md`, punti 8-11: lì ci sono lo stato dei dati, i difetti
+ancora da correggere e il blocco IT/EN mai iniziato.
+
+In breve: **35 giochi su tre librerie**, tutte e undici le migrazioni applicate,
+e il sito rifatto graficamente — un font solo (Poppins), sei tinte, e un posto
+solo che decide com'è fatto un pulsante.
+
+## Stato del backend
+
 Funziona ed è collaudato end-to-end sul progetto vero (2026-08-19): accesso con
 Google, ruolo letto dal server, aggiunta, **modifica** (scheda e recensione),
 rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
@@ -1526,7 +1608,8 @@ rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
 faccia** salvati sul profilo, le due funzioni di **richiesta amicizia**
 (codice inesistente, proprio codice, email ignota: nessuna crea righe),
 **giocatori salvati** con il rifiuto del doppione, e una **partita** completa di
-partecipanti, posizioni e vincitore. Tutte e sette le migrazioni sono applicate.
+partecipanti, posizioni e vincitore. **Tutte e undici le migrazioni sono
+applicate**, `apprezzamenti` compresa (2026-08-20).
 Verificato rileggendo il database dall'esterno, non dalla cache del browser.
 
 Provato anche **con due account veri** (2026-08-20): amicizia accettata, la
@@ -1546,10 +1629,14 @@ Cosa manca, in ordine di fastidio:
 
 1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito con *modifica*, e
    da lì si pubblicano nel catalogo con la casella in fondo al modulo.
-2. **Il token BGG non è ancora arrivato.** Finché non c'è, la ricerca cade su
-   Wikidata: ~4.400 giochi contro 175.000, dati più magri e a volte sbagliati
-   (l'editore è spesso il distributore locale). Per questo un risultato **riempie
-   il modulo** invece di finire dritto sullo scaffale.
+2. **Il token BGG non è ancora arrivato, e ora serve davvero.** Provato il
+   2026-08-21: `boardgamegeek.com/xmlapi2` risponde **401 a qualunque
+   user-agent**, cioè non c'è più nessuna via pubblica. La pagina `browse`
+   risponde 200 ma è HTML da raschiare, e le loro condizioni lo vietano. Finché
+   non c'è il token la ricerca cade su Wikidata: ~4.400 giochi contro 175.000,
+   dati più magri e a volte sbagliati (l'editore è spesso il distributore
+   locale). Per questo un risultato **riempie il modulo** invece di finire dritto
+   sullo scaffale.
 3. **Wikidata non ha le copertine, e non le avrà mai**: le sue immagini vengono da
    Wikimedia Commons, che accetta solo licenze libere, e la grafica di una scatola
    è protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%) e sono foto

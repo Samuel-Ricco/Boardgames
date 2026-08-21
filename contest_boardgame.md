@@ -70,7 +70,7 @@ conferma «sì, questa email ha un account qui» a chiunque provi — enumerazio
 account. L'invito per email c'è, ma passa da una funzione che risponde *sempre*
 `inviata`, esista o no l'indirizzo.
 
-## 4. Le dieci migrazioni, tutte applicate
+## 4. Le undici migrazioni, tutte applicate
 
 Nell'ordine. Le prime tre precedono questa sessione.
 
@@ -88,15 +88,16 @@ Nell'ordine. Le prime tre precedono questa sessione.
 20260820230000_apprezzamenti.sql            i cuori sotto la recensione di un amico
 ```
 
-**L'ultima NON è ancora applicata.** Va eseguita dal pannello Supabase: finché
-non c'è, i cuori non compaiono e il sito lo dice per nome invece di rompersi.
+**Tutte e undici sono applicate**, `apprezzamenti` compresa (applicata
+dall'utente il 2026-08-20). Se una funzione dice «manca la migrazione X»,
+qualcosa è andato storto: il client è scritto per dirlo per nome.
 
 **Sono tutte applicate al progetto.** Se una funzione dice «manca la migrazione
 X», qualcosa è andato storto: il client è scritto per dirlo per nome.
 
 ## 5. Cosa è stato costruito, in ordine
 
-Ventidue commit. Il filo è: da una libreria che si adattava allo schermo a una
+Ventidue commit, fino al 2026-08-20 (per quelli dopo vedi il punto 8). Il filo è: da una libreria che si adattava allo schermo a una
 stanza arredata con dentro delle persone.
 
 **La geometria.** La libreria era calcolata: quattro colonne in orizzontale, tre
@@ -210,36 +211,130 @@ chiave `sb-<progetto>-auth-token` di `localStorage` in un'altra chiave, si
 ricarica, si prova, e poi la si rimette. `AUTH.esci()` no — quello invalida il
 refresh token sul server.
 
-## 8. Stato dei dati (2026-08-20)
+## 8. La sessione del 2026-08-20/21: ottimizzazione e rifacimento grafico
+
+Diciotto commit, in tre atti. Tutti su `libreria` e su `main`.
+
+### Atto I — il fotogramma costava troppo (`ddbf827`, `5f7c43e`)
+
+Misurato avvolgendo il contesto WebGL e contando i draw call **divisi per
+framebuffer**: 574 a fotogramma per 5.794 triangoli. Dodici triangoli a
+chiamata: il collo di bottiglia non è mai stata la geometria, era l'overhead.
+
+- **316 di quei 574 erano la passata d'ombra**, ridisegnata sessanta volte al
+  secondo per un'ombra identica a quella di prima. Ora `shadowMap.autoUpdate` è
+  spento e la mappa si rifà su prenotazione (`rifaiOmbre`).
+- 224 materiali per 152 mesh, niente condiviso, e `buildProps` li rifaceva tutti
+  — canvas e texture comprese — **a ogni lettera scritta nella ricerca**.
+- Un box con un array di materiali si disegna **una volta per gruppo**: 42
+  oggetti costavano 252 chiamate. `cuboRaggruppato` riordina gli indici per
+  slot. I dadi sono passati a un **atlante 3×2**: da sei chiamate a una.
+
+Risultato: **574 → 201 elementi da disegnare**, 224 → 98 materiali, 152 → 43
+geometrie, e a riposo la passata d'ombra non c'è proprio.
+
+### Atto II — l'interfaccia (`c7f6aa8` → `03d315b`)
+
+Testata fissa e uguale ovunque · imbuto e pannello della libreria · scheda che
+esce dalla scatola · finestrella delle azioni · visita ridotta con i cuori ·
+**re-skin completo** · modulo della partita rifatto. I dettagli tecnici stanno
+tutti in `CLAUDE.md`, sezione per sezione.
+
+Il re-skin è passato **due volte**: prima un serif editoriale su crema
+(`87a1130`), poi — su indicazione dell'utente — **un font solo (Poppins) e sei
+tinte** (`e6d2f24`). Il secondo è quello buono. Il primo è utile solo come
+lezione: le misure dei titoli erano nate su un condensato, e ogni cambio di
+faccia le ha dovute riscalare.
+
+### Atto III — i difetti trovati usando il sito (`1a36508`, `eda52df`)
+
+- **`opacity:0` nasconde, non disattiva**: il binario restava cliccabile in
+  tutte le schermate.
+- **I filtri sopravvivevano alla schermata** in cui li si metteva.
+- **Il cestino delle librerie cancellava al primo clic** — ed è costato due
+  mobili veri (vedi sotto).
+
+## 9. Stato dei dati (2026-08-21)
 
 - Account principale: `admin@smlrcc.it`, nick **Samuel**, codice `HH67 6BY7`.
-- Secondo account di prova: **samuel2**, amicizia accettata. Serve per provare
-  la visita alla libreria di un amico.
-- Collezione: **10 giochi**, tutti in vetrina. Due librerie: `Libreria 1` (con i
-  giochi) e `Libreria 2` (vuota, creata dall'utente).
-- I posti hanno dei buchi (7 e 10 liberi, `ark4` all'11): **non è un errore**, è
-  la funzione che fa il suo lavoro.
-- Zero gruppi, zero partite, zero giocatori, zero preferiti: tutti i dati di
-  prova sono stati cancellati a fine verifica.
-- Le recensioni sono ancora **lorem ipsum**, accorciato a due capoversi.
+- Secondo account di prova: **samuel2**, amicizia accettata.
+- Collezione: **35 giochi**, tutti sugli scaffali. **Tre librerie**:
+  `Libreria 1`, `Libreria 2`, `Libreria 3`.
+- **25 di quei giochi sono i primi 25 della classifica BGG**, inseriti su
+  richiesta dell'utente **con il solo nome**: copertina disegnata dal sito,
+  nessun altro dato, nessun id BGG. Vedi il punto sulle copertine più sotto.
+- Un gruppo: **party game** (3 giochi). Un preferito (RisiKo!).
+- **Una partita di prova rimasta**: titolo `pa`, giocatori `s, d, sa`, datata
+  20/08/2026. Segnalata all'utente, non cancellata perché non è chiaro di chi
+  sia.
+- Le recensioni sono ancora **lorem ipsum** sui 10 giochi vecchi; i 25 nuovi
+  hanno la recensione vuota.
 
-## 9. Cosa resta aperto
+### Un incidente, e la regola che ne è uscita
 
-1. **Le recensioni vere** al posto del lorem ipsum. Si scrivono dal sito, dal
-   tasto *la tua recensione* nella scatola aperta, e da lì si pubblicano nel
-   catalogo con la casella in fondo al modulo di modifica.
-2. **Il token BGG.** Finché non c'è, il catalogo resta su Wikidata: dati più
-   magri, editore spesso sbagliato, e quasi mai la copertina vera.
-3. **Edge function su Supabase** al posto del proxy locale `tools/bgg-proxy.mjs`:
-   il token starebbe sul server, la ricerca funzionerebbe da qualunque browser,
-   ed è anche ciò che le condizioni di BGG chiedono.
-4. **Logo «Powered by BGG»** nel piede, obbligatorio quando si usa l'API.
-5. **Le partite sono private.** Gli amici vedono libreria e recensioni, non le
+Il pannello delle librerie, appena scritto, aveva **un cestino per riga che
+cancellava al primo clic**. In un elenco che si trascina è un incidente che
+aspetta di capitare: sono spariti **Libreria 1 e Libreria 2**, e con la chiave
+esterna `on delete set null` tutti e 35 i giochi sono tornati **senza posto**
+insieme.
+
+Il difetto è stato corretto (ora è in due tempi) e i dati ripristinati: le due
+librerie ricreate nell'ordine giusto e i 35 giochi ricollocati, verificando dal
+server. Ma la regola era **già scritta in `CLAUDE.md`** e non è stata seguita:
+*tutto ciò che butta via qualcosa chiede conferma sul pulsante stesso.*
+
+## 10. Le copertine: perché non ci sono, e cosa serve
+
+Provate tutte le strade prima di fermarsi:
+
+| strada | esito |
+|---|---|
+| `boardgamegeek.com/xmlapi2` | **401** con qualunque user-agent: chiusa dietro token |
+| pagina `browse/boardgame` | risponde 200, ma è **HTML da raschiare** e le condizioni di BGG lo vietano |
+| Wikidata, la fonte che il sito già usa | misurata su 8 titoli moderni: ne trova 5 e **ha la copertina di uno solo** |
+
+Quindi: i nomi ci sono, le copertine no. Servono, in alternativa, **il token
+BGG** (`tools/bgg-fetch.mjs` esiste già) oppure **il campo file** nel modulo di
+modifica, che resta la fonte giusta — il press kit dell'editore.
+
+Nota: i 25 nomi li ha **incollati l'utente**, non sono stati raschiati.
+
+## 11. Cosa resta aperto
+
+**Il blocco mai iniziato:**
+
+1. **IT/EN.** Chiesto due volte, mai fatto. Il sito **non ha nessun sistema di
+   traduzione**: va costruito da zero e passato su ogni stringa dell'HTML e su
+   quelle generate in JS. Il selettore va **nel cancello** e **in fondo al
+   profilo**, e sotto di esso, come ultima cosa della pagina, il logout.
+
+**I difetti segnalati dall'utente e non ancora corretti** (elenco interrotto a
+metà, potrebbe continuare):
+
+2. **Eliminare una libreria non funziona.** Con due librerie, sulla prima dice
+   «l'ultima libreria non si toglie» — ma non è l'ultima; sull'altra l'azione si
+   completa ma **non cancella niente**. Da guardare: `togliLibreria` in
+   `js/store.js` e i due punti che la chiamano in `js/app.js` (il cestino
+   dell'elenco e `#st-meno`).
+3. **Amici e Giocatori non hanno la gerarchia delle tendine** applicata a
+   partite e gruppi (rientro + filo verticale + peso minore).
+4. Il pulsante **copia** del codice amico: solo icona, senza scritta.
+5. Nella collezione il **preferito deve essere una stellina cliccabile sulla
+   riga**, tolta dal menu; e **icone su tutte le azioni** che le meritano.
+6. L'**icona del pannello della libreria** (oggi una lampada) non descrive più
+   quel pannello, che adesso gestisce nome, aspetto e ordine di tutti i mobili.
+
+**Da prima di questa sessione:**
+
+7. Le **recensioni vere** al posto del lorem ipsum.
+8. **Edge function su Supabase** al posto del proxy locale, e il logo
+   **«Powered by BGG»** nel piede quando l'API verrà usata.
+9. Le **partite sono private**: gli amici vedono libreria e recensioni, non le
    serate. È il cambio di una policy, se lo si vuole.
-6. Su telefono la scatola è **larga 90 px**: si riconosce la copertina, non si
-   legge il titolo. È il prezzo delle tre colonne.
+10. Su telefono la scatola è **larga 90 px**: si riconosce la copertina, non si
+    legge il titolo. È il prezzo delle tre colonne.
 
-## 10. Modo di lavorare
+## 12. Modo di lavorare
 
 - L'utente scrive in **italiano**; commenti nel codice e testi del sito in
   italiano. I file `.js` restano **solo ASCII** (accenti come entità o senza).
