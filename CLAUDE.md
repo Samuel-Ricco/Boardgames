@@ -60,8 +60,8 @@ js/bgg.js             ricerca BGG (passa dal proxy locale)
 js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
 js/art.js             grafica generata su canvas
 js/app.js             scena 3D e interazione
-img/                  le copertine vere delle scatole
-fonts/                Bebas Neue e Inter in locale
+img/                  le copertine vere delle scatole (due: root, scythe)
+fonts/                Poppins, cinque pesi, in locale
 vendor/                three.js r152 e supabase-js, committati
 supabase/migrations/   lo schema del database
 tools/bgg-*.mjs        scarico dati BGG e proxy per la ricerca admin
@@ -79,6 +79,16 @@ sito deve funzionare a rete staccata. Prima di aggiungere un `<link>` o un
   C'è `.claude/launch.json` pronto (`python -m http.server 8124`).
 - I file `.js` sono **solo ASCII**: senza header `charset` sui file esterni le
   lettere accentate si rompono. Nei testi si usano entità HTML o apostrofi dritti.
+- **Le modifiche si fanno con sostituzioni verificate, non a occhio.** `js/app.js`
+  è sopra le 5.400 righe e `css/style.css` sopra le 2.600: un `sed` cieco su file
+  così può colpire tre punti invece di uno e non dirlo. Il modo che ha retto per
+  tutta la sessione è uno scriptino usa e getta che, per ogni sostituzione,
+  **pretende esattamente un'occorrenza** (`assert s.count(old) == 1`) e a fine
+  giro **ricontrolla che il `.js` sia ancora ASCII**. Se il conto non torna,
+  fallisce prima di scrivere invece di lasciare un danno silenzioso.
+- **Attenzione agli apostrofi nelle stringhe JS**: `'serve l'accesso'` chiude la
+  stringa a metà e rompe l'intero file. È già successo. Se il testo ha un
+  apostrofo, virgolette doppie — o `l&#39;`.
 
 ### Trappole dell'ambiente di anteprima
 
@@ -275,15 +285,18 @@ diverse.
 
 ## Righe compatte, e due aperture invece di una
 
-Nell'elenco una riga mostra **copertina, nome e un tasto a tre righe**, e basta.
+Nell'elenco una riga mostra **copertina, nome e un tasto a tre punti**, e basta.
 Una riga che mostra già tutto obbliga a scorrere per contare i propri giochi.
+
+Tre punti e non tre righe: **le tre righe dicono «un elenco», i tre punti dicono
+«altro»** — ed è altro quello che c'è dentro.
 
 Le aperture sono **due, distinte**:
 
 - la **riga** apre le informazioni — che gioco è, dove sta, cosa ne pensi, in
   che gruppi è;
-- il **tasto a tre righe** apre le azioni — preferito, in libreria, togli, vai
-  allo scaffale — in una **finestrella ancorata al tasto**, non in una fascia
+- il **tasto a tre punti** apre le azioni — preferito, in libreria, togli, vai
+  allo scaffale, **elimina il gioco** — in una **finestrella ancorata al tasto**, non in una fascia
   sotto la riga. Sotto la riga le azioni scivolavano via dal punto in cui si era
   premuto (tanto più con le informazioni già aperte) e allargavano l'elenco a
   ogni tocco, che è il modo migliore di perdere il segno mentre si scorre. Il
@@ -294,13 +307,21 @@ Le aperture sono **due, distinte**:
 Sono due domande diverse, «che gioco è» e «cosa ci faccio», e mescolarle voleva
 dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti.
 
+**Togliere dalla libreria ed eliminare restano due gesti diversi**, e stanno
+lontani nel menu: il primo rimette il gioco nella collezione senza posto e si
+disfa in un clic, il secondo lo cancella. Per questo l'ultimo è rosso e **in due
+tempi sul pulsante stesso** — `window.confirm` bloccherebbe il rendering, e una
+finestra di sistema in mezzo a questa pagina stonerebbe.
+
 - Il contenuto si costruisce **solo quando si apre**: con duecento giochi,
   riempire tutte le schede in anticipo genera duecento blocchi che nessuno
   guarderà.
 - Cliccando *dentro* un blocco già aperto non si richiude la riga: se no toccare
   una pastiglia di gruppo faceva sparire quello che si stava guardando.
 - **Ogni gruppo è una tendina**, e quale sia aperta se lo ricorda. Si parte
-  aperte: un elenco di soli titoli chiusi non fa vedere niente al primo colpo.
+  **chiuse** — vedi «Un elenco diviso per gruppi non si filtra anche per
+  gruppo». Erano aperte, ma con qualche gruppo la vista diventava l'elenco
+  intero con dei titoli in mezzo, cioè la vista accanto più rumore.
 
 ## La scheda esce dalla scatola
 
@@ -831,9 +852,14 @@ nascosta con l'opacità.
   la porta: chiude la partita, apre il profilo col cassetto dei giocatori già
   aperto e il campo pronto. Crearlo di sfuggita vuol dire ritrovarselo dopo senza
   sapere da dove esca.
-- Nella tendina stanno **insieme gli amici e i giocatori salvati**: al tavolo la
-  differenza non conta, conta chi c'era, e tenerli in due elenchi vuol dire
-  cercare due volte.
+- **Chi c'era si tocca, non si sceglie da una tendina.** Un `select` apre il
+  selettore del sistema operativo — una lista grigia che non somiglia a niente
+  del resto del sito — e per due o tre nomi è anche un giro inutile: si vedono
+  tutti insieme e si toccano quelli giusti. Le pastiglie si rifanno a ogni
+  aggiunta, quindi l'ascoltatore è **uno solo sul contenitore**: attaccarne uno
+  per pastiglia vorrebbe dire rimetterli tutti ogni volta.
+- Amici e giocatori salvati stanno **insieme**: al tavolo la differenza non
+  conta, conta chi c'era, e tenerli in due elenchi vuol dire cercare due volte.
 
 ### Le posizioni non si scrivono: si calcolano
 
