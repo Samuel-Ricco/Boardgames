@@ -292,7 +292,7 @@ body.visita .visita-only{display:inline-flex !important}
    faccio" -- e mescolarle voleva dire che per leggere due righe di
    recensione ti trovavi davanti quattro pulsanti. */
 .righe.compatta > li{
-  grid-template-columns:52px 1fr auto; align-items:center; gap:14px; padding:11px 0;
+  grid-template-columns:52px 1fr auto auto; align-items:center; gap:14px; padding:11px 0;
 }
 .righe.compatta > li:hover .riga-nome{color:var(--accent)}
 .righe.compatta .cat-cop{width:52px; cursor:pointer}
@@ -300,7 +300,18 @@ body.visita .visita-only{display:inline-flex !important}
   margin:0; cursor:pointer; font-family:var(--ff-display); font-weight:400;
   font-size:15.1px; letter-spacing:0; line-height:1.15; color:var(--ink);
 }
-.riga-nome .stella{color:var(--accent); font-style:normal; font-size:14px; vertical-align:2px}
+/* La stellina del preferito e' un interruttore sulla riga, non una voce
+   di menu: si accende con un tocco e si legge scorrendo. Spenta e'
+   tenue -- se no trenta stelle accese sarebbero un elenco di stelle con
+   dei giochi in mezzo -- e accesa e' piena, del colore di quello che si
+   tocca. Il vuoto tiene la colonna in casa di un amico. */
+.riga-stella{
+  flex:none; cursor:pointer; padding:7px; line-height:0;
+  color:rgba(51,53,43,.28); background:none; border:0; border-radius:var(--r-s);
+}
+.riga-stella:hover{color:var(--accent); background:rgba(200,106,60,.10)}
+.riga-stella[aria-pressed="true"]{color:var(--accent)}
+.riga-stella-vuota{display:block; width:0}
 .riga-menu{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:7px 10px;
   color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
@@ -328,7 +339,10 @@ body.visita .visita-only{display:inline-flex !important}
   from{opacity:0; transform:translateY(-6px)}
   to{opacity:1; transform:none}
 }
-.riga-azioni button{width:100%; text-align:left; border-color:transparent}
+.riga-azioni button{
+  width:100%; text-align:left; border-color:transparent;
+  display:flex; align-items:center; gap:9px;
+}
 .riga-azioni button:hover{border-color:var(--line)}
 /* sulle ultime righe la finestrella uscirebbe dal fondo: sale */
 .righe.compatta > li:nth-last-child(-n+2) .riga-azioni{top:auto; bottom:calc(100% + 7px)}
@@ -1736,7 +1750,7 @@ body.elenco #conta{background:var(--accent); color:#fff}
 
 /* --- sul tocco i bersagli crescono: quarantaquattro pixel ---------- */
 @media (pointer:coarse){
-  .tool, #conta, .riga-menu, .gruppi button, #sortmenu button, .vista-riga,
+  .tool, #conta, .riga-menu, .riga-stella, .gruppi button, #sortmenu button, .vista-riga,
   .aggiungi, #stanza-apri, #vista-apri, .riga-azioni button,
   .pan-azioni button, #close, #sezioni button, #tabbar button{
     min-height:44px;
@@ -1757,8 +1771,17 @@ button .ico + *{margin-left:2px}
 }
 .riga-menu, #stanza-apri, #vista-apri, #close, #p-pref{padding:10px}
 #vista-apri svg{width:18px; height:18px}
-#p-cuore[aria-pressed="true"] .ico{fill:currentColor}
-#p-pref[aria-pressed="true"] .ico{fill:currentColor}
+/* Acceso, il disegno si riempie. La regola deve mirare al PATH e non
+   all'<svg>: ogni icona del corredo porta `fill="none"` scritto addosso
+   come attributo di presentazione, e un attributo sul figlio vince su
+   una proprieta' ereditata dal padre -- mentre una regola CSS, anche
+   debole, batte l'attributo. Scritta sull'<svg> non ha mai riempito
+   niente: il cuore e la stella del pannello cambiavano solo il colore
+   del contorno, che a occhio sembra "acceso" e infatti non se n'era
+   accorto nessuno. */
+#p-cuore[aria-pressed="true"] .ico path,
+#p-pref[aria-pressed="true"] .ico path,
+.riga-stella[aria-pressed="true"] .ico path{fill:currentColor}
 
 /* --- QUELLO CHE GALLEGGIA SULLA SCENA ------------------------------
    Un fondo tinto al dieci per cento funziona dentro una scheda bianca;
@@ -2336,6 +2359,8 @@ body.arreda #stanza{transform:none}
   padding:11px 13px;
 }
 #st-rinomina:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
+/* spento sul mobile di scorta: il segnaposto dice perche' */
+#st-rinomina:disabled{opacity:.55; cursor:default}
 #st-rinomina-ok{flex:0 0 auto; padding:11px 15px; font-size:13px}
 #st-rinomina-ok:disabled{opacity:.4; cursor:default; background:rgba(51,53,43,.07); color:var(--ink-soft)}
 
@@ -2394,6 +2419,10 @@ body.arreda #stanza{transform:none}
   padding-top:14px; border-top:1px solid var(--line);
 }
 .st-gesti button{flex:1 1 auto; padding:11px 14px; font-size:13px}
+/* un comando che non si puo' usare si spegne e spiega perche' nel
+   `title`, invece di fallire dopo il clic */
+.st-gesti button:disabled{opacity:.4; cursor:default}
+.st-gesti button:disabled:hover{background:rgba(197,74,58,.10); color:#a8412f}
 
 /* dentro la tendina dell'aspetto il piede non ha piu' bisogno di un
    filo sopra: ce l'ha gia' la tendina */
@@ -2434,7 +2463,9 @@ body.arreda #stanza{transform:none}
   flex:1 1 auto; min-width:0; text-align:center; padding:11px 10px;
   letter-spacing:.10em; font-size:15px; overflow:hidden; text-overflow:ellipsis;
 }
-#pro-copia{flex:0 0 auto; margin-left:0; padding:11px 15px; font-size:13px}
+/* Solo icona: la parola "copia" si mangiava lo spazio del codice, che
+   e' quello che si legge e si detta. Cosa fa lo dice il `title`. */
+#pro-copia{flex:0 0 auto; margin-left:0; padding:11px; font-size:13px; line-height:0}
 
 /* I due comandi di identita' stanno affiancati anche nella colonna
    stretta accanto alla faccia: si stringono, non si impilano. */
@@ -2633,6 +2664,30 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .cartella .righe > li{border-top:0; border-bottom:1px solid rgba(51,53,43,.07)}
 .cartella .righe > li:last-child{border-bottom:0}
 .cartella .riga-nome{font-size:15px}
+
+/* --- e vale anche per Amici e Giocatori ----------------------------
+
+   Erano gli unici due cassetti del profilo in cui il contenuto partiva
+   a filo del titolo: aperto "Amici", le facce cominciavano esattamente
+   dove comincia la parola Amici, e niente diceva che stessero dentro.
+   Sotto "Partite" invece il rientro e il filo ci sono da sempre, perche'
+   li porta `.gio-gruppo`.
+
+   Il rientro si mette QUI e non su `.pro-dentro`, che vale per tutti e
+   tre: sotto Partite aggiungerebbe un livello a roba che i suoi livelli
+   ce li ha gia' dentro, e la serata finirebbe rientrata quattro volte. */
+#blocco-amici, #blocco-giocatori{
+  padding:0 0 24px 14px;
+  border-left:2px solid rgba(51,53,43,.12);
+}
+/* I tre elenchi degli amici -- chi ti ha chiesto, chi lo e', chi non ha
+   ancora risposto -- sono tre gruppi con tre etichette diverse, e uno
+   attaccato all'altro si leggevano come un elenco solo. Quelli vuoti
+   non ci sono proprio (`.pro-gente:empty`), quindi lo stacco non lascia
+   mai un buco. */
+#blocco-amici .pro-gente + .pro-gente{margin-top:12px}
+/* Un livello sotto il titolo il testo pesa meno, come nelle partite. */
+#blocco-amici .chi b, #blocco-giocatori .chi b{font-weight:500}
 
 /* --- chi c'era: pastiglie, non una tendina di sistema --------------- */
 .pa-scelta{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 0}

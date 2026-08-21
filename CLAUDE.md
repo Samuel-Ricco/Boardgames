@@ -295,8 +295,8 @@ Le aperture sono **due, distinte**:
 
 - la **riga** apre le informazioni — che gioco è, dove sta, cosa ne pensi, in
   che gruppi è;
-- il **tasto a tre punti** apre le azioni — preferito, in libreria, togli, vai
-  allo scaffale, **elimina il gioco** — in una **finestrella ancorata al tasto**, non in una fascia
+- il **tasto a tre punti** apre le azioni — in libreria, togli, vai allo
+  scaffale, **elimina il gioco** — in una **finestrella ancorata al tasto**, non in una fascia
   sotto la riga. Sotto la riga le azioni scivolavano via dal punto in cui si era
   premuto (tanto più con le informazioni già aperte) e allargavano l'elenco a
   ogni tocco, che è il modo migliore di perdere il segno mentre si scorre. Il
@@ -306,6 +306,15 @@ Le aperture sono **due, distinte**:
 
 Sono due domande diverse, «che gioco è» e «cosa ci faccio», e mescolarle voleva
 dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti.
+
+**Il preferito non sta in nessuna delle due: è una stellina sulla riga.** Dentro
+il menu erano due tocchi per accenderlo e un'apertura per sapere se era acceso,
+mentre la stella si vede **scorrendo**, che è l'unico momento in cui serve. Si
+aggiorna **in posto** — niente `disegnaMia()`: rifare l'elenco staccherebbe dal
+documento il pulsante appena premuto, ed è un pulsante su cui si tocca più volte
+di fila. In casa di un amico la stella non c'è, ma il posto resta occupato da uno
+`<span>` vuoto: le colonne della griglia sono quattro, e una in meno sposterebbe
+il tasto del menu sotto la stella delle altre righe.
 
 **Togliere dalla libreria ed eliminare restano due gesti diversi**, e stanno
 lontani nel menu: il primo rimette il gioco nella collezione senza posto e si
@@ -929,6 +938,17 @@ leggere: un **rientro**, un **filo verticale** che dice a chi appartiene quel
 rientro, e un **peso di testo** minore. Il fondo tinto resta solo al livello di
 mezzo — il gioco — che è quello che si apre e si chiude.
 
+**Vale per tutte le tendine, anche per Amici e Giocatori.** Erano gli unici due
+cassetti del profilo in cui il contenuto partiva a filo del titolo: aperto
+«Amici», le facce cominciavano esattamente dove comincia la parola Amici, e
+niente diceva che stessero dentro. Il rientro va su `#blocco-amici` e
+`#blocco-giocatori` e **non su `.pro-dentro`**, che vale per tutti e tre: sotto
+Partite aggiungerebbe un livello a una cosa che i suoi livelli ce li ha già
+dentro (`.gio-gruppo`, `.giocate`), e la serata finirebbe rientrata quattro
+volte. I tre elenchi degli amici — chi ti ha chiesto, chi lo è, chi non ha
+ancora risposto — prendono uno stacco fra l'uno e l'altro: attaccati si
+leggevano come un elenco solo.
+
 ## Un pannello solo per la libreria
 
 Erano due — «la stanza» (luce e colori) e «i tuoi mobili» (nome, crea, togli) —
@@ -957,6 +977,38 @@ l'una né l'altra cosa.
   le righe che cambiano davvero.
 - La porta è una sola: quella dell'imbuto è stata tolta. Due porte per la stessa
   stanza sono una di troppo.
+
+### Il mobile di scorta non è un mobile, e il pannello deve saperlo
+
+In fondo alla fila c'è **sempre un mobile in più** di quelli che esistono
+(`disposizione` fa `librerie.length + 1`): è quello dove si trascina una scatola
+per cominciarne un altro. Sullo schermo si vede come gli altri, ma una riga in
+`librerie` non ce l'ha — e da lì venivano tre difetti che sembravano scollegati:
+
+- **`elimina questa libreria` non funzionava.** Prendeva il mobile all'indice
+  dello scroll: sulla scorta era `undefined` e il gesto usciva in silenzio
+  («l'azione si completa ma non cancella niente»). E con **una** libreria vera
+  sullo schermo se ne vedono **due**, quindi sulla vera arrivava «l'ultima
+  libreria non si toglie» a chi non stava guardando l'ultima.
+- **`libCorrente()` accostava all'ultimo mobile vero.** Stando sulla scorta,
+  scegliere un legno ridipingeva il mobile **accanto**, e il pannello scriveva
+  il nome di un mobile che non era quello inquadrato. La guardia
+  `if (!L) flash('nessun mobile da arredare')` c'era già, e non poteva mai
+  scattare.
+- **Scorrendo, il pannello aperto rinfrescava solo legno e arredi**, non il
+  campo del nome: si scorreva alla libreria 3 e il campo diceva ancora
+  «Libreria 1».
+
+Adesso `libCorrente()` **può rispondere `null`, ed è il punto**: chi chiede deve
+poter sapere che lì non c'è niente. Il campo del nome si spegne con un
+segnaposto, `#st-quale` dice «nessun mobile qui», ed `elimina` **si spegne e
+spiega perché nel `title`** invece di fallire dopo il clic — vale anche quando è
+l'unica libreria rimasta. Il pannello si rimette in pari da `sincronizzaPannello()`,
+chiamata da `updateRail()` **solo quando cambia il numero intero** del mobile: su
+`state.scroll` girerebbe a ogni fotogramma e cancellerebbe quello che si sta
+scrivendo nel campo. E l'elenco dei mobili **non si rifà** per spostare
+l'evidenziazione — si sposta la classe in posto, se no si staccherebbe la riga
+che si sta trascinando per riordinare.
 
 ## Arredare la stanza
 
@@ -1393,6 +1445,13 @@ testo). Più il rosso, per quello che distrugge, che resta in due tempi.
 - **La pressione si vede**: `scale(.96)`, e il ritorno più lento della partenza.
 - Raggi in scala: `--r-s` comandi, `--r-m` schede, `--r-l` il pannello.
 
+**L'icona di un comando descrive il comando, non la sua prima riga.** Il pannello
+della libreria si apriva con una **lampadina**, che era giusta quando quel
+pannello era «la stanza»: adesso fa luce, nome, aspetto e ordine di tutti i
+mobili, e la luce è solo la sua prima riga. Ora è una **libreria a cubi 2×2 con
+i piedi** — lo stesso disegno di «vai allo scaffale», perché due comandi che
+portano allo stesso oggetto portano la stessa figura.
+
 **Quello che galleggia sulla scena è una superficie, non una tinta.** Un fondo
 tinto al 10% funziona dentro una scheda chiara; sopra la stanza, che è già color
 crema, sparisce. Imbuto, lampada, contatore e binario sono carta chiara con
@@ -1509,6 +1568,19 @@ una scelta.
 
 Un corredo solo in SVG: tratto 1.6, estremi tondi, riquadro 24, e prendono il
 colore del testo — quindi seguono da sole lo stato del comando che le contiene.
+
+**Per riempirle da accese si mira al `path`, non all'`<svg>`.** Ogni icona porta
+`fill="none"` scritto addosso come attributo di presentazione, e un attributo sul
+figlio vince su una proprietà ereditata dal padre — mentre una regola CSS, anche
+debolissima, batte l'attributo. Scritte sull'`<svg>`, le due regole che
+riempivano il cuore e la stella del pannello **non hanno mai riempito niente**:
+cambiava solo il colore del contorno, che a occhio sembra «acceso» e infatti non
+se n'era accorto nessuno. Vale per ogni icona futura che debba avere due stati.
+
+**E l'SVG non va sovrascritto con un glifo.** `#p-pref` aveva l'icona nel markup
+e il JS gli rimetteva `innerHTML = '&#9733;'` a ogni apertura del pannello: il
+disegno spariva al primo giro, e con lui la regola che lo riempie. Lo stato si
+cambia con `aria-pressed`, il disegno resta dov'è.
 Prima erano **glifi Unicode**, che li disegna il sistema operativo: una faccia di
 sole su Windows e su un telefono sono due disegni diversi, ed era la parte più
 visibilmente scoordinata dell'interfaccia. Le poche stelle rimaste nel JS stanno

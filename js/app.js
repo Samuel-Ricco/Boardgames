@@ -185,7 +185,18 @@ const ICO = {
   cestino:  '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M10 7V5h4v2M6.5 7l.8 12h9.4l.8-12M10.5 10.5v5.5M13.5 10.5v5.5"/></svg>',
   chiudi:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>',
   corona:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8l3.5 3L12 5l4.5 6L20 8l-1.6 9H5.6zM5.6 20h12.8"/></svg>',
-  maniglia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 9h12M6 15h12"/></svg>'
+  maniglia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 9h12M6 15h12"/></svg>',
+  /* Una libreria a cubi 2x2 con i piedi: e' il soggetto del sito, e
+     serve in due posti -- il pannello del mobile e "vai allo
+     scaffale". Due comandi che portano allo stesso oggetto portano la
+     stessa figura. */
+  scaffale: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 3.5h16v16H4zM4 11.5h16M12 3.5v16M7 19.5v2M17 19.5v2"/></svg>',
+  /* Una stella sola, vuota. Piena la fa il CSS su `aria-pressed`, come
+     per il cuore: due disegni per due stati vorrebbe dire tenerli
+     uguali a mano per sempre. */
+  stella:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"/></svg>',
+  dentro:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v9M8.5 9l3.5 3.5L15.5 9M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
+  fuori:    '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.5v-9M8.5 7l3.5-3.5L15.5 7M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>'
 };
 
 const q  = s => document.querySelector(s);
@@ -1928,7 +1939,6 @@ function showPanel(game){
   if (pref){
     const si = !!(game && game.preferito);
     pref.setAttribute('aria-pressed', si ? 'true' : 'false');
-    pref.innerHTML = si ? '&#9733;' : '&#9734;';   // stella piena o vuota
     pref.title = si ? 'togli dai preferiti' : 'segnalo fra i preferiti';
   }
 
@@ -2003,11 +2013,23 @@ function scrollBy(d){
   state.scrollTo = clamp(state.scrollTo + d, 0, maxScroll());
   snapSoon();
 }
+let mobileMostrato = -1;                  // quale mobile mostra il pannello aperto
+
 function updateRail(){
   nomeMobileCorrente();                   // il nome sta nell'imbuto, non qui
 
-  // col pannello aperto, cambiando mobile cambiano legno e arredi mostrati
-  if (document.body.classList.contains('arreda')) disegnaStanza();
+  /* Col pannello aperto, cambiando mobile cambia tutto quello che il
+     pannello dice -- non solo legno e arredi, che erano gli unici a
+     rinfrescarsi: il nome nel campo restava su quello di prima.
+
+     Si guarda il numero INTERO del mobile e non `state.scroll`, che
+     mentre si accosta cambia a ogni fotogramma: riscrivere il campo
+     sessanta volte al secondo cancellerebbe quello che ci si sta
+     scrivendo dentro. */
+  if (document.body.classList.contains('arreda')
+      && Math.round(state.scroll) !== mobileMostrato){
+    sincronizzaPannello();
+  }
 
   const max = maxScroll();
   if (!max) return;                       // niente da scorrere: il binario e' nascosto dal CSS
@@ -3296,7 +3318,7 @@ function disegnaLibrerie(){
   LIB.all().forEach(function(g){
     if (g.libreria) perLibreria[g.libreria] = (perLibreria[g.libreria] || 0) + 1;
   });
-  const corrente = l[Math.round(state.scroll)];
+  const corrente = libCorrente();
 
   el.innerHTML = l.map(function(L){
     return '<li data-id="' + esc(L.id) + '"' +
@@ -3318,10 +3340,15 @@ function disegnaLibrerie(){
 function disegnaNomeCorrente(){
   const inp = q('#st-rinomina'), ok = q('#st-rinomina-ok');
   if (!inp) return;
-  const L = LIB.librerie()[Math.round(state.scroll)];
+  const L = libCorrente();
   inp.value = L ? L.nome : '';
   inp.disabled = !L;
+  /* Sul mobile di scorta il campo e' spento: dirlo e' meglio che
+     lasciarlo vuoto e muto, perche' la scorta si vede come le altre. */
+  inp.placeholder = L ? '' : 'nessun mobile qui';
   if (ok) ok.disabled = true;
+  segnaGesti();
+  mobileMostrato = Math.round(state.scroll);
 }
 
 /* Rinominare vuole una conferma esplicita. Salvare all'uscita dal campo
@@ -3331,7 +3358,7 @@ function disegnaNomeCorrente(){
    richiama `buildCabinet`, che la targhetta sta dentro il mobile. */
 function confermaNomeCorrente(){
   const inp = q('#st-rinomina'), ok = q('#st-rinomina-ok');
-  const L = LIB.librerie()[Math.round(state.scroll)];
+  const L = libCorrente();
   if (!L) return;
   ok.disabled = true;
   LIB.rinominaLibreria(L.id, inp.value).then(function(){
@@ -3394,8 +3421,8 @@ function bindOrdineLibrerie(){
     buildCabinet();
     applyLibrary({ animate: true });
     updateRail();
-    disegnaNomeCorrente();
     disegnaLibrerie();
+    sincronizzaPannello();
     flash('librerie riordinate');
   };
   el.addEventListener('pointerup', molla);
@@ -3440,8 +3467,8 @@ function bindOrdineLibrerie(){
       buildCabinet();
       applyLibrary({ animate: true });
       updateRail();
-      disegnaNomeCorrente();
       disegnaLibrerie();
+      sincronizzaPannello();
       flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
     }).catch(function(err){ b.disabled = false; flash('non tolta: ' + err.message); });
   });
@@ -3463,7 +3490,7 @@ function creaLibreriaNuova(){
       flash('libreria nuova: ' + L.nome);
     }
     state.scrollTo = clamp(LIB.librerie().length - 1, 0, maxScroll());
-    disegnaNomeCorrente();
+    sincronizzaPannello();
   }).catch(function(e){ flash('non creata: ' + e.message); });
 }
 
@@ -3471,7 +3498,7 @@ function bindLibrerie(){
   const inp = q('#st-rinomina'), ok = q('#st-rinomina-ok');
   if (inp){
     inp.addEventListener('input', function(){
-      const L = LIB.librerie()[Math.round(state.scroll)];
+      const L = libCorrente();
       ok.disabled = !inp.value.trim() || (L && inp.value === L.nome);
     });
     inp.addEventListener('keydown', function(e){
@@ -3489,15 +3516,15 @@ function bindLibrerie(){
      scaffali, e non e' un gesto da un clic solo. */
   const meno = q('#st-meno');
   if (meno) armaBottone(meno, 'elimina questa libreria', 'sicuro? tocca ancora', function(){
-    const L = LIB.librerie()[Math.round(state.scroll)];
-    if (!L) return;
+    const L = libCorrente();
+    if (!L){ flash('qui non c\u2019e\u2019 nessuna libreria da togliere'); return; }
     LIB.togliLibreria(L.id).then(function(){
       state.scrollTo = state.scroll = clamp(state.scroll, 0, maxScroll());
       buildCabinet();
       applyLibrary({ animate: true });
       updateRail();
-      disegnaNomeCorrente();
       disegnaLibrerie();
+      sincronizzaPannello();
       flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
     }).catch(function(err){ flash('non tolta: ' + err.message); });
   });
@@ -3529,13 +3556,68 @@ function salvaStanzaTraPoco(){
   }, 700);
 }
 
-/* Quale mobile si sta guardando: e' quello di cui si cambiano legno e
-   arredi. Il resto -- luce, muro, pavimento -- e' la stanza, e la
-   stanza e' una sola. */
+/* Quale mobile si sta guardando: e' quello di cui si cambiano nome,
+   legno e arredi. Il resto -- luce, muro, pavimento -- e' la stanza, e
+   la stanza e' una sola.
+
+   Puo' rispondere `null`, ed e' tutto il punto. In fondo alla fila c'e'
+   sempre un mobile in PIU' di quelli che esistono davvero -- quello di
+   scorta, dove si trascina una scatola per cominciarne un altro (vedi
+   `disposizione`). Sullo schermo si vede come gli altri, ma una riga in
+   `librerie` non ce l'ha.
+
+   Prima qui si accostava all'ultimo mobile vero, e il pannello finiva
+   per parlare di un mobile diverso da quello inquadrato: scegliere un
+   legno stando sulla scorta ridipingeva quello accanto, e "elimina
+   questa libreria" spariva nel nulla. Chi chiede deve poter sapere che
+   li' non c'e' niente. */
 function libCorrente(){
-  const l = LIB.librerie();
-  if (!l.length) return null;
-  return l[clamp(Math.round(state.scroll), 0, l.length - 1)] || null;
+  return LIB.librerie()[Math.round(state.scroll)] || null;
+}
+
+/* Quale riga dell'elenco e' il mobile che si sta guardando. La classe
+   si sposta IN POSTO e l'elenco non si rifa': rifarlo mentre si scorre
+   staccherebbe la riga che si sta trascinando per riordinare, che e' la
+   stessa lezione dell'elenco dei gruppi. */
+function segnaQui(){
+  const el = q('#st-lista');
+  if (!el) return;
+  const L = libCorrente();
+  Array.prototype.forEach.call(el.children, function(li){
+    li.classList.toggle('qui', !!L && li.getAttribute('data-id') === L.id);
+  });
+}
+
+/* I due gesti in fondo al pannello sanno su cosa stanno per agire.
+
+   `elimina questa libreria` prendeva il mobile all'indice dello scroll
+   e usciva in silenzio quando non c'era (la scorta), oppure rispondeva
+   "l'ultima libreria non si toglie" a chi sullo schermo ne vedeva due.
+   Un comando che non si puo' usare si spegne e dice perche', invece di
+   fallire dopo il clic. */
+function segnaGesti(){
+  const meno = q('#st-meno');
+  if (!meno) return;
+  const L = libCorrente(), quante = LIB.librerie().length;
+  const motivo = !L
+    ? 'qui non c\u2019e\u2019 ancora nessun mobile: trascinaci una scatola, o aggiungine uno'
+    : (quante <= 1
+        ? 'e\u2019 l\u2019unica libreria che hai: prima aggiungine un\u2019altra'
+        : '');
+  meno.disabled = !!motivo;
+  meno.title = motivo || ('elimina ' + L.nome);
+  if (motivo && meno.__disarma) meno.__disarma();
+}
+
+/* Tutto quello che il pannello dice del mobile inquadrato, in un posto
+   solo: legno e arredi, il nome nel campo, la riga "qui" nell'elenco e
+   i due gesti in fondo. Prima scorrendo si rinfrescavano solo legno e
+   arredi, quindi il campo del nome restava sul mobile di prima. */
+function sincronizzaPannello(){
+  mobileMostrato = Math.round(state.scroll);
+  disegnaStanza();
+  disegnaNomeCorrente();
+  segnaQui();
 }
 
 function disegnaStanza(){
@@ -3548,7 +3630,7 @@ function disegnaStanza(){
 
   q('#st-luce').value = cur.luce;
   q('#st-luce-n').textContent = Math.round(cur.luce * 100) + '%';
-  q('#st-quale').textContent = L ? L.nome : 'questo mobile';
+  q('#st-quale').textContent = L ? L.nome : 'nessun mobile qui';
 
   const gruppo = function(sel, lista, valore, testo){
     q(sel).innerHTML = lista.map(function(x){
@@ -3607,7 +3689,7 @@ function chiudiVista(){
 function nomeMobileCorrente(){
   const b = q('#vista-mobili');
   if (!b) return;
-  const L = LIB.librerie()[Math.round(state.scroll)];
+  const L = libCorrente();
   b.textContent = L ? L.nome : 'nuova libreria';
 }
 
@@ -3618,16 +3700,16 @@ function bindVista(){
   });
   q('#vista-x').addEventListener('click', chiudiVista);
   /* La porta dei mobili non sta piu' qui: il pannello della libreria
-     -- quello della lampada -- fa gia' nome, aspetto e ordine, e due
-     porte per la stessa stanza sono una di troppo. */
+     -- quello con lo scaffale disegnato sopra -- fa gia' luce, nome,
+     aspetto e ordine, e due porte per la stessa stanza sono una di
+     troppo. */
 }
 
 function apriArreda(){
   if (LIB.ospitePresso()) return;          // in casa d'altri non si arreda
   chiudiPannelli('arreda');
-  disegnaStanza();
-  disegnaNomeCorrente();
   disegnaLibrerie();
+  sincronizzaPannello();
   document.body.classList.add('arreda');
   q('#stanza').setAttribute('aria-hidden', 'false');
   q('#st-msg').textContent = 'si salva da solo';
@@ -3717,12 +3799,30 @@ function bindStanza(){
 
    - la RIGA apre le informazioni: che gioco e', dove sta, cosa ne
      pensi, in che gruppi e';
-   - il TASTO A TRE RIGHE apre le azioni: preferito, in libreria,
-     togli, vai allo scaffale.
+   - il TASTO A TRE RIGHE apre le azioni: in libreria, togli, vai allo
+     scaffale, elimina.
+
+   Il preferito non e' piu' li' dentro: e' una stellina sulla riga. E'
+   un interruttore da un tocco, e metterlo in un menu voleva dire due
+   tocchi per accenderlo e un'apertura per sapere se era acceso --
+   mentre la stella si vede scorrendo, che e' quando serve.
 
    Sono due domande distinte, "che gioco e'" e "cosa ci faccio", e
    mescolarle voleva dire che per leggere due righe di recensione ti
    trovavi davanti quattro pulsanti. */
+/* La stellina del preferito. In casa di un amico non c'e' -- li' non si
+   tocca niente -- ma il posto resta occupato da uno spazio vuoto: le
+   colonne della griglia sono quelle, e una riga in meno di elementi
+   sposterebbe il tasto del menu sotto la stella delle altre. */
+function stellaRiga(g){
+  if (LIB.ospitePresso()) return '<span class="riga-stella-vuota"></span>';
+  const si = !!g.preferito;
+  const che = si ? 'togli dai preferiti' : 'metti fra i preferiti';
+  return '<button type="button" class="riga-stella" data-fa="stella"' +
+         ' aria-pressed="' + (si ? 'true' : 'false') + '"' +
+         ' title="' + che + '" aria-label="' + che + '">' + ICO.stella + '</button>';
+}
+
 function rigaMia(g){
   const cop = g.cover
     ? '<img src="' + esc(g.cover) + '" alt="" loading="lazy">'
@@ -3730,8 +3830,8 @@ function rigaMia(g){
 
   return '<li data-id="' + esc(g.id) + '">' +
     '<div class="cat-cop">' + cop + '</div>' +
-    '<h3 class="riga-nome">' + esc(g.title) +
-      (g.preferito ? ' <i class="stella">&#9733;</i>' : '') + '</h3>' +
+    '<h3 class="riga-nome">' + esc(g.title) + '</h3>' +
+    stellaRiga(g) +
     /* Il tasto e le sue azioni stanno nello stesso involucro: la
        finestrella si ancora al PULSANTE, non alla riga -- se no, con le
        informazioni aperte sotto, uscirebbe mezzo schermo piu' in giu'
@@ -3774,16 +3874,15 @@ function contenutoInfo(g){
 
 function contenutoAzioni(g){
   if (LIB.ospitePresso()) return '<p class="vuoto">In casa di un amico si guarda e basta.</p>';
-  return '<button type="button" class="pref' + (g.preferito ? ' on' : '') + '" data-fa="pref">' +
-           (g.preferito ? '&#9733; preferito' : '&#9734; preferito') + '</button>' +
-         (g.libreria
-           ? '<button type="button" data-fa="scaffale">vai allo scaffale</button>' +
-             '<button type="button" data-fa="fuori" class="fuori">togli dalla libreria</button>'
-           : '<button type="button" data-fa="dentro" class="dentro">metti in libreria</button>') +
+  return (g.libreria
+           ? '<button type="button" data-fa="scaffale">' + ICO.scaffale + '<span>vai allo scaffale</span></button>' +
+             '<button type="button" data-fa="fuori" class="fuori">' + ICO.fuori + '<span>togli dalla libreria</span></button>'
+           : '<button type="button" data-fa="dentro" class="dentro">' + ICO.dentro + '<span>metti in libreria</span></button>') +
          /* Uscire dallo scaffale e sparire dalla collezione restano due
             gesti diversi: il primo e' reversibile in un clic, il secondo
             no. Per questo l'ultimo e' rosso e in due tempi. */
-         '<button type="button" data-fa="elimina" class="elimina">elimina il gioco</button>';
+         '<button type="button" data-fa="elimina" class="elimina">' + ICO.cestino +
+           '<span>elimina il gioco</span></button>';
 }
 
 /* L'elenco si divide in CARTELLE quando non si sta filtrando su un
@@ -4361,6 +4460,7 @@ function bindProfilo(){
        sistema in mezzo a questa pagina stonerebbe. */
     const del = e.target.closest('[data-fa="elimina"]');
     if (del){
+      const dice = del.querySelector('span') || del;
       if (del.classList.contains('armed')){
         LIB.remove(id);
         chiudiAzioni(null);
@@ -4370,19 +4470,33 @@ function bindProfilo(){
         flash('gioco eliminato');
       } else {
         del.classList.add('armed');
-        del.textContent = 'sicuro? tocca ancora';
+        dice.textContent = 'sicuro? tocca ancora';
         setTimeout(function(){
           if (!del.isConnected) return;
           del.classList.remove('armed');
-          del.textContent = 'elimina il gioco';
+          dice.textContent = 'elimina il gioco';
         }, 3500);
       }
       return;
     }
-    if (e.target.closest('[data-fa="pref"]')){
+    /* La stellina si aggiorna in posto e l'elenco non si rifa'.
+       Rifarlo staccherebbe dal documento il pulsante appena premuto e
+       il tocco successivo cadrebbe su un nodo che non c'e' piu': e' la
+       lezione dell'elenco dei gruppi, e qui conta di piu' perche' la
+       stella sta sulla riga e ci si tocca sopra piu' volte di fila. */
+    const st = e.target.closest('[data-fa="stella"]');
+    if (st){
       const g = LIB.get(id);
-      if (g) LIB.segnaPreferito(id, !g.preferito);
-      disegnaMia();
+      if (!g) return;
+      const si = !g.preferito;
+      LIB.segnaPreferito(id, si);
+      st.setAttribute('aria-pressed', si ? 'true' : 'false');
+      const che = si ? 'togli dai preferiti' : 'metti fra i preferiti';
+      st.title = che;
+      st.setAttribute('aria-label', che);
+      /* La pastiglia "solo i preferiti" compare solo se ce n'e'
+         almeno uno, e sta fuori dall'elenco: quella si puo' rifare. */
+      disegnaGruppiFiltro();
       return;
     }
     // dentro un blocco gia' aperto non si apre e chiude a ogni clic
@@ -5002,9 +5116,8 @@ function bindPartite(){
     if (!g) return;
     const si = !g.preferito;
     LIB.segnaPreferito(g.id, si);
-    // ottimista: la stella cambia subito, la riga parte dietro
+    // ottimista: la stella si riempie subito, la riga parte dietro
     e.currentTarget.setAttribute('aria-pressed', si ? 'true' : 'false');
-    e.currentTarget.innerHTML = si ? '&#9733;' : '&#9734;';
     if (document.body.classList.contains('elenco')) disegnaMia();
   });
 

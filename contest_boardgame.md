@@ -311,18 +311,25 @@ Nota: i 25 nomi li ha **incollati l'utente**, non sono stati raschiati.
 **I difetti segnalati dall'utente e non ancora corretti** (elenco interrotto a
 metà, potrebbe continuare):
 
-2. **Eliminare una libreria non funziona.** Con due librerie, sulla prima dice
-   «l'ultima libreria non si toglie» — ma non è l'ultima; sull'altra l'azione si
-   completa ma **non cancella niente**. Da guardare: `togliLibreria` in
-   `js/store.js` e i due punti che la chiamano in `js/app.js` (il cestino
-   dell'elenco e `#st-meno`).
-3. **Amici e Giocatori non hanno la gerarchia delle tendine** applicata a
-   partite e gruppi (rientro + filo verticale + peso minore).
-4. Il pulsante **copia** del codice amico: solo icona, senza scritta.
-5. Nella collezione il **preferito deve essere una stellina cliccabile sulla
-   riga**, tolta dal menu; e **icone su tutte le azioni** che le meritano.
-6. L'**icona del pannello della libreria** (oggi una lampada) non descrive più
-   quel pannello, che adesso gestisce nome, aspetto e ordine di tutti i mobili.
+~~2. Eliminare una libreria non funziona.~~ **Fatto il 2026-08-21.** Non era
+   `togliLibreria`: era il **mobile di scorta**, quello in più che c'è sempre in
+   fondo alla fila. `#st-meno` ci puntava e usciva in silenzio, e con una
+   libreria vera se ne vedono due. Nello stesso posto ne sono usciti altri due:
+   `libCorrente()` accostava all'ultimo mobile vero (scegliere un legno stando
+   sulla scorta ridipingeva quello accanto) e scorrendo col pannello aperto il
+   campo del nome non seguiva. Vedi `CLAUDE.md`, «Il mobile di scorta non è un
+   mobile».
+~~3. Amici e Giocatori senza la gerarchia delle tendine.~~ **Fatto**: rientro e
+   filo su `#blocco-amici` e `#blocco-giocatori` — non su `.pro-dentro`, che
+   avrebbe rientrato le partite due volte.
+~~4. Il copia del codice amico.~~ **Fatto**: solo icona. La riga stava a 352 px
+   dentro 343 e il pulsante andava a capo; a leggersi e a dettarsi è il codice.
+~~5. Il preferito nel menu.~~ **Fatto**: è una **stellina sulla riga**, che si
+   aggiorna in posto senza rifare l'elenco, e le azioni rimaste hanno un'icona.
+   Nel farlo è saltato fuori che le icone «accese» non si sono mai riempite: la
+   regola stava sull'`<svg>` e il `<path>` ha `fill=none` addosso.
+~~6. L'icona del pannello della libreria.~~ **Fatto**: da lampadina a libreria a
+   cubi, la stessa di «vai allo scaffale».
 
 **Da prima di questa sessione:**
 
