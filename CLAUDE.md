@@ -48,6 +48,7 @@ puo' essere la **8125**, che e' del proxy BGG: si pesterebbero i piedi.
 index.html            markup
 css/style.css         stile
 js/data.js            i giochi committati: il seme della libreria
+js/i18n.js            le due lingue: dizionario, chiavi, selettore
 js/config.js          url e chiave pubblica di Supabase
 js/auth.js            accesso con Google, e "sono admin?"
 js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
@@ -817,6 +818,58 @@ refresh token sul server e tocca rifare l'accesso da Google.
   `segnaPreferito` faceva `!!g.preferito`, quindi dopo un errore il campo
   restava `false` e la modifica successiva provava a scriverlo su una colonna che
   non c'era ancora, facendo fallire un salvataggio che non c'entrava niente.
+
+## Due lingue, un dizionario
+
+`js/i18n.js`. Il sito non aveva nessun sistema di traduzione: le parole stavano
+dentro il markup e dentro le stringhe del JS, in italiano, e basta.
+
+- Ogni testo ha una **chiave puntata** (`pro.esci`, `gate.entraT`) e il dizionario
+  ha un ramo per lingua. Le chiavi dicono *dove sta* il testo, non *cosa dice*:
+  `pro.esci` resta `pro.esci` anche quando la frase cambia.
+- Nel markup si scrive `data-i18n` sull'elemento, e `data-i18n-ph`,
+  `data-i18n-title`, `data-i18n-aria` per segnaposto, titolo ed etichetta.
+  `applica()` gira sul documento e riempie.
+- Nel JS si chiama `T('chiave')`, che accetta dei dati: `T('mia.conta', {n: 3})`
+  sostituisce `{n}`.
+
+Le scelte che vale la pena ricordare:
+
+- **`data-i18n` scrive in `innerHTML`.** I testi sono nostri e contengono
+  grassetti ed entità, ed è come il resto del sito scrive già nel documento. Gli
+  attributi invece vogliono testo piano, e ci pensa `piano()` — se no
+  `placeholder="cerca un gioco&hellip;"` mostrerebbe proprio quei caratteri.
+- **Dove dentro una frase c'è un pezzo che riempie il JS** — il nome di un
+  amico, il titolo di un gioco, il contatore di un cassetto — la frase è
+  **spezzata in due chiavi attorno a quel nodo**. Con una chiave sola,
+  riapplicare la lingua cancellerebbe quello che il JS ci aveva messo.
+- **Il file non dipende da niente**, come il selettore di smlrcc: vive fuori da
+  ogni `init()` e parte da sé. Se three.js non carica, la lingua si cambia
+  lo stesso.
+- **Una chiave che manca torna sé stessa**, non una stringa vuota: un buco muto
+  in una schermata non lo trova nessuno.
+- **Il file resta ASCII** come tutti gli altri `.js`: gli accenti si scrivono
+  con le entità, che `piano()` scioglie quando servono in un attributo.
+- Chi ha già disegnato qualcosa col JS — l'elenco, il catalogo, il profilo — si
+  iscrive con **`I18N.suCambio(fn)`** e si ridisegna da sé. `applica()` rifà solo
+  il markup.
+
+**Il selettore sta in due posti**: nel **cancello**, che è la prima schermata che
+si legge e l'unico punto dove serve davvero — chi non legge l'italiano deve
+poterla cambiare senza aver capito niente di quello che c'è scritto sopra — e in
+**fondo al profilo**, con l'**uscita sotto, ultima cosa della pagina**. Uscire
+stava in mezzo, appeso al codice amico, dove sembrava un dettaglio del codice.
+
+**I nomi delle lingue non si traducono**: «Italiano» e «English» restano scritti
+nella propria lingua, se no chi cerca la sua non la trova.
+
+**La selezione ha dovuto pareggiare una catena di `:not()`.** Il fondo dei
+pulsanti dentro il profilo lo decide
+`#profilo button:not(.primario):not(.secondario):not(.distruttivo)`, che pesa un
+id, **tre classi** e un elemento. `.lingua button.on` non ci arriva nemmeno
+vicino, e nemmeno `#profilo .lingua button.on`: la pastiglia scelta restava
+grigia. È la lezione di `.primario` un piano più su — un id batte una classe — con
+l'aggiunta che **ogni `:not()` conta come la cosa che contiene**.
 
 ## Lo stile appartiene al mobile, la stanza alla stanza
 

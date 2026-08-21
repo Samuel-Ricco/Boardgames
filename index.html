@@ -21,13 +21,13 @@
 <header>
   <div class="brand">
     <b>il dado <i>&egrave;</i> trap</b>
-    <span>recensioni di giochi da tavolo</span>
+    <span data-i18n="testa.tagline">recensioni di giochi da tavolo</span>
   </div>
 
-  <nav id="sezioni" aria-label="sezioni del sito">
-    <button type="button" data-sez="collezione" class="on">collezione</button>
-    <button type="button" data-sez="catalogo">catalogo</button>
-    <button type="button" data-sez="profilo" class="dentro-only">profilo</button>
+  <nav id="sezioni" data-i18n-aria="nav.aria" aria-label="sezioni del sito">
+    <button type="button" data-sez="collezione" class="on" data-i18n="nav.collezione">collezione</button>
+    <button type="button" data-sez="catalogo" data-i18n="nav.catalogo">catalogo</button>
+    <button type="button" data-sez="profilo" class="dentro-only" data-i18n="nav.profilo">profilo</button>
   </nav>
 
   <!-- La testata tiene solo quello che vale in TUTTE le schermate: chi
@@ -35,9 +35,11 @@
        solo lo scaffale, e sono passati sotto l'imbuto. -->
   <div class="tools">
     <button id="conta" type="button" class="tool count" aria-live="polite"
-            title="vedi la collezione come elenco"></button>
-    <button id="mode" type="button" class="tool chip" title="entra">entra</button>
-    <button id="esci" type="button" class="tool dentro-only" title="chiudi la sessione">esci</button>
+            data-i18n-title="testa.contaTitolo" title="vedi la collezione come elenco"></button>
+    <button id="mode" type="button" class="tool chip" data-i18n-title="testa.entra"
+            title="entra" data-i18n="testa.entra">entra</button>
+    <button id="esci" type="button" class="tool dentro-only" data-i18n-title="testa.esciTitolo"
+            title="chiudi la sessione" data-i18n="testa.esci">esci</button>
   </div>
 </header>
 
@@ -45,51 +47,57 @@
      a casa. Sta sotto la testata perche' e' una condizione della
      schermata, non un messaggio di passaggio. -->
 <div id="visita" aria-hidden="true">
-  <span>la libreria di <b id="vis-chi"></b></span>
-  <button id="vis-torna" type="button">torna alla tua</button>
+  <!-- La frase e' spezzata attorno a `#vis-chi`: con una chiave sola,
+       riapplicare la lingua cancellerebbe il nome che ci mette il JS. -->
+  <span><i data-i18n="visita.di">la libreria di</i> <b id="vis-chi"></b></span>
+  <button id="vis-torna" type="button" data-i18n="visita.torna">torna alla tua</button>
 </div>
 
 <!-- LA VISTA DELLO SCAFFALE. Cercare, ordinare e scegliere il mobile
      sono la stessa domanda -- "cosa vedo su questo scaffale" -- e
      stanno sotto un imbuto solo. Sta sulla scena e non sulla testata
      perche' riguarda questa schermata e nessun'altra. -->
-<button id="vista-apri" type="button" title="cerca, ordina, scegli il mobile"
-        aria-label="filtri" aria-expanded="false">
+<button id="vista-apri" type="button" data-i18n-title="vista.apriTitolo"
+        title="cerca, ordina, scegli il mobile"
+        data-i18n-aria="vista.apriAria" aria-label="filtri" aria-expanded="false">
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path d="M3 5h18l-7 8v6l-4 2v-8z" fill="none" stroke="currentColor"
           stroke-width="1.6" stroke-linejoin="round"/>
   </svg>
 </button>
 
-<aside id="vista" aria-hidden="true" aria-label="cosa vedi sullo scaffale">
-  <button id="vista-x" type="button" aria-label="chiudi">&times;</button>
-  <p class="eyebrow">la vista</p>
+<aside id="vista" aria-hidden="true" data-i18n-aria="vista.aria" aria-label="cosa vedi sullo scaffale">
+  <button id="vista-x" type="button" data-i18n-aria="pan.chiudi" aria-label="chiudi">&times;</button>
+  <p class="eyebrow" data-i18n="vista.occhiello">la vista</p>
 
   <div class="cercawrap">
-    <input id="cerca" type="text" placeholder="cerca un gioco&hellip;"
-           autocomplete="off" spellcheck="false" aria-label="cerca nella collezione">
-    <button id="cerca-x" type="button" title="pulisci la ricerca" aria-label="pulisci">&times;</button>
+    <input id="cerca" type="text" data-i18n-ph="vista.cercaPh" placeholder="cerca un gioco&hellip;"
+           autocomplete="off" spellcheck="false"
+           data-i18n-aria="vista.cercaAria" aria-label="cerca nella collezione">
+    <button id="cerca-x" type="button" data-i18n-title="vista.pulisciTitolo" title="pulisci la ricerca"
+            data-i18n-aria="vista.pulisciAria" aria-label="pulisci">&times;</button>
   </div>
 
-  <p class="vista-tit">ordina per</p>
+  <p class="vista-tit" data-i18n="vista.ordinaPer">ordina per</p>
   <div id="sortmenu" role="menu" class="vista-scelte">
-    <button type="button" data-sort="mio" role="menuitem">il mio ordine</button>
-    <button type="button" data-sort="aggiunta" role="menuitem">data di aggiunta</button>
-    <button type="button" data-sort="nome" role="menuitem">nome</button>
-    <button type="button" data-sort="voto" role="menuitem">voto</button>
+    <button type="button" data-sort="mio" role="menuitem" data-i18n="sort.mio">il mio ordine</button>
+    <button type="button" data-sort="aggiunta" role="menuitem" data-i18n="sort.aggiunta">data di aggiunta</button>
+    <button type="button" data-sort="nome" role="menuitem" data-i18n="sort.nome">nome</button>
+    <button type="button" data-sort="voto" role="menuitem" data-i18n="sort.voto">voto</button>
   </div>
 
   <!-- Il nome del mobile non sta piu' in fondo allo schermo, ma la porta
        per crearne e rinominarne deve restare da qualche parte: e' qui. -->
-  <p class="vista-tit dentro-only">il mobile</p>
+  <p class="vista-tit dentro-only" data-i18n="vista.ilMobile">il mobile</p>
   <button id="vista-mobili" type="button" class="dentro-only vista-riga"></button>
 </aside>
 
 <!-- ARREDARE LA STANZA. Un pannello che sta SOPRA la scena e non la
      copre: si sceglie e si vede subito, che e' l'unico modo di
      scegliere un colore. -->
-<button id="stanza-apri" type="button" class="dentro-only" title="la libreria: luce, nome, aspetto, ordine"
-        aria-label="la libreria"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 3.5h16v16H4zM4 11.5h16M12 3.5v16M7 19.5v2M17 19.5v2"/></svg></button>
+<button id="stanza-apri" type="button" class="dentro-only"
+        data-i18n-title="stanza.apriTitolo" title="la libreria: luce, nome, aspetto, ordine"
+        data-i18n-aria="stanza.apriAria" aria-label="la libreria"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 3.5h16v16H4zM4 11.5h16M12 3.5v16M7 19.5v2M17 19.5v2"/></svg></button>
 
 <!-- IL PANNELLO DELLA LIBRERIA.
 
@@ -103,14 +111,14 @@
      Le due parti lunghe stanno in `<details>` perche' non si guardano
      insieme: chi rinomina non sta scegliendo un legno, e chi riordina
      non sta facendo ne' l'una ne' l'altra cosa. -->
-<aside id="stanza" aria-hidden="true" aria-label="la tua libreria">
-  <button id="stanza-x" type="button" aria-label="chiudi">&times;</button>
-  <p class="eyebrow">la libreria</p>
+<aside id="stanza" aria-hidden="true" data-i18n-aria="stanza.aria" aria-label="la tua libreria">
+  <button id="stanza-x" type="button" data-i18n-aria="pan.chiudi" aria-label="chiudi">&times;</button>
+  <p class="eyebrow" data-i18n="stanza.occhiello">la libreria</p>
 
   <p class="st-riga luce">
-    <span>luce</span>
+    <span data-i18n="stanza.luce">luce</span>
     <input id="st-luce" type="range" min="0.08" max="1.6" step="0.02" value="1"
-           aria-label="luce della stanza">
+           data-i18n-aria="stanza.luceAria" aria-label="luce della stanza">
     <b id="st-luce-n">100%</b>
   </p>
 
@@ -118,36 +126,38 @@
        distingue un mobile dall'altro, e si cambia spesso all'inizio. -->
   <p class="st-nome">
     <input id="st-rinomina" type="text" maxlength="40" autocomplete="off"
-           spellcheck="false" aria-label="nome di questa libreria">
-    <button id="st-rinomina-ok" type="button" class="primario" disabled>salva</button>
+           spellcheck="false" data-i18n-aria="stanza.nomeAria" aria-label="nome di questa libreria">
+    <button id="st-rinomina-ok" type="button" class="primario" disabled
+            data-i18n="stanza.salva">salva</button>
   </p>
 
   <details id="st-aspetto" class="st-tendina">
-    <summary>modifica libreria</summary>
+    <summary data-i18n="stanza.modifica">modifica libreria</summary>
     <div class="st-dentro">
-      <p class="st-quale">legno e arredi di <b id="st-quale">questo mobile</b></p>
-      <p class="st-riga"><span>scaffali</span><span id="st-scaffali" class="pastiglie"></span></p>
-      <p class="st-riga"><span>muro</span><span id="st-muro" class="pastiglie"></span></p>
-      <p class="st-riga"><span>pavimento</span><span id="st-pavimento" class="pastiglie"></span></p>
-      <p class="st-riga alto"><span>arredi</span><span id="st-arredo" class="pastiglie testo"></span></p>
-      <p class="st-quale sotto">luce, muro e pavimento sono della stanza intera</p>
+      <!-- spezzata attorno a `#st-quale`, che lo riempie il JS -->
+      <p class="st-quale"><i data-i18n="stanza.legnoDi">legno e arredi di</i> <b id="st-quale">questo mobile</b></p>
+      <p class="st-riga"><span data-i18n="stanza.scaffali">scaffali</span><span id="st-scaffali" class="pastiglie"></span></p>
+      <p class="st-riga"><span data-i18n="stanza.muro">muro</span><span id="st-muro" class="pastiglie"></span></p>
+      <p class="st-riga"><span data-i18n="stanza.pavimento">pavimento</span><span id="st-pavimento" class="pastiglie"></span></p>
+      <p class="st-riga alto"><span data-i18n="stanza.arredi">arredi</span><span id="st-arredo" class="pastiglie testo"></span></p>
+      <p class="st-quale sotto" data-i18n="stanza.dellaStanza">luce, muro e pavimento sono della stanza intera</p>
       <p class="st-fondo">
-        <span id="st-msg">si salva da solo</span>
+        <span id="st-msg" data-i18n="stanza.siSalva">si salva da solo</span>
         <button id="st-reset" type="button">com&rsquo;era</button>
       </p>
     </div>
   </details>
 
   <details id="st-ordine" class="st-tendina">
-    <summary>ordina librerie</summary>
+    <summary data-i18n="stanza.ordina">ordina librerie</summary>
     <div class="st-dentro">
-      <p class="st-quale">l&rsquo;ordine qui e&rsquo; l&rsquo;ordine lungo la parete</p>
+      <p class="st-quale" data-i18n="stanza.ordineParete">l&rsquo;ordine qui e&rsquo; l&rsquo;ordine lungo la parete</p>
       <ul id="st-lista"></ul>
     </div>
   </details>
 
   <p class="st-gesti">
-    <button id="st-piu" type="button" class="secondario">aggiungi una libreria</button>
+    <button id="st-piu" type="button" class="secondario" data-i18n="stanza.piu">aggiungi una libreria</button>
     <button id="st-meno" type="button" class="distruttivo">elimina questa libreria</button>
   </p>
 </aside>
@@ -158,7 +168,8 @@
      sembrava un comando senza esserlo. -->
 <div id="rail">
   <span id="rail-txt" aria-hidden="true">1 / 3</span>
-  <div class="rail-bar" role="slider" tabindex="0" aria-label="scegli la libreria"
+  <div class="rail-bar" role="slider" tabindex="0"
+       data-i18n-aria="rail.aria" aria-label="scegli la libreria"
        aria-valuemin="1" aria-valuenow="1" aria-valuemax="1"><i id="rail-thumb"></i></div>
 </div>
 
@@ -166,19 +177,20 @@
      per sapere in che scaffale si trova. -->
 <!-- pannello della recensione: si apre come un'anta, incernierato sul lato -->
 <aside id="panel" role="dialog" aria-modal="false" aria-labelledby="p-title" aria-hidden="true">
-  <button id="close" type="button">chiudi &times;</button>
+  <button id="close" type="button"><span data-i18n="pan.chiudi">chiudi</span> &times;</button>
   <div class="pan-scroll">
     <p class="eyebrow" id="p-eyebrow">la recensione</p>
     <h2 id="p-title"></h2>
     <p class="byline" id="p-by"></p>
     <ul class="specs" id="p-specs"></ul>
-    <div class="score"><b id="p-score"></b><i>/10</i><small>il voto della<br>ludoteca</small></div>
+    <div class="score"><b id="p-score"></b><i>/10</i><small data-i18n="pan.voto">il voto della<br>ludoteca</small></div>
     <div class="body" id="p-body"></div>
     <div class="tags" id="p-tags"></div>
     <div class="gruppi" id="p-gruppi"></div>
     <div class="giocate" id="p-giocate"></div>
     <p class="pan-link">
-      <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a>
+      <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener"
+         data-i18n="pan.bgg">scheda su BoardGameGeek &#8599;</a>
     </p>
   </div>
 
@@ -186,32 +198,36 @@
        spingeva sotto il bordo del pannello e i pulsanti non si vedevano
        piu'. Inchiodato qui, ci sono sempre. -->
   <p class="pan-foot">
-    <button id="p-pref" type="button" class="dentro-only" title="segnalo fra i preferiti"
+    <button id="p-pref" type="button" class="dentro-only"
+            data-i18n-title="pan.prefTitolo" title="segnalo fra i preferiti"
             aria-pressed="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"/></svg></button>
     <!-- In casa di un amico non si tocca niente, tranne questo: dire che
          quello che ha scritto ti e' piaciuto. Sta dove sta la stella
          perche' e' lo stesso gesto -- uno sulla tua copia, uno sulla sua
          recensione -- e non compare mai a casa propria. -->
     <button id="p-cuore" type="button" class="visita-only" aria-pressed="false"
-            title="questa recensione mi e&rsquo; piaciuta">
+            data-i18n-title="pan.cuoreTitolo" title="questa recensione mi e&rsquo; piaciuta">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 20s-7.2-4.4-7.2-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7.2 2.7C19.2 15.6 12 20 12 20z"/></svg><span id="p-cuore-n"></span>
     </button>
-    <button id="p-mia" type="button" class="dentro-only" title="scrivi cosa ne pensi tu">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> la tua recensione
+    <button id="p-mia" type="button" class="dentro-only"
+            data-i18n-title="pan.miaTitolo" title="scrivi cosa ne pensi tu">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pan.mia">la tua recensione</span>
     </button>
-    <button id="p-segna" type="button" class="dentro-only" title="segna una partita a questo gioco">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8.5v7l8 4.5 8-4.5v-7L12 4zM12 4v16M4 8.5l8 4.5 8-4.5"/></svg> partita
+    <button id="p-segna" type="button" class="dentro-only"
+            data-i18n-title="pan.segnaTitolo" title="segna una partita a questo gioco">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8.5v7l8 4.5 8-4.5v-7L12 4zM12 4v16M4 8.5l8 4.5 8-4.5"/></svg> <span data-i18n="pan.segna">partita</span>
     </button>
-    <button id="edit" type="button" class="dentro-only" title="correggi la scheda">
-      scheda
+    <button id="edit" type="button" class="dentro-only"
+            data-i18n-title="pan.schedaTitolo" title="correggi la scheda">
+      <span data-i18n="pan.scheda">scheda</span>
     </button>
     <button id="p-fuori" type="button" class="dentro-only"
-            title="lascia lo scaffale, resta nella tua collezione">
-      dallo scaffale
+            data-i18n-title="pan.fuoriTitolo" title="lascia lo scaffale, resta nella tua collezione">
+      <span data-i18n="pan.fuori">dallo scaffale</span>
     </button>
     <button id="del" type="button" class="dentro-only"
-            title="elimina il gioco dalla tua collezione, per sempre">
-      <span aria-hidden="true">&#9003;</span> elimina
+            data-i18n-title="pan.eliminaTitolo" title="elimina il gioco dalla tua collezione, per sempre">
+      <span aria-hidden="true">&#9003;</span> <span data-i18n="pan.elimina">elimina</span>
     </button>
   </p>
 </aside>
@@ -220,13 +236,13 @@
      pollice, e non in una testata gia' piena di strumenti. Sono le
      stesse tre voci di sopra e chiamano la stessa funzione: cambia il
      posto, non il significato. -->
-<nav id="tabbar" aria-label="sezioni del sito">
+<nav id="tabbar" data-i18n-aria="nav.aria" aria-label="sezioni del sito">
   <button type="button" data-sez="collezione" class="on">
-    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/></svg><span>libreria</span></button>
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/></svg><span data-i18n="tab.libreria">libreria</span></button>
   <button type="button" data-sez="catalogo">
-    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg><span>catalogo</span></button>
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="tab.catalogo">catalogo</span></button>
   <button type="button" data-sez="profilo" class="dentro-only">
-    <canvas id="tab-faccia" width="44" height="44" aria-hidden="true"></canvas><span>profilo</span></button>
+    <canvas id="tab-faccia" width="44" height="44" aria-hidden="true"></canvas><span data-i18n="tab.profilo">profilo</span></button>
 </nav>
 
 <!-- LA MIA LIBRERIA COME ELENCO. Lo scaffale in tre dimensioni e' bello
@@ -235,19 +251,19 @@
      mobili. Qui e' una riga per gioco, come il catalogo. Ci si arriva
      dal contatore, che e' gia' il posto dove uno guarda per sapere
      quanti sono. -->
-<section id="mia" aria-hidden="true" aria-label="la tua libreria come elenco">
+<section id="mia" aria-hidden="true" data-i18n-aria="mia.aria" aria-label="la tua libreria come elenco">
   <div class="cat-in">
     <div class="cat-testa">
       <p class="eyebrow" id="mia-eyebrow">la tua collezione</p>
       <div class="viste" id="viste" role="tablist">
-        <button type="button" data-vista="tutti" role="tab">tutti i giochi</button>
-        <button type="button" data-vista="gruppi" role="tab">gruppi</button>
+        <button type="button" data-vista="tutti" role="tab" data-i18n="mia.tutti">tutti i giochi</button>
+        <button type="button" data-vista="gruppi" role="tab" data-i18n="mia.gruppi">gruppi</button>
         <i class="ind" aria-hidden="true"></i>
       </div>
       <div class="mia-barra">
         <div id="mia-gruppi" class="gruppi filtro"></div>
-        <button id="mia-gestisci" type="button" class="dentro-only">gestisci gruppi</button>
-        <button id="add" type="button" class="dentro-only aggiungi">+ aggiungi un gioco</button>
+        <button id="mia-gestisci" type="button" class="dentro-only" data-i18n="mia.gestisci">gestisci gruppi</button>
+        <button id="add" type="button" class="dentro-only aggiungi" data-i18n="mia.aggiungi">+ aggiungi un gioco</button>
       </div>
       <p id="mia-msg"></p>
     </div>
@@ -260,15 +276,16 @@
      tua collezione, una cosa che si guarda; il catalogo sono migliaia
      di titoli da scorrere, e per quello un elenco batte qualunque
      mobile. Cliccando una riga si apre la recensione, se c'e'. -->
-<section id="catalogo" aria-hidden="true" aria-label="catalogo dei giochi">
+<section id="catalogo" aria-hidden="true" data-i18n-aria="cat.aria" aria-label="catalogo dei giochi">
   <div class="cat-in">
     <div class="cat-testa">
-      <p class="eyebrow">il catalogo</p>
+      <p class="eyebrow" data-i18n="cat.occhiello">il catalogo</p>
       <div class="cat-cerca">
-        <input id="cat-q" type="text" placeholder="cerca un gioco&hellip;"
-               autocomplete="off" spellcheck="false" aria-label="cerca nel catalogo">
-        <button id="cat-go" type="button">cerca</button>
-        <button id="cat-tutti" type="button" class="chiaro">tutti</button>
+        <input id="cat-q" type="text" data-i18n-ph="cat.cercaPh" placeholder="cerca un gioco&hellip;"
+               autocomplete="off" spellcheck="false"
+               data-i18n-aria="cat.cercaAria" aria-label="cerca nel catalogo">
+        <button id="cat-go" type="button" data-i18n="cat.cerca">cerca</button>
+        <button id="cat-tutti" type="button" class="chiaro" data-i18n="cat.tutti">tutti</button>
       </div>
       <p id="cat-msg"></p>
     </div>
@@ -276,16 +293,16 @@
     <ol id="cat-list" class="righe"></ol>
 
     <div class="cat-fondo">
-      <button id="cat-piu" type="button">altri giochi</button>
+      <button id="cat-piu" type="button" data-i18n="cat.piu">altri giochi</button>
     </div>
   </div>
 </section>
 
 <!-- IL PROFILO: chi gioca, non cosa si gioca. -->
-<section id="profilo" aria-hidden="true" aria-label="il tuo profilo">
+<section id="profilo" aria-hidden="true" data-i18n-aria="pro.aria" aria-label="il tuo profilo">
   <div class="pro-in">
 
-    <p class="eyebrow pro-occhiello">il tuo profilo</p>
+    <p class="eyebrow pro-occhiello" data-i18n="pro.occhiello">il tuo profilo</p>
 
     <!-- La faccia e chi sei stanno FIANCO A FIANCO, sempre: e' la
          forma di un profilo su qualunque cosa, e sotto la faccia da
@@ -306,35 +323,33 @@
              venivano tagliate a meta'. Accanto alla faccia e al nome
              una parola sola basta, e la matita dice che si modifica. -->
         <p class="pro-io">
-          <button id="pro-cambia" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> meeple</button>
-          <button id="pro-rinomina" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> nick</button>
+          <button id="pro-cambia" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pro.meeple">meeple</span></button>
+          <button id="pro-rinomina" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pro.nick">nick</span></button>
         </p>
       </div>
     </div>
 
     <div class="pro-dati">
         <p class="pro-cod">
-          <span>codice amico</span>
+          <span data-i18n="pro.codice">codice amico</span>
           <b id="pro-codice">&mdash;</b>
           <button id="pro-copia" type="button" class="primario"
-                  title="copia il codice" aria-label="copia il codice"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M8.5 8.5h11v11h-11zM15.5 8.5V5.5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3"/></svg></button>
+                  data-i18n-title="pro.copia" title="copia il codice"
+                  data-i18n-aria="pro.copia" aria-label="copia il codice"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M8.5 8.5h11v11h-11zM15.5 8.5V5.5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3"/></svg></button>
         </p>
-        <p class="pro-nota">Dallo a chi vuoi che ti trovi. Non compare mai
+        <p class="pro-nota" data-i18n="pro.codiceNota">Dallo a chi vuoi che ti trovi. Non compare mai
           nel profilo che vedono gli altri.</p>
-        <p class="pro-fondo">
-          <button id="pro-esci" type="button" class="pro-lin esci">esci dall&rsquo;account</button>
-        </p>
     </div>
 
     <!-- costruttore del meeple: si apre da "cambia faccia" -->
     <div id="pro-faccia-lab" hidden>
-      <h3>La tua faccia</h3>
-      <p class="pro-lab-nota">Un meeple, il tuo colore e il tuo fondo.</p>
-      <p class="pro-lab-riga"><span>meeple</span><span id="lab-corpi" class="pastiglie tinte"></span></p>
-      <p class="pro-lab-riga"><span>fondo</span><span id="lab-fondi" class="pastiglie tinte"></span></p>
+      <h3 data-i18n="pro.facciaH">La tua faccia</h3>
+      <p class="pro-lab-nota" data-i18n="pro.facciaNota">Un meeple, il tuo colore e il tuo fondo.</p>
+      <p class="pro-lab-riga"><span data-i18n="pro.labMeeple">meeple</span><span id="lab-corpi" class="pastiglie tinte"></span></p>
+      <p class="pro-lab-riga"><span data-i18n="pro.labFondo">fondo</span><span id="lab-fondi" class="pastiglie tinte"></span></p>
       <p class="pro-lab-fondo">
-        <button id="lab-salva" type="button">salva la faccia</button>
-        <button id="lab-annulla" type="button" class="chiaro">lascia perdere</button>
+        <button id="lab-salva" type="button" data-i18n="pro.labSalva">salva la faccia</button>
+        <button id="lab-annulla" type="button" class="chiaro" data-i18n="pro.labAnnulla">lascia perdere</button>
       </p>
     </div>
 
@@ -343,7 +358,7 @@
          fondo; e quale sia aperto se lo ricorda. -->
     <section class="pro-blocco">
       <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-amici">
-        Amici <span class="quanti" id="conta-amici"></span></button></h3>
+        <span data-i18n="pro.amici">Amici</span> <span class="quanti" id="conta-amici"></span></button></h3>
       <div class="pro-dentro" id="blocco-amici" hidden>
         <p id="pro-amici-msg" class="pro-msg"></p>
 
@@ -352,9 +367,10 @@
         <ul id="pro-attesa" class="pro-gente"></ul>
 
         <div class="pro-aggiungi">
-          <input id="ami-q" type="text" placeholder="codice amico, o email"
-                 autocomplete="off" spellcheck="false" aria-label="codice amico o email">
-          <button id="ami-go" type="button">chiedi</button>
+          <input id="ami-q" type="text" data-i18n-ph="pro.amiciPh" placeholder="codice amico, o email"
+                 autocomplete="off" spellcheck="false"
+                 data-i18n-aria="pro.amiciAria" aria-label="codice amico o email">
+          <button id="ami-go" type="button" data-i18n="pro.chiedi">chiedi</button>
         </div>
         <p id="ami-msg" class="pro-msg"></p>
       </div>
@@ -362,31 +378,46 @@
 
     <section class="pro-blocco">
       <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-giocatori">
-        Giocatori <span class="quanti" id="conta-giocatori"></span></button></h3>
+        <span data-i18n="pro.giocatori">Giocatori</span> <span class="quanti" id="conta-giocatori"></span></button></h3>
       <div class="pro-dentro" id="blocco-giocatori" hidden>
-        <p class="pro-msg">I nomi che usi per segnare le partite. Al tavolo c&rsquo;&egrave;
+        <p class="pro-msg" data-i18n="pro.giocatoriNota">I nomi che usi per segnare le partite. Al tavolo c&rsquo;&egrave;
           quasi sempre qualcuno che sul sito non c&rsquo;&egrave;: qui ci sta lo stesso.</p>
         <ul id="pro-giocatori" class="pro-gente"></ul>
         <p id="gio-msg" class="pro-msg"></p>
         <div class="pro-aggiungi">
-          <input id="gio-nuovo" type="text" placeholder="un nome" autocomplete="off"
-                 maxlength="40" aria-label="nome del giocatore">
-          <button id="gio-piu" type="button">aggiungi</button>
+          <input id="gio-nuovo" type="text" data-i18n-ph="pro.giocatorePh" placeholder="un nome"
+                 autocomplete="off" maxlength="40"
+                 data-i18n-aria="pro.giocatoreAria" aria-label="nome del giocatore">
+          <button id="gio-piu" type="button" data-i18n="pro.giocatoreAgg">aggiungi</button>
         </div>
       </div>
     </section>
 
     <section class="pro-blocco">
       <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-partite">
-        Partite <span class="quanti" id="conta-partite"></span></button></h3>
+        <span data-i18n="pro.partite">Partite</span> <span class="quanti" id="conta-partite"></span></button></h3>
       <div class="pro-dentro" id="blocco-partite" hidden>
         <p id="par-msg" class="pro-msg"></p>
         <div id="pro-partite"></div>
         <p class="pro-fondo">
-          <button id="par-nuova" type="button" class="pro-lin">segna una partita</button>
+          <button id="par-nuova" type="button" class="pro-lin" data-i18n="pro.parNuova">segna una partita</button>
         </p>
       </div>
     </section>
+
+    <!-- La lingua sta qui e nel cancello: sono i due momenti in cui uno
+         si guarda intorno invece di guardare i giochi. E sotto di lei
+         l'uscita, ULTIMA cosa della pagina -- stava in mezzo, appesa al
+         codice amico, dove uscire sembrava un dettaglio del codice. -->
+    <p class="lingua" id="pro-lingua" role="group" data-i18n-aria="pro.lingua" aria-label="lingua">
+      <span class="lingua-tit" data-i18n="pro.lingua">lingua</span>
+      <button type="button" data-lingua="it" lang="it">Italiano</button>
+      <button type="button" data-lingua="en" lang="en">English</button>
+    </p>
+
+    <p class="pro-fondo pro-uscita">
+      <button id="pro-esci" type="button" class="pro-lin esci">esci dall&rsquo;account</button>
+    </p>
 
   </div>
 </section>
@@ -396,14 +427,14 @@
      modulo vuoto che nessuno compilerebbe mai. -->
 <div id="nick" aria-hidden="true">
   <div class="nick-in">
-    <p class="eyebrow">ancora una cosa</p>
-    <h2>Come ti chiamiamo?</h2>
-    <p class="nick-nota">Il nick e' come ti vedono gli amici. Si cambia quando
+    <p class="eyebrow" data-i18n="nick.occhiello">ancora una cosa</p>
+    <h2 data-i18n="nick.h">Come ti chiamiamo?</h2>
+    <p class="nick-nota" data-i18n="nick.nota">Il nick e' come ti vedono gli amici. Si cambia quando
       vuoi dal profilo.</p>
     <div class="nick-riga">
       <input id="nick-q" type="text" maxlength="20" autocomplete="off"
-             spellcheck="false" aria-label="il tuo nick">
-      <button id="nick-ok" type="button">avanti</button>
+             spellcheck="false" data-i18n-aria="nick.aria" aria-label="il tuo nick">
+      <button id="nick-ok" type="button" data-i18n="nick.ok">avanti</button>
     </div>
     <p id="nick-msg"></p>
   </div>
@@ -413,21 +444,30 @@
 <div id="gate">
   <div class="gate-in">
     <b class="gate-logo">il dado <i>&egrave;</i> trap</b>
-    <p class="gate-q">Chi apre la libreria?</p>
+    <p class="gate-q" data-i18n="gate.q">Chi apre la libreria?</p>
     <div class="gate-pick">
       <button type="button" data-gate="entra">
-        <b>Entra con Google</b>
-        <span>La tua libreria ti aspetta: i giochi che aggiungi restano tuoi
+        <b data-i18n="gate.entraT">Entra con Google</b>
+        <span data-i18n="gate.entraD">La tua libreria ti aspetta: i giochi che aggiungi restano tuoi
           e li rivedi da qualsiasi dispositivo.</span>
       </button>
       <button type="button" data-gate="ospite" class="last">
-        <b>Guarda il catalogo</b>
-        <span>Le recensioni si leggono senza account. Niente libreria, per&ograve;:
+        <b data-i18n="gate.ospiteT">Guarda il catalogo</b>
+        <span data-i18n="gate.ospiteD">Le recensioni si leggono senza account. Niente libreria, per&ograve;:
           quella comincia quando entri.</span>
       </button>
     </div>
-    <p class="gate-note" id="gate-note">Ogni account ha la sua libreria, e la vede
+    <p class="gate-note" id="gate-note" data-i18n="gate.nota">Ogni account ha la sua libreria, e la vede
       solo lui: sono le regole del database a garantirlo, non questa schermata.</p>
+
+    <!-- La lingua si sceglie PRIMA di entrare: e' la prima schermata che
+         si legge, e chi non legge l'italiano deve poterla cambiare senza
+         aver capito niente di quello che c'e' scritto sopra. -->
+    <p class="lingua" id="gate-lingua" role="group" data-i18n-aria="pro.lingua" aria-label="lingua">
+      <span class="lingua-tit" data-i18n="pro.lingua">lingua</span>
+      <button type="button" data-lingua="it" lang="it">Italiano</button>
+      <button type="button" data-lingua="en" lang="en">English</button>
+    </p>
   </div>
 </div>
 
@@ -445,7 +485,7 @@
   </div>
   <div class="load-txt">
     <b>il dado <i>&egrave;</i> trap</b>
-    <span id="load-msg">sto tirando il dado&hellip;</span>
+    <span id="load-msg" data-i18n="load.dado">sto tirando il dado&hellip;</span>
   </div>
   <div class="bar"><i id="bar"></i></div>
 </div>
@@ -453,48 +493,49 @@
 <!-- admin: cerca e aggiungi -->
 <div id="addlayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="add-h">
-    <button id="add-x" type="button">chiudi &times;</button>
-    <p class="eyebrow">nuovo gioco</p>
-    <h2 id="add-h">Aggiungi alla libreria</h2>
+    <button id="add-x" type="button"><span data-i18n="add.chiudi">chiudi</span> &times;</button>
+    <p class="eyebrow" data-i18n="add.occhiello">nuovo gioco</p>
+    <h2 id="add-h" data-i18n="add.h">Aggiungi alla libreria</h2>
 
     <div class="add-search">
-      <input id="add-q" type="text" placeholder="cerca su BoardGameGeek&hellip;" autocomplete="off" spellcheck="false">
-      <button id="add-go" type="button">cerca</button>
+      <input id="add-q" type="text" data-i18n-ph="add.qPh" placeholder="cerca su BoardGameGeek&hellip;"
+             autocomplete="off" spellcheck="false">
+      <button id="add-go" type="button" data-i18n="add.go">cerca</button>
     </div>
     <p id="add-msg" class="add-msg"></p>
     <ul id="add-res"></ul>
 
     <details id="add-man">
-      <summary>oppure scrivilo a mano</summary>
+      <summary data-i18n="add.man">oppure scrivilo a mano</summary>
       <div class="add-form">
-        <label>titolo <input id="m-title" type="text" autocomplete="off"></label>
-        <label>id BGG <input id="m-bgg" type="text" inputmode="numeric" autocomplete="off"></label>
-        <label>autore <input id="m-designer" type="text" autocomplete="off"></label>
-        <label>editore <input id="m-publisher" type="text" autocomplete="off"></label>
-        <label>anno <input id="m-year" type="text" inputmode="numeric" autocomplete="off"></label>
-        <label>giocatori <input id="m-players" type="text" placeholder="2-4" autocomplete="off"></label>
-        <label>durata <input id="m-time" type="text" placeholder="60-90" autocomplete="off"></label>
-        <label>voto <input id="m-score" type="text" placeholder="8.0" autocomplete="off"></label>
-        <label class="wide">recensione
-          <textarea id="m-review" rows="7" placeholder="Scrivi qui. Una riga vuota separa un capoverso dall&rsquo;altro."></textarea>
+        <label><span data-i18n="add.titolo">titolo</span> <input id="m-title" type="text" autocomplete="off"></label>
+        <label><span data-i18n="add.bgg">id BGG</span> <input id="m-bgg" type="text" inputmode="numeric" autocomplete="off"></label>
+        <label><span data-i18n="add.autore">autore</span> <input id="m-designer" type="text" autocomplete="off"></label>
+        <label><span data-i18n="add.editore">editore</span> <input id="m-publisher" type="text" autocomplete="off"></label>
+        <label><span data-i18n="add.anno">anno</span> <input id="m-year" type="text" inputmode="numeric" autocomplete="off"></label>
+        <label><span data-i18n="add.giocatori">giocatori</span> <input id="m-players" type="text" placeholder="2-4" autocomplete="off"></label>
+        <label><span data-i18n="add.durata">durata</span> <input id="m-time" type="text" placeholder="60-90" autocomplete="off"></label>
+        <label><span data-i18n="add.voto">voto</span> <input id="m-score" type="text" placeholder="8.0" autocomplete="off"></label>
+        <label class="wide"><span data-i18n="add.recensione">recensione</span>
+          <textarea id="m-review" rows="7" data-i18n-ph="add.recPh" placeholder="Scrivi qui. Una riga vuota separa un capoverso dall&rsquo;altro."></textarea>
         </label>
         <label class="wide riga" id="m-pub-riga">
           <input id="m-pub" type="checkbox">
-          <span>pubblica la recensione nel <b>catalogo</b>, dove la legge chiunque
+          <span data-i18n="add.pubblica">pubblica la recensione nel <b>catalogo</b>, dove la legge chiunque
             <small>serve l&rsquo;id BGG: &egrave; la chiave con cui il catalogo la ritrova</small></span>
         </label>
-        <label class="wide">copertina
+        <label class="wide"><span data-i18n="add.copertina">copertina</span>
           <input id="m-file" type="file" accept="image/*">
-          <small id="m-file-nota">dal press kit dell&rsquo;editore, se ce l&rsquo;hai: Wikidata le copertine non le ha</small>
+          <small id="m-file-nota" data-i18n="add.copertinaNota">dal press kit dell&rsquo;editore, se ce l&rsquo;hai: Wikidata le copertine non le ha</small>
         </label>
-        <button id="m-go" type="button">metti sullo scaffale</button>
+        <button id="m-go" type="button" data-i18n="add.metti">metti sullo scaffale</button>
       </div>
     </details>
 
     <p class="add-foot">
-      <span id="add-dove">Le modifiche restano su questo browser.</span>
-      <button id="exp" type="button">esporta js/data.js</button>
-      <button id="rst" type="button">ripristina</button>
+      <span id="add-dove" data-i18n="add.dove">Le modifiche restano su questo browser.</span>
+      <button id="exp" type="button" data-i18n="add.esporta">esporta js/data.js</button>
+      <button id="rst" type="button" data-i18n="add.ripristina">ripristina</button>
     </p>
   </div>
 </div>
@@ -504,16 +545,16 @@
      decide cosa sta con cosa. Nel profilo erano lontani dal loro uso. -->
 <div id="gruppilayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="gru-h">
-    <p class="eyebrow">etichette</p>
-    <h2 id="gru-h">I tuoi gruppi</h2>
-    <p class="mia-nota">Un gioco pu&ograve; stare in pi&ugrave; gruppi, e i gruppi
+    <p class="eyebrow" data-i18n="gru.occhiello">etichette</p>
+    <h2 id="gru-h" data-i18n="gru.h">I tuoi gruppi</h2>
+    <p class="mia-nota" data-i18n="gru.nota">Un gioco pu&ograve; stare in pi&ugrave; gruppi, e i gruppi
       attraversano le librerie: rispondono a <b>che cos&rsquo;&egrave;</b>, non a
       dove sta.</p>
 
     <div class="pro-aggiungi">
-      <input id="gru-nuovo" type="text" placeholder="party games, strategici&hellip;"
-             autocomplete="off" maxlength="30" aria-label="nome del gruppo">
-      <button id="gru-piu" type="button">crea</button>
+      <input id="gru-nuovo" type="text" data-i18n-ph="gru.ph" placeholder="party games, strategici&hellip;"
+             autocomplete="off" maxlength="30" data-i18n-aria="gru.aria" aria-label="nome del gruppo">
+      <button id="gru-piu" type="button" data-i18n="gru.crea">crea</button>
     </div>
     <p id="gru-msg" class="pro-msg"></p>
 
@@ -530,8 +571,8 @@
          salvata, e un pulsante che promettesse di disfare il resto
          direbbe una bugia. -->
     <p class="add-foot">
-      <button id="gru-x" type="button" class="secondario">annulla</button>
-      <button id="gru-ok" type="button" class="primario">fatto</button>
+      <button id="gru-x" type="button" class="secondario" data-i18n="gru.annulla">annulla</button>
+      <button id="gru-ok" type="button" class="primario" data-i18n="gru.ok">fatto</button>
     </p>
   </div>
 </div>
@@ -543,23 +584,24 @@
      nella tua libreria. -->
 <div id="mialayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="mia-h">
-    <button id="mia-x" type="button">chiudi &times;</button>
-    <p class="eyebrow">quello che ne pensi tu</p>
-    <h2 id="mia-h">La tua recensione</h2>
-    <p class="mia-nota">La leggono i tuoi amici quando aprono <b id="mia-gioco"></b>
-      nella tua libreria. Poche righe bastano.</p>
+    <button id="mia-x" type="button"><span data-i18n="rec.chiudi">chiudi</span> &times;</button>
+    <p class="eyebrow" data-i18n="rec.occhiello">quello che ne pensi tu</p>
+    <h2 id="mia-h" data-i18n="rec.h">La tua recensione</h2>
+    <!-- spezzata attorno a `#mia-gioco`, che lo riempie il JS -->
+    <p class="mia-nota"><i data-i18n="rec.nota1">La leggono i tuoi amici quando aprono</i> <b id="mia-gioco"></b>
+      <i data-i18n="rec.nota2">nella tua libreria. Poche righe bastano.</i></p>
 
     <div class="add-form">
-      <label>voto <input id="mia-voto" type="text" inputmode="decimal"
+      <label><span data-i18n="rec.voto">voto</span> <input id="mia-voto" type="text" inputmode="decimal"
                          placeholder="8.0" autocomplete="off"></label>
-      <label class="wide">recensione
-        <textarea id="mia-testo" rows="7"
+      <label class="wide"><span data-i18n="rec.recensione">recensione</span>
+        <textarea id="mia-testo" rows="7" data-i18n-ph="rec.ph"
           placeholder="Com&rsquo;&egrave;? A chi lo consiglieresti? Una riga vuota separa un capoverso."></textarea>
       </label>
     </div>
 
     <p class="add-foot">
-      <button id="mia-salva" type="button">salva</button>
+      <button id="mia-salva" type="button" data-i18n="rec.salva">salva</button>
     </p>
   </div>
 </div>
@@ -571,25 +613,25 @@
 <div id="partitalayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="pa-h">
 
-    <p class="eyebrow">una serata</p>
-    <h2 id="pa-h">Segna una partita</h2>
+    <p class="eyebrow" data-i18n="pa.occhiello">una serata</p>
+    <h2 id="pa-h" data-i18n="pa.h">Segna una partita</h2>
 
     <!-- Il gioco si CERCA, non si scrive. L'id BGG non si chiede piu' a
          nessuno: e' un numero che nessuno sa a memoria, e arriva da solo
          scegliendo un gioco dai suggerimenti. Chi digita e basta ha
          comunque la sua serata, solo senza aggancio al catalogo. -->
     <div class="add-form pa-form">
-      <label class="wide">gioco
+      <label class="wide"><span data-i18n="pa.gioco">gioco</span>
         <input id="pa-titolo" type="text" autocomplete="off" role="combobox"
                aria-autocomplete="list" aria-expanded="false" aria-controls="pa-sugg"
-               placeholder="cerca nella tua collezione o nel catalogo">
+               data-i18n-ph="pa.giocoPh" placeholder="cerca nella tua collezione o nel catalogo">
       </label>
-      <label>data <input id="pa-data" type="date"></label>
-      <label>ora <input id="pa-ora" type="time"></label>
+      <label><span data-i18n="pa.data">data</span> <input id="pa-data" type="date"></label>
+      <label><span data-i18n="pa.ora">ora</span> <input id="pa-ora" type="time"></label>
     </div>
     <ul id="pa-sugg" class="pa-sugg" role="listbox" hidden></ul>
 
-    <p class="eyebrow pa-eye">chi c&rsquo;era</p>
+    <p class="eyebrow pa-eye" data-i18n="pa.chiCera">chi c&rsquo;era</p>
 
     <!-- Si sceglie fra gli amici e i giocatori salvati. Un nome nuovo si
          crea nella sua sezione, non qui: e' li' che vive, e crearlo di
@@ -601,20 +643,20 @@
          nomi e' anche un giro inutile: si vedono tutti insieme e si
          toccano quelli giusti. -->
     <div id="pa-scelta" class="pa-scelta"></div>
-    <button id="pa-vai-giocatori" type="button">aggiungi un giocatore</button>
+    <button id="pa-vai-giocatori" type="button" data-i18n="pa.vaiGiocatori">aggiungi un giocatore</button>
 
     <ul id="pa-chi" class="pa-chi"></ul>
     <p id="pa-msg" class="add-msg"></p>
 
     <div class="add-form">
-      <label class="wide">note
-        <textarea id="pa-note" rows="2" placeholder="com&rsquo;&egrave; andata, se ti va"></textarea>
+      <label class="wide"><span data-i18n="pa.note">note</span>
+        <textarea id="pa-note" rows="2" data-i18n-ph="pa.notePh" placeholder="com&rsquo;&egrave; andata, se ti va"></textarea>
       </label>
     </div>
 
     <p class="add-foot pa-foot">
-      <button id="pa-x" type="button" class="secondario">annulla</button>
-      <button id="pa-salva" type="button" class="primario">salva la partita</button>
+      <button id="pa-x" type="button" class="secondario" data-i18n="pa.annulla">annulla</button>
+      <button id="pa-salva" type="button" class="primario" data-i18n="pa.salva">salva la partita</button>
       <button id="pa-togli" type="button" class="distruttivo">elimina</button>
     </p>
   </div>
@@ -623,12 +665,13 @@
 <!-- senza WebGL il sito resta leggibile: stesse recensioni, in piano -->
 <div id="flat">
   <h1>il dado &egrave; trap</h1>
-  <p class="lead">La libreria in 3D non parte su questo dispositivo, ma le recensioni sono tutte qui.</p>
+  <p class="lead" data-i18n="flat.lead">La libreria in 3D non parte su questo dispositivo, ma le recensioni sono tutte qui.</p>
   <div id="flat-list"></div>
 </div>
 
 <script src="vendor/three.min.js"></script>
 <script src="vendor/supabase.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/auth.js"></script>
