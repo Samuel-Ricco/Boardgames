@@ -315,7 +315,13 @@ Le aperture sono **due, distinte**:
 Sono due domande diverse, «che gioco è» e «cosa ci faccio», e mescolarle voleva
 dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti.
 
-**Il preferito non sta in nessuna delle due: è una stellina sulla riga.** Dentro
+**Il preferito non sta in nessuna delle due: è una stellina accanto al nome.**
+Stava in fondo alla riga, in una colonna sua, e lì si leggeva come un terzo
+comando in fila col menu invece che come un interruttore su quel titolo. Ora il
+titolo e la stella stanno in una cella sola (`.riga-tit`) e la griglia è passata
+da quattro colonne a tre; `min-width:0` perché un titolo lungo deve stringere,
+non spingere fuori la stella.
+ Dentro
 il menu erano due tocchi per accenderlo e un'apertura per sapere se era acceso,
 mentre la stella si vede **scorrendo**, che è l'unico momento in cui serve. Si
 aggiorna **in posto** — niente `disegnaMia()`: rifare l'elenco staccherebbe dal
@@ -591,6 +597,27 @@ classi `.righe` del catalogo.
 - `ridisponi()` esiste perché **non si può rifare la disposizione con una scatola
   aperta**: la si sposterebbe sotto i piedi al tween in corso. Se c'è, chiude e
   ridispone dopo, con il seguito passato a `unfocus(poi)`.
+
+## Il piede della scheda: due righe, e il peso in basso
+
+I sette pulsanti stavano tutti in fila e si equivalevano. Adesso vanno a capo a
+metà: **sopra quello che si fa di sfuggita** — la stella, il cuore, «partita»,
+«in collezione» — e **sotto le due cose che pesano**, scrivere cosa ne pensi e
+toglierlo dalla collezione. Il ritorno a capo è `.pan-acapo`, un elemento largo
+quanto la riga e alto zero: il flex va a capo da solo, senza un secondo
+contenitore da tenere allineato.
+
+- **«Rimuovi» e non «elimina»**, e sta in **fondo a destra** come l'azione di
+  ogni altro piede di pannello del sito. Resta rosso e resta in due tempi.
+- **«Dallo scaffale» si chiama «in collezione»**: dice dove va il gioco, non da
+  dove esce, ed è lo stesso verso con cui l'elenco dice «in libreria».
+- **Il pulsante «scheda» non c'è più.** Va detto chiaro: `apriModifica()` —
+  autore, editore, anno, voto, copertina — adesso **non ha più nessuna porta**.
+  La funzione è intatta e il listener è scritto per non esplodere se il
+  pulsante manca (`const bEdit = q('#edit'); if (bEdit) ...`), ma finché
+  qualcuno non gli dà un posto, quei campi si correggono solo dal database. Il
+  posto naturale sarebbe il menu a tre punti dell'elenco, dove sta già
+  «altro».
 
 ## Le due sezioni
 
@@ -1156,6 +1183,17 @@ nascosta con l'opacità.
   sessione, e i suggerimenti si rifanno da soli quando arrivano.
 - L'ascoltatore dei suggerimenti è su `mousedown` e non su `click`: il `blur`
   del campo chiuderebbe l'elenco prima che il clic arrivi a destinazione.
+- **Si chiede solo la data.** L'ora e le note non ci sono piu': di una partita ci
+  si ricorda il giorno, non il minuto, e le note erano un campo che restava
+  vuoto. Le colonne sul database restano, e quello che c'è già scritto non si
+  butta via — `paCorrente` se lo porta dietro e torna sul database com'era.
+- **La corona sta a destra del nome, e si vede solo su chi ha vinto.** Era un
+  pulsante in testa a ogni riga: una fila di corone spente diceva «qui si
+  preme», che non è quello che si vuole leggere scorrendo un tavolo. Sulle
+  altre righe il pulsante c'è ancora, appena accennato, e si accende sotto il
+  dito: senza, non ci sarebbe più modo di dire chi ha vinto. Il nome e la sua
+  corona stanno in un involucro loro (`.chi-nome`), se no la corona finiva
+  incolonnata a destra insieme ai comandi invece che attaccata al nome.
 
 ### Le posizioni non si scrivono: si calcolano
 
@@ -1182,11 +1220,22 @@ classifiche ovunque.
   tavolo riparte da zero e i punti tornano a decidere: senza, chi aveva messo una
   corona a mano una volta non aveva più modo di rimettere la classifica al
   comando.
-- **I punti non si salvano.** Sul database ci sono nome, posizione e vincitore:
-  riaprendo una partita la corona che si vede è un fatto registrato, non
-  qualcosa da ricalcolare, quindi `coroneAMano` parte già vera se c'è un
-  vincitore. Se no, al primo punto scritto il vincitore segnato sarebbe cambiato
-  da solo.
+- **I punti si salvano** (migrazione `punti_partita`). Prima no: erano un aiuto
+  del modulo e sparivano alla chiusura, quindi riaprendo una partita i campi
+  erano vuoti e non si poteva più correggere un punteggio senza riscrivere
+  tutto il tavolo. Da questo nasceva anche il difetto gemello — «cambio il
+  punteggio e il vincitore resta quello di prima»: senza punti salvati,
+  `coroneAMano` partiva vera per non cancellare un vincitore registrato, e la
+  corona non si muoveva più. Adesso il tavolo che si riapre è quello di
+  allora, `coroneAMano` parte **falsa**, e i punti tornano a comandare: si
+  corregge un punteggio e la corona si sposta con lui.
+- **Zero non è nullo.** `parseInt(x) || null` trasformerebbe uno zero in «non
+  registrato», e a certi giochi si chiude davvero a zero. C'è un `numero()`
+  che distingue i due casi, e vale per `posizione` come per `punti`.
+- **Se la migrazione non è applicata la partita si salva lo stesso.** PostgREST
+  su una colonna inesistente butta via l'intera scrittura: `salva()` riprova
+  senza `punti`, e i punti tornano a essere quello che erano, un aiuto del
+  modulo. Meglio una partita senza punteggi che nessuna partita.
 - **Tolti i punti se ne vanno le corone che venivano dai punti**, non quelle
   messe a mano: per questo ogni riga ricorda `daPunti`. Senza, svuotando i campi
   restava addosso all'ultimo calcolato una corona che nessuno gli aveva messo.
@@ -1300,6 +1349,15 @@ domanda subito dopo.
   numero che si sta già guardando, e sotto c'è ancora l'elenco da cui viene. La
   pastiglia resta dov'è e si accende, come l'imbuto e la libreria — è lo stesso
   gesto che la richiude.
+
+**E il winrate si vede anche sul gioco.** Aprendo una scatola dalla libreria o una
+riga dal catalogo, sopra la recensione compare l'anello con il tuo winrate su
+**quel** titolo. È la stessa domanda del riquadro in cima alle partite,
+ristretta a un gioco — e fatta nel momento in cui quel gioco lo si ha davanti,
+che è quando interessa. Non compare se non ci hai mai giocato: un anello vuoto
+si legge come «non ne ho vinta nessuna», che è un'altra cosa. Un blocco solo
+(`bloccoWr`) per i due posti, se no sarebbero due cose che dicono la stessa cosa
+in due modi.
 
 **E la riga del gioco non può avvolgersi.** Con `flex-wrap:wrap` sulla riga, una
 didascalia lunga («8 partite · vince Anna») non fa *stringere* il titolo: lo
@@ -1906,6 +1964,46 @@ scrivendo nel campo del gruppo nuovo: un pulsante che promettesse di disfare il
 resto direbbe una bugia. Nella partita invece c'è un modulo vero, e annulla
 chiude senza salvare.
 
+### Quello che non si leggeva
+
+Tre cose segnalate insieme, e la stessa lezione dietro due di loro: **un testo
+piccolo non può anche essere tenue**.
+
+- **Via il capolettera della recensione.** Era un `::first-letter` in float alto
+  trentaquattro pixel, di un altro colore: prendeva il punto in cui si comincia
+  a leggere e lo spezzava in due, con le prime righe che giravano attorno. Su
+  una recensione di poche righe si mangiava mezzo capoverso. Una recensione è
+  un testo da leggere, non un frontespizio.
+- **Le etichette dei riquadri** («giocatori», «minuti») stavano a **nove
+  pixel**, maiuscole, spaziate e nell'oliva tenue: sul grigio del riquadro fanno
+  poco più di tre a uno, sotto la soglia per un corpo così piccolo. Adesso
+  sono a 10,5 px, minuscole, poco spaziate e più scure. Stessa correzione su
+  `.cat-spec`, che è la stessa cosa nell'elenco e nel catalogo.
+- **Il tasto chiudi era finito nel livello «tinto»** insieme agli altri
+  comandi, cioè terracotta al 10%. Un fondo al 10% funziona dentro una scheda
+  chiara, ma nell'angolo di un pannello che sta già su carta non si vede: e
+  chiudere la scheda è la prima cosa che si cerca per uscire. È lo stesso
+  principio già scritto per l'imbuto e il binario — **quello che galleggia è
+  una superficie, non una tinta** — e vale a maggior ragione per un comando
+  appoggiato su un altro pannello. Adesso è pieno, e sta fuori dalle liste del
+  livello tinto.
+
+### Il cartello di casa d'altri
+
+Era un rettangolo squadrato con dentro un blocco terracotta grande quanto metà
+cartello: su un telefono il pulsante andava a capo — «torna / alla tua» — e
+il cartello si sbilanciava. Adesso è **una pastiglia sola**, come tutto quello
+che galleggia sulla scena: carta velata con la sfocatura dietro, il testo che si
+stringe con l'ellissi se il nick è lungo, e il pulsante che **non si stringe
+mai** — è l'uscita, e un'uscita non va a capo.
+
+- Le misure stanno **in fondo al foglio**, dopo la sezione I COMANDI: il livello
+  «pieno» arriva dopo il blocco di `#visita` e gli riscriverebbe corpo, peso e
+  imbottitura.
+- La freccia sta **fuori da `data-i18n`**: quell'attributo scrive in `innerHTML`,
+  e con la chiave sul pulsante il disegno sparirebbe al primo cambio di lingua.
+  È la stessa lezione di `#p-pref`.
+
 ### Il fuoco non si ruba
 
 Il pannello della vista prendeva da solo il fuoco sul campo di ricerca
@@ -2117,8 +2215,16 @@ freddo: cosa c'è, cosa è appena cambiato, com'è messo il database e cosa rest
 da fare. Per il racconto lungo di com'è nato tutto c'è `contest_boardgame.md`.
 
 Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
-profilo — **due lingue** con 457 chiavi per ramo, e tutte e undici le migrazioni
-applicate.
+profilo — **due lingue** con 457 chiavi per ramo, e undici migrazioni applicate
+su dodici.
+
+> **LA DODICESIMA È DA APPLICARE A MANO.**
+> `supabase/migrations/20260822120000_punti_partita.sql` aggiunge la colonna
+> `punti` a `partecipanti` e **non è ancora sul database**: qui non c'è la CLI
+> di Supabase, quindi va incollata nell'SQL editor del pannello. Finché non lo
+> è, le partite si salvano lo stesso ma **senza i punteggi** — `salva()`
+> riprova senza quella colonna — e riaprendo una partita i campi dei punti
+> sono vuoti, che è il difetto che quella migrazione risolve.
 
 ### Cos'è successo nella sessione del 2026-08-22
 
@@ -2176,6 +2282,21 @@ samuel2 (amico), d (giocatore)**, il filtro mentre si scrive, la riga
 corona — punti a due su tre, corona a mano sul terzo, cambio dei punti,
 spenta e rimessa, punti tolti. Chiuso con «annulla»: sul server non è
 finita nessuna partita di prova.
+
+### La sessione del 2026-08-22, quarta parte: la scheda e il tavolo
+
+Quindici cose chieste in un colpo solo, in quattro giri.
+
+| giro | cosa |
+|---|---|
+| il modulo | i punti si salvano; via l'ora e le note; la corona a destra del nome e solo al vincitore; i punti tornano a comandare riaprendo |
+| il winrate | compare anche sul singolo gioco, dal pannello e dal catalogo |
+| l'elenco e il piede | stella accanto al nome; il piede va a capo, «rimuovi» in basso a destra, via «scheda», «dallo scaffale» diventa «in collezione» |
+| l'estetica | via il capolettera; etichette dei riquadri leggibili; il chiudi pieno; il cartello di casa d'altri rifatto |
+
+**Una cosa è rimasta scoperta apposta, e va detta:** togliendo il pulsante
+«scheda» dal piede, `apriModifica()` non ha più nessuna porta. Autore,
+editore, anno e copertina non si correggono più da nessuna parte del sito.
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 

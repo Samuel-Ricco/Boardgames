@@ -2399,7 +2399,11 @@ function bindInput(){
   });
 
   q('#close').addEventListener('click', function(e){ e.stopPropagation(); unfocus(); });
-  q('#edit').addEventListener('click', function(e){
+  /* Il pulsante "scheda" non c'e' piu' nel piede del pannello. La
+     funzione resta -- e' quella che corregge autore, editore, anno e
+     copertina -- ma da qui dentro non ci arriva piu' nessuno. */
+  const bEdit = q('#edit');
+  if (bEdit) bEdit.addEventListener('click', function(e){
     e.stopPropagation();
     const g = state.focused && state.focused.userData.game;
     if (!g) return;
@@ -3098,10 +3102,15 @@ function apriRiga(li){
     ? '<p><a class="bgg" href="https://boardgamegeek.com/boardgame/' + esc(v.bgg) +
       '/" target="_blank" rel="noopener">' + T('pan.bgg') + '</a></p>'
     : '';
-  li.querySelector('.cat-rec').innerHTML = rec
+  /* Il winrate viene prima della recensione: quello che il sito pensa
+     di un gioco lo si legge sempre, come vai tu solo se ci hai giocato
+     -- e quando c'e' e' la riga che riguarda chi sta leggendo. */
+  const wr = (state.dentro && !PARTITE.problema())
+    ? bloccoWr(PARTITE.diGioco(v.bgg, v.title)) : '';
+  li.querySelector('.cat-rec').innerHTML = wr + (rec
     ? (rec.score ? '<p class="voto">' + esc(rec.score) + '<i>/10</i></p>' : '') +
       (rec.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('') + link
-    : '<p class="vuoto">' + T('cat.nonRecensito') + '</p>' + link;
+    : '<p class="vuoto">' + T('cat.nonRecensito') + '</p>' + link);
 }
 
 /* Dal catalogo allo scaffale. Passa dalla stessa strada del modulo di
@@ -4028,8 +4037,13 @@ function rigaMia(g){
 
   return '<li data-id="' + esc(g.id) + '">' +
     '<div class="cat-cop">' + cop + '</div>' +
-    '<h3 class="riga-nome">' + esc(g.title) + '</h3>' +
-    stellaRiga(g) +
+    /* La stella sta ACCANTO AL NOME e non in fondo alla riga: e' del
+       gioco, e a fondo riga si leggeva come un terzo comando in fila
+       col menu invece che come un interruttore su quel titolo. */
+    '<span class="riga-tit">' +
+      '<h3 class="riga-nome">' + esc(g.title) + '</h3>' +
+      stellaRiga(g) +
+    '</span>' +
     /* Il tasto e le sue azioni stanno nello stesso involucro: la
        finestrella si ancora al PULSANTE, non alla riga -- se no, con le
        informazioni aperte sotto, uscirebbe mezzo schermo piu' in giu'
@@ -4828,6 +4842,21 @@ function rigaGiocata(p, conTitolo){
   '</li>';
 }
 
+/* Il tuo winrate su QUESTO gioco, li' dove il gioco si sta guardando:
+   nel pannello della recensione e dentro la riga aperta del catalogo.
+   E' la stessa domanda del riquadro in cima alle partite, ristretta a
+   un titolo solo -- e la si fa proprio mentre si ha quel titolo davanti.
+
+   Non compare se non ci hai mai giocato: un anello vuoto si legge come
+   "non ne ho vinta nessuna", che e' un'altra cosa. */
+function bloccoWr(partite){
+  const w = PARTITE.winrate(partite || []);
+  if (!w.gioc) return '';
+  return '<div class="gioco-wr">' + anelloWr(w.perc) +
+    '<b>' + w.perc + '%</b>' +
+    '<span>' + T('par.wrTuoSu', {v: w.vinte, n: w.gioc}) + '</span></div>';
+}
+
 // le partite di quel gioco, nel pannello della recensione
 function disegnaGiocate(game){
   const el = q('#p-giocate');
@@ -4835,7 +4864,8 @@ function disegnaGiocate(game){
   const g = (game && state.dentro && !PARTITE.problema())
     ? PARTITE.diGioco(game.bgg, game.title) : [];
   el.innerHTML = g.length
-    ? '<p class="eyebrow">' + T('par.tuePartite') + '</p><ul class="giocate">' +
+    ? '<p class="eyebrow">' + T('par.tuePartite') + '</p>' + bloccoWr(g) +
+      '<ul class="giocate">' +
       g.slice(0, 6).map(function(p){ return rigaGiocata(p, false); }).join('') + '</ul>'
     : '';
 }
@@ -5087,18 +5117,18 @@ function apriPartita(dati){
   q('#pa-h').textContent = TP(paCorrente.id ? 'pa.hCorreggi' : 'pa.h');
   q('#pa-titolo').value = paCorrente.titolo || '';
   q('#pa-data').value   = paCorrente.giocata_il || '';
-  q('#pa-ora').value    = paCorrente.ora ? String(paCorrente.ora).slice(0, 5) : '';
-  q('#pa-note').value   = paCorrente.note || '';
   q('#pa-togli').hidden = !paCorrente.id;
   q('#pa-chi-q').value = '';
   chiudiSuggChi();
   leggiNomiNoti();
-  /* I punti non si salvano -- sul database ci sono nome, posizione e
-     vincitore -- quindi riaprendo una partita la corona che si vede e'
-     un fatto registrato, non qualcosa da ricalcolare. Se poi si mettono
-     dei punti, non deve sparire da sotto: chi l'ha messa lo ha fatto
-     una volta e vale ancora. */
-  paCorrente.coroneAMano = paCorrente.chi.some(function(x){ return x.vincitore; });
+  /* Adesso i punti si salvano (migrazione `punti_partita`), quindi
+     riaprendo una partita il tavolo e' quello di allora e i punti
+     tornano a comandare: si corregge un punteggio e il vincitore si
+     sposta con lui. Prima questo campo partiva vero se c'era un
+     vincitore, e la conseguenza era che modificando i punti la corona
+     restava dov'era -- che e' proprio il difetto segnalato. Solo un
+     tocco sulla corona, in questa sessione, la passa alle mani. */
+  paCorrente.coroneAMano = false;
   q('#pa-msg').textContent = '';
 
   disegnaTavolo();
@@ -5173,11 +5203,20 @@ function ricalcolaPosizioni(){
 function disegnaTavolo(){
   if (!paCorrente) return;
   q('#pa-chi').innerHTML = paCorrente.chi.map(function(x, i){
+    /* La corona sta a DESTRA DEL NOME, attaccata a lui, e si vede solo
+       su chi ha vinto: una fila di corone spente davanti a ogni nome
+       diceva "qui si preme", che non e' quello che si vuole leggere
+       scorrendo un tavolo. Sulle altre righe resta comunque un pulsante,
+       appena accennato, e si accende sotto il dito: senza, non ci
+       sarebbe piu' modo di dire chi ha vinto quando i punti non ci sono
+       o non sono di tutti. */
     return '<li data-i="' + i + '"' + (x.vincitore ? ' class="vince"' : '') + '>' +
-      '<button type="button" class="corona' + (x.vincitore ? ' on' : '') + '" data-fa="vince" ' +
-        'aria-pressed="' + (x.vincitore ? 'true' : 'false') + '" ' +
-        'aria-label="' + esc(TP('pa.haVinto', {n: x.nome})) + '">' + ICO.corona + '</button>' +
-      '<span class="nome">' + esc(x.nome) + '</span>' +
+      '<span class="chi-nome">' +
+        '<span class="nome">' + esc(x.nome) + '</span>' +
+        '<button type="button" class="corona' + (x.vincitore ? ' on' : '') + '" data-fa="vince" ' +
+          'aria-pressed="' + (x.vincitore ? 'true' : 'false') + '" ' +
+          'aria-label="' + esc(TP('pa.haVinto', {n: x.nome})) + '">' + ICO.corona + '</button>' +
+      '</span>' +
       (x.posizione ? '<span class="posto">' + x.posizione + '&deg;</span>' : '') +
       '<input class="punti" type="text" inputmode="numeric" maxlength="4" ' +
         'value="' + esc(x.punti == null ? '' : x.punti) + '" ' +
@@ -5400,9 +5439,11 @@ async function salvaPartita(){
   const b = q('#pa-salva');
   paCorrente.titolo = q('#pa-titolo').value;
   // l'id BGG non si chiede piu': lo mette il suggeritore scegliendo un gioco
+  /* L'ora e le note non si chiedono piu': di una partita si ricorda il
+     giorno, non il minuto, e le note erano un campo che restava vuoto.
+     Quelle gia' scritte non si buttano via -- `paCorrente` se le porta
+     dietro e tornano sul database com'erano. */
   paCorrente.giocata_il = q('#pa-data').value || null;
-  paCorrente.ora    = q('#pa-ora').value || null;
-  paCorrente.note   = q('#pa-note').value.trim() || null;
 
   b.disabled = true;
   try {

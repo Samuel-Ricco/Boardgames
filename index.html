@@ -51,7 +51,12 @@
   <!-- La frase e' spezzata attorno a `#vis-chi`: con una chiave sola,
        riapplicare la lingua cancellerebbe il nome che ci mette il JS. -->
   <span><i data-i18n="visita.di">la libreria di</i> <b id="vis-chi"></b></span>
-  <button id="vis-torna" type="button" data-i18n="visita.torna">torna alla tua</button>
+  <!-- La freccia sta FUORI da `data-i18n`: quell'attributo scrive in
+       `innerHTML`, e con la chiave sul pulsante il disegno sparirebbe al
+       primo cambio di lingua. E' la stessa lezione di `#p-pref`. -->
+  <button id="vis-torna" type="button">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M10 5l-7 7 7 7M3 12h18"/></svg><span data-i18n="visita.torna">torna alla tua</span>
+  </button>
 </div>
 
 <!-- LA VISTA DELLO SCAFFALE. Cercare, ordinare e scegliere il mobile
@@ -210,25 +215,28 @@
             data-i18n-title="pan.cuoreTitolo" title="questa recensione mi e&rsquo; piaciuta">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 20s-7.2-4.4-7.2-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7.2 2.7C19.2 15.6 12 20 12 20z"/></svg><span id="p-cuore-n"></span>
     </button>
-    <button id="p-mia" type="button" class="dentro-only"
-            data-i18n-title="pan.miaTitolo" title="scrivi cosa ne pensi tu">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pan.mia">la tua recensione</span>
-    </button>
     <button id="p-segna" type="button" class="dentro-only"
             data-i18n-title="pan.segnaTitolo" title="segna una partita a questo gioco">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8.5v7l8 4.5 8-4.5v-7L12 4zM12 4v16M4 8.5l8 4.5 8-4.5"/></svg> <span data-i18n="pan.segna">partita</span>
     </button>
-    <button id="edit" type="button" class="dentro-only"
-            data-i18n-title="pan.schedaTitolo" title="correggi la scheda">
-      <span data-i18n="pan.scheda">scheda</span>
-    </button>
     <button id="p-fuori" type="button" class="dentro-only"
             data-i18n-title="pan.fuoriTitolo" title="lascia lo scaffale, resta nella tua collezione">
-      <span data-i18n="pan.fuori">dallo scaffale</span>
+      <span data-i18n="pan.fuori">in collezione</span>
+    </button>
+
+    <!-- Il piede va a capo qui: sopra le cose che si fanno di sfuggita,
+         sotto le due che pesano -- scrivere cosa ne pensi, e toglierlo.
+         Un elemento largo quanto la riga e alto zero: il flex va a capo
+         da solo, senza un secondo contenitore. -->
+    <span class="pan-acapo" aria-hidden="true"></span>
+
+    <button id="p-mia" type="button" class="dentro-only"
+            data-i18n-title="pan.miaTitolo" title="scrivi cosa ne pensi tu">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pan.mia">la tua recensione</span>
     </button>
     <button id="del" type="button" class="dentro-only"
-            data-i18n-title="pan.eliminaTitolo" title="elimina il gioco dalla tua collezione, per sempre">
-      <span aria-hidden="true">&#9003;</span> <span data-i18n="pan.elimina">elimina</span>
+            data-i18n-title="pan.eliminaTitolo" title="rimuovi il gioco dalla tua collezione, per sempre">
+      <span data-i18n="pan.elimina">rimuovi</span>
     </button>
   </p>
 </aside>
@@ -668,8 +676,9 @@
                aria-autocomplete="list" aria-expanded="false" aria-controls="pa-sugg"
                data-i18n-ph="pa.giocoPh" placeholder="cerca nella tua collezione o nel catalogo">
       </label>
-      <label><span data-i18n="pa.data">data</span> <input id="pa-data" type="date"></label>
-      <label><span data-i18n="pa.ora">ora</span> <input id="pa-ora" type="time"></label>
+      <!-- Solo la data: di una partita ci si ricorda il giorno, non il
+           minuto. L'ora era un campo che nessuno riempiva. -->
+      <label class="wide"><span data-i18n="pa.data">data</span> <input id="pa-data" type="date"></label>
     </div>
     <ul id="pa-sugg" class="pa-sugg" role="listbox" hidden></ul>
 
@@ -693,12 +702,6 @@
 
     <ul id="pa-chi" class="pa-chi"></ul>
     <p id="pa-msg" class="add-msg"></p>
-
-    <div class="add-form">
-      <label class="wide"><span data-i18n="pa.note">note</span>
-        <textarea id="pa-note" rows="2" data-i18n-ph="pa.notePh" placeholder="com&rsquo;&egrave; andata, se ti va"></textarea>
-      </label>
-    </div>
 
     <p class="add-foot pa-foot">
       <button id="pa-x" type="button" class="secondario" data-i18n="pa.annulla">annulla</button>

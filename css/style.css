@@ -292,8 +292,13 @@ body.visita .visita-only{display:inline-flex !important}
    faccio" -- e mescolarle voleva dire che per leggere due righe di
    recensione ti trovavi davanti quattro pulsanti. */
 .righe.compatta > li{
-  grid-template-columns:52px 1fr auto auto; align-items:center; gap:14px; padding:11px 0;
+  grid-template-columns:52px 1fr auto; align-items:center; gap:14px; padding:11px 0;
 }
+/* Il titolo e la sua stella in una cella sola: la stella e' di quel
+   gioco, e in una colonna sua si leggeva come un comando in fila col
+   menu. `min-width:0` perche' un titolo lungo deve stringere, non
+   spingere fuori la stella. */
+.riga-tit{display:flex; align-items:center; gap:4px; min-width:0}
 .righe.compatta > li:hover .riga-nome{color:var(--accent)}
 .righe.compatta .cat-cop{width:52px; cursor:pointer}
 .riga-nome{
@@ -542,7 +547,7 @@ body.sez-catalogo #catalogo{display:block}
 .cat-chi{margin:6px 0 0; font-size:13px; color:var(--ink-soft)}
 .cat-chi b{color:var(--ink); font-weight:500}
 .cat-spec{list-style:none; display:flex; flex-wrap:wrap; gap:14px; margin:9px 0 0; padding:0}
-.cat-spec li{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft)}
+.cat-spec li{font-size:11.5px; letter-spacing:.03em; text-transform:none; color:rgba(51,53,43,.74)}
 .cat-spec b{
   font-family:var(--ff-display); font-size:10.8px; letter-spacing:0;
   color:var(--ink); margin-right:5px;
@@ -907,12 +912,6 @@ body.sez-partite #partite{display:block}
 body.visita #visita{transform:translate(-50%,84px)}
 #visita span{font-size:12px; color:var(--ink-soft)}
 #visita b{font-weight:500; color:var(--ink)}
-#vis-torna{
-  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:rgba(51,53,43,.06); border:0; padding:7px 10px; border-radius:var(--r-s);
-}
-#vis-torna:hover{color:var(--accent); border-color:var(--accent)}
 
 /* in casa d'altri si guarda e basta: via tutto quello che modifica */
 body.visita #add,
@@ -1194,10 +1193,18 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .specs{list-style:none; margin:0 0 20px; padding:0; gap:1px;
   display:grid; grid-template-columns:repeat(4,1fr);
   background:var(--line); border:1px solid var(--line)}
+/* Le etichette erano a NOVE pixel, maiuscole e spaziate, nell'oliva
+   tenue: sul grigio del riquadro fanno poco piu' di tre a uno, cioe'
+   sotto la soglia per un testo cosi' piccolo -- e infatti "giocatori" e
+   "minuti" non si leggevano. Adesso sono piu' grandi, piu' scure e meno
+   spaziate: restano etichette, ma si leggono. */
 .specs li{background:rgba(51,53,43,.05); padding:10px 6px; text-align:center}
 .specs b{display:block; font-family:var(--ff-display); font-size:15.1px; letter-spacing:0;
   color:var(--accent); line-height:1.2}
-.specs span{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft)}
+.specs span{
+  display:block; margin-top:2px; font-size:10.5px; letter-spacing:.03em;
+  text-transform:none; color:rgba(51,53,43,.74);
+}
 
 .score{display:flex; align-items:baseline; gap:10px; margin:0 0 20px; padding-bottom:20px;
   border-bottom:1px solid var(--line)}
@@ -1206,11 +1213,14 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .score small{margin-left:auto; text-align:right; line-height:1.5;
   font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft)}
 
+/* Niente capolettera. Era un `::first-letter` in float, alto trentaquattro
+   pixel: prendeva l'inizio della recensione -- cioe' il punto in cui si
+   comincia a leggere -- e lo spezzava in due, con le prime righe che
+   giravano attorno a una lettera grande di un altro colore. Su un testo
+   di poche righe si mangiava mezzo capoverso. Una recensione e' un testo
+   da leggere, non un frontespizio. */
 .body p{margin:0 0 14px; font-size:15px; color:rgba(51,53,43,.88)}
-.body p:first-child::first-letter{
-  font-family:var(--ff-display); font-size:34.6px; line-height:.76; float:left;
-  margin:8px 9px 0 0; color:var(--accent);
-}
+.body p:first-child{margin-top:2px}
 .tags{display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0}
 .tags span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);
   border:1px solid var(--line); padding:5px 9px}
@@ -1299,6 +1309,11 @@ body.review .pan-foot{opacity:1}
 .pan-link{margin:20px 0 0}
 /* con quattro pulsanti in fila le etichette lunghe non ci stanno */
 .pan-foot button{font-size:10px; letter-spacing:.1em; padding:9px 10px}
+/* Il ritorno a capo del piede: largo quanto la riga, alto zero. */
+.pan-acapo{flex-basis:100%; height:0; margin:0}
+/* Quello che butta via qualcosa sta in fondo a destra, come in ogni
+   altro piede di pannello del sito. */
+#del{margin-left:auto}
 #p-mia{
   font-family:var(--ff-text); font-weight:700; text-transform:none;
   cursor:pointer; color:#f2f1ed; background:var(--accent); border:0; border-radius:var(--r-s);
@@ -1670,7 +1685,7 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 
 .tool, #conta, .riga-menu, .gruppi button, #sortmenu button, .vista-riga,
 .aggiungi, #stanza-apri, #vista-apri, .riga-azioni button, #mobili-lista button,
-.pan-azioni button, #close, .cartella-tit, #mia-gestisci, #vis-torna{
+.pan-azioni button, .cartella-tit, #mia-gestisci, #vis-torna{
   font-family:var(--ff); font-weight:500; letter-spacing:0;
   text-transform:none; border-radius:var(--r-s);
   border:0; cursor:pointer;
@@ -1681,6 +1696,7 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 #sortmenu button:active, .vista-riga:active, .aggiungi:active,
 #stanza-apri:active, #vista-apri:active, .riga-azioni button:active,
 .pan-azioni button:active, #close:active, #vis-torna:active{
+  /* (il chiudi tiene la sua pressione, ma non il fondo tinto: vedi sotto) */
   transform:scale(.96);
 }
 
@@ -1694,23 +1710,36 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 
 /* --- livello 2: tinto --------------------------------------------- */
 .tool, #conta, .riga-menu, .gruppi button, .vista-riga, #stanza-apri,
-#vista-apri, .pan-azioni button, #mia-gestisci, #close{
+#vista-apri, .pan-azioni button, #mia-gestisci{
   background:rgba(200,106,60,.10); color:var(--accent);
   padding:10px 15px; font-size:14px;
 }
 .tool:hover, #conta:hover, .riga-menu:hover, .gruppi button:hover,
 .vista-riga:hover, #stanza-apri:hover, #vista-apri:hover,
-.pan-azioni button:hover, #mia-gestisci:hover, #close:hover{
+.pan-azioni button:hover, #mia-gestisci:hover{
   background:rgba(200,106,60,.18); color:var(--accent);
 }
 /* quello che e' spento sta in grigio, non in terracotta: il colore
    dell'accento vuol dire "questo fa qualcosa adesso" */
-.gruppi button, #mia-gestisci, #close, .riga-menu{
+.gruppi button, #mia-gestisci, .riga-menu{
   background:rgba(51,53,43,.06); color:var(--ink-soft);
 }
-.gruppi button:hover, #mia-gestisci:hover, #close:hover, .riga-menu:hover{
+.gruppi button:hover, #mia-gestisci:hover, .riga-menu:hover{
   background:rgba(51,53,43,.11); color:var(--ink);
 }
+
+/* IL CHIUDI E' PIENO, NON TINTO. Era finito nel livello "tinto" insieme
+   agli altri comandi, cioe' terracotta al 10% -- e un fondo al 10%
+   funziona dentro una scheda chiara ma non nell'angolo di un pannello
+   che sta gia' su carta: si vedeva a malapena, e chiudere la scheda e'
+   la cosa che si cerca per prima quando si vuole uscire. Sta all'angolo
+   e deve essere una superficie piena, come tutto quello che galleggia. */
+#close{
+  background:var(--accent); color:#f2f1ed; font-weight:600;
+  padding:9px 13px; font-size:12px; letter-spacing:.02em;
+  box-shadow:var(--ombra-lieve);
+}
+#close:hover{background:var(--ink); color:#f2f1ed}
 .gruppi button.on, .gruppi.filtro button.on{
   background:var(--accent); color:#fff; border:0;
 }
@@ -2624,6 +2653,11 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   background:rgba(51,53,43,.05); border-radius:var(--r-s);
 }
 .pa-chi li.vince{background:rgba(200,106,60,.12)}
+/* Il nome e la sua corona stanno insieme: la corona e' di quel nome,
+   non una colonna di comandi in testa alla riga. */
+.pa-chi .chi-nome{
+  flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:4px;
+}
 .pa-chi .nome{
   flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   font-family:var(--ff); font-size:14px; font-weight:500; color:var(--ink);
@@ -2638,6 +2672,14 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   background:var(--card); border:0; border-radius:var(--r-s); padding:9px 8px; color:var(--ink);
 }
 .pa-chi .punti:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
+/* Appena accennata dove non ha vinto nessuno -- il tavolo si legge, e
+   una fila di corone spente direbbe "qui si preme" a ogni riga -- e
+   piena su chi ha vinto. Resta comunque un pulsante vero, e sotto il
+   dito si accende: senza, chi non segna i punti di tutti non avrebbe
+   piu' modo di dire chi ha vinto. */
+.pa-chi .corona{opacity:.18}
+.pa-chi .corona:hover, .pa-chi .corona:focus-visible{opacity:1}
+.pa-chi li.vince .corona{opacity:1}
 .pa-chi .corona, .pa-chi .via{
   flex:0 0 auto; width:32px; height:32px; padding:0; border:0; border-radius:var(--r-s);
   background:none; color:var(--ink-soft); cursor:pointer;
@@ -2992,6 +3034,56 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   grid-row:1 / span 2; grid-column:3; font-style:normal;
   font-family:var(--ff-display); font-weight:400; font-size:17px; color:var(--accent);
 }
+
+/* ===================================================================
+   IL CARTELLO DI CASA D'ALTRI
+
+   Dice di chi e' la libreria che stai guardando, ed e' l'unica uscita:
+   di la' il catalogo e il profilo spariscono apposta. Era un rettangolo
+   squadrato con dentro un blocco terracotta grande quanto meta'
+   cartello, che su un telefono andava a capo -- "torna / alla tua" --
+   e sbilanciava tutto.
+
+   Adesso e' una pastiglia sola, come le altre cose che galleggiano
+   sulla scena: carta velata con la sfocatura dietro. Il testo si
+   stringe con l'ellissi se il nick e' lungo, il pulsante non si
+   stringe mai -- e' l'uscita, e un'uscita non va a capo.
+
+   Le misure stanno QUI e non nel blocco di `#visita` piu' su: il
+   livello "pieno" della sezione I COMANDI arriva dopo, e gli
+   riscriverebbe corpo, peso e imbottitura.
+   =================================================================== */
+#visita{
+  gap:10px; max-width:calc(100vw - 24px);
+  background:rgba(242,241,237,.92); backdrop-filter:blur(10px);
+  border:0; border-radius:999px; padding:6px 6px 6px 17px;
+}
+#visita span{
+  min-width:0; font-size:12.5px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+#visita b{font-weight:600}
+#vis-torna{
+  flex:none; display:inline-flex; align-items:center; gap:7px;
+  font-size:12.5px; font-weight:600; white-space:nowrap;
+  padding:9px 15px; border-radius:999px;
+}
+#vis-torna .ico{width:15px; height:15px; flex:none}
+
+/* --- il tuo winrate su un gioco solo -------------------------------
+   Nel pannello della recensione e dentro la riga aperta del catalogo:
+   e' la stessa domanda del riquadro in cima alle partite, ristretta a
+   un titolo, e fatta mentre si ha quel titolo davanti. */
+.gioco-wr{
+  display:flex; align-items:center; gap:10px; margin:0 0 12px;
+  padding:9px 12px; background:rgba(200,106,60,.09); border-radius:var(--r-s);
+}
+.gioco-wr .wr-anello{width:26px; height:26px}
+.gioco-wr b{
+  font-family:var(--ff-display); font-weight:400; font-size:19px;
+  letter-spacing:0; color:var(--accent); line-height:1;
+}
+.gioco-wr span{font-size:11.5px; color:var(--ink-soft); letter-spacing:.03em}
 
 /* Il campo del nome di una libreria quando quel nome e' gia' di un
    altro mobile: il rosso lo dice prima del clic, la spunta e' gia'

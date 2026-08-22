@@ -180,18 +180,44 @@ async function salva(p){
     id = i.data.id;
   }
 
-  const r = await c.from('partecipanti').insert(chi.map(function(x){
+  const righe = chi.map(function(x){
     return {
       partita: id, nome: x.nome, giocatore: x.giocatore || null,
-      posizione: x.posizione === '' || x.posizione === undefined ? null
-                                                                : (parseInt(x.posizione, 10) || null),
+      posizione: numero(x.posizione),
+      punti: numero(x.punti),
       vincitore: !!x.vincitore
     };
-  }));
+  });
+
+  let r = await c.from('partecipanti').insert(righe);
+  /* Senza la migrazione `punti_partita` la colonna non c'e' e PostgREST
+     butta via l'intera scrittura. Meglio salvare la partita senza i
+     punti che non salvarla: si riprova senza, e i punti tornano a
+     essere quello che erano prima, un aiuto del modulo. */
+  if (r.error && mancaPunti(r.error)){
+    r = await c.from('partecipanti').insert(righe.map(function(x){
+      const y = Object.assign({}, x); delete y.punti; return y;
+    }));
+  }
   if (r.error) throw r.error;
 
   await carica();
   return id;
+}
+
+/* Un numero, o nullo se non e' stato scritto niente. NON si scrive
+   `parseInt(x) || null`: lo zero e' un punteggio vero -- si puo'
+   chiudere una partita a zero -- e quel `||` lo trasformerebbe in "non
+   registrato", che e' un'altra cosa. */
+function numero(x){
+  if (x === '' || x === null || x === undefined) return null;
+  const n = parseInt(x, 10);
+  return isNaN(n) ? null : n;
+}
+
+function mancaPunti(e){
+  const m = (e && (e.message || '')) + ' ' + (e && (e.details || ''));
+  return (e && (e.code === '42703' || e.code === 'PGRST204')) || m.indexOf('punti') >= 0;
 }
 
 async function togli(id){
