@@ -126,6 +126,53 @@ function wood(o){
 }
 
 /* ---------------------------------------------------------------
+   L'OMBRA DENTRO I CUBI  (occlusione ambientale, dipinta)
+
+   Un cubo di libreria non e' illuminato come la stanza attorno: la
+   luce entra dal davanti e si spegne verso il fondo e verso gli
+   angoli. Senza, lo schienale e' una tavola uniforme e il mobile si
+   legge piatto -- tre file di rettangoli invece di dodici scatole
+   dentro dei vani.
+
+   Si dipinge sullo SCHIENALE, che e' UNA tavola sola per tutto il
+   mobile: una texture, un materiale, e **nessuna chiamata di disegno
+   in piu'**. Una SSAO vera vorrebbe una passata di post-produzione,
+   cioe' il contrario di quello che serve qui.
+
+   `celle` sono i rettangoli dei cubi in frazioni 0..1 dello schienale.
+   Il bordo ALTO e' il piu' scuro -- la luce viene da sopra e il
+   ripiano la ferma -- e il basso il piu' chiaro, perche' il fondo del
+   cubo un po' di luce la rimanda su. Negli angoli le sfumature si
+   sommano, ed e' esattamente dove un'occlusione e' piu' fitta. */
+function aoCubi(c, celle, forza){
+  const x = c.getContext('2d'), w = c.width, h = c.height;
+  const f = forza === undefined ? .58 : forza;
+  celle.forEach(function(r){
+    const X = r[0] * w, Y = r[1] * h, W = (r[2] - r[0]) * w, H = (r[3] - r[1]) * h;
+    const dentro = Math.min(W, H) * .44;          // quanto entra la sfumatura
+    [[X, Y, X, Y + dentro, f],                    // dall'alto: il piu' scuro
+     [X, Y + H, X, Y + H - dentro, f * .42],      // dal basso: il piu' chiaro
+     [X, Y, X + dentro, Y, f * .70],              // da sinistra
+     [X + W, Y, X + W - dentro, Y, f * .70]       // da destra
+    ].forEach(function(s){
+      const g = x.createLinearGradient(s[0], s[1], s[2], s[3]);
+      g.addColorStop(0, 'rgba(0,0,0,' + s[4].toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g;
+      x.fillRect(X, Y, W, H);
+    });
+  });
+  return c;
+}
+
+// una copia su cui dipingere senza sporcare l'originale
+function copia(c){
+  const [d, x] = cnv(c.width, c.height);
+  x.drawImage(c, 0, 0);
+  return d;
+}
+
+/* ---------------------------------------------------------------
    COPERTINE
    --------------------------------------------------------------- */
 
@@ -794,6 +841,7 @@ function quadro(seed){
 
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
+  aoCubi: aoCubi, copia: copia,
   avatar: avatar, quadro: quadro, targhetta: targhetta,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,

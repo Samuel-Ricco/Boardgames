@@ -1565,6 +1565,35 @@ versione aveva emisferica 1.15 e ambiente 0.45 e la scena usciva slavata, media
 `--bg` nel CSS deve restare **uguale** a `SFONDO` in `js/app.js`: è la stessa
 tinta a tenere insieme caricamento, cancello e mondo dietro.
 
+## L'ombra dentro i cubi
+
+Il mobile si leggeva piatto: dodici rettangoli scuri in una griglia, non
+dodici vani. Mancava l'occlusione ambientale — la luce che negli angoli non
+arriva — e senza, un cubo vuoto e una toppa scura sono la stessa cosa.
+
+Una SSAO vera vorrebbe una passata di post-produzione, cioè l'opposto di
+quello che serve qui. Invece **si dipinge**, e si dipinge in un posto solo: lo
+**schienale**, che è una tavola unica per tutto il mobile. Una texture, un
+materiale, e **zero chiamate di disegno in più**.
+
+- `ART.aoCubi(canvas, celle)` scurisce ogni cella verso i suoi bordi. Il bordo
+  **alto è il più scuro** (la luce viene da sopra e il ripiano la ferma), il
+  **basso il più chiaro** (il fondo del cubo rimanda su un po' di luce), i lati
+  stanno in mezzo. Negli angoli le sfumature si sommano, ed è esattamente dove
+  un'occlusione è più fitta.
+- **Le celle escono dalle stesse costanti che costruiscono il mobile**
+  (`celleCubi()`): lo schienale è largo `LIB_W - 2t` e alto `LIB_H - 2t`, cioè
+  esattamente l'interno, quindi tre colonne da `cell` separate da un montante da
+  `t` cadono al pixel giusto per costruzione. Verificato: l'ultima cella finisce
+  a 1.0000.
+- **L'ombra NON va nel bump map.** Il rilievo viene dalla venatura: un'ombra è
+  luce che manca, non legno che sporge, e messa anche nel bump scaverebbe un
+  fossato lungo ogni bordo. Per questo `makeWoodMat` dipinge su una **copia**
+  (`ART.copia`) e il bump resta la tavola nuda.
+- Si misura a numeri, non a occhio: dipinta su bianco, il centro di una cella
+  resta a **255**, il bordo alto scende a **114**, il basso a **195**, l'angolo
+  alto a **70**.
+
 ## Quello che costa un fotogramma
 
 Misurato avvolgendo il contesto WebGL e contando i draw call divisi per
@@ -1680,6 +1709,33 @@ sua cella, e si contano le macchie scure di ogni cella filtrando per area (un
 pallino ha raggio 12, cioè circa 450 pixel — sotto quella soglia è grana).
 Devono venire `[3,4,1,6,2,5]`.
 
+## Sessanta fotogrammi: dov'erano già, e cosa restava
+
+Misurato prima di toccare niente, che qui è la regola: **160 fps, CPU 0,3 ms
+mediana e 0,5 al novantacinquesimo, 80 chiamate di disegno per fotogramma.** Su
+questa macchina i sessanta erano già superati di due volte e mezza, e il ciclo
+era già magro — le ombre si rifanno su prenotazione, geometrie e materiali
+sono in comune, il pixel ratio è già limitato a 2.
+
+Quello che restava riguarda le macchine deboli, non questa:
+
+- **L'antialiasing si spegne dove i pixel sono piccoli.** Su uno schermo a
+  densità 2 o 3 — cioè ogni telefono — la scalettatura la mangia già la
+  densità, e MSAA costa una passata a risoluzione multipla su tutta la scena.
+  È il conto più salato che si possa pagare per una cosa che lì non si vede.
+- **La mappa d'ombra scende a 1024 sotto i 720 px** di lato corto. La passata
+  d'ombra è la scena intera ridisegnata dentro quella mappa: a metà lato costa
+  un quarto dei pixel, e su cinque pollici la differenza non la vede nessuno.
+- **Il raycast solo quando serve.** `pick()` girava su tutte le scatole a ogni
+  fotogramma, anche con il puntatore fermo e la scena ferma — cioè quasi
+  sempre. Ora c'è `mirinoSporco`, che lo segnano il puntatore che si muove, la
+  camera che scorre e le scatole che si spostano: sono i soli casi in cui la
+  risposta può essere un'altra.
+
+Dopo: **160 fps, 80 chiamate, CPU 0,4 ms mediana e 1,1 di picco.** Sulla
+macchina di prova non cambia niente, ed è giusto così: qui non c'era niente da
+guadagnare. I tre interventi valgono dove il conto si paga davvero.
+
 ## Misurare invece di guardare
 
 Quattro tecniche che in questa sessione hanno cambiato la diagnosi, non solo
@@ -1698,6 +1754,25 @@ conta solo fra un `bind` e l'altro **perde tutto**. Serve anche un totale.
 Il numero di elementi da disegnare si può leggere anche dal **grafo di scena**,
 senza un solo fotogramma: materiale singolo → uno, array → uno per gruppo. Utile
 quando il pannello non compone.
+
+### Il browser dell'anteprima tiene in cache anche i `.js`
+
+Era già scritto per il CSS; vale **identico per il JavaScript**. `python
+http.server` manda solo `Last-Modified`, senza `Cache-Control`, e il browser si
+tiene la sua copia per euristica: si modifica un file, si ricarica, e gira
+ancora il codice di prima — con l'aggravante che `fetch` dello stesso file
+mostra la versione **nuova**, quindi sembra che il problema sia altrove.
+
+Si sblocca così, da console:
+
+```js
+Promise.all([...document.querySelectorAll('script[src]')].map(s => s.getAttribute('src'))
+  .concat([...document.querySelectorAll('link[rel=stylesheet]')].map(l => l.getAttribute('href')))
+  .map(f => fetch(f, { cache: 'reload' }))).then(() => location.reload());
+```
+
+`cache:'reload'` va in rete **e aggiorna la cache HTTP**: al ricaricamento
+successivo i `<script>` prendono la versione giusta.
 
 ### Tarare un confronto di pixel sul suo rumore di fondo
 

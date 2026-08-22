@@ -526,13 +526,19 @@ body.sez-catalogo #catalogo{display:block}
   padding:18px 0; border-top:1px solid var(--line);
 }
 .righe > li:last-child{border-bottom:1px solid var(--line)}
+/* Il riquadro senza copertina e' una carta color sabbia, non un buco
+   grigio: nel catalogo ce ne sono a centinaia di fila, e un grigio
+   neutro ripetuto cento volte legge come un elenco rotto. La sabbia
+   e' gia' nella tavolozza, e l'iniziale sopra le da' un contenuto. */
 .cat-cop{
-  width:88px; aspect-ratio:1/1; overflow:hidden; background:rgba(51,53,43,.06);
+  width:88px; aspect-ratio:1/1; overflow:hidden;
+  background:rgba(199,175,152,.30);
   display:flex; align-items:center; justify-content:center;
 }
 .cat-cop img{width:100%; height:100%; object-fit:cover; display:block}
 .cat-cop .senza{
-  font-family:var(--ff-display); font-size:21.6px; color:rgba(51,53,43,.22);
+  font-family:var(--ff-display); font-size:30px; line-height:1;
+  color:rgba(142,106,75,.60);
 }
 .cat-dati h3{
   margin:0; font-family:var(--ff-display); font-weight:400;
@@ -567,8 +573,13 @@ body.sez-catalogo #catalogo{display:block}
   color:var(--accent); background:rgba(200,106,60,.10);
 }
 .cat-azioni .metti:hover{background:var(--accent); color:#fff}
-.cat-azioni .metti:disabled{background:rgba(51,53,43,.06); color:var(--ink-soft)}
-.cat-azioni .metti:disabled:hover{background:rgba(51,53,43,.06); color:var(--ink-soft)}
+/* La spunta non e' un pulsante spento: e' la risposta a "ce l'ho gia'?".
+   In grigio tenue non si leggeva, e scorrendo il catalogo era proprio
+   l'unica cosa che si stava cercando di vedere. */
+.cat-azioni .metti:disabled{
+  background:rgba(200,106,60,.12); color:var(--accent); cursor:default; opacity:1;
+}
+.cat-azioni .metti:disabled:hover{background:rgba(200,106,60,.12); color:var(--accent)}
 .cat-azioni button:disabled{cursor:default; opacity:.55}
 .cat-azioni button:disabled:hover{color:var(--ink-soft); border-color:var(--line)}
 
@@ -629,10 +640,15 @@ body.sez-profilo #profilo{display:block}
    di stanza scoperta in cima, e il mobile si vedeva spuntare da sotto
    il titolo. Il respiro in alto lo mette `.cat-in`, come per il
    catalogo e il profilo. */
+/* Il fondo lo prende dalla regola che vale per tutte e quattro le
+   schermate, piu' sotto. Qui ne aveva uno suo, e per giunta a 0.975 di
+   opacita': la libreria si vedeva in trasparenza dietro le partite --
+   scatole e ripiani sotto il testo -- e la tinta era pure un'altra da
+   quella delle sezioni vicine. Una schermata che copre la scena la
+   copre e basta. */
 #partite{
   position:fixed; inset:0; z-index:2; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(207,204,200,.975);
 }
 body.sez-partite #partite{display:block}
 .pro-in{max-width:760px; margin:0 auto; padding:96px clamp(16px,4vw,40px) 80px}
@@ -1979,7 +1995,7 @@ body.elenco #conta b{color:#fff}
 /* Il fondo dell'elenco era la stanza a piena tinta: sotto al testo
    diventava una lastra grigia. Va verso la carta, che e' il colore di
    una pagina che si legge. */
-#mia, #catalogo, #profilo{background:#e7e5e0}
+#mia, #catalogo, #profilo, #partite{background:#e7e5e0}
 
 /* La finestrella delle azioni era trasparente: si leggeva attraverso e
    non si capiva dove finisse, e prendere una voce era un tiro a segno. */

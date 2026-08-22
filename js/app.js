@@ -252,12 +252,37 @@ function killGroup(g, deep){
 function makeWoodMat(o){
   o = o || {};
   const c = ART.wood(o);
+  /* Il RILIEVO viene dalla venatura e basta: l'ombra dipinta sopra e'
+     luce che manca, non legno che sporge, e messa anche nel bump map
+     scaverebbe un fossato lungo ogni bordo. Per questo l'occlusione va
+     su una copia, e il bump resta la tavola nuda. */
+  const bump = ART.toTex(c, { repeat: o.repeat, rot: o.rot });
+  const map = o.ao ? ART.toTex(o.ao(ART.copia(c)), { repeat: o.repeat, rot: o.rot }) : bump.clone();
+  if (o.ao) map.needsUpdate = true;
   return new THREE.MeshStandardMaterial({
-    map: ART.toTex(c, { repeat: o.repeat, rot: o.rot }),
-    bumpMap: ART.toTex(c, { repeat: o.repeat, rot: o.rot }),
+    map: map,
+    bumpMap: bump,
     bumpScale: o.bump === undefined ? .035 : o.bump,
     roughness: o.rough === undefined ? .74 : o.rough, metalness: .04
   });
+}
+
+/* I dodici cubi in frazioni dello schienale. Lo schienale e' largo
+   `W - 2T` e alto `H - 2T`, cioe' esattamente l'interno del mobile:
+   tre colonne da `cell` separate da un montante da `t`, e quattro file
+   uguali. Le frazioni escono dalle stesse costanti che costruiscono il
+   mobile, quindi non possono andare fuori registro. */
+function celleCubi(){
+  const larg = LIB_W - KAL.t * 2, alt = LIB_H - KAL.t * 2, celle = [];
+  for (let r = 0; r < RIGHE; r++){
+    for (let c = 0; c < COLS; c++){
+      celle.push([
+        (c * KAL.passo) / larg,               (r * KAL.passo) / alt,
+        (c * KAL.passo + KAL.cell) / larg,    (r * KAL.passo + KAL.cell) / alt
+      ]);
+    }
+  }
+  return celle;
 }
 
 /* Rovere chiaro, quello delle KALLAX: venatura tenue e poco contrasto,
@@ -296,9 +321,13 @@ function matsDi(tinta){
     // e' cosi' che si vede su un mobile vero
     orizz: legno(esa(c.clone().lerp(new THREE.Color(0xffffff), .05)),
                  { lines:220, knots:2, rough:.70, bump:.05 }),
-    // lo schienale sta in ombra: parte gia' piu' scuro
+    /* Lo schienale sta in ombra: parte gia' piu' scuro, e sopra ci
+       viene dipinta l'occlusione dei dodici cubi. E' lo stesso disegno
+       per tutti i mobili -- la griglia e' sempre 3 x 4 -- quindi la
+       cache per tinta va bene com'e'. */
     fondo: legno(esa(c.clone().multiplyScalar(.88)),
-                 { lines:160, knots:1, rough:.86, bump:.02 })
+                 { lines:160, knots:1, rough:.86, bump:.02,
+                   ao: function(cv){ return ART.aoCubi(cv, celleCubi()); } })
   };
   return MATS_PER_TINTA[tinta];
 }
@@ -417,7 +446,15 @@ function buildRoom(){
   const key = keyLight = new THREE.DirectionalLight(0xfff4e2, .95);
   key.position.set(-9, 22, 26);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  /* 2048 su un monitor, 1024 su un telefono. La passata d'ombra e' la
+     scena INTERA ridisegnata dentro quella mappa: a 1024 costa un quarto
+     dei pixel, e su uno schermo da cinque pollici il mobile e' alto
+     ottocento pixel scarsi -- la differenza non la vede nessuno. Gira
+     comunque solo su prenotazione (vedi `rifaiOmbre`), quindi e' un
+     risparmio sui fotogrammi in cui qualcosa si muove, che sono quelli
+     in cui serve. */
+  const piccolo = Math.min(window.innerWidth || 1200, window.innerHeight || 900) < 720;
+  key.shadow.mapSize.set(piccolo ? 1024 : 2048, piccolo ? 1024 : 2048);
   key.shadow.camera.near = 1;
   key.shadow.camera.far = 90;
   key.shadow.camera.left = -26;
@@ -2288,6 +2325,7 @@ function bindInput(){
   el.addEventListener('pointermove', function(e){
     norm(e);
     pointer.set(state.tx, state.ty);
+    sporcaMirino();                 // il puntatore si e' spostato: si rimira
     if (state.presa){ muoviPresa(); return; }
     // muoversi prima che scatti la presa vuol dire che si sta scorrendo
     if (Math.abs(e.clientX - downX) > 9 || Math.abs(e.clientY - downY) > 9) clearTimeout(presaT);
@@ -2318,7 +2356,7 @@ function bindInput(){
     partenzaLib = Math.round(state.scroll);      // da qui non ci si allontana di piu' di uno
     state.dragging = true;
     if (el.setPointerCapture) try { el.setPointerCapture(e.pointerId); } catch(err){}
-    norm(e); pointer.set(state.tx, state.ty);
+    norm(e); pointer.set(state.tx, state.ty); sporcaMirino();
 
     clearTimeout(presaT);
     if (puoiSpostare()){
@@ -2434,6 +2472,11 @@ function bindInput(){
     clearTimeout(rt); rt = setTimeout(layout, 120);
   });
 }
+
+/* Il mirino e' "sporco" quando la risposta del raycast puo' essere
+   cambiata: chi muove il puntatore, la scena o le scatole lo segna. */
+let mirinoSporco = true;
+function sporcaMirino(){ mirinoSporco = true; }
 
 function pick(){
   raycaster.setFromCamera(pointer, camera);
@@ -3067,9 +3110,15 @@ function rigaCatalogo(v, i){
     .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
 
   return '<li data-i="' + i + '">' +
+    /* Senza miniatura si mette l'INIZIALE, come fa gia' l'elenco della
+       collezione. Il punto interrogativo era lo stesso segno per tutti:
+       cento righe di catalogo diventavano cento quadrati identici che
+       dicevano soltanto "non lo so". L'iniziale almeno appartiene a quel
+       gioco, e scorrendo l'occhio ci si aggancia. */
     '<div class="cat-cop">' + (img
       ? '<img src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
-      : '<span class="senza">?</span>') + '</div>' +
+      : '<span class="senza">' + esc(String(v.title || '?').trim().slice(0, 1).toUpperCase()) + '</span>') +
+    '</div>' +
     '<div class="cat-dati">' +
       '<h3>' + esc(v.title) + (rec ? '<i class="bollo">recensito</i>' : '') + '</h3>' +
       (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
@@ -5797,6 +5846,7 @@ function frame(now){
       updateRail();
       allineaComandi();      // la camera si e' spostata: la proiezione e' un'altra
       rifaiOmbre();          // la luce di finestra segue camBase: l'ombra si sposta
+      sporcaMirino();        // sotto il puntatore adesso c'e' un'altra scatola
     }
   }
 
@@ -5848,17 +5898,25 @@ function frame(now){
     muoviPresa();
   }
 
+  /* Il raycast costava un giro su tutte le scatole a OGNI fotogramma,
+     anche con il puntatore fermo e la scena ferma -- cioe' quasi sempre.
+     Si rifa' solo se qualcosa e' cambiato sotto: il puntatore che si
+     muove, la camera che scorre, o le scatole che si spostano. Sono
+     esattamente i casi in cui la risposta puo' essere un'altra. */
   if (state.phase === 'browse' && !state.dragging && !state.presa){
-    const hit = pick();
-    if (hit !== state.hover){
-      state.hover = hit;
-      document.body.style.cursor = hit ? 'pointer' : '';
+    if (mirinoSporco){
+      mirinoSporco = false;
+      const hit = pick();
+      if (hit !== state.hover){
+        state.hover = hit;
+        document.body.style.cursor = hit ? 'pointer' : '';
+      }
     }
   } else if (state.phase !== 'browse' && document.body.style.cursor){
     document.body.style.cursor = '';
   }
 
-  if (updateBoxes(dt) || anims.length || state.presa) rifaiOmbre();
+  if (updateBoxes(dt) || anims.length || state.presa){ rifaiOmbre(); sporcaMirino(); }
 
   // la mappa d'ombra solo quando serve davvero: vedi `rifaiOmbre`
   renderer.shadowMap.needsUpdate = ombreDaRifare > 0;
@@ -6026,7 +6084,13 @@ async function boot(){
 
   try {
     camera = new THREE.PerspectiveCamera(FOV, 16/9, .1, 300);
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    /* MSAA solo dove i pixel sono grossi. Su uno schermo a densita' 2 o
+       3 -- cioe' ogni telefono -- il bordo scalettato lo mangia gia' la
+       densita', e l'antialiasing costa una passata di risoluzione
+       multipla su tutta la scena: e' il conto piu' salato che si possa
+       pagare per una cosa che li' non si vede. */
+    const denso = (window.devicePixelRatio || 1) >= 2;
+    renderer = new THREE.WebGLRenderer({ antialias: !denso, powerPreference: 'high-performance' });
   } catch(e){
     fallbackFlat(); return;
   }
