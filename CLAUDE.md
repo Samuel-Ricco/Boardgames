@@ -1755,6 +1755,64 @@ Il numero di elementi da disegnare si può leggere anche dal **grafo di scena**,
 senza un solo fotogramma: materiale singolo → uno, array → uno per gruppo. Utile
 quando il pannello non compone.
 
+## Un cubo tiene una scatola sola, e il database lo fa rispettare
+
+`giochi_posto_unico` è un indice unico su `(libreria, posto)`. Da questo
+discendono due difetti che sembravano scollegati e sono lo stesso.
+
+**Lo scambio di due scatole falliva.** `mandaPosti` mandava gli update **in
+parallelo**: in uno scambio le due righe rivendicano per un istante lo stesso
+cubo, una arriva prima, e Postgres risponde `23505 duplicate key value violates
+unique constraint «giochi_posto_unico»`. Chi trascinava un gioco sopra un altro
+vedeva un errore invece di vederli scambiati. Verificato in tutti e due i modi
+contro il database vero: in parallelo l'errore c'è, in due tempi no.
+
+Adesso è **in due tempi**: prima si sfilano tutte dall'indice (`posto` nullo,
+che l'indice non guarda), poi si scrive dove vanno davvero. Vale per qualunque
+scrittura futura su una colonna con un indice unico: **un vincolo non guarda
+l'intenzione, guarda lo stato in quell'istante.**
+
+**E una posizione rifiutata non tornava indietro.** Le scritture qui sono
+ottimiste, ma questa non aveva rollback: la scatola restava dove l'avevi
+trascinata e in memoria due giochi rivendicavano lo stesso cubo — una
+situazione che sul **database non può nemmeno esistere**. Da lì in poi la scena
+mostrava cose che il server non aveva, e finivano anche in `localStorage`. Ora
+`mandaPosti` fotografa il prima e lo rimette, con `onRipristino()` a rimettere in
+pari la scena.
+
+## Quando non c'è posto si fa un mobile
+
+Dodici cubi per libreria, e basta. Se i giochi in vetrina erano di piu' dei
+posti, l'eccedenza finiva **nel mobile di scorta** — quello in piu' che si vede
+sempre in fondo alla fila e che sul database non esiste. È arrivato come
+segnalazione, con lo screenshot di due scatole dentro «nuova libreria».
+
+La risposta è quella che darebbe chiunque: **quando lo scaffale è pieno se ne
+prende un altro.** Vale in tutti e tre i punti in cui un gioco cerca posto:
+`mettiSuScaffale`, `collocaNuovo`, e la riparazione all'avvio.
+
+- `cuboLibero(presi)` cerca il primo cubo libero della fila e, se non ce n'è
+  nessuno, **crea un mobile**. Contare prima quanti ne servono non basta: fra il
+  conto e l'assegnazione qualcosa può cambiare, e restare senza posto vuol dire
+  che un gioco esce dalla vetrina senza che nessuno l'abbia chiesto.
+- `riparaPosti()` gira all'avvio e rimette in ordine tre guasti: due giochi sullo
+  stesso cubo, un `libreria` che punta a un mobile cancellato, e piu' giochi in
+  vetrina che cubi. Dei dati storti restano storti finche' qualcuno non li
+  guarda, e intanto la scena mostra scatole in un mobile che non c'è.
+- Non può fermare l'avvio: è dentro un `try`. Vedi la regola sugli agganci.
+
+## Le luci dei vani seguono la stanza
+
+Abbassando la luce **la colonna centrale restava accesa**. Le quattro luci di
+fila sono deboli e servono a far risaltare le copertine dentro i cubi, ma
+**seguono la camera** — quindi stanno sempre sul mobile che si sta guardando —
+e `applicaLuce()` le aveva dimenticate: scalava emisferica, ambiente, finestra,
+riempimento ed esposizione, non loro. A luce minima erano le uniche accese.
+
+Adesso `luceVani` si calcola in `applicaLuce` (non nel ciclo, che gira sessanta
+volte al secondo) e il ciclo la usa. Misurato leggendo i pixel: al minimo la
+differenza fra la colonna centrale e le laterali è **6 su 255**.
+
 ## Un aggancio che salta non si porta via gli altri
 
 In fondo a `boot()` c'erano dieci chiamate in fila — `bindInput()`,
@@ -2113,6 +2171,22 @@ mai** — è l'uscita, e un'uscita non va a capo.
 - La freccia sta **fuori da `data-i18n`**: quell'attributo scrive in `innerHTML`,
   e con la chiave sul pulsante il disegno sparirebbe al primo cambio di lingua.
   È la stessa lezione di `#p-pref`.
+
+### Il lampo azzurro sul tocco
+
+Su un telefono, toccando un punto qualsiasi **tutto lo schermo diventava
+azzurro** per un istante. Non era un pannello: era l'evidenziazione di tocco del
+browser, dipinta sopra l'elemento toccato — e l'elemento toccato è `#scene`,
+che è fisso e grande quanto lo schermo. `-webkit-tap-highlight-color:transparent`
+su `html`, e `user-select:none` su quello che si tocca per fare e non per
+leggere: qui non si seleziona, si preme.
+
+### Il piede del pannello della libreria sta fuori da quello che scorre
+
+Con le due tendine aperte il pannello ha oltre ottocento pixel di contenuto, e
+«elimina questa libreria» finiva sotto il bordo — su un telefono senza
+nemmeno una barra di scorrimento a dire che sotto c'era altro. È la stessa
+lezione della scheda: `.st-scorre` scorre, `.st-gesti` no.
 
 ### Il fuoco non si ruba
 

@@ -126,6 +126,10 @@ const camBase = new THREE.Vector3(0, 8, 26);
 
 let renderer, scene, camera, raycaster, pointer;
 let cabGroup, propGroup, bayLights = [], focusLight, keyLight, alone;
+/* Quanto valgono le luci dei vani, a questa luce di stanza. Sta qui e
+   non dentro `frame()` perche' cambia solo quando si muove il cursore
+   della luce, mentre il ciclo gira sessanta volte al secondo. */
+let luceVani = .30;
 let hemiLight, ambLight, fillLight;
 let floorMesh, wallMesh;
 let boxes = [];
@@ -530,6 +534,12 @@ function applicaLuce(){
   if (keyLight)  keyLight.intensity  = .95 * Math.pow(l, 1.35);
   if (fillLight) fillLight.intensity = .22 * Math.pow(l, 1.10);
   if (renderer)  renderer.toneMappingExposure = .90 * Math.pow(l, -.20);
+  /* Anche le luci dei vani seguono la stanza. Non lo facevano, ed era
+     il difetto per cui abbassando la luce **la colonna centrale restava
+     accesa**: quelle quattro luci seguono la camera, quindi stanno
+     proprio sul mobile che si sta guardando, e restavano al massimo
+     mentre tutto il resto si spegneva. */
+  luceVani = .30 * Math.pow(l, 1.15);
 
   /* Lo sfondo scende molto piu' della luce: e' quello che fa la
      differenza fra "stanza in penombra" e "filtro grigio". Con il
@@ -1606,6 +1616,82 @@ function fissaOrdineCorrente(quali){
    Dal proprio elenco: e' li' che c'e' tutta la collezione, ed e' li'
    che si decide cosa far vedere. Se le librerie sono piu' d'una si
    sceglie quale, perche' e' il senso di avere piu' mobili. */
+/* NESSUNA SCATOLA IN UN MOBILE CHE NON C'E'.
+
+   Dodici cubi per libreria, e basta. Se i giochi in vetrina erano di
+   piu' dei posti, l'eccedenza finiva nel mobile in piu' che si vede in
+   fondo alla fila -- la SCORTA -- che sul database non esiste: al
+   ricaricamento quelle scatole comparivano altrove, o sparivano. E'
+   arrivato come segnalazione, con lo screenshot di due giochi dentro
+   "nuova libreria".
+
+   La risposta e' quella che darebbe chiunque: quando lo scaffale e'
+   pieno se ne prende un altro. */
+async function assicuraMobili(quanti){
+  const servono = Math.ceil(quanti / PER_LIB);
+  while (LIB.librerie().length < servono){
+    const prima = LIB.librerie().length;
+    await LIB.creaLibreria('');
+    if (LIB.librerie().length <= prima) break;    // non ce l'ha fatta: non si insiste
+  }
+  return LIB.librerie().length;
+}
+
+/* Il primo cubo libero della fila, e se non ce n'e' nessuno **si crea un
+   mobile**. Contare prima quanti ne servono non basta: fra il conto e
+   l'assegnazione qualcosa puo' cambiare, e restare senza posto qui vuol
+   dire che un gioco esce dalla vetrina senza che nessuno l'abbia
+   chiesto. Meglio chiedere il posto quando serve. */
+async function cuboLibero(presi){
+  const cerca = function(){
+    const l = LIB.librerie();
+    for (let i = 0; i < l.length; i++){
+      for (let p = 0; p < PER_LIB; p++){
+        if (!presi[l[i].id + ':' + p]) return [l[i].id, p];
+      }
+    }
+    return null;
+  };
+  let dove = cerca();
+  if (dove) return dove;
+  const L = await LIB.creaLibreria('');
+  return [L.id, 0];
+}
+
+/* Rimette in ordine quello che si e' gia' rotto, e si rompe in tre modi:
+   due giochi sullo stesso cubo, un `libreria` che punta a un mobile
+   cancellato, e piu' giochi in vetrina che cubi. Gira all'avvio, perche'
+   dei dati storti restano storti finche' qualcuno non li guarda -- e
+   intanto la scena mostra scatole in un mobile che non c'e'. */
+async function riparaPosti(){
+  if (LIB.ospitePresso() || !LIB.eRemota()) return 0;
+  const su = LIB.all().filter(function(g){ return g.libreria; });
+  if (!su.length) return 0;
+
+  await assicuraMobili(su.length);
+
+  const vive = Object.create(null);
+  LIB.librerie().forEach(function(L){ vive[L.id] = true; });
+
+  const presi = Object.create(null), daSistemare = [];
+  su.forEach(function(g){
+    const p = g.posto, chiave = g.libreria + ':' + p;
+    const buono = vive[g.libreria] && p !== null && p !== undefined &&
+                  p >= 0 && p < PER_LIB && !presi[chiave];
+    if (buono) presi[chiave] = true; else daSistemare.push(g);
+  });
+  if (!daSistemare.length) return 0;
+
+  const tocchi = [];
+  for (let i = 0; i < daSistemare.length; i++){
+    const dove = await cuboLibero(presi);
+    presi[dove[0] + ':' + dove[1]] = true;
+    tocchi.push(LIB.metti(daSistemare[i].id, dove[0], dove[1]));
+  }
+  if (tocchi.length) await LIB.mandaPosti(tocchi.filter(Boolean));
+  return tocchi.length;
+}
+
 function primoLibero(libId, tranne){
   const presi = {};
   LIB.all().forEach(function(g){
@@ -1620,8 +1706,16 @@ function primoLibero(libId, tranne){
 function mettiSuScaffale(id, libId){
   const p = primoLibero(libId, id);
   if (p < 0){
-    flash(TP('msg.mobilePieno'));
-    disegnaMia();
+    // pieno: se ne fa un altro invece di rifiutare
+    LIB.creaLibreria('').then(function(L){
+      LIB.metti(id, L.id, 0);
+      LIB.mandaPosti([LIB.get(id)]);
+      disegnaLibrerie(); disegnaMia(); ridisponi();
+      flash(TP('msg.messoIn', { g: (LIB.get(id) || {}).title, lib: L.nome }));
+    }).catch(function(e){
+      flash(TP('msg.libNonCreata', {e: e.message}));
+      disegnaMia();
+    });
     return;
   }
   LIB.metti(id, libId, p);
@@ -1686,6 +1780,17 @@ function collocaNuovo(game){
       return;
     }
   }
+
+  /* Tutti pieni. Prima si usciva di qui in silenzio e il gioco restava
+     senza posto -- oppure, peggio, finiva nella scorta. Si fa un mobile
+     nuovo e ci si mette dentro: e' il gesto che si farebbe in salotto. */
+  LIB.creaLibreria('').then(function(L){
+    LIB.metti(game.id, L.id, 0);
+    LIB.mandaPosti([LIB.get(game.id)]);
+    disegnaLibrerie();
+    applyLibrary({ animate: true });
+    flash(TP('msg.libNuova', {n: L.nome}));
+  }).catch(function(e){ flash(TP('msg.libNonCreata', {e: e.message})); });
 }
 
 function posaScatola(p){
@@ -5867,7 +5972,7 @@ function frame(now){
      una libreria e basta -- lasciato fermo all'origine, dalla seconda in
      poi le ombre sparivano di colpo. */
   for (let i = 0; i < bayLights.length; i++){
-    bayLights[i].intensity = state.bayLight * .30;
+    bayLights[i].intensity = state.bayLight * luceVani;
     bayLights[i].position.x = camBase.x;
   }
   if (keyLight){
@@ -6127,6 +6232,12 @@ async function boot(){
   const lib = await LIB.sync();
   await LIB.caricaLibrerie();     // i mobili prima delle scatole: decidono dove vanno
   await LIB.caricaGruppi();
+  /* Prima di disporre: se i dati sono storti la scena mostrerebbe
+     scatole dentro un mobile che non esiste. */
+  let rimessi = 0;
+  try { rimessi = await riparaPosti(); }
+  catch(e){ if (window.console) console.error('riparaPosti:', e); }
+  if (rimessi) flash(TP('msg.postiRimessi', {n: rimessi}));
   buildFlatList();
   setProg(.56, TP('load.copertine'));
   await loadCovers();

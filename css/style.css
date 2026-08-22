@@ -59,6 +59,17 @@
 }
 
 *{box-sizing:border-box}
+
+/* Il lampo azzurro sul tocco. Su un telefono, toccando la scena -- che
+   e' un elemento fisso grande quanto lo schermo -- il browser ci
+   dipingeva sopra la sua evidenziazione: tutto lo schermo diventava
+   azzurro per un istante, come se avesse selezionato un pannello che
+   copre tutto. Qui non si tocca per selezionare, si tocca per fare. */
+html{-webkit-tap-highlight-color:transparent}
+button, summary, .viste, #rail, #scene, #tabbar, .pastiglie, .riga-menu{
+  -webkit-user-select:none; user-select:none;
+}
+
 html,body{height:100%}
 body{
   margin:0; background:var(--bg); color:var(--ink);
@@ -2424,7 +2435,18 @@ body.arreda #stanza{transform:none}
    `<details>` perche' non si guardano insieme.
    =================================================================== */
 
-#stanza{max-height:calc(100vh - var(--y-alto) - 90px); overflow-y:auto}
+/* Il pannello e' una colonna: in mezzo scorre, in fondo no. I due
+   gesti che cambiano quanti sono i mobili devono restare sotto gli
+   occhi anche con tutte le tendine aperte. */
+#stanza{
+  max-height:calc(100vh - var(--y-alto) - 90px);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.st-scorre{
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  min-height:0; margin:0 -4px; padding:0 4px;
+}
+#stanza .st-gesti{flex:none; margin-top:14px; padding-top:12px; border-top:1px solid var(--line)}
 
 /* il nome della libreria che stai guardando, in chiaro */
 .st-nome{display:flex; gap:9px; align-items:center; margin:18px 0 0}

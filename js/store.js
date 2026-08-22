@@ -621,11 +621,39 @@ function metti(id, libreriaId, posto){
   return g;
 }
 
+/* IN DUE TEMPI, e non e' pignoleria.
+
+   Sul database c'e' un indice unico su `(libreria, posto)` -- un cubo
+   tiene una scatola sola -- e uno SCAMBIO scrive due righe che per un
+   istante rivendicano lo stesso cubo. Mandate in parallelo, una delle
+   due arriva prima e il server rifiuta: chi trascinava un gioco sopra
+   un altro vedeva un errore invece di vederli scambiati.
+
+   Quindi prima si sfilano tutte dall'indice (posto nullo, che l'indice
+   non guarda), poi si scrive dove vanno davvero. Se il secondo tempo
+   fallisce restano senza posto, e lo si dice: `riparaPosti` le rimette
+   sullo scaffale al giro dopo. */
 async function mandaPosti(giochi){
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (!c || !remota || visitata) return;
+  const lista = (giochi || []).filter(Boolean);
+  if (!lista.length) return;
+  /* Com'era PRIMA. Le scritture qui sono ottimiste come tutte le altre,
+     ma questa non tornava indietro quando il server diceva di no: la
+     scatola restava dov'era stata trascinata, e in memoria due giochi
+     rivendicavano lo stesso cubo -- una situazione che sul database non
+     puo' nemmeno esistere, perche' c'e' un indice unico a vietarla. Da
+     li' in poi la scena mostrava cose che il server non aveva. */
+  const prima = lista.map(function(g){
+    return { id: g.id, libreria: g.libreria, posto: g.posto };
+  });
   try {
-    const esiti = await Promise.all(giochi.map(function(g){
+    const via = await c.from('giochi').update({ posto: null })
+      .eq('proprietario', AUTH.stato().id)
+      .in('id', lista.map(function(g){ return g.id; }));
+    if (via.error) throw via.error;
+
+    const esiti = await Promise.all(lista.map(function(g){
       return c.from('giochi')
         .update({ libreria: g.libreria, posto: g.posto })
         .eq('proprietario', AUTH.stato().id).eq('id', g.id);
@@ -633,6 +661,12 @@ async function mandaPosti(giochi){
     const ko = esiti.find(function(r){ return r.error; });
     if (ko) throw ko.error;
   } catch(e){
+    prima.forEach(function(v){
+      const g = get(v.id);
+      if (g){ g.libreria = v.libreria; g.posto = v.posto; }
+    });
+    salvaLocale();
+    onRipristino();                 // e la scena torna in pari con i dati
     onErrore(TP('err.posizione', {e: messaggio(e)}));
   }
 }

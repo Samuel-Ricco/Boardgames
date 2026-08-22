@@ -121,6 +121,13 @@
   <button id="stanza-x" type="button" data-i18n-aria="pan.chiudi" aria-label="chiudi">&times;</button>
   <p class="eyebrow" data-i18n="stanza.occhiello">la libreria</p>
 
+  <!-- Il piede sta FUORI da quello che scorre, come nella scheda: con
+       le due tendine aperte il pannello ha quasi mille pixel di
+       contenuto, e "elimina questa libreria" finiva sotto il bordo. Su
+       un telefono non c'e' nemmeno una barra di scorrimento a dire che
+       sotto c'e' altro. -->
+  <div class="st-scorre">
+
   <p class="st-riga luce">
     <span data-i18n="stanza.luce">luce</span>
     <input id="st-luce" type="range" min="0.08" max="1.6" step="0.02" value="1"
@@ -161,6 +168,8 @@
       <ul id="st-lista"></ul>
     </div>
   </details>
+
+  </div><!-- /.st-scorre -->
 
   <p class="st-gesti">
     <button id="st-piu" type="button" class="secondario" data-i18n="stanza.piu">aggiungi una libreria</button>
