@@ -1991,17 +1991,17 @@ body.elenco #conta b{color:#fff}
    resto del sito. */
 .rail-passo{
   flex:none; display:inline-flex; align-items:center; justify-content:center;
-  width:32px; height:32px; padding:0; cursor:pointer;
+  width:27px; height:27px; padding:0; cursor:pointer;
   color:var(--ink-soft); background:none; border:0; border-radius:var(--r-s);
   pointer-events:auto;
   transition:background-color .2s var(--ease), color .2s var(--ease),
              transform .12s var(--ease), opacity .2s var(--ease);
 }
-.rail-passo .ico{width:19px; height:19px}
+.rail-passo .ico{width:16px; height:16px}
 .rail-passo:hover{background:rgba(200,106,60,.12); color:var(--accent)}
 .rail-passo:active{transform:scale(.92)}
 .rail-passo:disabled{opacity:.26; cursor:default; pointer-events:none}
-@media (pointer:coarse){ .rail-passo{width:38px; height:38px} }
+@media (pointer:coarse){ .rail-passo{width:32px; height:32px} }
 #rail-txt{color:var(--ink); opacity:.85}
 .rail-bar{background:rgba(51,53,43,.22)}
 
@@ -2083,7 +2083,7 @@ body.elenco #conta b{color:#fff}
    perdona non e' una superficie: e' una scommessa sul colore di
    dietro. Adesso la pastiglia c'e' sempre, come la targa del mobile e
    come tutto quello che galleggia sulla scena. */
-#rail-txt{color:var(--ink); opacity:.72; font-size:12.5px}
+#rail-txt{color:var(--ink); opacity:.72; font-size:11.5px}
 .rail-bar{background:rgba(51,53,43,.20)}
 
 /* L'anello arancione era il fuoco del campo di ricerca, che il pannello
@@ -2492,8 +2492,8 @@ body.arreda #stanza{transform:none}
    attorno a tutti e due, quello che l'occhio centra e' la pastiglia --
    e il numero fuori dal fondo chiaro tornava illeggibile sulla stanza,
    che era il punto di partenza. */
-#rail{position:fixed; padding:8px 10px; gap:10px}
-#rail-txt{position:static; transform:none; margin:0 2px}
+#rail{position:fixed; padding:5px 8px; gap:7px}
+#rail-txt{position:static; transform:none; margin:0 1px}
 .rail-bar{width:min(260px,58vw); max-width:none; flex:0 0 auto}
 #rail-thumb{transition:left .18s var(--ease), width .18s var(--ease)}
 .rail-bar.presa #rail-thumb{transition:none}
@@ -2527,8 +2527,8 @@ body.arreda #stanza{transform:none}
    -- e la riga sottile e' un `::before` in mezzo. Due mestieri, due
    cose. */
 .rail-bar{
-  position:relative; width:min(260px,58vw); max-width:none; flex:0 0 auto;
-  height:28px; border:0; padding:0; border-radius:0;
+  position:relative; width:min(230px,52vw); max-width:none; flex:0 0 auto;
+  height:24px; border:0; padding:0; border-radius:0;
   background:none; background-color:transparent;
   cursor:pointer; touch-action:none; pointer-events:auto;
 }

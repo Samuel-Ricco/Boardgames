@@ -1969,6 +1969,38 @@ paga in stanza vuota sopra e sotto il mobile.
 Resta responsive quello che deve esserlo: `state.side` (il pannello di lato sopra
 gli 880 px, dal basso sotto) e le frazioni di quadro di `focusPose()`.
 
+## Le due fasce libere, e chi ci sta dentro
+
+Sopra il mobile e sotto il mobile restano due fasce, e ci vivono tutti i comandi
+che galleggiano: in alto la lampada, la targa col nome e l'imbuto; in basso il
+binario. **Stanno centrati sulle due guide** — `--y-alto` e `--y-basso`, che
+`allineaComandi()` mette a meta' fra la testata e la cima del mobile, e fra il
+piede del mobile e la barra in basso. Centrati su un punto medio vuol dire
+equidistanti per costruzione: non c'e' niente da tarare a mano.
+
+Quello che si tara e' **quanto sono larghe quelle fasce**, cioe' il margine
+attorno al mobile in `layout()`. Era cosi' stretto sui formati alti (`.3`) che la
+libreria toccava i due bordi dello schermo: bella e senza un posto dove mettere
+niente, con il binario addosso al piede del mobile. Adesso e' `.62` in verticale
+e `1.0` in orizzontale. Si paga in mobile piu' piccolo, ed e' il prezzo giusto:
+e' quello che si fa indietreggiando di un passo per guardare uno scaffale.
+
+Misurato dopo: su un telefono **42 px sopra e 42 sotto** i pulsanti in alto,
+**29 e 29** attorno al binario; su un monitor 57/57 e 62/61.
+
+### La camera va messa al suo posto PRIMA di misurare
+
+Costato un giro, e si vedeva **solo dopo un ridimensionamento**. `layout()`
+sposta `camBase`, ma la camera vera la muove `frame()`, al fotogramma dopo — e
+`allineaComandi` proietta con la camera di adesso. Misurando con quella vecchia,
+le due guide e la quota della targa uscivano da un quadro che non esisteva piu':
+il nome del mobile finiva novanta pixel sopra i pulsanti che gli stanno accanto,
+mentre i pulsanti (che leggono le guide dal CSS) restavano dov'erano.
+
+Su una pagina appena caricata non si vedeva mai, perche' li' la camera era ferma
+al suo posto da un pezzo. **Chi misura una proiezione deve prima assicurarsi che
+la camera sia quella con cui si disegnera'.**
+
 ## Inquadratura (la parte che è costata di più)
 
 Niente numeri fissi: la distanza della camera esce dall'ingombro del mobile e dal

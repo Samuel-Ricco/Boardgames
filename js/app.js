@@ -1349,7 +1349,16 @@ function layout(){
      Il margine si stringe sui formati alti e stretti: li' comanda la
      larghezza, e ogni decimo di margine si paga in stanza vuota sopra e
      sotto il mobile. */
-  const marg = aspect < .8 ? .3 : .9;
+  /* Il margine attorno al mobile. Era cosi' stretto sui formati alti
+     che la libreria arrivava a toccare i due bordi dello schermo: bella
+     da vedere e senza un posto dove mettere niente -- il binario finiva
+     addosso al piede del mobile e la targa alla testata. Un filo di
+     aria in piu' e le due fasce libere, sopra e sotto, tornano ad
+     avere una misura.
+
+     Si paga in mobile piu' piccolo, ed e' il prezzo giusto: e' quello
+     che si fa indietreggiando di un passo per guardare uno scaffale. */
+  const marg = aspect < .8 ? .62 : 1.0;
   const bw = LIB_W/2 + marg;
   const bh = (CIMA_VISTA - SUOLO)/2 + marg + ALZA;
   state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
@@ -1369,6 +1378,24 @@ function layout(){
   renderer.setSize(w, h, false);
 
   if (state.phase === 'browse') camBase.z = state.distShelf;
+
+  /* LA CAMERA VA MESSA DAVVERO AL SUO POSTO PRIMA DI MISURARE.
+
+     `layout()` sposta `camBase`, ma la camera vera la muove `frame()`,
+     al fotogramma dopo -- e `allineaComandi` proietta con la camera di
+     adesso. Misurando con quella vecchia, le due guide dello schermo e
+     la quota della targa uscivano da un quadro che non esisteva piu':
+     il nome del mobile finiva novanta pixel sopra i pulsanti che gli
+     stanno accanto. Si vedeva solo dopo un RIDIMENSIONAMENTO, mai su
+     una pagina appena caricata, perche' li' la camera era gia' ferma
+     al suo posto da un pezzo.
+
+     L'ondeggio (`px`/`py`) qui non si applica: e' una parallasse di
+     pochi pixel che `frame()` rimette da solo, e mediarla dentro una
+     misura la sporcherebbe e basta. */
+  camera.position.set(camBase.x, camBase.y, camBase.z);
+  camera.lookAt(camBase.x, camBase.y, 0);
+  camera.updateMatrixWorld();
 
   allineaComandi();
   rifaiOmbre();            // cambiato il quadro, la mappa va rifatta
