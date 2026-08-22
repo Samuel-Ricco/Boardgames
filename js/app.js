@@ -196,7 +196,12 @@ const ICO = {
      uguali a mano per sempre. */
   stella:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"/></svg>',
   dentro:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v9M8.5 9l3.5 3.5L15.5 9M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
-  fuori:    '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.5v-9M8.5 7l3.5-3.5L15.5 7M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>'
+  fuori:    '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.5v-9M8.5 7l3.5-3.5L15.5 7M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
+  /* Nel catalogo il gesto e' uno solo -- aggiungilo -- e su una riga
+     che si scorre una parola in piu' e' rumore: un "+" lo dice meglio.
+     Cosa faccia per esteso resta nel `title`. */
+  piu:      '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>',
+  spunta:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 
 const q  = s => document.querySelector(s);
@@ -295,6 +300,33 @@ function matsDi(tinta){
   return MATS_PER_TINTA[tinta];
 }
 
+/* IL MOBILE DI SCORTA NON E' UN MOBILE.
+
+   In fondo alla fila ce n'e' sempre uno in piu' di quelli che esistono
+   (`disposizione` fa `librerie.length + 1`): e' il posto dove si
+   trascina una scatola per cominciarne un altro. Disegnato con lo
+   stesso legno degli altri era indistinguibile da un mobile vero --
+   chi ne aveva uno solo ne vedeva due, e poi il pannello gli diceva
+   "nessun mobile qui" e sembrava un guasto. Adesso e' un'ombra di
+   mobile: stessa forma, cosi' i cubi restano un bersaglio riconoscibile
+   per il trascinamento, ma trasparente e senza venatura.
+
+   Un corredo solo, in cache come tutti gli altri: il fantasma e' uno. */
+let MATS_FANTASMA = null;
+function matsFantasma(){
+  if (MATS_FANTASMA) return MATS_FANTASMA;
+  const fai = function(op){
+    const m = new THREE.MeshStandardMaterial({
+      color: 0x8a8578, roughness: .95, metalness: 0,
+      transparent: true, opacity: op, depthWrite: false
+    });
+    m.__comune = true;            // non lo butta `killGroup`: vedi la nota
+    return m;
+  };
+  MATS_FANTASMA = { vert: fai(.20), orizz: fai(.16), fondo: fai(.10) };
+  return MATS_FANTASMA;
+}
+
 /* Lo stile di un mobile: il suo, se ce l'ha, se no quello della stanza.
    Luce, muro e pavimento restano della stanza -- quelli SONO la stanza,
    e un pavimento diverso sotto ogni libreria sarebbe una stanza diversa
@@ -315,6 +347,14 @@ function makeMats(){
 function legnoPavimento(){
   return legno(STANZA.corrente().pavimento,
                { lines:180, knots:1, repeat:[1,13], rough:.72, bump:.012 });
+}
+
+/* Un fantasma non proietta ombra: sarebbe l'ombra di un mobile che non
+   c'e', e si vedrebbe benissimo sul pavimento. */
+function ombra(mesh, si){
+  mesh.castShadow = !!si;
+  mesh.receiveShadow = !!si;
+  return mesh;
 }
 
 function slab(w, h, d, mat, x, y, z){
@@ -507,13 +547,17 @@ function buildCabinet(){
 
   // tante librerie quante ne servono, in fila lungo la parete: identiche
   // nella forma, non per forza nel legno
+  const quanteVere = LIB.librerie().length;
   for (let l = 0; l < state.libs; l++){
     const ox = libX(l);
-    const MATS = matsDi(stileLib(l).scaffali);
+    /* L'ultimo della fila, quando e' in piu' di quelli che esistono, e'
+       la scorta: si disegna come un'ombra. */
+    const fantasma = l >= quanteVere;
+    const MATS = fantasma ? matsFantasma() : matsDi(stileLib(l).scaffali);
 
     // montanti: due esterni e uno per ogni divisione interna
     for (let c = 0; c <= COLS; c++){
-      g.add(slab(T, H, D, MATS.vert, ox - W/2 + T/2 + c * KAL.passo, fondo + H/2, 0));
+      g.add(ombra(slab(T, H, D, MATS.vert, ox - W/2 + T/2 + c * KAL.passo, fondo + H/2, 0), !fantasma));
     }
 
     /* Ripiani: cielo, fondo e uno per ogni divisione. La profondita' e'
@@ -524,12 +568,12 @@ function buildCabinet(){
        tramatura sporca lungo ogni incrocio. Un ripiano appena arretrato
        e' anche piu' giusto: e' cosi' su un mobile vero. */
     for (let r = 0; r <= RIGHE; r++){
-      g.add(slab(W - T*2, T, D - .02, MATS.orizz, ox, cima - T/2 - r * KAL.passo, 0));
+      g.add(ombra(slab(W - T*2, T, D - .02, MATS.orizz, ox, cima - T/2 - r * KAL.passo, 0), !fantasma));
     }
 
     // schienale sottile e arretrato: senza, i cubi si aprono sulla
     // parete e le scatole perdono il loro sfondo
-    g.add(slab(W - T*2, H - T*2, .10, MATS.fondo, ox, fondo + H/2, -D/2 + .07));
+    g.add(ombra(slab(W - T*2, H - T*2, .10, MATS.fondo, ox, fondo + H/2, -D/2 + .07), !fantasma));
 
     /* Il nome, sopra il mobile. Sulla parete e non su un cartello
        appeso: un cartello vero avrebbe voluto cornice, spessore e
@@ -539,13 +583,18 @@ function buildCabinet(){
        se no ci finisce dietro. `MeshBasic` apposta: e' informazione, e
        deve restare leggibile anche con la stanza in penombra. */
     const L = LIB.librerie()[l];
-    if (L && L.nome){
-      const c = ART.targhetta(L.nome);
+    /* Anche la scorta ha la sua targhetta, ma dice cos'e': senza, in
+       fondo alla fila restava un mobile muto e senza nome, che e'
+       esattamente com'era prima. */
+    const scritta = fantasma ? TP('vista.nuovaLib') : (L && L.nome);
+    if (scritta){
+      const c = ART.targhetta(scritta);
       const alt = 1.05, larg = alt * (c.width / c.height);
       const targa = new THREE.Mesh(
         new THREE.PlaneGeometry(Math.min(larg, W - .6), alt),
         new THREE.MeshBasicMaterial({
-          map: ART.toTex(c), transparent: true, depthWrite: false
+          map: ART.toTex(c), transparent: true, depthWrite: false,
+          opacity: fantasma ? .45 : 1
         })
       );
       targa.position.set(ox, state.yTarga || (KAL.topY + SOPRA - .62), -KAL.d/2 + .02);
@@ -975,7 +1024,13 @@ function buildProps(used){
      contorno. */
   if (!used){ propGroup = g; scene.add(g); rifaiOmbre(); return; }
 
-  for (let l = 0; l < state.libs; l++){
+  /* Il mobile di scorta non si arreda: e' il posto dove ci sara' una
+     libreria, non una libreria. Arredato -- e per giunta attraverso i
+     ripiani trasparenti -- sembrava una vetrina piena di roba che
+     galleggia, cioe' peggio di prima. */
+  const quanteVere = LIB.librerie().length;
+
+  for (let l = 0; l < Math.min(state.libs, quanteVere); l++){
     const stile = stileLib(l).arredo;        // ogni mobile il suo
     arrediSopra(g, stile, l);
     for (let k = 0; k < PER_LIB; k++){
@@ -2446,6 +2501,7 @@ function setSort(mode){
     b.classList.toggle('on', b.getAttribute('data-sort') === mode);
   });
   ridisponi();
+  if (document.body.classList.contains('elenco')) disegnaMia();
 }
 
 /* --- ricerca ------------------------------------------------------
@@ -2460,6 +2516,9 @@ function setQuery(v){
   document.body.classList.toggle('cerca', !!nuovo);
   state.scrollTo = state.scroll = 0;
   ridisponi();
+  // l'imbuto si apre anche sopra l'elenco: li' la ricerca deve rifare
+  // l'elenco, non solo lo scaffale che sta sotto
+  if (document.body.classList.contains('elenco')){ disegnaMia(); updateConta(); }
   if (nuovo && !lista().length) flash(TP('msg.nessunGiocoPer', {q: nuovo}));
 }
 
@@ -2834,6 +2893,9 @@ function setSezione(s){
      aperto: restava aperto passando al catalogo o al profilo, sospeso
      su un contenuto che non c'entrava piu' niente. */
   if (s !== 'collezione') chiudiPannelli('');
+  /* Solo se si cambia davvero: `setSezione` gira anche all'avvio e
+     rientrando sulla stessa voce. */
+  if (s !== state.sezione) azzeraSchermata();
   state.sezione = s;
   document.body.classList.toggle('sez-collezione', s === 'collezione');
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
@@ -2956,8 +3018,10 @@ function rigaCatalogo(v, i){
     '</div>' +
     '<div class="cat-azioni">' +
       '<button type="button" class="apri">' + T(rec ? 'cat.recensione' : 'cat.scheda') + '</button>' +
-      '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') + '>' +
-        T(gia ? 'cat.ceLHai' : 'cat.inLibreria') + '</button>' +
+      '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') +
+        ' title="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '"' +
+        ' aria-label="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '">' +
+        (gia ? ICO.spunta : ICO.piu) + '</button>' +
     '</div>' +
     '<div class="cat-rec"></div>' +
   '</li>';
@@ -2990,9 +3054,10 @@ function apriRiga(li){
    cosa: cambia solo da dove si e' partiti. */
 async function mettiInLibreria(v, btn){
   btn.disabled = true;
-  const prima = btn.textContent;
+  const prima = btn.innerHTML;
   try {
-    btn.textContent = TP('cat.prendoScheda');
+    btn.innerHTML = ICO.piu;
+    btn.title = TP('cat.prendoScheda');
     const g = await CATALOGO.dettagli(v);
     const gioco = {
       title: g.title, bgg: parseInt(g.bgg, 10) || 0,
@@ -3001,7 +3066,7 @@ async function mettiInLibreria(v, btn){
       score: g.score || '', art: 'generic'
     };
     if (g.immagine){
-      btn.textContent = TP('cat.scaricoCop');
+      btn.title = TP('cat.scaricoCop');
       // se non arriva non e' un errore: si usa la copertina disegnata
       try { gioco.cover = await CATALOGO.copertina(g); } catch(err){}
     }
@@ -3012,11 +3077,13 @@ async function mettiInLibreria(v, btn){
       applyLibrary({ animate: true });
       goToGame(messo.id);
     }
-    btn.textContent = TP('cat.ceLHai');
+    btn.innerHTML = ICO.spunta;
+    btn.title = TP('cat.ceLHai');
     flash(TP('msg.sulloScaffale', {g: messo.title}));
   } catch(e){
     btn.disabled = false;
-    btn.textContent = prima;
+    btn.innerHTML = prima;
+    btn.title = TP('cat.inLibreria');
     flash(TP('msg.nonAggiunto', {e: e.message}));
   }
 }
@@ -3678,6 +3745,32 @@ function disegnaStanza(){
   gruppo('#st-arredo',    STANZA.ARREDI,    suo.arredo,     true);
 }
 
+/* CLICCANDO FUORI SI CHIUDE.
+
+   I due pannelli che galleggiano sulla scena -- l'imbuto e la libreria
+   -- si chiudevano solo con la loro crocetta. Ma sono finestrelle
+   ancorate a un pulsante, non schermate: da una finestrella si esce
+   guardando altrove, ed e' quello che fa chiunque.
+
+   Si ascolta in CATTURA e su `pointerdown`, cosi' il pannello e' gia'
+   chiuso quando il gesto arriva a destinazione -- se no cliccando su una
+   scatola si apriva la scheda con l'imbuto ancora aperto sopra.
+
+   I due pulsanti sono ESCLUSI dal controllo: se no il loro pointerdown
+   chiuderebbe il pannello e il click subito dopo lo riaprirebbe, e il
+   toggle non funzionerebbe mai. */
+function bindClicFuori(){
+  document.addEventListener('pointerdown', function(e){
+    const t = e.target;
+    if (!t || !t.closest) return;
+    const b = document.body;
+    if (b.classList.contains('vista') &&
+        !t.closest('#vista') && !t.closest('#vista-apri')) chiudiVista();
+    if (b.classList.contains('arreda') &&
+        !t.closest('#stanza') && !t.closest('#stanza-apri')) chiudiArreda();
+  }, true);
+}
+
 /* UN PANNELLO CONTESTUALE ALLA VOLTA.
 
    Due pannelli aperti insieme si contendono lo stesso angolo di
@@ -3688,7 +3781,11 @@ function disegnaStanza(){
 function chiudiPannelli(tranne){
   if (tranne !== 'vista')   chiudiVista();
   if (tranne !== 'arreda')  chiudiArreda();
-  if (tranne !== 'elenco')  chiudiElenco();
+  /* L'imbuto e l'elenco NON sono rivali: l'imbuto e' la ricerca e
+     l'ordine di quello che l'elenco mostra, e si apre proprio sopra di
+     lui. Aprendolo si chiudeva l'elenco sotto, cioe' si buttava via la
+     cosa che si stava filtrando. */
+  if (tranne !== 'elenco' && tranne !== 'vista') chiudiElenco();
   if (tranne !== 'mia')     chiudiMia();
   if (tranne !== 'partita') chiudiPartita();
   if (tranne !== 'add')     closeAdd();
@@ -3753,7 +3850,11 @@ function chiudiArreda(){
 }
 
 function bindStanza(){
-  q('#stanza-apri').addEventListener('click', apriArreda);
+  /* Toggle, come l'imbuto: lo stesso gesto che apre richiude. */
+  q('#stanza-apri').addEventListener('click', function(){
+    if (document.body.classList.contains('arreda')) chiudiArreda();
+    else apriArreda();
+  });
   q('#stanza-x').addEventListener('click', chiudiArreda);
 
   /* Il cursore della luce chiama solo applicaLuce(): e' un cambio di
@@ -3952,8 +4053,10 @@ function disegnaMia(){
        questa vista. Quale si e' aperta se lo ricorda. */
     const cartella = function(id, nome, dentro){
       if (!dentro.length) return '';
-      let su = false;
-      try { su = localStorage.getItem('dado-cartella-' + id) === '1'; } catch(e){}
+      /* Chiuse, sempre. Ricordarsele aperte fra una visita e l'altra
+         faceva ritrovare la vista a gruppi trasformata nell'elenco
+         intero con dei titoli in mezzo, cioe' la vista accanto. */
+      const su = false;
       return '<div class="cartella" data-c="' + esc(id) + '">' +
         '<button type="button" class="cartella-tit" aria-expanded="' + (su ? 'true' : 'false') + '">' +
           esc(nome) + '<span>' + dentro.length + '</span></button>' +
@@ -4019,7 +4122,6 @@ function setVista(v){
   if (v !== 'gruppi' && v !== 'tutti') return;
   if (v === state.vista){ disegnaViste(); return; }
   state.vista = v;
-  try { localStorage.setItem('dado-vista', v); } catch(e){}
   /* Passando di vista i filtri si azzerano: "solo i preferiti" e' un
      taglio della vista in cui lo si e' scelto, e trovarselo acceso
      nell'altra vuol dire vedere un elenco corto senza sapere perche'. */
@@ -4379,25 +4481,45 @@ async function salvaNickDaModulo(){
 }
 
 /* I tre cassetti del profilo. Aperti tutti insieme la pagina diventava
-   lunghissima e la cosa che cercavi era sempre in fondo; quale sia
-   aperto se lo ricorda, se no ogni giro ricomincia da chiuso. */
+   lunghissima e la cosa che cercavi era sempre in fondo.
+
+   NON si ricordano piu' fra una visita e l'altra: quello che si apre
+   appartiene alla volta in cui lo si e' aperto, e ritrovare tre
+   cassetti spalancati tornando dal catalogo vuol dire ritrovare una
+   pagina che qualcun altro ha lasciato a meta'. Si azzerano cambiando
+   schermata -- vedi `azzeraSchermata()`. */
 function bindBlocchi(){
   qa('.pro-tit').forEach(function(b){
     const box = document.getElementById(b.getAttribute('aria-controls'));
     if (!box) return;
-    const chiave = 'dado-cassetto-' + box.id;
-    let aperto = false;
-    try { aperto = localStorage.getItem(chiave) === '1'; } catch(e){}
-
     const metti = function(v){
-      aperto = v;
       b.setAttribute('aria-expanded', v ? 'true' : 'false');
       box.hidden = !v;
-      try { localStorage.setItem(chiave, v ? '1' : '0'); } catch(e){}
     };
-    metti(aperto);
-    b.addEventListener('click', function(){ metti(!aperto); });
+    metti(false);
+    b.addEventListener('click', function(){
+      metti(b.getAttribute('aria-expanded') !== 'true');
+    });
   });
+}
+
+/* Cambiando schermata si riparte da capo: cassetti chiusi, cartelle
+   chiuse, e l'elenco sulla prima vista. Lasciare tutto com'era vuol
+   dire tornare su una pagina che non si riconosce -- e soprattutto
+   ritrovare un elenco tagliato da una vista scelta dieci minuti prima,
+   senza niente a schermo che lo dica. E' la stessa ragione per cui i
+   filtri non escono dalla schermata in cui si mettono. */
+function azzeraSchermata(){
+  qa('.pro-tit').forEach(function(b){
+    const box = document.getElementById(b.getAttribute('aria-controls'));
+    b.setAttribute('aria-expanded', 'false');
+    if (box) box.hidden = true;
+  });
+  qa('.gio-gioco[aria-expanded="true"]').forEach(function(b){
+    b.setAttribute('aria-expanded', 'false');
+    if (b.nextElementSibling) b.nextElementSibling.hidden = true;
+  });
+  state.vista = 'tutti';
 }
 
 function bindProfilo(){
@@ -4451,7 +4573,7 @@ function bindProfilo(){
       const ol = tit.nextElementSibling;
       if (ol) ol.hidden = su;
       const c = tit.closest('.cartella').getAttribute('data-c');
-      try { localStorage.setItem('dado-cartella-' + c, su ? '0' : '1'); } catch(err){}
+      // aperta o chiusa vale per questa volta, non per le prossime
       return;
     }
 
@@ -5451,7 +5573,7 @@ function gate(giaDentro){
 
 async function boot(){
   try { state.sort = localStorage.getItem('dado-ordine') || 'aggiunta'; } catch(e){}
-  try { state.vista = localStorage.getItem('dado-vista') || 'gruppi'; } catch(e){}
+  state.vista = 'tutti';        // si riparte sempre dalla prima vista
   qa('#sortmenu button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-sort') === state.sort);
   });
@@ -5547,6 +5669,7 @@ async function boot(){
   bindCuore();
   bindPiedeGruppi();
   bindStanza();
+  bindClicFuori();
   bindLibrerie();
   bindGruppi();
   setSort(state.sort);

@@ -978,6 +978,54 @@ stanza diversa per ognuna.
 - Il pannello parla del **mobile che si sta guardando** (`libCorrente`), e
   scorrendo si aggiorna da solo.
 
+## Un pulsante che apre resta dov'è, e si accende
+
+I due comandi che galleggiano sulla scena — l'**imbuto** e la **libreria** — si
+comportavano in due modi diversi: l'imbuto restava e diventava terracotta, la
+libreria **spariva**. La regola d'accento c'era per tutti e due
+(`body.arreda #stanza-apri`), ma un `display:none !important` la copriva prima
+che si vedesse.
+
+Sparire è la cosa sbagliata: lascia un buco nell'angolo, non si capisce più che
+cosa abbia aperto quel pannello, e soprattutto toglie il modo più naturale di
+richiuderlo — **lo stesso gesto con cui lo si è aperto**. Ora tutti e due
+restano, si accendono, e fanno da interruttore.
+
+**E cliccando fuori si chiudono** (`bindClicFuori`). Sono finestrelle ancorate a
+un pulsante, non schermate: da una finestrella si esce guardando altrove. Si
+ascolta in **cattura** e su `pointerdown`, così il pannello è già chiuso quando
+il gesto arriva a destinazione — se no cliccando una scatola si apriva la scheda
+con l'imbuto ancora aperto sopra. I due pulsanti sono **esclusi** dal controllo:
+se no il loro `pointerdown` chiuderebbe e il `click` subito dopo riaprirebbe, e
+l'interruttore non funzionerebbe mai.
+
+## L'imbuto vale anche sull'elenco
+
+Cercare e ordinare valgono nell'elenco come sugli scaffali, ed è la stessa
+domanda: *cosa vedo*. Quindi è lo stesso pannello, non un secondo corredo di
+comandi — sparisce solo la riga che parla del mobile in tre dimensioni, che sopra
+un elenco non vuol dire niente.
+
+- **L'imbuto e l'elenco non sono rivali.** `chiudiPannelli('vista')` chiudeva
+  l'elenco: aprendo il filtro si buttava via la cosa che si stava filtrando. La
+  regola «un pannello alla volta» vale fra pannelli che si contendono l'angolo,
+  non fra un pannello e la pagina su cui è appoggiato.
+- `setQuery` e `setSort` chiamano anche `disegnaMia()` quando l'elenco è aperto:
+  prima rifacevano solo lo scaffale, che lì sotto non si vede.
+
+## Cambiando schermata si riparte da capo
+
+Le tendine aperte, le cartelle aperte e la vista scelta **non sopravvivono più al
+cambio di sezione** (`azzeraSchermata`). Erano ricordate in `localStorage`, e
+l'effetto era tornare su una pagina lasciata a metà da sé stessi dieci minuti
+prima: tre cassetti spalancati nel profilo, e l'elenco tagliato da una vista che
+nessuno ricordava di aver scelto.
+
+È la stessa ragione per cui **i filtri non escono dalla schermata in cui si
+mettono**: uno stato che non si vede e non si ricorda è uno stato che non si
+trova più. L'elenco riparte sempre da **tutti i giochi**, che è anche la prima
+delle due voci.
+
 ## Nascondere non è disattivare
 
 Il binario delle librerie era invisibile fuori dalla libreria — `opacity:0` — ma
@@ -1143,6 +1191,17 @@ per cominciarne un altro. Sullo schermo si vede come gli altri, ma una riga in
 - **Scorrendo, il pannello aperto rinfrescava solo legno e arredi**, non il
   campo del nome: si scorreva alla libreria 3 e il campo diceva ancora
   «Libreria 1».
+
+**E adesso si vede anche che non è un mobile.** Restava il difetto più grosso:
+in scena la scorta era disegnata **identica** a una libreria vera, stesso legno e
+stessi arredi dentro. Chi ne aveva una sola ne vedeva due, e quando il pannello
+gli diceva «nessun mobile qui» sembrava un guasto — è arrivato come segnalazione,
+in questi termini esatti. Ora è **un'ombra di mobile**: stessa forma, così i cubi
+restano un bersaglio riconoscibile per il trascinamento, ma trasparente
+(`matsFantasma`), senza ombra propria, **senza arredi dentro** e con la targhetta
+che dice «nuova libreria». Gli arredi erano la metà del problema: attraverso i
+ripiani trasparenti sembravano galleggiare, e una vetrina piena di roba è peggio
+di un mobile finto.
 
 Adesso `libCorrente()` **può rispondere `null`, ed è il punto**: chi chiede deve
 poter sapere che lì non c'è niente. Il campo del nome si spegne con un
@@ -1596,6 +1655,17 @@ pannello era «la stanza»: adesso fa luce, nome, aspetto e ordine di tutti i
 mobili, e la luce è solo la sua prima riga. Ora è una **libreria a cubi 2×2 con
 i piedi** — lo stesso disegno di «vai allo scaffale», perché due comandi che
 portano allo stesso oggetto portano la stessa figura.
+
+**Un gesto solo si dice con un segno, non con una parola.** Nel catalogo il
+pulsante che aggiunge un gioco era «in libreria»: su una riga che si scorre una
+pastiglia di testo ruba larghezza al titolo, che è la cosa che si sta leggendo.
+Adesso è un **«+»**, e diventa una **spunta** quando ce l'hai già; cosa faccia
+per esteso sta nel `title`.
+
+**Uscire è un'azione importante, e si vede.** Il tasto in fondo al profilo aveva
+la faccia di un comando qualunque. Ora è **rosso** come tutto quello che ha
+conseguenze e sta in fondo a **destra**, dove il sito mette già l'azione di ogni
+piede di pannello — e resta in due tempi.
 
 **Quello che galleggia sulla scena è una superficie, non una tinta.** Un fondo
 tinto al 10% funziona dentro una scheda chiara; sopra la stanza, che è già color
