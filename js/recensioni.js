@@ -48,7 +48,7 @@ function carica(rileggi){
   const c = (typeof AUTH !== 'undefined' && AUTH.attivo()) ? AUTH.client() : null;
   if (!c){
     per = {};
-    motivo = 'senza backend le recensioni del catalogo non ci sono';
+    motivo = TP('err.receNiente');
     return Promise.resolve(per);
   }
 
@@ -64,7 +64,7 @@ function carica(rileggi){
     // 42P01: la tabella non c'e'. Capita una volta sola, quando la
     // migrazione e' nel repo ma non e' ancora stata applicata.
     motivo = (e && (e.code === '42P01' || /recensioni/.test(e.message || '')))
-      ? 'manca la tabella `recensioni`: applica la migrazione recensioni_pubbliche'
+      ? TP('err.receTabella')
       : (e && e.message) || String(e);
     return per;
   }).then(function(m){ caricando = null; return m; });
@@ -91,9 +91,9 @@ function problema(){ return motivo; }
    delete ma non update, e un upsert fallirebbe. */
 async function pubblica(game){
   const c = (typeof AUTH !== 'undefined' && AUTH.attivo()) ? AUTH.client() : null;
-  if (!c) throw new Error('senza backend non si pubblica niente');
+  if (!c) throw new Error(TP('err.recePubblica'));
   const bgg = parseInt(game.bgg, 10);
-  if (!bgg) throw new Error('serve l\'id BGG: e\' la chiave della recensione');
+  if (!bgg) throw new Error(TP('err.receBgg'));
 
   const io = AUTH.stato();
   const riga = {

@@ -85,7 +85,7 @@ function stato(){
 
 async function entra(){
   const c = client();
-  if (!c) throw new Error('Supabase non configurato');
+  if (!c) throw new Error(TP('err.senzaBackend'));
   // si torna esattamente da dove si e' partiti: in locale e'
   // localhost:8124, online e' la pagina su GitHub Pages. Entrambi
   // devono stare fra i Redirect URLs del progetto.

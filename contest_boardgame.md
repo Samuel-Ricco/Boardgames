@@ -303,10 +303,21 @@ Nota: i 25 nomi li ha **incollati l'utente**, non sono stati raschiati.
 
 **Il blocco mai iniziato:**
 
-1. **IT/EN.** Chiesto due volte, mai fatto. Il sito **non ha nessun sistema di
-   traduzione**: va costruito da zero e passato su ogni stringa dell'HTML e su
-   quelle generate in JS. Il selettore va **nel cancello** e **in fondo al
-   profilo**, e sotto di esso, come ultima cosa della pagina, il logout.
+~~1. IT/EN.~~ **Fatto il 2026-08-22.** `js/i18n.js`: chiavi puntate, un ramo per
+   lingua, **433 chiavi per ramo**. Il markup porta `data-i18n` (più `-ph`,
+   `-title`, `-aria`), il JS chiama `T('chiave')`. Il selettore sta nel cancello
+   e in fondo al profilo, con l'uscita sotto, ultima cosa della pagina.
+
+   Le tre cose che hanno richiesto una decisione: le frasi con dentro un pezzo
+   scritto dal JS sono **spezzate in due chiavi** attorno a quel nodo (se no
+   riapplicare la lingua lo cancella); chi **cattura** una parola la tiene per
+   sempre, quindi `armaBottone`, le tavolozze della stanza e le risposte del
+   server tengono **chiavi** e non parole; e la selezione del selettore ha dovuto
+   pareggiare una catena di `:not()` per non restare grigia.
+
+   Verificato sul vivo, in tutte e due le lingue: cancello, testata, elenco con
+   la stellina, profilo coi tre cassetti, catalogo (messaggio asincrono
+   compreso) e **scheda aperta**, che cambia lingua mentre è aperta.
 
 **I difetti segnalati dall'utente e non ancora corretti** (elenco interrotto a
 metà, potrebbe continuare):

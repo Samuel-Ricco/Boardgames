@@ -60,7 +60,7 @@ async function carica(proprietario){
        sa cosa farsene di "schema cache". */
     const m = String(r.error.message || '');
     motivo = m.indexOf('apprezzamenti') >= 0
-      ? "manca la migrazione apprezzamenti: applicala dal pannello Supabase"
+      ? TP('err.appreMigrazione')
       : m;
     return mappa;
   }
@@ -84,7 +84,7 @@ function problema(){ return motivo; }
 async function alterna(proprietario, gioco){
   const c = client();
   const io = (AUTH.stato() || {}).id || null;
-  if (!c || !io) throw new Error("serve l'accesso");
+  if (!c || !io) throw new Error(TP('err.serveAccesso'));
 
   const v = mappa[gioco] || (mappa[gioco] = { n: 0, mio: false });
   const acceso = !v.mio;

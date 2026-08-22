@@ -854,6 +854,35 @@ Le scelte che vale la pena ricordare:
   iscrive con **`I18N.suCambio(fn)`** e si ridisegna da sé. `applica()` rifà solo
   il markup.
 
+### Chi tiene una parola se la tiene per sempre
+
+Il markup si rifà da solo, ma tutto quello che il JS aveva **catturato** resta
+nella lingua di quel momento. Tre posti dove è successo, e la regola che ne esce:
+**si tengono le chiavi, si sciolgono al momento di mostrarle.**
+
+- **`armaBottone(btn, chiaveNormale, chiaveConferma, azione)`** prendeva le due
+  scritte e le richiudeva dentro la sua closure. Risultato: «esci dall'account»
+  era l'unica scritta del profilo che non seguiva la lingua. Ora prende le chiavi
+  e le scioglie ogni volta che riscrive il pulsante, e ognuno espone
+  `__rilingua()` per rimettersi in pari senza perdere lo stato armato.
+- **Le tavolozze di `js/stanza.js`**: `n` non è più la parola ma la chiave
+  (`tinta.noce`, `arredo.dadi`), e `disegnaStanza()` fa `TP(x.n)`. Quel file non
+  sapeva niente di three.js, e adesso non sa niente nemmeno di italiano.
+- **Le risposte del server sulle amicizie**: `RISPOSTE` mappa il codice
+  (`chiesta`, `nessuno`, `te stesso`) a una chiave, e `frase()` la scioglie
+  quando la mostra. Una mappa di frasi costruita all'avvio sarebbe rimasta
+  ferma alla lingua di allora.
+
+`rilingua()` in `app.js` è l'iscritto a `suCambio`, e ridisegna **solo quello che
+è davvero a schermo**: rifare il catalogo mentre si guarda la libreria vuol dire
+rifare centinaia di righe che nessuno sta leggendo. La scheda aperta invece va
+rifatta col suo gioco — occhiello, specifiche e credito all'illustratore li
+scrive tutti il JS.
+
+**I messaggi d'errore si traducono dove nascono**, non dove si mostrano: i moduli
+fanno `throw new Error(TP('err.qualcosa'))`. Sono messaggi di passaggio, e
+tradurli al volo costerebbe un secondo livello di indirezione per niente.
+
 **Il selettore sta in due posti**: nel **cancello**, che è la prima schermata che
 si legge e l'unico punto dove serve davvero — chi non legge l'italiano deve
 poterla cambiare senza aver capito niente di quello che c'è scritto sopra — e in
@@ -1747,8 +1776,8 @@ settimana senza traffico, e si riattiva a mano dal pannello.
 ancora da correggere e il blocco IT/EN mai iniziato.
 
 In breve: **35 giochi su tre librerie**, tutte e undici le migrazioni applicate,
-e il sito rifatto graficamente — un font solo (Poppins), sei tinte, e un posto
-solo che decide com'è fatto un pulsante.
+il sito rifatto graficamente — un font solo (Poppins), sei tinte, e un posto solo
+che decide com'è fatto un pulsante — e **due lingue**, con 433 chiavi per ramo.
 
 ## Stato del backend
 

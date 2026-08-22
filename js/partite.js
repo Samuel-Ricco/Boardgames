@@ -29,7 +29,7 @@ function cli(){
 
 function spiega(e){
   if (e && (e.code === '42P01' || /partite|giocatori|partecipanti/.test(e.message || ''))){
-    return 'manca la migrazione partite';
+    return TP('err.partiteMigr');
   }
   return (e && e.message) || String(e);
 }
@@ -56,10 +56,10 @@ function giocatori(){ return gioca; }
 
 async function aggiungiGiocatore(nome, amico){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   const t = String(nome || '').trim();
-  if (!t) throw new Error('serve un nome');
-  if (t.length > 40) throw new Error('nome troppo lungo');
+  if (!t) throw new Error(TP('err.serveNome'));
+  if (t.length > 40) throw new Error(TP('err.nomeLungo'));
 
   const r = await c.from('giocatori').insert({
     proprietario: AUTH.stato().id, nome: t, amico: amico || null
@@ -67,7 +67,7 @@ async function aggiungiGiocatore(nome, amico){
   // 23505: c'e' gia' un giocatore con quel nome. Non e' un guasto, e'
   // esattamente il motivo per cui i nomi sono unici: uno solo per nome.
   if (r.error){
-    if (r.error.code === '23505') throw new Error('"' + t + '" c\'e\' gia\'');
+    if (r.error.code === '23505') throw new Error(TP('err.ceGia', {n: t}));
     throw r.error;
   }
   await caricaGiocatori();
@@ -76,7 +76,7 @@ async function aggiungiGiocatore(nome, amico){
 
 async function togliGiocatore(id){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   const r = await c.from('giocatori').delete().eq('id', id);
   if (r.error) throw r.error;
   await caricaGiocatori();
@@ -150,14 +150,14 @@ function diGioco(bgg, titolo){
    di quanto valga. */
 async function salva(p){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   const titolo = String(p.titolo || '').trim();
-  if (!titolo) throw new Error('serve il gioco');
+  if (!titolo) throw new Error(TP('err.serveGioco'));
 
   const chi = (p.chi || [])
     .map(function(x){ return Object.assign({}, x, { nome: String(x.nome || '').trim() }); })
     .filter(function(x){ return x.nome; });
-  if (!chi.length) throw new Error('serve almeno un giocatore');
+  if (!chi.length) throw new Error(TP('err.serveGiocatore'));
 
   const riga = {
     proprietario: AUTH.stato().id,
@@ -196,7 +196,7 @@ async function salva(p){
 
 async function togli(id){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   // i partecipanti se ne vanno da soli: on delete cascade
   const r = await c.from('partite').delete().eq('id', id);
   if (r.error) throw r.error;

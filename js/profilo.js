@@ -121,12 +121,12 @@ async function carica(){
       io.codice = cod.data || '';
     } catch(e2){
       io.codice = '';
-      guaio = 'manca la migrazione codice_riservato: il codice amico non si legge';
+      guaio = TP('err.codiceMigr');
     }
   } catch(e){
     io = null;
     guaio = (e && (e.code === '42703' || e.code === '42P01'))
-      ? 'manca la migrazione profili_e_amici'
+      ? TP('err.profiliMigr')
       : (e && e.message) || String(e);
   }
   return io;
@@ -141,16 +141,16 @@ function serveNick(){ return !!io && !io.nick; }
 
 function nickValido(n){
   const t = String(n || '').trim();
-  if (t.length < 3)  return 'almeno tre caratteri';
-  if (t.length > 20) return 'al massimo venti';
+  if (t.length < 3)  return TP('nick.corto');
+  if (t.length > 20) return TP('nick.lungo');
   // niente spazi ai lati gia' tolti; dentro si', un nick puo' essere due parole
-  if (!/^[\w \-.']+$/.test(t)) return 'lettere, numeri, spazio, trattino e punto';
+  if (!/^[\w \-.']+$/.test(t)) return TP('nick.segni');
   return '';
 }
 
 async function salvaNick(n){
   const c = cli();
-  if (!c || !io) throw new Error('non sei entrato');
+  if (!c || !io) throw new Error(TP('err.nonEntrato'));
   const t = String(n).trim();
   const male = nickValido(t);
   if (male) throw new Error(male);
@@ -159,7 +159,7 @@ async function salvaNick(n){
   // 23505: violazione di unicita'. E' l'unico errore che ha una
   // spiegazione utile per chi sta scrivendo, quindi la si da'.
   if (r.error){
-    if (r.error.code === '23505') throw new Error('"' + t + '" e\' gia\' di qualcun altro');
+    if (r.error.code === '23505') throw new Error(TP('nick.preso', {n: t}));
     throw r.error;
   }
   io.nick = t;
@@ -168,7 +168,7 @@ async function salvaNick(n){
 
 async function salvaAvatar(av){
   const c = cli();
-  if (!c || !io) throw new Error('non sei entrato');
+  if (!c || !io) throw new Error(TP('err.nonEntrato'));
   const r = await c.from('profili').update({ avatar: av }).eq('id', io.id);
   if (r.error) throw r.error;
   io.avatar = av;
@@ -215,7 +215,7 @@ async function caricaAmici(){
     });
   } catch(e){
     gente = [];
-    guaio = (e && e.code === '42P01') ? 'manca la migrazione profili_e_amici'
+    guaio = (e && e.code === '42P01') ? TP('err.profiliMigr')
                                       : (e && e.message) || String(e);
   }
   return gente;
@@ -225,36 +225,42 @@ function amici(){    return gente.filter(function(x){ return x.stato === 'accett
 function daAccettare(){ return gente.filter(function(x){ return x.stato === 'in attesa' && x.verso === 'entrata'; }); }
 function inAttesa(){ return gente.filter(function(x){ return x.stato === 'in attesa' && x.verso === 'uscita'; }); }
 
+/* Il server risponde con un CODICE, non con una frase, e la frase si
+   cerca quando si MOSTRA: una mappa di testi costruita all'avvio
+   resterebbe per sempre nella lingua di quel momento. */
 const RISPOSTE = {
-  'chiesta':  'richiesta mandata',
-  'inviata':  'se quell\'indirizzo ha un account, la richiesta e\' arrivata',
-  'nessuno':  'nessun codice cosi\'',
-  'gia':      'con questa persona c\'e\' gia\' qualcosa in corso',
-  'te stesso':'quello e\' il tuo codice',
-  'fuori':    'non sei entrato'
+  'chiesta':  'ami.chiesta',
+  'inviata':  'ami.inviata',
+  'nessuno':  'ami.nessuno',
+  'gia':      'ami.gia',
+  'te stesso':'ami.teStesso',
+  'fuori':    'err.nonEntrato'
 };
+function frase(codice){
+  return RISPOSTE[codice] ? TP(RISPOSTE[codice]) : codice;
+}
 
 async function chiediPerCodice(cod){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   const r = await c.rpc('chiedi_amicizia_codice', { cod: String(cod || '').trim() });
   if (r.error) throw r.error;
   await caricaAmici();
-  return { esito: r.data, testo: RISPOSTE[r.data] || r.data };
+  return { esito: r.data, testo: frase(r.data) };
 }
 
 async function chiediPerEmail(mail){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   const r = await c.rpc('chiedi_amicizia_email', { indirizzo: String(mail || '').trim() });
   if (r.error) throw r.error;
   await caricaAmici();
-  return { esito: r.data, testo: RISPOSTE[r.data] || r.data };
+  return { esito: r.data, testo: frase(r.data) };
 }
 
 async function accetta(altro){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   // solo il destinatario puo' accettare, e il destinatario sono io
   const r = await c.from('amicizie').update({ stato: 'accettata' })
                    .eq('richiedente', altro).eq('destinatario', io.id);
@@ -267,7 +273,7 @@ async function accetta(altro){
    cui la si preme. */
 async function togli(altro){
   const c = cli();
-  if (!c) throw new Error('non sei entrato');
+  if (!c) throw new Error(TP('err.nonEntrato'));
   const r = await c.from('amicizie').delete()
     .or('and(richiedente.eq.' + altro + ',destinatario.eq.' + io.id + '),' +
         'and(richiedente.eq.' + io.id + ',destinatario.eq.' + altro + ')');

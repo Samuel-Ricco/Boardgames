@@ -160,7 +160,7 @@ let visitata = null;             // { id, nick, games } oppure null
 
 async function visita(uid, nick){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c) throw new Error('senza backend non c\'e\' nessuno da visitare');
+  if (!c) throw new Error(TP('err.nessunoVisitare'));
   const r = await c.from('giochi').select('*').eq('proprietario', uid)
                    .order('creato', { ascending: true });
   if (r.error) throw r.error;
@@ -325,7 +325,7 @@ async function mandaAlServer(c, game){
       } catch(e){
         // senza copertina il gioco entra lo stesso, con quella disegnata
         delete riga.copertina;
-        onErrore('copertina non caricata: ' + messaggio(e));
+        onErrore(TP('err.copertina', {e: messaggio(e)}));
       }
     }
 
@@ -334,7 +334,7 @@ async function mandaAlServer(c, game){
     await sync();                             // riallinea creato e ordine col server
   } catch(e){
     annulla(game.id);
-    onErrore('non sono riuscito ad aggiungerlo: ' + messaggio(e));
+    onErrore(TP('err.nonAggiunto', {e: messaggio(e)}));
   }
 }
 
@@ -370,7 +370,7 @@ async function mandaModifica(c, g, prima){
         g.cover = riga.copertina;
       } catch(e){
         delete riga.copertina;
-        onErrore('copertina non caricata: ' + messaggio(e));
+        onErrore(TP('err.copertina', {e: messaggio(e)}));
       }
     }
 
@@ -383,7 +383,7 @@ async function mandaModifica(c, g, prima){
   } catch(e){
     Object.keys(prima).forEach(function(k){ g[k] = prima[k]; });
     salvaLocale();
-    onErrore('modifica non salvata: ' + messaggio(e));
+    onErrore(TP('err.nonModificato', {e: messaggio(e)}));
   }
 }
 
@@ -413,7 +413,7 @@ async function segnaPreferito(id, si){
   if (r.error){
     g.preferito = prima;
     salvaLocale();
-    onErrore('preferito non salvato: ' + messaggio(r.error));
+    onErrore(TP('err.nonPreferito', {e: messaggio(r.error)}));
   }
   return g;
 }
@@ -447,14 +447,14 @@ async function caricaLibrerie(chi){
     librerie = r.data || [];
   } catch(e){
     librerie = [];
-    onErrore('librerie non lette: ' + messaggio(e));
+    onErrore(TP('err.librerieNonLette', {e: messaggio(e)}));
   }
   return librerie;
 }
 
 async function creaLibreria(nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const r = await c.from('librerie').insert({
     proprietario: AUTH.stato().id,
     nome: String(nome || '').trim() || ('Libreria ' + (librerie.length + 1)),
@@ -470,9 +470,9 @@ async function creaLibreria(nome){
    toccato niente. */
 async function stileLibreria(id, patch){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const L = librerie.find(function(x){ return x.id === id; });
-  if (!L) throw new Error('libreria sconosciuta');
+  if (!L) throw new Error(TP('err.libSconosciuta'));
 
   const prima = { scaffali: L.scaffali, arredo: L.arredo };
   Object.keys(patch).forEach(function(k){ L[k] = patch[k]; });
@@ -482,7 +482,7 @@ async function stileLibreria(id, patch){
   if (r.error){
     L.scaffali = prima.scaffali; L.arredo = prima.arredo;
     if (r.error.code === '42703' || r.error.code === 'PGRST204'){
-      throw new Error('manca la migrazione preferiti_e_stile_libreria');
+      throw new Error(TP('err.stileMigr'));
     }
     throw r.error;
   }
@@ -491,9 +491,9 @@ async function stileLibreria(id, patch){
 
 async function rinominaLibreria(id, nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const t = String(nome || '').trim();
-  if (!t) throw new Error('serve un nome');
+  if (!t) throw new Error(TP('err.serveNome'));
   const r = await c.from('librerie').update({ nome: t })
     .eq('proprietario', AUTH.stato().id).eq('id', id);
   if (r.error) throw r.error;
@@ -537,7 +537,7 @@ async function mandaOrdineLibrerie(c, elenco){
     const ko = esiti.find(function(r){ return r.error; });
     if (ko) throw ko.error;
   } catch(e){
-    onErrore('ordine dei mobili non salvato sul server: ' + messaggio(e));
+    onErrore(TP('err.ordineMobili', {e: messaggio(e)}));
   }
 }
 
@@ -547,8 +547,8 @@ async function mandaOrdineLibrerie(c, elenco){
    cancellare quello che c'era sopra. */
 async function togliLibreria(id){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
-  if (librerie.length <= 1) throw new Error('l\'ultima libreria non si toglie');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
+  if (librerie.length <= 1) throw new Error(TP('err.ultimaLib'));
   const r = await c.from('librerie').delete()
     .eq('proprietario', AUTH.stato().id).eq('id', id);
   if (r.error) throw r.error;
@@ -584,7 +584,7 @@ async function mandaPosti(giochi){
     const ko = esiti.find(function(r){ return r.error; });
     if (ko) throw ko.error;
   } catch(e){
-    onErrore('posizione non salvata: ' + messaggio(e));
+    onErrore(TP('err.posizione', {e: messaggio(e)}));
   }
 }
 
@@ -622,20 +622,20 @@ async function caricaGruppi(chi){
     });
   } catch(e){
     gruppi = []; appartiene = {};
-    onErrore('gruppi non letti: ' + messaggio(e));
+    onErrore(TP('err.gruppiNonLetti', {e: messaggio(e)}));
   }
   return gruppi;
 }
 
 async function creaGruppo(nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const t = String(nome || '').trim();
-  if (!t) throw new Error('serve un nome');
+  if (!t) throw new Error(TP('err.serveNome'));
   const r = await c.from('gruppi')
     .insert({ proprietario: AUTH.stato().id, nome: t }).select().single();
   if (r.error){
-    if (r.error.code === '23505') throw new Error('"' + t + '" c\'e\' gia\'');
+    if (r.error.code === '23505') throw new Error(TP('err.ceGia', {n: t}));
     throw r.error;
   }
   gruppi.push(r.data);
@@ -645,13 +645,13 @@ async function creaGruppo(nome){
 
 async function rinominaGruppo(id, nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const t = String(nome || '').trim();
-  if (!t) throw new Error('serve un nome');
+  if (!t) throw new Error(TP('err.serveNome'));
   const r = await c.from('gruppi').update({ nome: t })
     .eq('proprietario', AUTH.stato().id).eq('id', id);
   if (r.error){
-    if (r.error.code === '23505') throw new Error('"' + t + '" c\'e\' gia\'');
+    if (r.error.code === '23505') throw new Error(TP('err.ceGia', {n: t}));
     throw r.error;
   }
   const G = gruppi.find(function(x){ return x.id === id; });
@@ -663,7 +663,7 @@ async function rinominaGruppo(id, nome){
    in cascata. */
 async function togliGruppo(id){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const r = await c.from('gruppi').delete()
     .eq('proprietario', AUTH.stato().id).eq('id', id);
   if (r.error) throw r.error;
@@ -677,7 +677,7 @@ async function togliGruppo(id){
    l'etichetta compare subito e la riga parte dietro. */
 async function segnaGruppo(gioco, gruppo, dentro){
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (!c || visitata) throw new Error('non si puo\'');
+  if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const ora = appartiene[gioco] || (appartiene[gioco] = []);
 
   if (dentro){
@@ -736,7 +736,7 @@ async function mandaOrdine(c, giochi){
     const ko = esiti.find(function(r){ return r.error; });
     if (ko) throw ko.error;
   } catch(e){
-    onErrore('ordine non salvato sul server: ' + messaggio(e));
+    onErrore(TP('err.ordineGiochi', {e: messaggio(e)}));
   }
 }
 
@@ -753,7 +753,7 @@ function remove(id){
       if (r.error){
         all().push(out);
         salvaLocale();
-        onErrore('non sono riuscito a toglierlo: ' + messaggio(r.error));
+        onErrore(TP('err.nonTolto', {e: messaggio(r.error)}));
         return;
       }
       // via anche l'immagine, se stava nel bucket: se no resta li' a
@@ -777,7 +777,7 @@ function annulla(id){
 function messaggio(err){
   const m = (err && (err.message || err.msg)) || String(err);
   if (err && (err.code === '42501' || /row-level security/i.test(m))){
-    return 'il database dice di no, questo account non e\' admin';
+    return TP('err.nonAdmin');
   }
   /* Colonna inesistente: succede una volta sola, quando una migrazione
      e' nel repo ma non e' ancora applicata al progetto. Il messaggio di
@@ -790,10 +790,10 @@ function messaggio(err){
        espressione che le prenda tutte e due prendeva la lettera
        sbagliata. Si cerca il nome che si conosce dentro il messaggio,
        che e' l'unica cosa che funziona con tutti e due. */
-    if (/posizione/.test(m)) return 'manca la migrazione ordine_manuale';
-    if (/preferito|scaffali|arredo/.test(m)) return 'manca la migrazione preferiti_e_stile_libreria';
-    if (/libreria|posto|stanza/.test(m)) return 'manca la migrazione stanza_librerie_gruppi';
-    return 'manca una colonna: controlla le migrazioni non applicate';
+    if (/posizione/.test(m)) return TP('err.ordineMigr');
+    if (/preferito|scaffali|arredo/.test(m)) return TP('err.stileMigr');
+    if (/libreria|posto|stanza/.test(m)) return TP('err.stanzaMigr');
+    return TP('err.colonnaIgnota');
   }
   return m;
 }

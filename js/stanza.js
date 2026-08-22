@@ -37,47 +37,52 @@ const DEFAULT = {
    essenze: sono le stesse sei che stanno nel CSS, piu' due gradazioni
    dello stesso marrone. Un mobile di un colore che non esiste da
    nessun'altra parte del sito era meta' del problema. */
+/* `n` non e' la parola ma la CHIAVE del dizionario: la tavolozza si
+   traduce quando viene disegnata, non quando viene dichiarata, cosi'
+   cambiando lingua col pannello aperto le pastiglie cambiano insieme al
+   resto. Questo file non sa niente di three.js, e ora nemmeno di
+   italiano. */
 const LEGNI = [
-  { v: '#8e6a4b', n: 'noce' },
-  { v: '#5c4530', n: 'noce scuro' },
-  { v: '#747760', n: 'oliva' },
-  { v: '#a6a89c', n: 'salvia' },
-  { v: '#c7af98', n: 'sabbia' },
-  { v: '#c86a3c', n: 'terracotta' }
+  { v: '#8e6a4b', n: 'tinta.noce' },
+  { v: '#5c4530', n: 'tinta.noceScuro' },
+  { v: '#747760', n: 'tinta.oliva' },
+  { v: '#a6a89c', n: 'tinta.salvia' },
+  { v: '#c7af98', n: 'tinta.sabbia' },
+  { v: '#c86a3c', n: 'tinta.terracotta' }
 ];
 
 /* Le prime tinte erano tutte a mezzo passo dal bianco: sul muro, sotto
    una luce diffusa, si leggevano tutte uguali. Adesso hanno un colore
    vero -- restano intonaci, non fluorescenze, ma si distinguono. */
 const MURI = [
-  { v: '#cfccc8', n: 'grigio caldo' },
-  { v: '#c7af98', n: 'sabbia' },
-  { v: '#a6a89c', n: 'salvia' },
-  { v: '#747760', n: 'oliva' },
-  { v: '#c86a3c', n: 'terracotta' },
-  { v: '#33352b', n: 'oliva scuro' }
+  { v: '#cfccc8', n: 'tinta.grigioCaldo' },
+  { v: '#c7af98', n: 'tinta.sabbia' },
+  { v: '#a6a89c', n: 'tinta.salvia' },
+  { v: '#747760', n: 'tinta.oliva' },
+  { v: '#c86a3c', n: 'tinta.terracotta' },
+  { v: '#33352b', n: 'tinta.olivaScuro' }
 ];
 
 const PAVIMENTI = [
-  { v: '#c7af98', n: 'sabbia' },
-  { v: '#cfccc8', n: 'cemento chiaro' },
-  { v: '#a6a89c', n: 'salvia' },
-  { v: '#8e6a4b', n: 'noce' },
-  { v: '#747760', n: 'oliva' },
-  { v: '#c86a3c', n: 'cotto' }
+  { v: '#c7af98', n: 'tinta.sabbia' },
+  { v: '#cfccc8', n: 'tinta.cementoChiaro' },
+  { v: '#a6a89c', n: 'tinta.salvia' },
+  { v: '#8e6a4b', n: 'tinta.noce' },
+  { v: '#747760', n: 'tinta.oliva' },
+  { v: '#c86a3c', n: 'tinta.cotto' }
 ];
 
 /* I cinque arredi, piu' il misto di prima e il niente. "Niente" non e'
    un ripiego: uno scaffale con dei vuoti veri e' una scelta di stile,
    e chi lascia i buchi apposta non vuole che glieli riempiamo noi. */
 const ARREDI = [
-  { v: 'libri',   n: 'libri' },
-  { v: 'giochi',  n: 'scatole' },
-  { v: 'dadi',    n: 'dadi e meeple' },
-  { v: 'piante',  n: 'piante' },
-  { v: 'cornici', n: 'cornici' },
-  { v: 'misto',   n: 'un po\' di tutto' },
-  { v: 'niente',  n: 'niente' }
+  { v: 'libri',   n: 'arredo.libri' },
+  { v: 'giochi',  n: 'arredo.scatole' },
+  { v: 'dadi',    n: 'arredo.dadi' },
+  { v: 'piante',  n: 'arredo.piante' },
+  { v: 'cornici', n: 'arredo.cornici' },
+  { v: 'misto',   n: 'arredo.misto' },
+  { v: 'niente',  n: 'arredo.niente' }
 ];
 
 /* Il minimo era 0.35 e non era buio: era una stanza un po' meno
@@ -139,7 +144,7 @@ async function salva(){
     // quale migrazione manca, non come si chiama la cache.
     if (r.error.code === '42703' || r.error.code === 'PGRST204' ||
         /stanza/.test(r.error.message || '')){
-      throw new Error('manca la migrazione stanza_librerie_gruppi');
+      throw new Error(TP('err.stanzaMigr'));
     }
     throw r.error;
   }

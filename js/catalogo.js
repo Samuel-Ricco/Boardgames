@@ -262,7 +262,7 @@ async function miniatura(fileUrl){
     if (ii && ii.thumburl) return ii.thumburl;
     if (ii && ii.url) return ii.url;
   }
-  throw new Error('miniatura non trovata');
+  throw new Error(TP('err.miniatura'));
 }
 
 function ridimensiona(im){
@@ -279,14 +279,14 @@ function carica(url, conCors){
     const i = new Image();
     if (conCors) i.crossOrigin = 'anonymous';
     i.onload = function(){ res(i); };
-    i.onerror = function(){ rej(new Error('immagine non caricata')); };
+    i.onerror = function(){ rej(new Error(TP('err.immagineNonCar'))); };
     i.src = url;
   });
 }
 
 async function copertina(voce){
   if (voce.fonte === 'bgg') return BGG.copertina(voce.id);
-  if (!voce.immagine) throw new Error('nessuna immagine');
+  if (!voce.immagine) throw new Error(TP('err.nessunaImmagine'));
   return ridimensiona(await carica(await miniatura(voce.immagine), true));
 }
 
@@ -299,8 +299,8 @@ async function copertina(voce){
    copertine. Per quelle serve il file, preso dal press kit dell'editore
    che per un sito di recensioni e' anche la fonte piu' corretta. */
 async function daFile(file){
-  if (!file) throw new Error('nessun file');
-  if (!/^image\//.test(file.type)) throw new Error('non e\' un\'immagine');
+  if (!file) throw new Error(TP('err.nessunFile'));
+  if (!/^image\//.test(file.type)) throw new Error(TP('err.nonImmagine'));
   const url = URL.createObjectURL(file);
   try { return ridimensiona(await carica(url, false)); }
   finally { URL.revokeObjectURL(url); }

@@ -1505,7 +1505,7 @@ function primoLibero(libId, tranne){
 function mettiSuScaffale(id, libId){
   const p = primoLibero(libId, id);
   if (p < 0){
-    flash('quel mobile e\' pieno: dodici cubi, dodici giochi');
+    flash(TP('msg.mobilePieno'));
     disegnaMia();
     return;
   }
@@ -1514,7 +1514,8 @@ function mettiSuScaffale(id, libId){
   disegnaMia();
   ridisponi();
   const L = LIB.librerie().find(function(x){ return x.id === libId; });
-  flash('"' + (LIB.get(id) || {}).title + '" in ' + ((L && L.nome) || 'libreria'));
+  flash(TP('msg.messoIn', { g: (LIB.get(id) || {}).title,
+                          lib: (L && L.nome) || TP('msg.libGenerica') }));
 }
 
 function togliDaScaffale(id){
@@ -1523,8 +1524,7 @@ function togliDaScaffale(id){
   LIB.mandaPosti([LIB.get(id)]);
   disegnaMia();
   ridisponi();                 // chiude la scatola aperta e rifa' gli scaffali
-  flash('"' + ((g && g.title) || 'il gioco') + '" e\' uscito dallo scaffale: ' +
-        'resta nella tua collezione');
+  flash(TP('msg.uscitoScaffale', { g: (g && g.title) || TP('msg.ilGioco') }));
 }
 
 /* Con un mobile solo non c'e' niente da scegliere e si fa e basta. Con
@@ -1532,7 +1532,7 @@ function togliDaScaffale(id){
    una finestra di scelta per un gesto da un clic sarebbe sproporzionata. */
 function scegliLibreria(btn, id){
   const l = LIB.librerie();
-  if (!l.length){ flash('crea prima una libreria, dal nome in basso'); return; }
+  if (!l.length){ flash(TP('msg.creaPrimaLib')); return; }
   if (l.length === 1){ mettiSuScaffale(id, l[0].id); return; }
 
   const box = document.createElement('span');
@@ -1575,7 +1575,7 @@ function collocaNuovo(game){
 
 function posaScatola(p){
   const prima = state.sort;
-  if (!LIB.librerie().length){ flash('nessuna libreria: non so dove metterla'); return; }
+  if (!LIB.librerie().length){ flash(TP('msg.nessunaLibreria')); return; }
 
   const l = Math.floor(p.mira / PER_LIB);
   const posto = p.mira % PER_LIB;
@@ -1592,7 +1592,7 @@ function posaScatola(p){
     LIB.mandaPosti(tocchi.filter(Boolean));
     if (prima !== 'mio'){
       setSort('mio');                   // ridispone da solo
-      flash('ordine tuo: da adesso le scatole restano dove le metti');
+      flash(TP('msg.ordineTuo'));
     } else {
       applyLibrary({ animate: true });
     }
@@ -1608,9 +1608,9 @@ function posaScatola(p){
       tocchi.push(LIB.metti(mio.id, L.id, posto));
       disegnaLibrerie();
       concludi(tocchi);
-      flash('libreria nuova: ' + L.nome);
+      flash(TP('msg.libNuova', {n: L.nome}));
     }).catch(function(e){
-      flash('libreria non creata: ' + e.message);
+      flash(TP('msg.libNonCreata', {e: e.message}));
       applyLibrary({ animate: true });
     });
     return;
@@ -1852,7 +1852,7 @@ function removeFocused(){
     applyLibrary({ animate: true });
     state.phase = 'browse';
     document.body.classList.add('browse');
-    flash('"' + game.title + '" tolto dalla libreria');
+    flash(TP('msg.toltoDaLib', {g: game.title}));
   });
 }
 
@@ -1892,9 +1892,7 @@ function disegnaCuore(game){
   const v = CUORI.di(game.id);
   b.setAttribute('aria-pressed', v.mio ? 'true' : 'false');
   q('#p-cuore-n').textContent = v.n ? String(v.n) : '';
-  b.setAttribute('title', v.mio
-    ? 'togli il cuore a questa recensione'
-    : "questa recensione mi e' piaciuta");
+  b.setAttribute('title', TP(v.mio ? 'pan.cuoreTolto' : 'pan.cuoreTitolo'));
 }
 
 function showPanel(game){
@@ -1907,15 +1905,15 @@ function showPanel(game){
   if (game.publisher) by.push(esc(game.publisher));
   if (game.year)      by.push(esc(game.year));
   q('#p-by').innerHTML = by.join(' &middot; ') +
-    (game.artist ? '<br><span class="credit">copertina di ' + esc(game.artist) +
+    (game.artist ? '<br><span class="credit">' + T('pan.credito', {a: esc(game.artist)}) +
                    (game.publisher ? ', &copy; ' + esc(game.publisher) : '') + '</span>' : '');
 
   const specs = [
-    [game.players, 'giocatori'], [game.time, 'minuti'],
-    [game.age, 'eta'], [game.weight, 'peso bgg']
+    [game.players, 'spec.giocatori'], [game.time, 'spec.minuti'],
+    [game.age, 'spec.eta'], [game.weight, 'spec.peso']
   ].filter(function(s){ return s[0]; });
   q('#p-specs').innerHTML = specs.map(function(s){
-    return '<li><b>' + esc(s[0]) + '</b><span>' + s[1] + '</span></li>';
+    return '<li><b>' + esc(s[0]) + '</b><span>' + T(s[1]) + '</span></li>';
   }).join('');
 
   q('#p-score').textContent = game.score || '--';
@@ -1933,13 +1931,13 @@ function showPanel(game){
   // in casa di un amico la recensione non e' tua, e va detto
   const dove = LIB.ospitePresso();
   q('#p-eyebrow').textContent = dove && dove.nick
-    ? 'la recensione di ' + dove.nick : 'la recensione';
+    ? TP('pan.occhielloDi', {chi: dove.nick}) : TP('pan.occhiello');
 
   const pref = q('#p-pref');
   if (pref){
     const si = !!(game && game.preferito);
     pref.setAttribute('aria-pressed', si ? 'true' : 'false');
-    pref.title = si ? 'togli dai preferiti' : 'segnalo fra i preferiti';
+    pref.title = TP(si ? 'pan.prefTolto' : 'pan.prefTitolo');
   }
 
   disegnaGruppiScheda(game);
@@ -1962,27 +1960,67 @@ function hidePanel(){
    rendering, e una finestra di sistema in mezzo a una scena 3D stona.
    Il primo clic arma, il secondo esegue, dopo quattro secondi si
    disarma da solo. */
-function armaBottone(btn, normale, conferma, azione){
+function armaBottone(btn, kNormale, kConferma, azione){
   let armed = false, t = 0;
+  /* Prende le CHIAVI e non le parole: le scioglie ogni volta che
+     riscrive il pulsante, cosi' cambiando lingua cambia anche lui. Con
+     le parole catturate alla partenza resterebbe per sempre in quella
+     di quel momento -- ed e' proprio quello che succedeva a "esci
+     dall'account", l'unica scritta del profilo che non seguiva. */
   function disarma(){
     clearTimeout(t); armed = false;
     btn.classList.remove('armed');
-    btn.innerHTML = normale;
+    btn.innerHTML = T(kNormale);
   }
-  btn.innerHTML = normale;
+  btn.innerHTML = T(kNormale);
   btn.__disarma = disarma;
+  btn.__rilingua = function(){ if (!armed) btn.innerHTML = T(kNormale); };
   btn.addEventListener('click', function(e){
     e.stopPropagation();
     if (!armed){
       armed = true;
       btn.classList.add('armed');
-      btn.innerHTML = conferma;
+      btn.innerHTML = T(kConferma);
       t = setTimeout(disarma, 4000);
       return;
     }
     disarma();
     azione();
   });
+}
+
+/* --- quando cambia la lingua ------------------------------------
+   `I18N.applica()` rifa' il markup, ma tutto quello che il JS ha gia'
+   disegnato -- l'elenco, il catalogo, il profilo, la scheda aperta --
+   lo ha scritto lui e tocca a lui rifarlo. Si ridisegna solo quello che
+   e' davvero a schermo: rifare il catalogo mentre si guarda la libreria
+   vorrebbe dire rifare centinaia di righe che nessuno sta leggendo. */
+function rilingua(){
+  qa('[data-fa], button').forEach(function(b){
+    if (b.__rilingua) b.__rilingua();
+  });
+  setMode(AUTH.stato());
+  nomeMobileCorrente();
+  updateConta();
+  buildFlatList();
+
+  if (document.body.classList.contains('arreda')){
+    disegnaLibrerie();
+    sincronizzaPannello();
+  }
+  if (document.body.classList.contains('elenco')) disegnaMia();
+  if (state.sezione === 'catalogo'){
+    disegnaCatalogo(0);
+    catNota();
+  }
+  if (state.sezione === 'profilo'){
+    disegnaProfilo(); disegnaAmici(); disegnaGiocatori(); disegnaPartite();
+  }
+  if (document.body.classList.contains('partita')) disegnaTavolo();
+  /* La scheda aperta va rifatta con il suo gioco: le specifiche, il
+     credito e l'occhiello sono tutti scritti dal JS. */
+  const g = state.focused && state.focused.userData && state.focused.userData.game;
+  if (g && (state.phase === 'focus' || state.phase === 'review')) showPanel(g);
 }
 
 /* --- messaggino di conferma ------------------------------------ */
@@ -2277,9 +2315,7 @@ function bindInput(){
     togliDaScaffale(g.id);
   });
 
-  armaBottone(q('#del'),
-    '<span aria-hidden="true">&#9003;</span> elimina',
-    'sicuro? sparisce', removeFocused);
+  armaBottone(q('#del'), 'pan.eliminaLungo', 'pan.eliminaOk', removeFocused);
   q('#panel').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   let rt;
@@ -2317,16 +2353,16 @@ function setMode(st){
   const chip = q('#mode');
   if (!AUTH.attivo()){
     chip.textContent = state.mode;          // senza backend resta l'interruttore locale
-    chip.title = 'cambia modalita';
+    chip.title = TP('testa.cambiaMod');
   } else if (st.dentro){
     // il chip dice CHI sei, non fa niente: uscire ha un tasto suo, se no
     // e' un pulsante che cambia significato a seconda dello stato
-    chip.textContent = st.admin ? 'admin' : 'utente';
+    chip.textContent = TP(st.admin ? 'testa.admin' : 'testa.utente');
     chip.title = (st.nome || '') + (st.admin ? ' -- admin' : '');
     chip.disabled = true;
   } else {
-    chip.textContent = 'entra';
-    chip.title = 'entra con Google';
+    chip.textContent = TP('testa.entra');
+    chip.title = TP('testa.entraGoogle');
     chip.disabled = false;
   }
 }
@@ -2336,12 +2372,12 @@ function bindTools(){
     if (!AUTH.attivo()){
       // senza database resta l'interruttore locale di prima
       setMode({ dentro: false, admin: state.mode !== 'admin' });
-      flash(state.mode === 'admin' ? 'modalita admin' : 'modalita utente');
+      flash(TP(state.mode === 'admin' ? 'msg.modAdmin' : 'msg.modUtente'));
       return;
     }
     if (AUTH.stato().dentro) return;     // qui dentro il chip e' solo un'etichetta
     try { await AUTH.entra(); }          // porta su Google e poi torna qui
-    catch(e){ flash('accesso non riuscito: ' + e.message); }
+    catch(e){ flash(TP('msg.accessoNo', {e: e.message})); }
   });
 
   // Uscire non e' cambiare un'etichetta: la collezione di prima non e'
@@ -2390,15 +2426,15 @@ function bindTools(){
     a.download = 'data.js';
     a.click();
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
-    flash('data.js scaricato: mettilo in js/ e committa');
+    flash(TP('msg.dataScaricato'));
   });
 
-  armaBottone(q('#rst'), 'ripristina', 'sicuro? si perdono le aggiunte', function(){
+  armaBottone(q('#rst'), 'add.ripristina', 'add.ripristinaOk', function(){
     LIB.reset();
     closeAdd();
     loadCovers().then(function(){
       applyLibrary({ animate: true });
-      flash('libreria ripristinata');
+      flash(TP('msg.libRipristinata'));
     });
   });
 }
@@ -2424,7 +2460,7 @@ function setQuery(v){
   document.body.classList.toggle('cerca', !!nuovo);
   state.scrollTo = state.scroll = 0;
   ridisponi();
-  if (nuovo && !lista().length) flash('nessun gioco per "' + nuovo + '"');
+  if (nuovo && !lista().length) flash(TP('msg.nessunGiocoPer', {q: nuovo}));
 }
 
 /* Quanti sono. Mentre si cerca dice anche su quanti, se no il numero
@@ -2436,7 +2472,7 @@ function updateConta(){
   const tot = LIB.all().length;
   const el = q('#conta');
   if (!el) return;
-  const chi = LIB.ospitePresso() ? 'la sua collezione' : 'la mia collezione';
+  const sua = !!LIB.ospitePresso();
   /* Il numero filtrato si vede solo DENTRO l'elenco, che e' dove il
      filtro si e' messo e dove si vede che c'e'. Fuori, il contatore
      torna a dire quanti giochi hai -- restava filtrato anche in
@@ -2444,8 +2480,8 @@ function updateConta(){
   const filtrato = document.body.classList.contains('elenco') &&
                    (state.q || state.gruppo || state.soloPreferiti);
   el.innerHTML = filtrato
-    ? '<span>' + chi + ':</span> <b>' + lista().length + '</b> <span>di ' + tot + '</span>'
-    : '<span>' + chi + ':</span> <b>' + tot + '</b>';
+    ? T('mia.contaCerca', {n: lista().length, m: tot})
+    : T(sua ? 'mia.contaSua' : 'mia.conta', {n: tot});
 }
 
 /* --- aggiunta -------------------------------------------------- */
@@ -2461,21 +2497,18 @@ function openAdd(){
   // dove finiscono le modifiche cambia se c'e' il database dietro
   const dove = q('#add-dove'), esporta = q('#exp'), ripristina = q('#rst');
   if (LIB.eRemota()){
-    dove.textContent = 'Le modifiche vanno nel database, le vedono tutti.';
+    dove.textContent = TP('add.doveRemoto');
     esporta.style.display = ripristina.style.display = 'none';
   } else {
-    dove.textContent = 'Le modifiche restano su questo browser.';
+    dove.textContent = TP('add.dove');
     esporta.style.display = ripristina.style.display = '';
   }
 
   CATALOGO.fonte(true).then(function(f){
     if (f === 'bgg'){
-      msgAdd('Ricerca su <b>BoardGameGeek</b>, dal proxy locale.', '');
+      msgAdd(T('add.fonteBgg'), '');
     } else {
-      msgAdd('Il token BGG non c&#39;&egrave; ancora, quindi cerco su <b>Wikidata</b>: ' +
-             'circa 4.400 giochi invece di 175.000, e l&#39;immagine &egrave; spesso una foto ' +
-             'del gioco allestito e non la scatola. <b>Controlla i campi prima di salvare</b> ' +
-             '&mdash; l&#39;editore &egrave; quello che sbaglia pi&ugrave; spesso.', 'warn');
+      msgAdd(T('add.fonteWiki'), 'warn');
     }
   });
 }
@@ -2503,8 +2536,8 @@ function apriModifica(game){
   q('#addlayer').classList.add('on', 'correzione');
   q('#addlayer').classList.add('correzione');
   q('#addlayer').setAttribute('aria-hidden','false');
-  q('#add-h').textContent = 'Correggi la scheda';
-  q('#m-go').textContent = 'salva le modifiche';
+  q('#add-h').textContent = TP('add.hCorreggi');
+  q('#m-go').textContent = TP('add.salvaModifiche');
 
   const set = function(sel, v){ q(sel).value = v == null ? '' : String(v); };
   set('#m-title', game.title);       set('#m-bgg', game.bgg);
@@ -2517,32 +2550,30 @@ function apriModifica(game){
   q('#m-file').value = '';
   q('#add-man').open = true;
   q('#add-res').innerHTML = '';
-  msgAdd('Le modifiche vanno nella <b>tua</b> collezione. Lascia vuoto il campo ' +
-         'copertina per tenere quella che c&#39;&egrave; gi&agrave;.', '');
+  msgAdd(T('add.noteModifica'), '');
   q('#m-title').focus();
 }
 
 function chiudiModifica(){
   inModifica = null;
   q('#addlayer').classList.remove('correzione');
-  q('#add-h').innerHTML = 'Aggiungi alla libreria';
-  q('#m-go').textContent = 'metti sullo scaffale';
+  q('#add-h').innerHTML = T('add.h');
+  q('#m-go').textContent = TP('add.metti');
 }
 
 async function doSearch(){
   const q0 = q('#add-q').value.trim();
   if (!q0) return;
-  msgAdd('cerco&hellip;', '');
+  msgAdd(T('add.cerco'), '');
   q('#add-res').innerHTML = '';
   try {
     const hits = await CATALOGO.cerca(q0);
     if (!hits.length){
-      msgAdd('Nessun risultato. Se il gioco &egrave; recente o poco noto pu&ograve; ' +
-             'semplicemente non essere su Wikidata: scrivilo a mano qui sotto.', '');
+      msgAdd(T('add.nessunRisultato'), '');
       q('#add-man').open = true;
       return;
     }
-    msgAdd('Scegline uno: riempie il modulo, non lo mette subito sullo scaffale.', '');
+    msgAdd(T('add.scegline'), '');
     q('#add-res').innerHTML = hits.map(function(h, i){
       return '<li><button type="button" data-i="' + i + '">' +
              '<b>' + esc(h.title) + '</b>' +
@@ -2555,8 +2586,7 @@ async function doSearch(){
       });
     });
   } catch(e){
-    msgAdd('Ricerca non riuscita: ' + esc(e.message) +
-           '. Puoi scrivere il gioco a mano qui sotto.', 'warn');
+    msgAdd(T('add.ricercaNo', {e: esc(e.message)}), 'warn');
     q('#add-man').open = true;
   }
 }
@@ -2567,7 +2597,7 @@ async function doSearch(){
 async function scegli(voce, btn){
   btn.disabled = true;
   const prima = btn.innerHTML;
-  btn.innerHTML = '<b>prendo la scheda&hellip;</b>';
+  btn.innerHTML = T('add.prendoScheda');
   try {
     const g = await CATALOGO.dettagli(voce);
     inAttesa = g;
@@ -2578,13 +2608,11 @@ async function scegli(voce, btn){
     set('#m-time', g.time);        set('#m-score', g.score);
     q('#add-man').open = true;
     q('#add-res').innerHTML = '';
-    msgAdd('Scheda da <b>' + esc(g.fonte === 'bgg' ? 'BoardGameGeek' : 'Wikidata') + '</b>. ' +
-           'Correggi quello che serve, poi metti sullo scaffale.' +
-           (g.immagine ? ' L&#39;immagine la scarico al salvataggio.'
-                       : ' Nessuna immagine: user&ograve; la copertina disegnata.'), '');
+    msgAdd(T('add.schedaDa', {f: esc(g.fonte === 'bgg' ? 'BoardGameGeek' : 'Wikidata')}) +
+           T(g.immagine ? 'add.immagineDopo' : 'add.senzaImmagine'), '');
     q('#m-title').focus();
   } catch(e){
-    msgAdd('Non sono riuscito a prendere la scheda: ' + esc(e.message), 'warn');
+    msgAdd(T('add.schedaNo', {e: esc(e.message)}), 'warn');
   } finally {
     btn.disabled = false; btn.innerHTML = prima;
   }
@@ -2657,7 +2685,7 @@ function salvaMia(){
   if (nuovo){
     box.userData.game = nuovo;
     showPanel(nuovo);              // il pannello dietro mostra subito quello che hai scritto
-    flash('recensione salvata');
+    flash(TP('msg.receSalvata'));
   }
 }
 
@@ -2688,14 +2716,14 @@ async function addManual(){
   const file = q('#m-file').files[0];
 
   if (file){
-    b.disabled = true; b.textContent = 'preparo la copertina...';
+    b.disabled = true; b.textContent = TP('add.preparoCop');
     try { g.cover = await CATALOGO.daFile(file); }
-    catch(e){ flash('immagine non usata: ' + e.message); }
+    catch(e){ flash(TP('msg.immagineNo', {e: e.message})); }
     b.disabled = false; b.textContent = prima;
   } else if (inAttesa && inAttesa.immagine && inAttesa.title === title){
-    b.disabled = true; b.textContent = 'scarico la copertina...';
+    b.disabled = true; b.textContent = TP('add.scaricoCop');
     try { g.cover = await CATALOGO.copertina(inAttesa); }
-    catch(e){ flash('copertina non presa: uso quella disegnata'); }
+    catch(e){ flash(TP('msg.copertinaNo')); }
     b.disabled = false; b.textContent = prima;
   }
 
@@ -2721,14 +2749,14 @@ async function addManual(){
     const eraPubblicata = !!RECE.di(game.bgg);
     if (vuole && game.bgg){
       RECE.pubblica(game)
-        .then(function(){ flash('recensione pubblicata nel catalogo'); })
-        .catch(function(e){ flash('non pubblicata: ' + e.message); });
+        .then(function(){ flash(TP('msg.recePubblicata')); })
+        .catch(function(e){ flash(TP('msg.nonPubblicata', {e: e.message})); });
     } else if (vuole && !game.bgg){
-      flash('senza id BGG non si pubblica: e\' la chiave della recensione');
+      flash(TP('msg.senzaBgg'));
     } else if (!vuole && eraPubblicata){
       RECE.togli(game.bgg)
-        .then(function(){ flash('recensione tolta dal catalogo'); })
-        .catch(function(e){ flash('non tolta: ' + e.message); });
+        .then(function(){ flash(TP('msg.receTolta')); })
+        .catch(function(e){ flash(TP('msg.nonTolta', {e: e.message})); });
     }
   }
 
@@ -2740,7 +2768,7 @@ async function addManual(){
   applyLibrary({ animate: true });
   if (game){
     goToGame(game.id);
-    flash('"' + game.title + '" salvato');
+    flash(TP('msg.salvato', {g: game.title}));
   }
 }
 
@@ -2829,7 +2857,7 @@ async function catSfoglia(daCapo){
   catCarico = true;
   if (daCapo){ catVoci = []; catOffset = 0; catFine = false; q('#cat-list').innerHTML = ''; }
   q('#cat-piu').disabled = true;
-  catMsg(catVoci.length ? 'prendo altri giochi&hellip;' : 'apro il catalogo&hellip;');
+  catMsg(T(catVoci.length ? 'cat.prendoAltri' : 'cat.apro'));
   try {
     const voci = await CATALOGO.sfoglia(catOffset, CAT_PAG);
     if (mio !== catGiro) return;          // intanto e' stato chiesto altro
@@ -2841,8 +2869,7 @@ async function catSfoglia(daCapo){
     catNota();
   } catch(e){
     if (mio !== catGiro) return;          // errore di una richiesta superata: non riguarda piu'
-    catMsg('Il catalogo non risponde: ' + esc(e.message) +
-           '. Wikidata a volte impiega troppo e chiude la richiesta: riprova.', 'warn');
+    catMsg(T('cat.nonRisponde', {e: esc(e.message)}), 'warn');
   } finally {
     if (mio === catGiro){
       catCarico = false;
@@ -2857,7 +2884,7 @@ async function catCerca(){
 
   const mio = ++catGiro;
   catCarico = true;
-  catMsg('cerco&hellip;');
+  catMsg(T('cat.cerco'));
   q('#cat-list').innerHTML = '';
   try {
     const voci = await CATALOGO.cerca(t);
@@ -2866,13 +2893,11 @@ async function catCerca(){
     catFine = true;                       // la ricerca da' quello che da', non si pagina
     disegnaCatalogo(0);
     if (!catVoci.length){
-      catMsg('Nessun gioco per <b>' + esc(t) + '</b>. Su Wikidata i giochi da tavolo ' +
-             'con un id BGG sono circa 3.400: se e\' recente o poco noto pu&ograve; ' +
-             'semplicemente non esserci.');
+      catMsg(T('cat.nessunGioco', {q: esc(t)}));
     } else catNota();
   } catch(e){
     if (mio !== catGiro) return;
-    catMsg('Ricerca non riuscita: ' + esc(e.message), 'warn');
+    catMsg(T('cat.ricercaNo', {e: esc(e.message)}), 'warn');
   } finally {
     if (mio === catGiro) catCarico = false;
   }
@@ -2885,13 +2910,10 @@ async function catNota(){
   const f = await CATALOGO.fonte();
   const guaio = RECE.problema();
   const n = RECE.quante();
-  const fonte = f === 'bgg'
-    ? 'Schede da <b>BoardGameGeek</b>.'
-    : 'Schede da <b>Wikidata</b>: circa 3.400 giochi con id BGG, dati pi&ugrave; ' +
-      'magri e quasi mai la copertina vera della scatola.';
+  const fonte = T(f === 'bgg' ? 'cat.fonteBgg' : 'cat.fonteWiki');
   catMsg(fonte + ' ' + (guaio
-    ? '<b>Le recensioni non si leggono:</b> ' + esc(guaio) + '.'
-    : n + (n === 1 ? ' gioco recensito' : ' giochi recensiti') + ' su questo sito.'));
+    ? T('cat.receGuaio', {e: esc(guaio)})
+    : T(n === 1 ? 'cat.receUno' : 'cat.receTanti', {n: n})));
 }
 
 function disegnaCatalogo(da){
@@ -2921,9 +2943,9 @@ function rigaCatalogo(v, i){
       (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
     '</div>' +
     '<div class="cat-azioni">' +
-      '<button type="button" class="apri">' + (rec ? 'recensione' : 'scheda') + '</button>' +
+      '<button type="button" class="apri">' + T(rec ? 'cat.recensione' : 'cat.scheda') + '</button>' +
       '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') + '>' +
-        (gia ? 'ce l\'hai' : 'in libreria') + '</button>' +
+        T(gia ? 'cat.ceLHai' : 'cat.inLibreria') + '</button>' +
     '</div>' +
     '<div class="cat-rec"></div>' +
   '</li>';
@@ -2938,18 +2960,17 @@ function apriRiga(li){
   const rec = RECE.di(v.bgg);
   const aperta = li.classList.toggle('aperta');
   li.querySelector('.apri').textContent =
-    aperta ? 'chiudi' : (rec ? 'recensione' : 'scheda');
+    TP(aperta ? 'cat.chiudi' : (rec ? 'cat.recensione' : 'cat.scheda'));
   if (!aperta) return;
 
   const link = v.bgg
     ? '<p><a class="bgg" href="https://boardgamegeek.com/boardgame/' + esc(v.bgg) +
-      '/" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a></p>'
+      '/" target="_blank" rel="noopener">' + T('pan.bgg') + '</a></p>'
     : '';
   li.querySelector('.cat-rec').innerHTML = rec
     ? (rec.score ? '<p class="voto">' + esc(rec.score) + '<i>/10</i></p>' : '') +
       (rec.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('') + link
-    : '<p class="vuoto">Non ancora recensito qui. La scheda arriva dalla fonte, ' +
-      'la recensione la scriviamo noi.</p>' + link;
+    : '<p class="vuoto">' + T('cat.nonRecensito') + '</p>' + link;
 }
 
 /* Dal catalogo allo scaffale. Passa dalla stessa strada del modulo di
@@ -2959,7 +2980,7 @@ async function mettiInLibreria(v, btn){
   btn.disabled = true;
   const prima = btn.textContent;
   try {
-    btn.textContent = 'prendo la scheda...';
+    btn.textContent = TP('cat.prendoScheda');
     const g = await CATALOGO.dettagli(v);
     const gioco = {
       title: g.title, bgg: parseInt(g.bgg, 10) || 0,
@@ -2968,7 +2989,7 @@ async function mettiInLibreria(v, btn){
       score: g.score || '', art: 'generic'
     };
     if (g.immagine){
-      btn.textContent = 'scarico la copertina...';
+      btn.textContent = TP('cat.scaricoCop');
       // se non arriva non e' un errore: si usa la copertina disegnata
       try { gioco.cover = await CATALOGO.copertina(g); } catch(err){}
     }
@@ -2979,12 +3000,12 @@ async function mettiInLibreria(v, btn){
       applyLibrary({ animate: true });
       goToGame(messo.id);
     }
-    btn.textContent = 'ce l\'hai';
-    flash('"' + messo.title + '" e\' sullo scaffale');
+    btn.textContent = TP('cat.ceLHai');
+    flash(TP('msg.sulloScaffale', {g: messo.title}));
   } catch(e){
     btn.disabled = false;
     btn.textContent = prima;
-    flash('non aggiunto: ' + e.message);
+    flash(TP('msg.nonAggiunto', {e: e.message}));
   }
 }
 
@@ -3044,7 +3065,7 @@ function disegnaGruppiScheda(game){
              (on ? ' class="on"' : '') + (altrui ? ' disabled' : '') + '>' +
              esc(G.nome) + '</button>';
     }).join('') +
-    (altrui ? '' : '<button type="button" class="nuovo" data-g="+">+ gruppo</button>');
+    (altrui ? '' : '<button type="button" class="nuovo" data-g="+">' + T('gru.piuGruppo') + '</button>');
 }
 
 /* Creare un gruppo dalla scheda: la pastiglia diventa un campo, sul
@@ -3052,9 +3073,9 @@ function disegnaGruppiScheda(game){
    e poi farlo tornare qui e' un giro che non serve a niente. */
 function nuovoGruppoInLinea(btn, game){
   const li = document.createElement('input');
-  li.type = 'text'; li.maxLength = 30; li.placeholder = 'nome del gruppo';
+  li.type = 'text'; li.maxLength = 30; li.placeholder = TP('gru.nomePh');
   li.className = 'gruppo-nuovo';
-  li.setAttribute('aria-label', 'nome del gruppo nuovo');
+  li.setAttribute('aria-label', TP('gru.nomeAria'));
   btn.replaceWith(li);
   li.focus();
 
@@ -3071,9 +3092,9 @@ function nuovoGruppoInLinea(btn, game){
     }).then(function(){
       disegnaGruppiScheda(game);
       disegnaGruppiFiltro();
-      flash('gruppo "' + nome + '" creato');
+      flash(TP('msg.gruppoCreato', {n: nome}));
     }).catch(function(err){
-      flash('non creato: ' + err.message);
+      flash(TP('msg.nonCreato', {e: err.message}));
       chiudi();
     });
   });
@@ -3094,7 +3115,7 @@ function disegnaGruppiFiltro(){
   const quanti = LIB.all().filter(function(g){ return g.preferito; }).length;
   el.innerHTML = (state.vista === 'tutti' && quanti)
     ? '<button type="button" data-pref="1"' +
-      (state.soloPreferiti ? ' class="on"' : '') + '>&#9733; solo i preferiti</button>'
+      (state.soloPreferiti ? ' class="on"' : '') + '>' + T('mia.soloPreferiti') + '</button>'
     : '';
 }
 
@@ -3141,13 +3162,13 @@ function disegnaGiochiDelGruppo(){
   if (!G){ gruppoAperto = null; box.hidden = true; return; }
 
   box.hidden = false;
-  q('#gru-quale').textContent = 'chi sta in "' + G.nome + '"';
+  q('#gru-quale').textContent = TP('gru.chiStaIn', {n: G.nome});
   q('#gru-elenco').innerHTML = LIB.list('nome', '').map(function(g){
     const dentro = LIB.gruppiDi(g.id).indexOf(G.id) >= 0;
     return '<li data-id="' + esc(g.id) + '">' +
       '<span class="nome">' + esc(g.title) + '</span>' +
       '<button type="button"' + (dentro ? ' class="on"' : '') + '>' +
-      (dentro ? 'dentro' : 'aggiungi') + '</button></li>';
+      T(dentro ? 'gru.dentro' : 'gru.aggiungi') + '</button></li>';
   }).join('');
 }
 
@@ -3202,7 +3223,7 @@ function bindGruppi(){
       if (state.gruppo) ridisponi();
     }).catch(function(err){
       b.classList.toggle('on', !dentro);
-      flash('non riuscito: ' + err.message);
+      flash(TP('msg.nonRiuscito', {e: err.message}));
     });
   });
   q('#p-gruppi').addEventListener('pointerup', function(e){ e.stopPropagation(); });
@@ -3261,8 +3282,8 @@ function bindGruppi(){
       disegnaGruppiElenco();
       disegnaGruppiFiltro();
       disegnaMia();
-      flash('gruppo tolto: i giochi restano dove sono');
-    }).catch(function(err){ b.disabled = false; flash('non tolto: ' + err.message); });
+      flash(TP('msg.gruppoTolto'));
+    }).catch(function(err){ b.disabled = false; flash(TP('msg.nonTolto', {e: err.message})); });
   });
 
   // dentro/fuori dal gruppo aperto, un gioco per riga
@@ -3292,7 +3313,7 @@ function bindGruppi(){
     }).catch(function(err){
       b.classList.toggle('on', !dentro);
       b.textContent = dentro ? 'aggiungi' : 'dentro';
-      flash('non riuscito: ' + err.message);
+      flash(TP('msg.nonRiuscito', {e: err.message}));
     });
   });
 }
@@ -3326,9 +3347,9 @@ function disegnaLibrerie(){
       '<span class="nome">' + esc(L.nome) + '</span>' +
       '<span class="quanti">' + (perLibreria[L.id] || 0) + '</span>' +
       (l.length > 1
-        ? '<button type="button" data-fa="via" aria-label="elimina ' + esc(L.nome) + '">' + ICO.cestino + '</button>'
+        ? '<button type="button" data-fa="via" aria-label="' + esc(TP('stanza.menoTitolo', {nome: L.nome})) + '">' + ICO.cestino + '</button>'
         : '') +
-      '<button type="button" class="presa" data-fa="sposta" aria-label="tieni premuto e trascina per riordinare">' +
+      '<button type="button" class="presa" data-fa="sposta" aria-label="' + esc(TP('stanza.sposta')) + '">' +
         ICO.maniglia + '</button>' +
     '</li>';
   }).join('');
@@ -3345,7 +3366,7 @@ function disegnaNomeCorrente(){
   inp.disabled = !L;
   /* Sul mobile di scorta il campo e' spento: dirlo e' meglio che
      lasciarlo vuoto e muto, perche' la scorta si vede come le altre. */
-  inp.placeholder = L ? '' : 'nessun mobile qui';
+  inp.placeholder = L ? '' : TP('stanza.nessunMobile');
   if (ok) ok.disabled = true;
   segnaGesti();
   mobileMostrato = Math.round(state.scroll);
@@ -3366,10 +3387,10 @@ function confermaNomeCorrente(){
     applyLibrary({});
     updateRail();
     disegnaLibrerie();
-    flash('libreria rinominata');
+    flash(TP('msg.libRinominata'));
   }).catch(function(err){
     ok.disabled = false;
-    flash('non rinominata: ' + err.message);
+    flash(TP('msg.nonRinominata', {e: err.message}));
   });
 }
 
@@ -3423,7 +3444,7 @@ function bindOrdineLibrerie(){
     updateRail();
     disegnaLibrerie();
     sincronizzaPannello();
-    flash('librerie riordinate');
+    flash(TP('msg.libRiordinate'));
   };
   el.addEventListener('pointerup', molla);
   el.addEventListener('pointercancel', molla);
@@ -3444,7 +3465,7 @@ function bindOrdineLibrerie(){
     clearTimeout(armatoT);
     if (armato && armato.isConnected){
       armato.classList.remove('armed');
-      armato.setAttribute('aria-label', 'elimina');
+      armato.setAttribute('aria-label', TP('stanza.elimina'));
     }
     armato = null;
   };
@@ -3455,7 +3476,7 @@ function bindOrdineLibrerie(){
       disarma();
       armato = b;
       b.classList.add('armed');
-      b.setAttribute('aria-label', 'tocca ancora per eliminare');
+      b.setAttribute('aria-label', TP('stanza.toccaAncora'));
       armatoT = setTimeout(disarma, 4000);
       return;
     }
@@ -3469,8 +3490,8 @@ function bindOrdineLibrerie(){
       updateRail();
       disegnaLibrerie();
       sincronizzaPannello();
-      flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
-    }).catch(function(err){ b.disabled = false; flash('non tolta: ' + err.message); });
+      flash(TP('msg.libTolta'));
+    }).catch(function(err){ b.disabled = false; flash(TP('msg.nonTolta2', {e: err.message})); });
   });
 }
 
@@ -3484,14 +3505,14 @@ function creaLibreriaNuova(){
     if (state.sort !== 'mio'){
       fissaOrdineCorrente();
       setSort('mio');
-      flash('libreria "' + L.nome + '": ordine tuo, ora le scatole si spostano');
+      flash(TP('msg.libOrdineTuo', {n: L.nome}));
     } else {
       applyLibrary({ animate: true });
-      flash('libreria nuova: ' + L.nome);
+      flash(TP('msg.libNuova', {n: L.nome}));
     }
     state.scrollTo = clamp(LIB.librerie().length - 1, 0, maxScroll());
     sincronizzaPannello();
-  }).catch(function(e){ flash('non creata: ' + e.message); });
+  }).catch(function(e){ flash(TP('msg.nonCreata', {e: e.message})); });
 }
 
 function bindLibrerie(){
@@ -3515,9 +3536,9 @@ function bindLibrerie(){
      qualcosa: una libreria in meno rimanda i suoi giochi fuori dagli
      scaffali, e non e' un gesto da un clic solo. */
   const meno = q('#st-meno');
-  if (meno) armaBottone(meno, 'elimina questa libreria', 'sicuro? tocca ancora', function(){
+  if (meno) armaBottone(meno, 'stanza.meno', 'stanza.menoOk', function(){
     const L = libCorrente();
-    if (!L){ flash('qui non c\u2019e\u2019 nessuna libreria da togliere'); return; }
+    if (!L){ flash(TP('msg.quiNienteLib')); return; }
     LIB.togliLibreria(L.id).then(function(){
       state.scrollTo = state.scroll = clamp(state.scroll, 0, maxScroll());
       buildCabinet();
@@ -3525,8 +3546,8 @@ function bindLibrerie(){
       updateRail();
       disegnaLibrerie();
       sincronizzaPannello();
-      flash('libreria tolta: i giochi che c\'erano sono usciti dagli scaffali');
-    }).catch(function(err){ flash('non tolta: ' + err.message); });
+      flash(TP('msg.libTolta'));
+    }).catch(function(err){ flash(TP('msg.nonTolta2', {e: err.message})); });
   });
 
   bindOrdineLibrerie();
@@ -3548,11 +3569,11 @@ let salvaStanzaT = 0;
 
 function salvaStanzaTraPoco(){
   clearTimeout(salvaStanzaT);
-  q('#st-msg').textContent = 'sto salvando';
+  q('#st-msg').textContent = TP('stanza.salvando');
   salvaStanzaT = setTimeout(function(){
     STANZA.salva()
-      .then(function(){ q('#st-msg').textContent = 'salvata'; })
-      .catch(function(e){ q('#st-msg').textContent = 'non salvata: ' + e.message; });
+      .then(function(){ q('#st-msg').textContent = TP('stanza.salvata'); })
+      .catch(function(e){ q('#st-msg').textContent = TP('stanza.nonSalvata', {e: e.message}); });
   }, 700);
 }
 
@@ -3600,12 +3621,10 @@ function segnaGesti(){
   if (!meno) return;
   const L = libCorrente(), quante = LIB.librerie().length;
   const motivo = !L
-    ? 'qui non c\u2019e\u2019 ancora nessun mobile: trascinaci una scatola, o aggiungine uno'
-    : (quante <= 1
-        ? 'e\u2019 l\u2019unica libreria che hai: prima aggiungine un\u2019altra'
-        : '');
+    ? TP('stanza.menoScorta')
+    : (quante <= 1 ? TP('stanza.menoUnica') : '');
   meno.disabled = !!motivo;
-  meno.title = motivo || ('elimina ' + L.nome);
+  meno.title = motivo || TP('stanza.menoTitolo', {nome: L.nome});
   if (motivo && meno.__disarma) meno.__disarma();
 }
 
@@ -3630,14 +3649,15 @@ function disegnaStanza(){
 
   q('#st-luce').value = cur.luce;
   q('#st-luce-n').textContent = Math.round(cur.luce * 100) + '%';
-  q('#st-quale').textContent = L ? L.nome : 'nessun mobile qui';
+  q('#st-quale').textContent = L ? L.nome : TP('stanza.nessunMobile');
 
   const gruppo = function(sel, lista, valore, testo){
     q(sel).innerHTML = lista.map(function(x){
       const on = valore === x.v ? ' class="on"' : '';
       const stile = testo ? '' : ' style="background:' + esc(x.v) + '"';
-      return '<button type="button" data-v="' + esc(x.v) + '" title="' + esc(x.n) + '"' +
-             on + stile + '>' + (testo ? esc(x.n) : '') + '</button>';
+      const nome = TP(x.n);          // `n` e' una chiave, non una parola
+      return '<button type="button" data-v="' + esc(x.v) + '" title="' + esc(nome) + '"' +
+             on + stile + '>' + (testo ? esc(nome) : '') + '</button>';
     }).join('');
   };
   gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false);
@@ -3690,7 +3710,7 @@ function nomeMobileCorrente(){
   const b = q('#vista-mobili');
   if (!b) return;
   const L = libCorrente();
-  b.textContent = L ? L.nome : 'nuova libreria';
+  b.textContent = L ? L.nome : TP('vista.nuovaLib');
 }
 
 function bindVista(){
@@ -3712,7 +3732,7 @@ function apriArreda(){
   sincronizzaPannello();
   document.body.classList.add('arreda');
   q('#stanza').setAttribute('aria-hidden', 'false');
-  q('#st-msg').textContent = 'si salva da solo';
+  q('#st-msg').textContent = TP('stanza.siSalva');
 }
 
 function chiudiArreda(){
@@ -3756,21 +3776,21 @@ function bindStanza(){
       const b = e.target.closest('button[data-v]');
       if (!b) return;
       const L = libCorrente();
-      if (!L){ flash('nessun mobile da arredare'); return; }
+      if (!L){ flash(TP('stanza.nienteArredo')); return; }
       const patch = {};
       patch[par[1]] = b.getAttribute('data-v');
-      q('#st-msg').textContent = 'sto salvando';
+      q('#st-msg').textContent = TP('stanza.salvando');
       LIB.stileLibreria(L.id, patch).then(function(){
-        q('#st-msg').textContent = 'salvata';
+        q('#st-msg').textContent = TP('stanza.salvata');
       }).catch(function(err){
-        q('#st-msg').textContent = 'non salvata: ' + err.message;
+        q('#st-msg').textContent = TP('stanza.nonSalvata', {e: err.message});
       });
       disegnaStanza();
       applicaStanza();          // il cambio si vede subito, il salvataggio segue
     });
   });
 
-  armaBottone(q('#st-reset'), 'com\u2019era', 'sicuro?', function(){
+  armaBottone(q('#st-reset'), 'stanza.comEra', 'stanza.comEraOk', function(){
     STANZA.cambia(STANZA.DEFAULT);
     disegnaStanza();
     applicaStanza();
@@ -3817,7 +3837,7 @@ function bindStanza(){
 function stellaRiga(g){
   if (LIB.ospitePresso()) return '<span class="riga-stella-vuota"></span>';
   const si = !!g.preferito;
-  const che = si ? 'togli dai preferiti' : 'metti fra i preferiti';
+  const che = TP(si ? 'pan.prefTolto' : 'riga.stellaOff');
   return '<button type="button" class="riga-stella" data-fa="stella"' +
          ' aria-pressed="' + (si ? 'true' : 'false') + '"' +
          ' title="' + che + '" aria-label="' + che + '">' + ICO.stella + '</button>';
@@ -3866,23 +3886,23 @@ function contenutoInfo(g){
 
   return (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
          (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
-         '<p class="cat-dove">' + (L ? 'in <b>' + esc(L.nome) + '</b>' : 'non in libreria') + '</p>' +
+         '<p class="cat-dove">' + (L ? T('riga.inLib', {n: esc(L.nome)}) : T('riga.nonInLib')) + '</p>' +
          (g.score ? '<p class="voto">' + esc(g.score) + '<i>/10</i></p>' : '') +
-         (testo || '<p class="vuoto">Nessuna recensione, per ora.</p>') +
+         (testo || '<p class="vuoto">' + T('riga.nessunaRece') + '</p>') +
          chip;
 }
 
 function contenutoAzioni(g){
-  if (LIB.ospitePresso()) return '<p class="vuoto">In casa di un amico si guarda e basta.</p>';
+  if (LIB.ospitePresso()) return '<p class="vuoto">' + T('riga.ospite') + '</p>';
   return (g.libreria
-           ? '<button type="button" data-fa="scaffale">' + ICO.scaffale + '<span>vai allo scaffale</span></button>' +
-             '<button type="button" data-fa="fuori" class="fuori">' + ICO.fuori + '<span>togli dalla libreria</span></button>'
-           : '<button type="button" data-fa="dentro" class="dentro">' + ICO.dentro + '<span>metti in libreria</span></button>') +
+           ? '<button type="button" data-fa="scaffale">' + ICO.scaffale + '<span>' + T('riga.vaiScaffale') + '</span></button>' +
+             '<button type="button" data-fa="fuori" class="fuori">' + ICO.fuori + '<span>' + T('riga.togliLib') + '</span></button>'
+           : '<button type="button" data-fa="dentro" class="dentro">' + ICO.dentro + '<span>' + T('riga.mettiLib') + '</span></button>') +
          /* Uscire dallo scaffale e sparire dalla collezione restano due
             gesti diversi: il primo e' reversibile in un clic, il secondo
             no. Per questo l'ultimo e' rosso e in due tempi. */
          '<button type="button" data-fa="elimina" class="elimina">' + ICO.cestino +
-           '<span>elimina il gioco</span></button>';
+           '<span>' + T('riga.eliminaGioco') + '</span></button>';
 }
 
 /* L'elenco si divide in CARTELLE quando non si sta filtrando su un
@@ -3900,7 +3920,7 @@ function disegnaMia(){
   const l = lista();
   const dove = LIB.ospitePresso();
   q('#mia-eyebrow').textContent = dove && dove.nick
-    ? 'la collezione di ' + dove.nick : 'la tua collezione';
+    ? TP('mia.occhielloDi', {chi: dove.nick}) : TP('mia.occhiello');
 
   const gruppi = LIB.gruppi();
   const aCartelle = state.vista === 'gruppi' && !state.gruppo && gruppi.length > 0;
@@ -3935,25 +3955,27 @@ function disegnaMia(){
         return LIB.gruppiDi(g.id).indexOf(G.id) >= 0;
       }));
     }).join('');
-    html += cartella('__senza', 'senza gruppo',
+    html += cartella('__senza', TP('mia.senzaGruppo'),
                      l.filter(function(g){ return !LIB.gruppiDi(g.id).length; }));
     q('#mia-list').innerHTML = html;
   }
 
   const inVetrina = l.filter(function(g){ return !!g.libreria; }).length;
   const perche = [];
-  if (state.q) perche.push('per <b>' + esc(state.q) + '</b>');
-  if (state.soloPreferiti) perche.push('fra i preferiti');
+  if (state.q) perche.push(T('mia.per', {q: esc(state.q)}));
+  if (state.soloPreferiti) perche.push(T('mia.fraPreferiti'));
   if (state.vista === 'gruppi' && !gruppi.length){
-    q('#mia-msg').innerHTML = 'Nessun gruppo, per ora: da <b>gestisci gruppi</b> ' +
-      'se ne crea uno e ci si mettono i giochi dentro.';
+    q('#mia-msg').innerHTML = T('mia.nessunGruppo');
     return;
   }
   q('#mia-msg').innerHTML = l.length
-    ? '<b>' + l.length + '</b> ' + (l.length === 1 ? 'gioco' : 'giochi') +
-      (perche.length ? ' ' + perche.join(', ') : '') +
-      ', <b>' + inVetrina + '</b> sugli scaffali. Tocca una riga per la scheda.'
-    : (perche.length ? 'Niente ' + perche.join(', ') + '.' : 'La libreria e\' vuota.');
+    ? T('mia.riepilogo', {
+        n: l.length,
+        parola: T(l.length === 1 ? 'mia.gioco' : 'mia.giochi'),
+        perche: perche.length ? ' ' + perche.join(', ') : '',
+        v: inVetrina
+      })
+    : (perche.length ? T('mia.niente', {perche: perche.join(', ')}) : T('mia.vuota'));
 }
 
 /* --- le due viste ------------------------------------------------
@@ -4184,7 +4206,7 @@ function apriProfilo(){
   PARTITE.carica().then(disegnaPartite);
 
   if (!PROFILO.mio()){
-    proMsg('#pro-amici-msg', esc(PROFILO.problema() || 'profilo non disponibile'), true);
+    proMsg('#pro-amici-msg', esc(PROFILO.problema() || TP('pro.nonDisponibile')), true);
     return;
   }
   disegnaProfilo();
@@ -4203,7 +4225,7 @@ function proMsg(sel, html, male){
 function disegnaProfilo(){
   const p = PROFILO.mio();
   if (!p) return;
-  q('#pro-nick').textContent = p.nick || p.nome || 'senza nome';
+  q('#pro-nick').textContent = p.nick || p.nome || TP('pro.senzaNome');
   q('#pro-mail').textContent = AUTH.stato().email || p.nome || '';
   // il codice si legge a gruppi di quattro: si detta al telefono
   q('#pro-codice').textContent = p.codice
@@ -4256,7 +4278,7 @@ function disegnaAmici(){
     q(sel).innerHTML = gente.map(function(x){
       return '<li data-id="' + esc(x.id) + '">' +
         '<canvas width="40" height="40" aria-hidden="true"></canvas>' +
-        '<span class="chi"><b>' + esc(x.profilo.nick || x.profilo.nome || 'senza nome') + '</b>' +
+        '<span class="chi"><b>' + esc(x.profilo.nick || x.profilo.nome || TP('pro.senzaNome')) + '</b>' +
         (etichetta ? '<span>' + etichetta + '</span>' : '') + '</span>' +
         '<span class="fa">' + azioni + '</span></li>';
     }).join('');
@@ -4266,24 +4288,24 @@ function disegnaAmici(){
   };
 
   elenco('#pro-richieste', PROFILO.daAccettare(),
-    '<button type="button" class="si" data-fa="accetta">accetta</button>' +
-    '<button type="button" class="no" data-fa="togli">no</button>',
-    'ti ha chiesto l\'amicizia');
+    '<button type="button" class="si" data-fa="accetta">' + T('ami.accetta') + '</button>' +
+    '<button type="button" class="no" data-fa="togli">' + T('ami.no') + '</button>',
+    T('ami.chiedeAmicizia'));
 
   elenco('#pro-amici', PROFILO.amici(),
-    '<button type="button" data-fa="libreria">la sua libreria</button>' +
-    '<button type="button" class="no" data-fa="togli">togli</button>', '');
+    '<button type="button" data-fa="libreria">' + T('ami.suaLibreria') + '</button>' +
+    '<button type="button" class="no" data-fa="togli">' + T('ami.togli') + '</button>', '');
 
   elenco('#pro-attesa', PROFILO.inAttesa(),
-    '<button type="button" class="no" data-fa="togli">ritira</button>',
-    'richiesta mandata');
+    '<button type="button" class="no" data-fa="togli">' + T('ami.ritira') + '</button>',
+    T('ami.chiesta'));
 
   const n = PROFILO.amici().length;
   quanti('#conta-amici', n + PROFILO.daAccettare().length);
   if (PROFILO.problema()){ proMsg('#pro-amici-msg', esc(PROFILO.problema()), true); return; }
   proMsg('#pro-amici-msg', n
-    ? '<b>' + n + '</b> ' + (n === 1 ? 'amico' : 'amici') + '.'
-    : 'Nessun amico, per ora. Passagli il tuo codice, o chiedi il loro.');
+    ? T(n === 1 ? 'ami.uno' : 'ami.tanti', {n: n})
+    : T('ami.nessunAmico'));
 }
 
 /* Una casella sola per il codice e per l'email: chi incolla qualcosa
@@ -4294,7 +4316,7 @@ async function chiediAmico(){
   if (!v) return;
   const b = q('#ami-go');
   b.disabled = true;
-  proMsg('#ami-msg', 'chiedo&hellip;');
+  proMsg('#ami-msg', T('ami.chiedo'));
   try {
     const r = v.indexOf('@') > 0 ? await PROFILO.chiediPerEmail(v)
                                  : await PROFILO.chiediPerCodice(v);
@@ -4302,7 +4324,7 @@ async function chiediAmico(){
     if (r.esito === 'chiesta' || r.esito === 'inviata') q('#ami-q').value = '';
     disegnaAmici();
   } catch(e){
-    proMsg('#ami-msg', 'non riuscito: ' + esc(e.message), true);
+    proMsg('#ami-msg', T('ami.nonRiuscito', {e: esc(e.message)}), true);
   }
   b.disabled = false;
 }
@@ -4330,13 +4352,13 @@ async function salvaNickDaModulo(){
   const msg = q('#nick-msg'), b = q('#nick-ok');
   b.disabled = true;
   msg.className = 'ok';
-  msg.textContent = 'un attimo\u2026';
+  msg.textContent = TP('nick.unAttimo');
   try {
     await PROFILO.salvaNick(q('#nick-q').value);
     q('#nick').classList.remove('on');
     q('#nick').setAttribute('aria-hidden', 'true');
     disegnaProfilo();
-    flash('ciao, ' + PROFILO.mio().nick);
+    flash(TP('msg.ciao', {n: PROFILO.mio().nick}));
   } catch(e){
     msg.className = '';
     msg.textContent = e.message;
@@ -4376,8 +4398,8 @@ function bindProfilo(){
   q('#lab-annulla').addEventListener('click', chiudiLab);
   q('#lab-salva').addEventListener('click', async function(){
     const av = labAvatar;
-    try { await PROFILO.salvaAvatar(av); flash('faccia salvata'); }
-    catch(e){ flash('faccia non salvata: ' + e.message); }
+    try { await PROFILO.salvaAvatar(av); flash(TP('msg.facciaSalvata')); }
+    catch(e){ flash(TP('msg.facciaNo', {e: e.message})); }
     chiudiLab();
   });
 
@@ -4391,11 +4413,11 @@ function bindProfilo(){
       r.selectNodeContents(q('#pro-codice'));
       const sel = window.getSelection();
       sel.removeAllRanges(); sel.addRange(r);
-      flash('selezionato: copialo tu');
+      flash(TP('msg.selezionato'));
     };
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(cod)
-        .then(function(){ flash('codice copiato'); })
+        .then(function(){ flash(TP('pro.copiato')); })
         .catch(aMano);
     } else aMano();
   });
@@ -4444,7 +4466,7 @@ function bindProfilo(){
         disegnaGruppiFiltro();
       }).catch(function(err){
         chip.classList.toggle('on', !dentro);
-        flash('non riuscito: ' + err.message);
+        flash(TP('msg.nonRiuscito', {e: err.message}));
       });
       return;
     }
@@ -4467,14 +4489,14 @@ function bindProfilo(){
         disegnaMia();
         updateConta();
         ridisponi();
-        flash('gioco eliminato');
+        flash(TP('msg.giocoEliminato'));
       } else {
         del.classList.add('armed');
-        dice.textContent = 'sicuro? tocca ancora';
+        dice.textContent = TP('stanza.menoOk');
         setTimeout(function(){
           if (!del.isConnected) return;
           del.classList.remove('armed');
-          dice.textContent = 'elimina il gioco';
+          dice.textContent = TP('riga.eliminaGioco');
         }, 3500);
       }
       return;
@@ -4491,7 +4513,7 @@ function bindProfilo(){
       const si = !g.preferito;
       LIB.segnaPreferito(id, si);
       st.setAttribute('aria-pressed', si ? 'true' : 'false');
-      const che = si ? 'togli dai preferiti' : 'metti fra i preferiti';
+      const che = TP(si ? 'pan.prefTolto' : 'riga.stellaOff');
       st.title = che;
       st.setAttribute('aria-label', che);
       /* La pastiglia "solo i preferiti" compare solo se ce n'e'
@@ -4517,7 +4539,7 @@ function bindProfilo(){
   /* Uscire sta anche qui perche' su schermo stretto la testata non ha
      piu' posto per dirlo. E' lo stesso gesto del pulsante in alto: la
      collezione di prima non e' piu' tua e si riparte dall'accesso. */
-  armaBottone(q('#pro-esci'), 'esci dall\u2019account', 'sicuro? tocca ancora', async function(){
+  armaBottone(q('#pro-esci'), 'pro.esci', 'pro.esciOk', async function(){
     await AUTH.esci();
     LIB.scollega();
     location.reload();
@@ -4555,7 +4577,7 @@ function bindProfilo(){
         disegnaAmici();
       } catch(err){
         b.disabled = false;
-        flash('non riuscito: ' + err.message);
+        flash(TP('msg.nonRiuscito', {e: err.message}));
       }
     });
   });
@@ -4612,7 +4634,7 @@ function disegnaGiocate(game){
   const g = (game && state.dentro && !PARTITE.problema())
     ? PARTITE.diGioco(game.bgg, game.title) : [];
   el.innerHTML = g.length
-    ? '<p class="eyebrow">le tue partite</p><ul class="giocate">' +
+    ? '<p class="eyebrow">' + T('par.tuePartite') + '</p><ul class="giocate">' +
       g.slice(0, 6).map(function(p){ return rigaGiocata(p, false); }).join('') + '</ul>'
     : '';
 }
@@ -4630,8 +4652,9 @@ function vinceDi(partite){
   const ordine = Object.keys(per).sort(function(a, b){ return per[b] - per[a]; });
   if (!ordine.length) return '';
   const primo = per[ordine[0]];
-  if (ordine.length > 1 && per[ordine[1]] === primo) return 'nessuno stacca gli altri';
-  return 'vince ' + ordine[0] + (primo > 1 ? ' (' + primo + ')' : '');
+  if (ordine.length > 1 && per[ordine[1]] === primo) return TP('par.nessunoStacca');
+  return primo > 1 ? TP('par.vinceN', {n: ordine[0], q: primo})
+                   : TP('par.vince', {n: ordine[0]});
 }
 
 /* Raggruppate per gioco. Un elenco di serate in ordine di data non dice
@@ -4655,7 +4678,7 @@ function disegnaPartite(){
     return '<div class="gio-gruppo">' +
       '<button type="button" class="gio-gioco" aria-expanded="false" data-g="' + i + '">' +
         '<b>' + esc(g.titolo) + '</b>' +
-        '<span>' + n + (n === 1 ? ' partita' : ' partite') +
+        '<span>' + T(n === 1 ? 'par.unaPartita' : 'par.partite', {n: n}) +
         (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span>' +
       '</button>' +
       '<ul class="giocate" hidden>' +
@@ -4665,9 +4688,7 @@ function disegnaPartite(){
 
   quanti('#conta-partite', tutte.length);
   if (PARTITE.problema()){ proMsg('#par-msg', esc(PARTITE.problema()), true); return; }
-  proMsg('#par-msg', tutte.length ? ''
-    : 'Nessuna partita segnata. Si segna da qui, oppure dalla scatola del gioco ' +
-      'appena finito.');
+  proMsg('#par-msg', tutte.length ? '' : T('par.nessuna'));
 }
 
 /* Il numero accanto al titolo del cassetto: quello che si vuole sapere
@@ -4684,8 +4705,8 @@ function disegnaGiocatori(){
   el.innerHTML = g.map(function(x){
     return '<li data-id="' + esc(x.id) + '">' +
       '<span class="chi"><b>' + esc(x.nome) + '</b>' +
-      (x.amico ? '<span>amico sul sito</span>' : '') + '</span>' +
-      '<span class="fa"><button type="button" class="no" data-fa="via">togli</button></span>' +
+      (x.amico ? '<span>' + T('gio.amicoSulSito') + '</span>' : '') + '</span>' +
+      '<span class="fa"><button type="button" class="no" data-fa="via">' + T('gio.togli') + '</button></span>' +
     '</li>';
   }).join('');
 
@@ -4694,9 +4715,9 @@ function disegnaGiocatori(){
   // gli amici che non sono ancora al tavolo: proporli evita di riscriverli
   const da = PARTITE.amiciDaAggiungere();
   proMsg('#gio-msg', da.length
-    ? 'Dai tuoi amici: ' + da.map(function(a){
+    ? T('gio.daiTuoiAmici') + ' ' + da.map(function(a){
         return '<button type="button" class="pro-lin" data-amico="' + esc(a.id) + '">' +
-               esc(a.profilo.nick || a.profilo.nome || 'senza nome') + '</button>';
+               esc(a.profilo.nick || a.profilo.nome || TP('pro.senzaNome')) + '</button>';
       }).join(' ')
     : '');
 }
@@ -4709,7 +4730,7 @@ function apriPartita(dati){
                                ora: '', note: '', chi: [] }, dati || {});
   paCorrente.chi = (paCorrente.chi || []).map(function(x){ return Object.assign({}, x); });
 
-  q('#pa-h').textContent = paCorrente.id ? 'Correggi la partita' : 'Segna una partita';
+  q('#pa-h').textContent = TP(paCorrente.id ? 'pa.hCorreggi' : 'pa.h');
   q('#pa-titolo').value = paCorrente.titolo || '';
   q('#pa-data').value   = paCorrente.giocata_il || '';
   q('#pa-ora').value    = paCorrente.ora ? String(paCorrente.ora).slice(0, 5) : '';
@@ -4779,13 +4800,13 @@ function disegnaTavolo(){
     return '<li data-i="' + i + '"' + (x.vincitore ? ' class="vince"' : '') + '>' +
       '<button type="button" class="corona' + (x.vincitore ? ' on' : '') + '" data-fa="vince" ' +
         'aria-pressed="' + (x.vincitore ? 'true' : 'false') + '" ' +
-        'aria-label="ha vinto ' + esc(x.nome) + '">' + ICO.corona + '</button>' +
+        'aria-label="' + esc(TP('pa.haVinto', {n: x.nome})) + '">' + ICO.corona + '</button>' +
       '<span class="nome">' + esc(x.nome) + '</span>' +
       (x.posizione ? '<span class="posto">' + x.posizione + '&deg;</span>' : '') +
       '<input class="punti" type="text" inputmode="numeric" maxlength="4" ' +
         'value="' + esc(x.punti == null ? '' : x.punti) + '" ' +
-        'placeholder="punti" aria-label="punti di ' + esc(x.nome) + '">' +
-      '<button type="button" class="via" data-fa="via" aria-label="togli ' + esc(x.nome) + '">' +
+        'placeholder="' + esc(TP('pa.punti')) + '" aria-label="' + esc(TP('pa.puntiDi', {n: x.nome})) + '">' +
+      '<button type="button" class="via" data-fa="via" aria-label="' + esc(TP('pa.togliChi', {n: x.nome})) + '">' +
         ICO.chiudi + '</button>' +
     '</li>';
   }).join('');
@@ -4808,8 +4829,7 @@ function disegnaTavolo(){
 
   q('#pa-scelta').innerHTML = tutte.length
     ? tutte.join('')
-    : '<p class="pa-vuoto">Nessuno da mettere al tavolo: aggiungi un giocatore, ' +
-      'oppure fatti dare il codice amico da chi ha giocato con te.</p>';
+    : '<p class="pa-vuoto">' + T('pa.nessunoAlTavolo') + '</p>';
 }
 
 /* Aggiorna posizioni e corone SENZA rifare l'elenco: chi sta scrivendo
@@ -4855,7 +4875,7 @@ function suggerisciGioco(testo){
   const q1 = piatto(t);
   const mie = LIB.all().filter(function(g){ return piatto(g.title).indexOf(q1) >= 0; })
     .slice(0, 6)
-    .map(function(g){ return { titolo: g.title, bgg: g.bgg || '', dove: 'la tua collezione' }; });
+    .map(function(g){ return { titolo: g.title, bgg: g.bgg || '', dove: 'mia.occhiello' }; });
 
   mostraSugg(mie, false);
 
@@ -4871,7 +4891,7 @@ function suggerisciGioco(testo){
     const gia = {};
     mie.forEach(function(x){ gia[piatto(x.titolo)] = true; });
     const dal = g.filter(function(x){ return !gia[piatto(x.title)]; }).slice(0, 6)
-      .map(function(x){ return { titolo: x.title, bgg: x.bgg || '', dove: 'catalogo' }; });
+      .map(function(x){ return { titolo: x.title, bgg: x.bgg || '', dove: 'cat.occhiello' }; });
     mostraSugg(mie.concat(dal), false);
   }).catch(function(){});
 }
@@ -4882,7 +4902,7 @@ function mostraSugg(elenco){
   el.innerHTML = elenco.map(function(x, i){
     return '<li><button type="button" role="option" data-i="' + i + '" ' +
       'data-titolo="' + esc(x.titolo) + '" data-bgg="' + esc(x.bgg) + '">' +
-      '<b>' + esc(x.titolo) + '</b><span>' + esc(x.dove) + '</span></button></li>';
+      '<b>' + esc(x.titolo) + '</b><span>' + esc(TP(x.dove)) + '</span></button></li>';
   }).join('');
   el.hidden = false;
   campo.setAttribute('aria-expanded', 'true');
@@ -4899,7 +4919,7 @@ function metteAlTavolo(nome, idGiocatore){
   const t = String(nome || '').trim();
   if (!t) return;
   if (paCorrente.chi.some(function(x){ return x.nome === t; })){
-    q('#pa-msg').textContent = t + ' e\' gia\' al tavolo';
+    q('#pa-msg').textContent = TP('pa.giaAlTavolo', {n: t});
     return;
   }
   paCorrente.chi.push({ nome: t, giocatore: idGiocatore || null,
@@ -4923,9 +4943,9 @@ async function salvaPartita(){
     chiudiPartita();
     disegnaPartite();
     disegnaGiocate(state.focused && state.focused.userData.game);
-    flash('partita segnata');
+    flash(TP('msg.partitaSegnata'));
   } catch(e){
-    q('#pa-msg').textContent = 'non salvata: ' + e.message;
+    q('#pa-msg').textContent = TP('pa.nonSalvata', {e: e.message});
   }
   b.disabled = false;
 }
@@ -4936,14 +4956,14 @@ async function salvaPartita(){
    guardare una collezione avrebbe voluto dire rifare da capo l'unica
    cosa che questo sito sa fare bene. */
 async function visitaLibreria(id, nick){
-  const chi = nick || 'un amico';
+  const chi = nick || TP('ami.unAmico');
   // una scatola tua aperta non ha senso davanti allo scaffale di un altro
   if (state.phase === 'focus' || state.phase === 'review') unfocus();
-  flash('apro la libreria di ' + chi);
+  flash(TP('msg.aproLibDi', {chi: chi}));
   try {
     await LIB.visita(id, nick);
   } catch(e){
-    flash('non riesco ad aprirla: ' + e.message);
+    flash(TP('msg.nonRiescoAprire', {e: e.message}));
     return;
   }
   document.body.classList.add('visita');
@@ -4970,7 +4990,7 @@ async function visitaLibreria(id, nick){
   await CUORI.carica(id);          // i cuori della sua collezione, in una lettura
   await loadCovers();
   applyLibrary({});
-  if (!LIB.all().length) flash('la libreria di ' + chi + ' e\' ancora vuota');
+  if (!LIB.all().length) flash(TP('msg.libDiVuota', {chi: chi}));
 }
 
 async function tornaACasa(){
@@ -5002,7 +5022,7 @@ function bindCuore(){
     try {
       await CUORI.alterna(dove.id, g.id);
     } catch(e){
-      flash(CUORI.problema() || ('non riuscito: ' + e.message));
+      flash(CUORI.problema() || TP('msg.nonRiuscito', {e: e.message}));
     }
     disegnaCuore(g);           // ridisegna comunque: se ha fallito e' tornato com'era
   });
@@ -5029,15 +5049,15 @@ function bindPartite(){
     chiudiSugg();
   });
 
-  armaBottone(q('#pa-togli'), 'elimina', 'sicuro? tocca ancora', async function(){
+  armaBottone(q('#pa-togli'), 'pa.togli', 'stanza.menoOk', async function(){
     if (!paCorrente || !paCorrente.id) return;
     try {
       await PARTITE.togli(paCorrente.id);
       chiudiPartita();
       disegnaPartite();
       disegnaGiocate(state.focused && state.focused.userData.game);
-      flash('partita eliminata');
-    } catch(e){ flash('non eliminata: ' + e.message); }
+      flash(TP('msg.partitaEliminata'));
+    } catch(e){ flash(TP('msg.nonEliminata', {e: e.message})); }
   });
 
   /* Un ascoltatore solo: le pastiglie si rifanno a ogni aggiunta, e
@@ -5088,7 +5108,7 @@ function bindPartite(){
        punti -- e ci sono giochi che non ne hanno -- si mette a mano. */
     const conPunti = paCorrente.chi.some(function(x){ return x.punti != null && x.punti !== ''; });
     if (conPunti){
-      q('#pa-msg').textContent = 'con i punti il primo lo decide la classifica';
+      q('#pa-msg').textContent = TP('pa.conPunti');
       return;
     }
     paCorrente.chi[i].vincitore = !paCorrente.chi[i].vincitore;
@@ -5168,7 +5188,7 @@ function bindPartite(){
     if (!b) return;
     b.disabled = true;
     try { await PARTITE.togliGiocatore(b.closest('li').getAttribute('data-id')); }
-    catch(err){ b.disabled = false; flash('non tolto: ' + err.message); return; }
+    catch(err){ b.disabled = false; flash(TP('msg.nonTolto', {e: err.message})); return; }
     disegnaGiocatori();
   });
 
@@ -5320,15 +5340,16 @@ function frame(now){
 function buildFlatList(){
   q('#flat-list').innerHTML = LIB.list(state.sort).map(function(g){
     return '<article>' +
-      (g.cover ? '<img src="' + esc(g.cover) + '" alt="la scatola di ' + esc(g.title) + '" loading="lazy">' : '') +
+      (g.cover ? '<img src="' + esc(g.cover) + '" alt="' + esc(TP('flat.scatolaDi', {g: g.title})) + '" loading="lazy">' : '') +
       '<h2>' + esc(g.title) + '</h2>' +
       '<p class="byline"><b>' + esc(g.designer) + '</b> &middot; ' + esc(g.publisher) + ' &middot; ' + esc(g.year) +
-      ' &middot; ' + esc(g.players) + ' giocatori &middot; ' + esc(g.time) + ' min' +
-      (g.artist ? '<br><span class="credit">copertina di ' + esc(g.artist) +
+      ' &middot; ' + esc(g.players) + ' ' + T('spec.giocatori') +
+      ' &middot; ' + esc(g.time) + ' ' + T('spec.min') +
+      (g.artist ? '<br><span class="credit">' + T('pan.credito', {a: esc(g.artist)}) +
                   ', &copy; ' + esc(g.publisher) + '</span>' : '') + '</p>' +
       (g.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('') +
       (g.bgg ? '<p><a class="bgg" href="https://boardgamegeek.com/boardgame/' + g.bgg +
-               '/" target="_blank" rel="noopener">scheda su BoardGameGeek &#8599;</a></p>' : '') +
+               '/" target="_blank" rel="noopener">' + T('pan.bgg') + '</a></p>' : '') +
       '</article>';
   }).join('');
 }
@@ -5394,8 +5415,7 @@ function gate(giaDentro){
             return;
           } catch(e){
             b.disabled = false;
-            q('#gate-note').textContent = 'Accesso non riuscito: ' + e.message +
-              ' -- puoi comunque guardare il catalogo.';
+            q('#gate-note').textContent = TP('gate.nonRiuscito', {e: e.message});
             return;
           }
         }
@@ -5413,6 +5433,7 @@ async function boot(){
     b.classList.toggle('on', b.getAttribute('data-sort') === state.sort);
   });
   LIB.suErrore(flash);                    // le scritture rifiutate le racconta il flash
+  I18N.suCambio(rilingua);                // quello che disegna il JS lo rifa' il JS
   buildFlatList();
 
   // Chi torna da Google ha gia' la sessione: si salta il cancello.
@@ -5473,7 +5494,7 @@ async function boot(){
   // Un passo per volta con una pausa in mezzo, cosi' la barra si muove.
   // setTimeout e non requestAnimationFrame: a pagina nascosta i frame
   // non arrivano affatto e il caricamento resterebbe li'.
-  await wait(20); setProg(.28, 'monto la stanza');
+  await wait(20); setProg(.28, TP('load.stanza'));
   // luce e colori PRIMA dei materiali: se no si costruisce il mobile due
   // volte, una con le tinte di serie e una con le tue
   STANZA.daProfilo();
@@ -5485,16 +5506,16 @@ async function boot(){
   layout();
   // la libreria vera, prima delle copertine: sono le schede a dire
   // quali immagini servono
-  setProg(.40, 'apro la libreria');
+  setProg(.40, TP('load.libreria'));
   const lib = await LIB.sync();
   await LIB.caricaLibrerie();     // i mobili prima delle scatole: decidono dove vanno
   await LIB.caricaGruppi();
   buildFlatList();
-  setProg(.56, 'stampo le copertine');
+  setProg(.56, TP('load.copertine'));
   await loadCovers();
-  await wait(20); setProg(.72, 'monto le mensole');
+  await wait(20); setProg(.72, TP('load.mensole'));
   applyLibrary({});
-  await wait(20); setProg(.92, 'accendo la lampada');
+  await wait(20); setProg(.92, TP('load.lampada'));
 
   bindInput();
   bindTools();
@@ -5521,9 +5542,9 @@ async function boot(){
   // Un armadio vuoto non e' un guasto: e' una collezione appena nata, e
   // va detto, se no sembra che il sito non abbia caricato niente.
   if (lib.vuota){
-    flash('la tua collezione e vuota: premi + per il primo gioco');
+    flash(TP('msg.collezioneVuota'));
   } else if (AUTH.attivo() && lib.dentro !== false && !lib.remota){
-    flash('collezione offline: mostro l\'ultima copia salvata');
+    flash(TP('msg.collezioneOff'));
   }
 }
 
