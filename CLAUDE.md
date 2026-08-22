@@ -892,12 +892,14 @@ stava in mezzo, appeso al codice amico, dove sembrava un dettaglio del codice.
 **I nomi delle lingue non si traducono**: «Italiano» e «English» restano scritti
 nella propria lingua, se no chi cerca la sua non la trova.
 
-**Nel cancello «ultima volta» adesso è vera.** Era un  del CSS su una
-classe  scritta **fissa nel markup**: diceva «ultima volta» sulla scheda
-dell’ospite a chiunque, anche a chi arrivava per la prima volta — e da un
- il dizionario non ci arriva. Ora è un elemento vero con la sua
-chiave, e la classe la mette  leggendo , che si scrive
-scegliendo. Sta **sopra** il titolo e non accanto: accanto gli rubava la
+**Nel cancello «ultima volta» adesso è vera.** Era un `content:` del CSS su
+una classe `last` scritta **fissa nel markup**: diceva «ultima volta» sulla
+scheda dell’ospite a chiunque, anche a chi arrivava per la prima volta — e da un
+`content:` il dizionario non ci arriva. Ora è un elemento vero con la sua
+chiave, e la classe la mette `gate()` leggendo `dado-cancello`, che si scrive
+scegliendo — niente salvato, niente pastiglia, che è la risposta giusta per chi
+arriva la prima volta. Sta **sopra** il titolo e non accanto: dentro al titolo il
+`float` la faceva scendere in mezzo alla descrizione, accanto gli rubava la
 larghezza e «Sign in with Google» andava a capo.
 
 **La selezione ha dovuto pareggiare una catena di `:not()`.** Il fondo dei
