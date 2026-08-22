@@ -2235,9 +2235,35 @@ un telefono non esistono. Adesso ci sono due chevron di livello «nudo», che
 **ai due capi si spengono**: un pulsante che risponde a vuoto e' peggio di uno
 spento.
 
-**E la targa entra invece di comparire.** Sale di un dito e si accende, con la
-curva unica del sito e uno scaglionamento per mobile — come le righe di un
-elenco. Era l'unica cosa della scena a spuntare di colpo a ogni ricostruzione.
+**La targa non ha una misura in scena: ha una fetta di schermo.** Era un piano
+alto 1,05 unita' fisse, e su un telefono il nome usciva la meta' di quello che e'
+su un monitor — segnalato con lo screenshot. Il motivo e' geometrico: per far
+stare i dodici cubi in un formato stretto **la camera arretra**, e tutto quello
+che ha una misura fissa in scena rimpicciolisce con lei.
+
+Adesso la costruisce a un'altezza di riferimento (`TARGA_ALT`) e la **scala
+`allineaComandi()`**, che e' l'unico posto che sa quanto spazio c'e' davvero: la
+targa prende una fetta della fascia libera fra il fondo della testata e la cima
+del mobile, misurata **in pixel di schermo** e riportata in scena con `mondoY`
+alla z della parete. Cosi' il nome pesa uguale ovunque, e a un `resize` si
+riadatta senza ricostruire niente.
+
+- La fetta e' **piu' generosa sullo schermo stretto** (.46 contro .30). Non e' un
+  capriccio: su un telefono la fascia libera e' poca e tutto il resto —
+  testata, pulsanti, barra — e' proporzionalmente piu' grande, quindi un nome
+  misurato col metro del monitor ci si perde dentro. Su un monitor la fascia e'
+  larga, e prendersene la meta' vuol dire un nome che pesa piu' del mobile di cui
+  parla.
+- Un tetto e un pavimento in pixel evitano i due estremi, e se il nome e' lungo
+  si stringe **tutta la targa** invece di schiacciare il testo: prima la
+  larghezza veniva tagliata a `W - .6` lasciando l'altezza dov'era, cioe' le
+  lettere compresse.
+
+**E la targa entra invece di comparire.** Si accende, con la curva unica del sito e uno
+scaglionamento per mobile — come le righe di un elenco. Era l'unica cosa della
+scena a spuntare di colpo a ogni ricostruzione. **Solo l'opacita'**: la quota e
+la scala le tiene `allineaComandi`, e animarle anche qui vorrebbe dire due pezzi
+di codice che scrivono la stessa proprieta' nello stesso fotogramma.
 
 **E qui e' stata rovesciata una decisione scritta.** Il binario la superficie
 l'aveva, ed era stata tolta: «sul pavimento chiaro sembrava una macchia,

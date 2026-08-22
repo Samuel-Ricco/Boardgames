@@ -121,6 +121,9 @@ const state = {
 };
 
 const FOV = 38;
+/* L'altezza con cui la targa viene COSTRUITA. Non e' quella che si
+   vede: `allineaComandi` la scala su quanto spazio c'e' davvero. */
+const TARGA_ALT = 1.05;
 const UP = new THREE.Vector3(0, 1, 0);
 const camBase = new THREE.Vector3(0, 8, 26);
 
@@ -642,30 +645,35 @@ function buildCabinet(){
        esattamente com'era prima. */
     const scritta = fantasma ? TP('vista.nuovaLib') : (L && L.nome);
     if (scritta){
+      /* La targa si costruisce a una misura di RIFERIMENTO e poi la
+         scala `allineaComandi`, che e' l'unico posto che sa quanto
+         spazio c'e' fra la testata e la cima del mobile. Prima era una
+         misura fissa in scena: su un telefono la camera arretra per far
+         stare i dodici cubi, e il nome finiva la meta' di quello che e'
+         su un monitor. */
       const c = ART.targhetta(scritta);
-      const alt = 1.05, larg = alt * (c.width / c.height);
+      const alt = TARGA_ALT, larg = alt * (c.width / c.height);
       const targa = new THREE.Mesh(
-        new THREE.PlaneGeometry(Math.min(larg, W - .6), alt),
+        new THREE.PlaneGeometry(larg, alt),
         new THREE.MeshBasicMaterial({
           map: ART.toTex(c), transparent: true, depthWrite: false,
           opacity: fantasma ? .45 : 1
         })
       );
       targa.position.set(ox, state.yTarga || (KAL.topY + SOPRA - .62), -KAL.d/2 + .02);
-      targa.userData.targa = true;      // `allineaComandi` la sposta senza ricostruire
+      targa.userData.targa = true;      // `allineaComandi` la sposta e la scala
+      targa.userData.aspetto = c.width / c.height;
       g.add(targa);
 
-      /* Entra invece di comparire: sale di un dito e si accende, con la
-         curva unica del sito. Era l'unica cosa della scena a spuntare di
-         colpo a ogni ricostruzione del mobile. */
+      /* Entra invece di comparire. SOLO l'opacita': la quota e la scala
+         le tiene `allineaComandi`, e farle animare qui vorrebbe dire che
+         due pezzi di codice scrivono la stessa proprieta' nello stesso
+         fotogramma. Era l'unica cosa della scena a spuntare di colpo a
+         ogni ricostruzione del mobile. */
       const opFine = fantasma ? .45 : 1;
-      const yFine = targa.position.y;
       targa.material.opacity = 0;
-      targa.position.y = yFine - .28;
       tween(.42, function(p){
-        const e = easeOut(p);
-        targa.material.opacity = opFine * e;
-        targa.position.y = yFine - .28 * (1 - e);
+        targa.material.opacity = opFine * easeOut(p);
       }, null, .08 + l * .05);          // una dopo l'altra, come le righe di un elenco
     }
   }
@@ -1425,9 +1433,35 @@ function allineaComandi(){
      se no la quota che si calcola non e' la sua. */
   const zT = -KAL.d/2 + .02;
   state.yTarga = mondoY(alto, zT, cx);
+
+  /* QUANTO GRANDE. La targa prende una fetta della fascia libera fra la
+     testata e la cima del mobile, misurata in PIXEL DI SCHERMO e poi
+     riportata in scena: e' l'unico modo perche' il nome pesi uguale su
+     un monitor e su un telefono, dove la camera sta molto piu' indietro.
+     Il tetto e il pavimento in pixel evitano i due estremi -- un nome
+     gigante su uno schermo alto, e uno illeggibile su uno schiacciato. */
+  /* La fetta e' piu' generosa sullo schermo stretto. Non e' un capriccio:
+     su un telefono la fascia libera e' poca e tutto il resto -- testata,
+     pulsanti, barra in basso -- e' proporzionalmente piu' grande, quindi
+     un nome misurato con il metro del monitor ci si perde dentro. Su un
+     monitor invece la fascia e' larga, e prendersene la meta' vuol dire
+     un nome che pesa piu' del mobile di cui parla. */
+  const stretto = window.innerWidth < 700;
+  const banda = Math.max(24, cima - hb);
+  const altaPx = clamp(banda * (stretto ? .46 : .30), 28, stretto ? 74 : 54);
+  const altaMondo = Math.abs(mondoY(alto - altaPx / 2, zT, cx) -
+                             mondoY(alto + altaPx / 2, zT, cx));
+
   if (cabGroup){
     cabGroup.traverse(function(o){
-      if (o.userData && o.userData.targa) o.position.y = state.yTarga;
+      if (!o.userData || !o.userData.targa) return;
+      o.position.y = state.yTarga;
+      let s = altaMondo / TARGA_ALT;
+      // e non piu' larga del mobile: se il nome e' lungo, si stringe tutta
+      const largMax = LIB_W - .4;
+      const larg = TARGA_ALT * (o.userData.aspetto || 3) * s;
+      if (larg > largMax) s *= largMax / larg;
+      o.scale.setScalar(s);
     });
     rifaiOmbre();
   }
