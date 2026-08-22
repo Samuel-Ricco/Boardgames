@@ -1975,12 +1975,33 @@ body.elenco #conta b{color:#fff}
 /* La stessa pastiglia della targa del mobile: carta chiara, angoli
    tondi, la sua ombra. Era un rettangolo a spigoli vivi appiccicato
    alla barra, che sulla stanza si leggeva come una toppa. */
+/* La stessa mano della targa del mobile e delle schede del sito:
+   `--r-m`, carta chiara, un filo di bordo, ombra leggera. La pastiglia
+   a 999px era la forma delle pastigliette -- i gruppi, i nomi al tavolo
+   -- e questa non e' una pastiglietta, e' una superficie. */
 #rail{
   background:rgba(242,241,237,.96);
   backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  box-shadow:0 3px 16px rgba(20,18,14,.20), inset 0 0 0 1px rgba(51,53,43,.07);
-  border-radius:999px;
+  box-shadow:var(--ombra-lieve), inset 0 0 0 1px rgba(51,53,43,.07);
+  border-radius:var(--r-m);
 }
+
+/* Le frecce: livello "nudo" del corredo comandi -- solo il segno --
+   che si accende sotto il dito e risponde alla pressione come tutto il
+   resto del sito. */
+.rail-passo{
+  flex:none; display:inline-flex; align-items:center; justify-content:center;
+  width:32px; height:32px; padding:0; cursor:pointer;
+  color:var(--ink-soft); background:none; border:0; border-radius:var(--r-s);
+  pointer-events:auto;
+  transition:background-color .2s var(--ease), color .2s var(--ease),
+             transform .12s var(--ease), opacity .2s var(--ease);
+}
+.rail-passo .ico{width:19px; height:19px}
+.rail-passo:hover{background:rgba(200,106,60,.12); color:var(--accent)}
+.rail-passo:active{transform:scale(.92)}
+.rail-passo:disabled{opacity:.26; cursor:default; pointer-events:none}
+@media (pointer:coarse){ .rail-passo{width:38px; height:38px} }
 #rail-txt{color:var(--ink); opacity:.85}
 .rail-bar{background:rgba(51,53,43,.22)}
 
@@ -2471,8 +2492,8 @@ body.arreda #stanza{transform:none}
    attorno a tutti e due, quello che l'occhio centra e' la pastiglia --
    e il numero fuori dal fondo chiaro tornava illeggibile sulla stanza,
    che era il punto di partenza. */
-#rail{position:fixed; padding:10px 20px; gap:14px}
-#rail-txt{position:static; transform:none; margin:0}
+#rail{position:fixed; padding:8px 10px; gap:10px}
+#rail-txt{position:static; transform:none; margin:0 2px}
 .rail-bar{width:min(260px,58vw); max-width:none; flex:0 0 auto}
 #rail-thumb{transition:left .18s var(--ease), width .18s var(--ease)}
 .rail-bar.presa #rail-thumb{transition:none}

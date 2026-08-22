@@ -119,6 +119,8 @@ it: {
   'stanza.elimina':     'elimina',
   'stanza.sposta':      'tieni premuto e trascina per riordinare',
   'stanza.nienteArredo':'nessun mobile da arredare',
+  'rail.prima':         'la libreria prima',
+  'rail.dopo':          'la libreria dopo',
   'rail.aria':          'scegli la libreria',
 
   /* --- il pannello della recensione --- */
@@ -648,6 +650,8 @@ en: {
   'stanza.elimina':     'delete',
   'stanza.sposta':      'press and drag to reorder',
   'stanza.nienteArredo':'no bookcase to furnish',
+  'rail.prima':         'the bookcase before',
+  'rail.dopo':          'the bookcase after',
   'rail.aria':          'choose the bookcase',
 
   'pan.chiudi':         'close',

@@ -883,35 +883,75 @@ function rettTondo(x, bx, by, bw, bh, r){
    la sua ombra, come tutto quello che galleggia sulla scena in questo
    sito. Il testo ci sta sopra scuro, e da quel momento il muro dietro
    non conta piu' niente. */
+/* L'icona della libreria a cubi, la stessa del corredo SVG del sito,
+   disegnata sul canvas. `Path2D` prende il `d` cosi' com'e', quindi il
+   disegno resta uno solo: se un giorno cambia l'icona, cambia anche
+   questa. Dove `Path2D` non c'e' si salta e resta il nome, che e'
+   l'informazione. */
+const D_SCAFFALE = 'M4 3.5h16v16H4zM4 11.5h16M12 3.5v16M7 19.5v2M17 19.5v2';
+
+function iconaScaffale(x, cx, cy, lato, tinta){
+  if (typeof Path2D === 'undefined') return false;
+  const s = lato / 24;
+  x.save();
+  x.translate(cx - lato / 2, cy - lato / 2);
+  x.scale(s, s);
+  x.strokeStyle = tinta;
+  x.lineWidth = 1.6;
+  x.lineCap = 'round';
+  x.lineJoin = 'round';
+  x.stroke(new Path2D(D_SCAFFALE));
+  x.restore();
+  return true;
+}
+
+/* IL NOME DEL MOBILE, SU UNA TARGA.
+
+   Con la mano del resto del sito, non con una sua: raggio `--r-m`
+   riportato in scala (le schede del sito, non una pastiglia), il font
+   dei titoli a peso 400 e **senza spaziatura** -- quella larga viene
+   dai tempi del condensato e le note dicono da un pezzo di non usarla
+   -- e l'icona della libreria a cubi davanti, la stessa che apre il
+   pannello del mobile e che porta allo scaffale. */
 function targhetta(nome){
   const testo = String(nome || '');
-  const H = 152, padX = 52;
+  const H = 152;
+  const CORPO = 78;                     // il testo
+  const ICO_L = 60, ICO_GAP = 22;       // l'icona e lo stacco dal nome
+  const padX = 46;
+
   const mis = cnv(8, 8)[1];
-  mis.font = '600 88px "Poppins", system-ui, sans-serif';
-  mis.letterSpacing = '2px';
-  const larg = Math.max(300, Math.ceil(mis.measureText(testo).width) + padX * 2);
+  mis.font = '400 ' + CORPO + 'px "Poppins", system-ui, sans-serif';
+  const wTesto = Math.ceil(mis.measureText(testo).width);
+  const dentro = ICO_L + ICO_GAP + wTesto;
+  const larg = Math.max(300, dentro + padX * 2);
 
   const cx = cnv(larg, H), c = cx[0], x = cx[1];
   // margine attorno alla targa: e' li' che ci sta l'ombra
-  const bx = 14, by = 16, bw = larg - 28, bh = H - 38, r = bh * .40;
+  const bx = 14, by = 16, bw = larg - 28, bh = H - 38;
+  const r = bh * .26;                   // `--r-m` sulle schede, in scala
 
-  x.shadowColor = 'rgba(28,20,10,.34)';
+  x.shadowColor = 'rgba(28,20,10,.30)';
   x.shadowBlur = 18;
   x.shadowOffsetY = 6;
-  x.fillStyle = 'rgba(243,241,236,.95)';
+  x.fillStyle = 'rgba(242,241,237,.96)';
   rettTondo(x, bx, by, bw, bh, r); x.fill();
   x.shadowBlur = 0; x.shadowOffsetY = 0;
 
   // un filo di bordo, come le altre superfici chiare del sito
-  x.strokeStyle = 'rgba(51,53,43,.12)'; x.lineWidth = 2;
+  x.strokeStyle = 'rgba(51,53,43,.10)'; x.lineWidth = 2;
   rettTondo(x, bx, by, bw, bh, r); x.stroke();
 
+  const cy = by + bh / 2;
+  const x0 = (larg - dentro) / 2;       // il gruppo icona+nome, centrato
+  const conIcona = iconaScaffale(x, x0 + ICO_L / 2, cy, ICO_L, 'rgba(200,106,60,.85)');
+
   x.font = mis.font;
-  x.letterSpacing = '2px';
-  x.textAlign = 'center';
+  x.letterSpacing = '0px';
+  x.textAlign = 'left';
   x.textBaseline = 'middle';
-  x.fillStyle = 'rgba(44,36,27,.92)';
-  x.fillText(testo, larg / 2, by + bh / 2 + 2);
+  x.fillStyle = 'rgba(51,53,43,.94)';
+  x.fillText(testo, conIcona ? x0 + ICO_L + ICO_GAP : (larg - wTesto) / 2, cy + 2);
   return c;
 }
 

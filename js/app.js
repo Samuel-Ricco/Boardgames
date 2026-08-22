@@ -654,6 +654,19 @@ function buildCabinet(){
       targa.position.set(ox, state.yTarga || (KAL.topY + SOPRA - .62), -KAL.d/2 + .02);
       targa.userData.targa = true;      // `allineaComandi` la sposta senza ricostruire
       g.add(targa);
+
+      /* Entra invece di comparire: sale di un dito e si accende, con la
+         curva unica del sito. Era l'unica cosa della scena a spuntare di
+         colpo a ogni ricostruzione del mobile. */
+      const opFine = fantasma ? .45 : 1;
+      const yFine = targa.position.y;
+      targa.material.opacity = 0;
+      targa.position.y = yFine - .28;
+      tween(.42, function(p){
+        const e = easeOut(p);
+        targa.material.opacity = opFine * e;
+        targa.position.y = yFine - .28 * (1 - e);
+      }, null, .08 + l * .05);          // una dopo l'altra, come le righe di un elenco
     }
   }
 
@@ -2326,6 +2339,11 @@ function updateRail(){
   const n = max + 1;
   q('#rail-txt').textContent = (Math.round(state.scroll) + 1) + ' / ' + n;
   const t = state.scroll / max;
+  const dove = Math.round(state.scroll);
+  const su = q('#rail-prima'), giu = q('#rail-dopo');
+  if (su)  su.disabled  = dove <= 0;
+  if (giu) giu.disabled = dove >= max;
+
   const bar = q('.rail-bar');
   if (bar){
     bar.setAttribute('aria-valuemax', n);
@@ -2390,6 +2408,13 @@ function bindRail(){
   }
   bar.addEventListener('pointerup', molla);
   bar.addEventListener('pointercancel', molla);
+
+  /* Le due frecce: un mobile per volta, che e' il gesto piu' semplice
+     che ci sia. Ai due capi si spengono invece di non fare niente --
+     un pulsante che risponde a vuoto e' peggio di uno spento. */
+  const prima = q('#rail-prima'), dopo = q('#rail-dopo');
+  if (prima) prima.addEventListener('click', function(){ scrollBy(-1); });
+  if (dopo)  dopo.addEventListener('click', function(){ scrollBy(1); });
 
   bar.addEventListener('keydown', function(e){
     if (e.key === 'ArrowLeft'){ scrollBy(-1); e.preventDefault(); }

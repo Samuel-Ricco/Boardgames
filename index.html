@@ -181,11 +181,23 @@
 <!-- Il binario non porta piu' il nome del mobile (sta nell'imbuto): qui
      resta solo dove sei, e la barra si TRASCINA -- era l'unica cosa che
      sembrava un comando senza esserlo. -->
+<!-- Le due frecce non c'erano: si passava di mobile in mobile solo
+     trascinando una riga alta quattro pixel, o con le frecce della
+     tastiera, che su un telefono non esistono. Un passo alla volta e'
+     il gesto piu' semplice che ci sia, e adesso ha il suo pulsante. -->
 <div id="rail">
+  <button id="rail-prima" type="button" class="rail-passo"
+          data-i18n-aria="rail.prima" aria-label="la libreria prima">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M14.5 5.5L8 12l6.5 6.5"/></svg>
+  </button>
   <span id="rail-txt" aria-hidden="true">1 / 3</span>
   <div class="rail-bar" role="slider" tabindex="0"
        data-i18n-aria="rail.aria" aria-label="scegli la libreria"
        aria-valuemin="1" aria-valuenow="1" aria-valuemax="1"><i id="rail-thumb"></i></div>
+  <button id="rail-dopo" type="button" class="rail-passo"
+          data-i18n-aria="rail.dopo" aria-label="la libreria dopo">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
+  </button>
 </div>
 
 <!-- I MOBILI. Si aprono dal nome della libreria, che e' dove uno guarda

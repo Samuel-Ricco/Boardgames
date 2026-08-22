@@ -2209,7 +2209,35 @@ provato due volte prima di arrivarci.
    e da quel momento **il muro dietro non conta piu' niente.**
 
 `targhetta()` la disegna sul canvas (`rettTondo` usa `roundRect` dove c'e' e le
-quattro `arcTo` dove non c'e'), e il binario ha la stessa pastiglia in CSS.
+quattro `arcTo` dove non c'e'), e il binario ha la stessa superficie in CSS.
+
+**E hanno la mano del resto del sito, non una loro.** Al primo giro erano usciti
+tutti e due fuori scala: pastiglia a 999px, testo a peso 600 con due pixel di
+spaziatura. Nessuna delle due cose e' del sito.
+
+- **Raggio `--r-m`**, che nella scala di questo foglio vuol dire *scheda*. I
+  999px sono la forma delle **pastigliette** — i gruppi, i nomi al tavolo, le
+  tinte — e queste due non sono pastigliette: sono superfici. Sulla targa il
+  raggio e' riportato in proporzione al canvas (`bh * .26`).
+- **Il testo dei titoli sta a peso 400 e senza spaziatura.** Quella larga viene
+  dai tempi in cui il font era condensato, e le note lo dicono da un pezzo per i
+  comandi: vale anche qui.
+- **L'icona.** Sulla targa c'e' la libreria a cubi, la stessa che apre il
+  pannello del mobile e che porta allo scaffale: due comandi che portano allo
+  stesso oggetto portano la stessa figura, e questa e' l'oggetto. Sul canvas la
+  disegna `Path2D` **con lo stesso `d` dell'SVG**, cosi' il disegno resta uno
+  solo: se un giorno cambia l'icona cambia anche questa. Dove `Path2D` non c'e'
+  si salta e resta il nome, che e' l'informazione.
+
+**Le frecce del binario non c'erano.** Si passava di mobile in mobile solo
+trascinando una riga alta quattro pixel o con le frecce della tastiera, che su
+un telefono non esistono. Adesso ci sono due chevron di livello «nudo», che
+**ai due capi si spengono**: un pulsante che risponde a vuoto e' peggio di uno
+spento.
+
+**E la targa entra invece di comparire.** Sale di un dito e si accende, con la
+curva unica del sito e uno scaglionamento per mobile — come le righe di un
+elenco. Era l'unica cosa della scena a spuntare di colpo a ogni ricostruzione.
 
 **E qui e' stata rovesciata una decisione scritta.** Il binario la superficie
 l'aveva, ed era stata tolta: «sul pavimento chiaro sembrava una macchia,
