@@ -203,6 +203,76 @@ async function togli(id){
   await carica();
 }
 
+/* --- il winrate ----------------------------------------------------
+
+   "Chi vince di piu'" e' una classifica fra chi c'era; il winrate
+   invece parla di UNA persona sola, e quella persona sei tu. E' la
+   domanda diversa: non "chi e' il piu' forte del tavolo" ma "come sto
+   andando io", che e' la sola a cui una schermata intitolata "le tue
+   partite" dovrebbe rispondere per prima.
+
+   CHI SONO IO AL TAVOLO. I partecipanti sono nomi, non account: al
+   tavolo c'e' quasi sempre qualcuno che sul sito non c'e', ed e' una
+   scelta che regge. Il prezzo e' che l'unico modo di riconoscersi in
+   una partita e' il proprio nome -- il nick, o il nome del profilo se
+   il nick non c'e'. Chi al tavolo si segna con un altro nome non si
+   trova, e il sito lo dice invece di inventare un numero. */
+function mioNome(){
+  if (typeof PROFILO === 'undefined') return '';
+  const p = PROFILO.mio();
+  return (p && (p.nick || p.nome)) || '';
+}
+
+/* Appiattito, come ogni confronto di testo del sito: "Samuel" e
+   "samuel" al tavolo sono la stessa persona. */
+function piattoNome(s){
+  return String(s == null ? '' : s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+/* Contate solo le partite in cui ci sono io: una serata a cui non ho
+   giocato non entra ne' al numeratore ne' al denominatore, se no il
+   winrate scenderebbe ogni volta che gli altri giocano senza di me.
+
+   `perc` nulla vuol dire "non ho mai giocato a questo", che non e' zero
+   per cento -- e va detto in modo diverso. */
+function winrate(lista){
+  const io = piattoNome(mioNome());
+  let gioc = 0, vinte = 0;
+  if (io){
+    (lista || []).forEach(function(p){
+      const mia = (p.chi || []).filter(function(x){ return piattoNome(x.nome) === io; })[0];
+      if (!mia) return;
+      gioc++;
+      if (mia.vincitore) vinte++;
+    });
+  }
+  return { gioc: gioc, vinte: vinte,
+           perc: gioc ? Math.round(vinte * 100 / gioc) : null };
+}
+
+function winrateTotale(){ return winrate(elenco); }
+
+/* Un winrate per gioco, in ordine di quanto vai forte -- e a parita' di
+   percentuale prima quello a cui hai giocato di piu', perche' 100% su
+   una partita sola dice meno di 70% su dieci. Fuori i giochi a cui non
+   ho mai giocato io: l'elenco risponde a "come vado", e una riga senza
+   winrate non risponde. */
+function winratePerGioco(){
+  const per = {}, ordine = [];
+  elenco.forEach(function(p){
+    const k = p.bgg ? 'b' + p.bgg : 't' + p.titolo;
+    if (!per[k]){ per[k] = { titolo: p.titolo, bgg: p.bgg || null, partite: [] }; ordine.push(per[k]); }
+    per[k].partite.push(p);
+  });
+  return ordine.map(function(g){
+    const w = winrate(g.partite);
+    return { titolo: g.titolo, bgg: g.bgg, gioc: w.gioc, vinte: w.vinte, perc: w.perc };
+  }).filter(function(g){ return g.gioc > 0; })
+    .sort(function(a, b){ return b.perc - a.perc || b.gioc - a.gioc ||
+                                 String(a.titolo).localeCompare(String(b.titolo), 'it'); });
+}
+
 /* Chi vince di piu'. Il conto e' sui NOMI e non sui giocatori salvati,
    se no cancellare un giocatore cancellerebbe anche le sue vittorie. */
 function classifica(){
@@ -224,6 +294,8 @@ return {
   aggiungiGiocatore: aggiungiGiocatore, togliGiocatore: togliGiocatore,
   amiciDaAggiungere: amiciDaAggiungere,
   carica: carica, tutte: tutte, diGioco: diGioco,
-  salva: salva, togli: togli, classifica: classifica
+  salva: salva, togli: togli, classifica: classifica,
+  mioNome: mioNome, winrate: winrate,
+  winrateTotale: winrateTotale, winratePerGioco: winratePerGioco
 };
 })();

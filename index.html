@@ -428,15 +428,18 @@
     <div class="cat-testa">
       <p class="eyebrow" data-i18n="par.occhiello">le tue partite</p>
 
-      <!-- Tre numeri in cima: quante serate, su quanti giochi, e chi
-           vince piu' spesso. Sono le domande per cui uno apre questa
+      <!-- Tre numeri in cima: quante partite, su quanti giochi, e come
+           stai andando tu. Sono le domande per cui uno apre questa
            schermata, e stanno prima dell'elenco perche' si leggono in
-           un colpo d'occhio. -->
+           un colpo d'occhio. Il terzo e' un pulsante: dietro c'e' lo
+           stesso winrate gioco per gioco. -->
       <div id="par-somma" class="par-somma"></div>
+      <div id="par-wr" class="par-wr-lista" hidden></div>
 
-      <!-- Due modi di guardarle: per gioco (quante volte a Root, e chi
-           vince) e in ordine di tempo (cosa abbiamo giocato l'ultima
-           volta). Stesso componente delle due viste della collezione. -->
+      <!-- Due modi di guardarle: per gioco (quante volte a Root, chi
+           vince e come vai tu) e in ordine di tempo (cosa abbiamo
+           giocato l'ultima volta). Stesso componente delle due viste
+           della collezione. -->
       <div class="viste" id="par-viste" role="tablist">
         <button type="button" data-vpar="gioco" role="tab" data-i18n="par.perGioco">per gioco</button>
         <button type="button" data-vpar="data" role="tab" data-i18n="par.perData">le ultime</button>
@@ -652,13 +655,13 @@
 <div id="partitalayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="pa-h">
 
-    <p class="eyebrow" data-i18n="pa.occhiello">una serata</p>
+    <p class="eyebrow" data-i18n="pa.occhiello">una partita</p>
     <h2 id="pa-h" data-i18n="pa.h">Segna una partita</h2>
 
     <!-- Il gioco si CERCA, non si scrive. L'id BGG non si chiede piu' a
          nessuno: e' un numero che nessuno sa a memoria, e arriva da solo
          scegliendo un gioco dai suggerimenti. Chi digita e basta ha
-         comunque la sua serata, solo senza aggancio al catalogo. -->
+         comunque la sua partita, solo senza aggancio al catalogo. -->
     <div class="add-form pa-form">
       <label class="wide"><span data-i18n="pa.gioco">gioco</span>
         <input id="pa-titolo" type="text" autocomplete="off" role="combobox"

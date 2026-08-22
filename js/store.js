@@ -22,6 +22,11 @@ let remota = false;             // i dati vengono dal database?
 
 // chiamata quando una scrittura non riesce; app.js ci attacca flash()
 let onErrore = function(){};
+/* Le scritture sono ottimiste, quindi ogni tanto una torna indietro. Il
+   messaggio da solo non basta: chi ha visto la scatola sparire deve
+   anche rivederla comparire, se no la scena e i dati restano in due
+   posti diversi fino al ricaricamento. */
+let onRipristino = function(){};
 
 /* --- traduzione fra le colonne del database e i campi della scena ---
    Le colonne sono in italiano, i campi della scena no. Meglio dieci
@@ -229,6 +234,29 @@ const ORDERS = {
 function piatto(s){
   return String(s == null ? '' : s).toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/* --- il nome di un mobile e' unico ---------------------------------
+   Due librerie che si chiamano allo stesso modo sono due librerie che
+   non si distinguono: il nome e' l'unica cosa che le separa nel
+   pannello, sul binario in basso e nella targhetta dentro la scena --
+   e in tutti e tre i posti si legge il nome e basta, non l'id.
+
+   Il confronto e' APPIATTITO: maiuscole, accenti e spazi doppi non
+   fanno un mobile diverso, fanno solo due nomi che a leggerli sono lo
+   stesso. Il controllo sta qui e non nell'interfaccia perche' qui ci
+   passano tutte e due le strade -- creare e rinominare -- e perche'
+   `store.js` e' l'unico file che sa quali librerie esistono. */
+function nomeLib(s){
+  return piatto(s).trim().replace(/\s+/g, ' ');
+}
+
+function nomeLibPreso(nome, tranne){
+  const n = nomeLib(nome);
+  if (!n) return false;
+  return librerie.some(function(L){
+    return L.id !== tranne && nomeLib(L.nome) === n;
+  });
 }
 
 function corrisponde(g, q){
@@ -461,17 +489,17 @@ async function creaLibreria(nome){
      davvero: l'ordine e' uno piu' del massimo, e il nome sale finche'
      non ne trova uno libero. */
   let ordine = 0, alto = 0;
-  const presi = {};
   librerie.forEach(function(L){
-    presi[String(L.nome)] = true;
     if ((L.ordine || 0) + 1 > ordine) ordine = (L.ordine || 0) + 1;
     const n = /^Libreria (\d+)$/.exec(String(L.nome || ''));
     if (n && +n[1] > alto) alto = +n[1];
   });
   let scelto = String(nome || '').trim();
-  if (!scelto){
+  if (scelto){
+    if (nomeLibPreso(scelto, null)) throw new Error(TP('err.libNomePreso', {n: scelto}));
+  } else {
     let k = Math.max(alto, librerie.length) + 1;
-    while (presi['Libreria ' + k]) k++;
+    while (nomeLibPreso('Libreria ' + k, null)) k++;
     scelto = 'Libreria ' + k;
   }
 
@@ -514,6 +542,7 @@ async function rinominaLibreria(id, nome){
   if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
   const t = String(nome || '').trim();
   if (!t) throw new Error(TP('err.serveNome'));
+  if (nomeLibPreso(t, id)) throw new Error(TP('err.libNomePreso', {n: t}));
   const r = await c.from('librerie').update({ nome: t })
     .eq('proprietario', AUTH.stato().id).eq('id', id);
   if (r.error) throw r.error;
@@ -769,11 +798,22 @@ function remove(id){
 
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (c && remota){
-    c.from('giochi').delete().eq('proprietario', AUTH.stato().id).eq('id', id).then(function(r){
-      if (r.error){
+    /* `.select()` non e' un vezzo: senza, una cancellazione che non
+       tocca NESSUNA riga torna indietro come un successo pulito -- e'
+       cosi' che risponde PostgREST quando le regole non lasciano
+       passare quella riga, o quando l'id non e' piu' quello. Il gioco
+       spariva dallo scaffale, nessuno diceva niente, e al primo
+       ricaricamento era di nuovo li'. Con il `select` la risposta porta
+       le righe cancellate: se sono zero e' un guasto, e si dice. */
+    c.from('giochi').delete()
+      .eq('proprietario', AUTH.stato().id).eq('id', id)
+      .select('id').then(function(r){
+      if (r.error || !(r.data && r.data.length)){
         all().push(out);
         salvaLocale();
-        onErrore(TP('err.nonTolto', {e: messaggio(r.error)}));
+        onErrore(r.error ? TP('err.nonTolto', {e: messaggio(r.error)})
+                         : TP('err.nonToltoZero', {g: out.title || id}));
+        onRipristino();
         return;
       }
       // via anche l'immagine, se stava nel bucket: se no resta li' a
@@ -854,6 +894,8 @@ return {
   togliGruppo: togliGruppo, segnaGruppo: segnaGruppo,
   eRemota: function(){ return remota; },
   suErrore: function(fn){ onErrore = fn; },
+  suRipristino: function(fn){ onRipristino = fn; },
+  nomeLibPreso: nomeLibPreso,
   orders: Object.keys(ORDERS)
 };
 })();

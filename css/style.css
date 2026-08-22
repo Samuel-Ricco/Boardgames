@@ -747,7 +747,7 @@ body.sez-partite #partite{display:block}
 
 /* --- le partite --------------------------------------------------
    La stessa forma nel profilo e nel pannello della recensione: una
-   riga per serata, il gioco e la data a sinistra, chi c'era sotto.
+   riga per partita, il gioco e la data a sinistra, chi c'era sotto.
    Il vincitore in ocra, che nel resto del sito e' gia' il colore di
    cio' che conta. */
 .giocate{list-style:none; margin:0; padding:0}
@@ -766,13 +766,13 @@ body.sez-partite #partite{display:block}
   border-bottom:2px solid var(--accent); padding-bottom:1px;
 }
 /* Un gruppo per gioco: "a Root abbiamo giocato tre volte e vince
-   sempre Giulia" dice quello che uno vuole sapere; un elenco di serate
+   sempre Giulia" dice quello che uno vuole sapere; un elenco di partite
    in ordine di data non dice niente. */
 .gio-gruppo{margin:0 0 22px}
 .gio-gruppo:last-child{margin-bottom:0}
 /* Il titolo del gioco e' una tendina: chiusa dice quante partite e chi
    vince, che e' gia' la risposta alla domanda per cui uno apre questa
-   sezione. Aperta ci sono le serate una per una. */
+   sezione. Aperta ci sono le partite una per una. */
 .gio-gioco{
   width:100%; display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px;
   margin:0; padding:10px 0; cursor:pointer; text-align:left;
@@ -2546,7 +2546,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 
 /* --- LE PARTITE HANNO TRE LIVELLI, E SI DEVONO VEDERE ---------------
 
-   Sezione > gioco > serata. Prima erano tutti e tre riquadri tinti
+   Sezione > gioco > partita. Prima erano tutti e tre riquadri tinti
    della stessa misura, uno dentro l'altro: aperta la sezione non si
    capiva se «Root» fosse un fratello di «Partite» o un suo figlio.
 
@@ -2582,7 +2582,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 }
 .gio-gioco[aria-expanded="true"]::after{transform:rotate(-135deg) translate(-2px,-2px)}
 
-/* livello 3: la singola serata */
+/* livello 3: la singola partita */
 .gio-gruppo .giocate{
   margin:6px 0 0 10px; padding-left:14px;
   border-left:2px solid rgba(51,53,43,.08);
@@ -2721,7 +2721,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 
    Il rientro si mette QUI e non su `.pro-dentro`, che vale per tutti e
    tre: sotto Partite aggiungerebbe un livello a roba che i suoi livelli
-   ce li ha gia' dentro, e la serata finirebbe rientrata quattro volte. */
+   ce li ha gia' dentro, e la partita finirebbe rientrata quattro volte. */
 #blocco-amici, #blocco-giocatori{
   padding:0 0 24px 14px;
   border-left:2px solid rgba(51,53,43,.12);
@@ -2865,7 +2865,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    =================================================================== */
 
 /* Tre numeri in cima. Rispondono in un colpo d'occhio alle domande per
-   cui uno apre questa schermata -- quante serate, su quanti giochi, chi
+   cui uno apre questa schermata -- quante partite, su quanti giochi, chi
    vince -- che dall'elenco si ricavano solo contando le righe. */
 .par-somma{
   display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 0;
@@ -2896,7 +2896,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    scritte per il profilo: rientro, filo verticale, peso minore. */
 #partite #pro-partite{margin:16px 0 0}
 
-/* Nella vista "le ultime" le serate sono una fila sola, in ordine di
+/* Nella vista "le ultime" le partite sono una fila sola, in ordine di
    tempo: non c'e' un livello di mezzo, quindi non c'e' nemmeno il filo
    -- un rientro che non appartiene a niente e' solo un rientro. */
 .par-tutte{
@@ -2914,3 +2914,125 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 /* Il "+" sta dove sta quello della collezione, e ha la stessa faccia. */
 #partite .mia-barra{margin:14px 0 0}
 #partite #par-msg{margin:12px 0 0}
+
+
+/* ===================================================================
+   IL WINRATE
+
+   "Chi vince di piu'" e' una classifica fra chi c'era; il winrate parla
+   di UNA persona sola, e quella persona e' chi sta guardando. Sono due
+   domande diverse, e quella che una schermata intitolata "le tue
+   partite" deve fare per prima e' la seconda.
+
+   L'ANELLO. Un numero si legge, ma non si CONFRONTA scorrendo un
+   elenco: la carica di un anello si', ed e' la prima cosa che l'occhio
+   prende scendendo lungo una colonna. Il numero resta accanto, perche'
+   un anello dice "circa due terzi" e non "67%".
+   =================================================================== */
+
+.wr-anello{
+  width:22px; height:22px; flex:none;
+  /* Si parte da mezzogiorno e si gira in senso orario, come si legge un
+     quadrante. La rotazione sta qui e non nei numeri dell'SVG: cosi'
+     l'SVG resta due cerchi concentrici e basta. */
+  transform:rotate(-90deg);
+}
+.wr-anello circle{fill:none; stroke-width:2.6}
+.wr-vuoto{stroke:rgba(51,53,43,.13)}
+/* Capo PIATTO e non tondo: a zero per cento un capo tondo disegna
+   comunque un puntino, e un puntino si legge come "un pochino" -- che
+   e' esattamente la cosa che non e' vera. */
+.wr-carica{
+  stroke:var(--accent); stroke-linecap:butt;
+  transition:stroke-dashoffset .5s var(--ease);
+}
+
+/* --- sulla riga del gioco ------------------------------------------
+   Sta a destra, incolonnata con quelle delle righe sopra e sotto: e'
+   li' che gli anelli si confrontano fra loro. Dove non ho mai giocato
+   resta uno <span> vuoto invece di sparire -- se no il chevron
+   scivolerebbe addosso al testo e la colonna si sfalserebbe. E' la
+   stessa ragione per cui la stellina lascia il posto occupato in casa
+   di un amico. */
+/* Il titolo e la didascalia si avvolgono FRA LORO; la riga no.
+
+   Con `flex-wrap:wrap` sulla riga un titolo lungo non fa stringere
+   l'involucro: lo manda a capo, e con lui tutto quello che segue --
+   cosi' la pastiglia del winrate finiva sotto e gli anelli si
+   sfilavano dalla colonna in cui si confrontano. Togliendo il wrap
+   l'involucro si stringe (ha `min-width:0`) e il testo va a capo
+   dentro di se', che e' dove deve andare. */
+.gio-gioco{flex-wrap:nowrap; align-items:center}
+.gio-gioco .gio-t{
+  flex:1 1 auto; min-width:0;
+  display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px;
+}
+.gio-gioco .wr{
+  margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:6px;
+}
+.gio-gioco .wr b{
+  font-family:var(--ff); font-weight:600; font-size:12.5px;
+  letter-spacing:0; color:var(--accent);
+}
+.gio-gioco::after{margin-left:12px}
+
+/* --- la pastiglia in cima, che e' anche la porta del dettaglio ------
+   Resta dov'e' e si accende quando e' aperta, come l'imbuto e la
+   libreria: sparire lascerebbe un buco e toglierebbe il modo piu'
+   naturale di richiuderla, cioe' lo stesso gesto con cui si e' aperta. */
+#par-somma .par-wr{
+  display:grid; grid-template-columns:auto 1fr;
+  align-items:center; column-gap:12px;
+  font:inherit; text-align:left; border:0; cursor:pointer;
+  transition:background-color .2s var(--ease), transform .12s var(--ease);
+}
+#par-somma .par-wr:hover{background:rgba(200,106,60,.10)}
+#par-somma .par-wr:active{transform:scale(.98)}
+#par-somma .par-wr[aria-expanded="true"]{background:rgba(200,106,60,.14)}
+/* Spenta quando non c'e' niente da mostrare: il perche' sta nel title,
+   che e' anche come si rimedia. */
+#par-somma .par-wr:disabled{cursor:default}
+#par-somma .par-wr:disabled:hover{background:var(--card)}
+#par-somma .par-wr:disabled b{color:var(--ink-soft)}
+#par-somma .par-wr .wr-anello{grid-row:1 / span 2; width:34px; height:34px}
+#par-somma .par-wr b{grid-column:2; font-size:23px; color:var(--accent)}
+#par-somma .par-wr span{grid-column:2}
+
+/* --- il winrate gioco per gioco ------------------------------------
+   Si apre SOTTO la pastiglia e non in una finestra sopra: e' il
+   dettaglio di un numero che si sta gia' guardando, e sotto c'e'
+   ancora l'elenco da cui quel numero viene. */
+.par-wr-lista{
+  margin:10px 0 0; padding:2px 14px 6px;
+  background:var(--card); border-radius:var(--r-m);
+  animation:entraRiga .32s var(--ease) both;
+}
+.par-wr-lista[hidden]{display:none}
+.par-wr-lista .eyebrow{margin:12px 0 2px}
+.wr-lista{list-style:none; margin:0; padding:0}
+.wr-lista li{
+  display:grid; grid-template-columns:auto 1fr auto;
+  align-items:center; column-gap:12px;
+  padding:9px 0; border-bottom:1px solid rgba(51,53,43,.07);
+}
+.wr-lista li:last-child{border-bottom:0}
+.wr-lista .wr-anello{grid-row:1 / span 2; width:26px; height:26px}
+.wr-lista b{
+  grid-column:2; font-size:13.5px; font-weight:500; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.wr-lista span{
+  grid-column:2; font-size:11px; letter-spacing:.04em; color:var(--ink-soft);
+}
+.wr-lista i{
+  grid-row:1 / span 2; grid-column:3; font-style:normal;
+  font-family:var(--ff-display); font-weight:400; font-size:17px; color:var(--accent);
+}
+
+/* Il campo del nome di una libreria quando quel nome e' gia' di un
+   altro mobile: il rosso lo dice prima del clic, la spunta e' gia'
+   spenta e il perche' sta nel title. */
+#st-rinomina[aria-invalid="true"]{
+  background:rgba(190,60,40,.09); color:#a8341f;
+  box-shadow:0 0 0 2px rgba(168,52,31,.35);
+}

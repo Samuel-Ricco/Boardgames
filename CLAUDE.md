@@ -414,6 +414,48 @@ porta via tutto quello che viene dopo, e il posto dove si vede il guasto non è
 quello dove sta. `disegnaMobili` aveva lo stesso nome per la stessa ragione: lì
 non esplodeva perché la funzione non veniva chiamata, ma era una trappola armata.
 
+## Cancellare è un fatto, non un'animazione
+
+«Ho eliminato dei giochi e sono rimasti nella libreria.» Il difetto non era uno,
+erano quattro, e tutti nascevano dallo stesso errore: **far dipendere una
+cancellazione da qualcosa che potrebbe non succedere.**
+
+1. **`LIB.remove` stava dentro il seguito del tween** di `removeFocused`, cioè il
+   gioco veniva tolto solo se l'animazione arrivava in fondo. Ma la coda si
+   svuota (`anims.length = 0`) ogni volta che una scatola si apre o si chiude:
+   basta che qualcosa la svuoti in quel mezzo secondo e il gioco resta dov'era,
+   senza che niente lo dica. Adesso **i dati se ne vanno subito** e l'animazione
+   viene dopo; la scatola esce da `boxes` nello stesso momento, così un
+   `applyLibrary` che arrivi nel mezzo non prova a rimandarla a casa.
+2. **`ridisponi()` buttava via la richiesta durante `closing`**, con un commento
+   che diceva «ci pensa la chiusura già avviata» — e non ci pensava, perché la
+   chiusura richiama `applyLibrary` solo se le è stato passato un seguito. Chi
+   eliminava un gioco mentre una scatola si stava richiudendo se lo ritrovava
+   sullo scaffale. Adesso la richiesta si **segna** (`ridisponiDopo`) e si fa
+   appena la chiusura ha finito.
+3. **`wanted` ereditava da `Object.prototype`.** Gli id sono slug che vengono dal
+   titolo, e su un oggetto normale `'constructor' in wanted` è vero anche quando
+   quel gioco non c'è: la sua scatola non se ne sarebbe andata mai.
+   `Object.create(null)` e il caso non esiste più.
+
+### Zero righe cancellate non è un successo
+
+Il quarto, e il più insidioso, stava nel database. `.delete().eq(...)` **senza
+`.select()` torna indietro come un successo pulito anche quando non ha toccato
+nessuna riga** — è così che risponde PostgREST quando le regole non lasciano
+passare quella riga, o quando l'id non è più quello. La scatola spariva dallo
+schermo (la scrittura è ottimista), nessuno diceva niente, e **al primo
+ricaricamento il gioco era di nuovo lì**: che è esattamente il sintomo
+descritto.
+
+Con `.select('id')` la risposta porta le righe cancellate: **se sono zero è un
+guasto, e si dice.** Vale per ogni `delete` futuro.
+
+E siccome il rollback rimette il gioco nei dati, la scena va rimessa in pari:
+`LIB.suRipristino(fn)` è il gancio. Senza, i dati e lo schermo restavano in
+disaccordo fino al ricaricamento — che è il momento in cui il gioco
+«ricompariva».
+
 ## Le librerie sono mobili, non conteggi
 
 Fino alla migrazione `stanza_librerie_gruppi` le librerie erano **calcolate** dal
@@ -447,6 +489,36 @@ un cubo vuoto in mezzo allo scaffale è una scelta di chi lo ha arredato.
   sapere dove si trova, ed è anche la porta del pannello dei mobili. Con una
   libreria sola sparisce la barra ma **non il nome**: se no non ci sarebbe modo
   di crearne una seconda.
+
+## Due librerie non si chiamano allo stesso modo
+
+Il nome è **l'unica cosa che distingue un mobile dall'altro**: si legge nel
+pannello, sul binario in basso e sulla targhetta dentro la scena, e in tutti e
+tre i posti si legge il nome — non l'id. Due «Libreria 3» sono due mobili che
+non si distinguono, e infatti ne erano nate tre.
+
+- Il controllo sta in **`store.js`**, che è l'unico file a sapere quali librerie
+  esistono, e copre **tutte e due le strade**: creare e rinominare. Metterlo
+  nell'interfaccia avrebbe voluto dire scriverlo due volte e dimenticarlo alla
+  terza.
+- Il confronto è **appiattito** (`nomeLib`): maiuscole, accenti e spazi doppi non
+  fanno un mobile diverso, fanno due nomi che a leggerli sono lo stesso.
+- `nomeLibPreso(nome, tranne)` prende un `tranne` perché **rinominare un mobile
+  col suo stesso nome non è un doppione** — senza, cambiare solo le maiuscole
+  sarebbe stato vietato contro sé stessi.
+- L'interfaccia spegne la spunta **prima del clic** e tinge di rosso il campo, col
+  perché nel `title`: scoprire di aver sbagliato dopo aver premuto salva è il
+  modo peggiore di dirlo. Ma il divieto vero resta quello dello store —
+  l'interfaccia è la cortesia, non la regola.
+- Il nome automatico (`Libreria N`) sale finché non ne trova uno libero, passando
+  dalla stessa funzione: prima usava una mappa sua, e i due controlli potevano
+  divergere.
+
+**Sul database non c'è ancora un indice unico su `(proprietario, nome)`**, e non
+è una dimenticanza: al momento della modifica la collezione aveva tre «Libreria
+3» e la migrazione non sarebbe passata. Adesso i doppioni non ci sono più,
+quindi l'indice si può aggiungere quando si vuole — ed è il posto giusto per
+una regola come questa.
 
 ## Ordinare a mano
 
@@ -718,7 +790,7 @@ Una collezione dice cosa hai; le partite dicono cosa hai giocato, con chi e chi
 ha vinto — che di un gioco da tavolo è la metà più interessante.
 
 - **La partita si aggancia all'id BGG, non a una riga di `giochi`.** Così si
-  segna anche una serata a casa di un amico su un gioco che non hai, e togliere
+  segna anche una partita a casa di un amico su un gioco che non hai, e togliere
   una scatola dallo scaffale non cancella la storia di quando ci hai giocato.
   È la stessa chiave delle recensioni del catalogo.
 - **`titolo` e `nome` sono copie, non ridondanza da normalizzare via.** Il titolo
@@ -1047,10 +1119,10 @@ nascosta con l'opacità.
 
 - **Il gioco si cerca, non si scrive.** Prima si digitava il titolo a mano e a
   fianco si chiedeva l'**id BGG**: un numero che nessuno sa a memoria, e senza il
-  quale la serata non si aggancia a niente. Ora si cerca e l'id arriva da solo
+  quale la partita non si aggancia a niente. Ora si cerca e l'id arriva da solo
   scegliendo un risultato. Si cerca **prima nella collezione** — è lì che stanno i
   giochi a cui si gioca davvero — e solo dopo nel catalogo. Chi scrive un titolo
-  che non esiste da nessuna parte ha comunque la sua serata, senza aggancio:
+  che non esiste da nessuna parte ha comunque la sua partita, senza aggancio:
   `titolo` e `bgg` sono due colonne diverse apposta.
 - Le richieste al catalogo passano dalla rete: **ognuna prende un numero e la
   risposta controlla di essere ancora l'ultima chiesta**, se no si butta via da
@@ -1139,20 +1211,73 @@ imparato a usare quello sa già usare questo.
 - **Due viste, come nell'elenco**: *per gioco* (quante volte a Root, e chi vince)
   e *le ultime* (in ordine di tempo, la più recente in cima). Nella seconda il
   titolo del gioco compare su ogni riga — `rigaGiocata(p, conTitolo)` lo prevedeva
-  già — perché lì è l'unica cosa che distingue una serata dall'altra.
-- **Tre numeri in cima**: quante serate, su quanti giochi, chi è in testa. Sono
-  le domande per cui si apre questa schermata, e dall'elenco si ricavavano solo
-  contando le righe. Le basi del flex li mettono in fila su schermo largo e
-  mandano a capo il terzo su un telefono, senza una media query.
-- Nella vista *le ultime* **non c'è il filo verticale**: le serate sono una fila
+  già — perché lì è l'unica cosa che distingue una partita dall'altra.
+- **Tre numeri in cima**: quante partite, su quanti giochi, e **come stai
+  andando tu**. Sono le domande per cui si apre questa schermata, e dall'elenco
+  si ricavavano solo contando le righe. Le basi del flex li mettono in fila su
+  schermo largo e mandano a capo il terzo su un telefono, senza una media query.
+- **Si dice «partita», mai «serata».** Erano rimaste tre chiavi a dirlo
+  (`pa.occhiello`, `par.serata`, `par.serate`) e mezzo ramo inglese a dire
+  «game night». In inglese adesso è **play/plays**, che è anche la parola di
+  BGG: «game» da solo si scontrerebbe con i giochi — «12 games on 5 games» non
+  si legge.
+- Nella vista *le ultime* **non c'è il filo verticale**: le partite sono una fila
   sola, senza un livello di mezzo a cui appartenere, e un rientro che non
   appartiene a niente è solo un rientro.
 - `#pro-partite`, `#par-msg` e `#par-nuova` **hanno tenuto il loro id**: il
   markup si è spostato, il codice che ci parlava no.
 
+## Il winrate: «chi vince» e «come vado io» sono due domande
+
+`vinceDi()` risponde alla prima — chi sta in testa fra chi c'era — e resta
+sulle righe dei giochi. Ma una schermata intitolata **«le tue partite»** deve
+rispondere prima di tutto sulla seconda, e il terzo riquadro in cima diceva
+«vince Samuel», cioè una classifica fra altri. Adesso è **il tuo winrate**,
+ed è un pulsante: dietro c'è lo stesso numero **gioco per gioco**, che è la
+domanda subito dopo.
+
+- **Chi sono io al tavolo è il mio nome, e basta.** I partecipanti sono nomi e
+  non account — al tavolo c'è quasi sempre qualcuno che sul sito non c'è, ed
+  è una scelta che regge. Il prezzo è che l'unico modo di riconoscersi è il
+  nick (o il nome del profilo se il nick manca), confrontato **appiattito**. Chi
+  si segna con un altro nome non si trova, **e il sito lo dice** invece di
+  inventare un numero.
+- **`perc` nulla non è zero per cento.** «Non ho mai giocato a questo» e «ci ho
+  giocato e non ho mai vinto» sono due cose diverse: la prima non mostra
+  l'anello, la seconda lo mostra vuoto. Senza la distinzione il riquadro in cima
+  direbbe 0% a chi non si è mai messo fra i giocatori, che è semplicemente
+  falso.
+- **Le partite in cui non c'ero non contano**, né sopra né sotto la frazione: se
+  no il winrate scenderebbe ogni volta che gli altri giocano senza di me.
+- **L'anello, non solo il numero.** Un numero si legge ma non si *confronta*
+  scorrendo: la carica di un anello sì, ed è la prima cosa che l'occhio prende
+  scendendo lungo una colonna. Il numero resta accanto, perché un anello dice
+  «circa due terzi» e non «67%».
+- **Il capo del tratto è piatto, non tondo.** A zero per cento un capo tondo
+  disegna comunque un puntino, e un puntino si legge come «un pochino» — che è
+  esattamente la cosa che non è vera.
+- **La rotazione sta nel CSS** (`transform:rotate(-90deg)`), così l'SVG resta due
+  cerchi concentrici e la corsa è la circonferenza: niente archi da calcolare, e
+  nessun caso limite a 100% — che con un `path` sarebbe un arco di 360 gradi,
+  cioè un arco che non si disegna.
+- **Il dettaglio si apre sotto**, non in una finestra sopra: è il dettaglio di un
+  numero che si sta già guardando, e sotto c'è ancora l'elenco da cui viene. La
+  pastiglia resta dov'è e si accende, come l'imbuto e la libreria — è lo stesso
+  gesto che la richiude.
+
+**E la riga del gioco non può avvolgersi.** Con `flex-wrap:wrap` sulla riga, una
+didascalia lunga («8 partite · vince Anna») non fa *stringere* il titolo: lo
+manda a capo, e con lui tutto quello che segue — così la pastiglia finiva sotto
+e gli anelli si sfilavano dalla colonna, che è l'unico posto in cui si
+confrontano. Titolo e didascalia stanno in un involucro loro (`.gio-t`, che si
+avvolge dentro di sé), la riga è `nowrap`, e il winrate resta sulla prima riga
+qualunque cosa faccia il testo. Dove non ho mai giocato **il posto resta occupato
+da uno `<span>` vuoto**: se no il chevron scivola addosso al testo. È la stessa
+ragione della stellina in casa di un amico.
+
 ## Le partite hanno tre livelli, e si devono vedere
 
-Sezione → gioco → serata. Erano tre riquadri tinti della stessa misura uno dentro
+Sezione → gioco → partita. Erano tre riquadri tinti della stessa misura uno dentro
 l'altro: aperta la sezione non si capiva se «Root» fosse un fratello di «Partite»
 o un suo figlio.
 
@@ -1167,7 +1292,7 @@ cassetti del profilo in cui il contenuto partiva a filo del titolo: aperto
 niente diceva che stessero dentro. Il rientro va su `#blocco-amici` e
 `#blocco-giocatori` e **non su `.pro-dentro`**, che vale per tutti e tre: sotto
 Partite aggiungerebbe un livello a una cosa che i suoi livelli ce li ha già
-dentro (`.gio-gruppo`, `.giocate`), e la serata finirebbe rientrata quattro
+dentro (`.gio-gruppo`, `.giocate`), e la partita finirebbe rientrata quattro
 volte. I tre elenchi degli amici — chi ti ha chiesto, chi lo è, chi non ha
 ancora risposto — prendono uno stacco fra l'uno e l'altro: attaccati si
 leggevano come un elenco solo.
@@ -1956,7 +2081,7 @@ freddo: cosa c'è, cosa è appena cambiato, com'è messo il database e cosa rest
 da fare. Per il racconto lungo di com'è nato tutto c'è `contest_boardgame.md`.
 
 Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
-profilo — **due lingue** con 448 chiavi per ramo, e tutte e undici le migrazioni
+profilo — **due lingue** con 457 chiavi per ramo, e tutte e undici le migrazioni
 applicate.
 
 ### Cos'è successo nella sessione del 2026-08-22
@@ -1975,21 +2100,44 @@ In ordine:
 | `bcb985c` | **le partite diventano una schermata**, e l'uscita diventa rossa |
 | `b5d6e75` | il mobile si ricostruisce anche quando cambia il numero di librerie **vere** |
 
+### La sessione del 2026-08-22, seconda parte
+
+Cinque cose chieste in un colpo solo. In ordine di quanto è costato capirle:
+
+| cosa | dove sta scritto |
+|---|---|
+| i giochi eliminati restavano nella libreria | «Cancellare è un fatto, non un'animazione» |
+| due librerie non possono chiamarsi uguale | «Due librerie non si chiamano allo stesso modo» |
+| un winrate per gioco, con l'anello | «Il winrate: chi vince e come vado io» |
+| il winrate del profilo al posto di «vince X» | idem |
+| «partita» al posto di «serata» | «Le partite sono una schermata» |
+
+**Come è stato verificato**, che qui conta più del cosa: la logica del winrate e
+quella dei nomi con dei casi in Node, presi **dal file vero** e non da una copia;
+il resto sul server locale contro il database vero, entrando davvero. La
+cancellazione fino in fondo — gioco di prova aggiunto, messo sullo scaffale,
+eliminato dall'elenco, e **riletto dal server dopo un ricaricamento** per essere
+sicuri che non fosse tornato. Il pannello dell'anteprima non componeva frame,
+quindi la scatola che esce dalla scena è stata guardata **dal grafo**,
+agganciando `Object3D.remove` come dicono le note più su.
+
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 
 - Account `admin@smlrcc.it`, nick **Samuel**, codice `HH67 6BY7`. Secondo account
   di prova **samuel2**, amicizia accettata.
-- **36 giochi**, di cui **24 con un posto** e **12 senza**.
-- **5 librerie**: `Libreria 2` (ordine 1), **tre** `Libreria 3` (tutte ordine 2),
-  `Libreria 5` (ordine 4).
-- **Due cose in sospeso, e sono decisioni dell'utente, non difetti:** i tre
-  doppioni «Libreria 3» andrebbero rinominati o fusi, e i 12 giochi senza posto
-  sono quelli rimasti orfani quando in una sessione precedente sparirono
-  `Libreria 1` e `Libreria 2`. **Non toccare né gli uni né gli altri senza che
-  l'utente lo chieda.**
-- Le recensioni sono ancora **lorem ipsum** sui 10 giochi vecchi; i 25 aggiunti
+- **26 giochi**, di cui **6 con un posto** e **20 senza**.
+- **Una libreria sola**, `Libreria 5` (ordine 4). I tre doppioni «Libreria 3» non
+  ci sono più: li ha tolti l'utente. Da qui in poi non possono ripresentarsi.
+- **Due partite**: `Arcs` (samuel2 vince, con `d`) e la vecchia partita di prova
+  `pa` (`s, d, sa`).
+- **Il winrate del profilo è a zero per una ragione vera, non per un guasto:**
+  il nick è `Samuel` e in nessuna delle due partite compare quel nome. Il
+  riquadro in cima lo dice e spiega come rimediare. Se si vuole che il winrate
+  cominci a contare, basta aggiungersi fra chi c'era — oppure decidere che chi
+  segna la partita ci finisce dentro da solo, che è una scelta da fare, non un
+  difetto da correggere.
+- Le recensioni sono ancora **lorem ipsum** sui giochi vecchi; quelli aggiunti
   per nome hanno la recensione vuota.
-- Una **partita di prova** rimasta, titolo `pa`, giocatori `s, d, sa`.
 
 ### Come si lavora qui, in tre righe
 
@@ -2058,7 +2206,7 @@ Cosa manca, in ordine di fastidio:
    di più — ma se le miniature servono, si possono chiedere a Wikidata per gli id
    visibili, una passata sola.
 7. **Le partite restano private.** Gli amici vedono libreria e recensioni, non le
-   serate: è il cambio di una policy, ed è una scelta dell'utente.
+   partite: è il cambio di una policy, ed è una scelta dell'utente.
 
 ### Quello che è stato chiesto e non si può fare qui
 

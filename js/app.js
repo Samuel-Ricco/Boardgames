@@ -109,6 +109,7 @@ const state = {
   soloPreferiti: false,        // mostra solo i giochi segnati
   vista: 'gruppi',             // come si guarda l'elenco: 'gruppi' o 'tutti'
   vpar: 'gioco',               // come si guardano le partite: 'gioco' o 'data'
+  wrAperto: false,             // il winrate gioco per gioco e' aperto?
   presa: null,                 // la scatola che si sta spostando a mano
   zoom: 1,                     // quanto la camera e' arretrata: 1 = normale
   libs: 1,                     // quante librerie in fila lungo la parete
@@ -1167,6 +1168,7 @@ function segnaFerma(){
 
 function applyLibrary(opts){
   opts = opts || {};
+  ridisponiDopo = false;             // qualunque richiesta in sospeso e' servita qui
   const list = listaScaffale();
   const disp = disposizione(list);
   const posti = disp.posti;
@@ -1189,7 +1191,10 @@ function applyLibrary(opts){
   }
   segnaFerma();
 
-  const wanted = {};
+  /* Senza prototipo: gli id sono slug che vengono dal titolo, e su un
+     oggetto normale `'constructor' in wanted` e' vero anche quando quel
+     gioco non c'e' -- cioe' una scatola che non se ne va piu'. */
+  const wanted = Object.create(null);
   list.forEach(function(g, i){ wanted[g.id] = i; });
 
   // via quelle che non ci sono piu'
@@ -1879,31 +1884,63 @@ function unfocus(poi){
       state.phase = 'browse';
       document.body.classList.add('browse');
       if (poi) poi();
+      ridisponiSeAtteso();
     });
   }, .12);
 }
 
 /* Rifa' la disposizione appena si puo': subito se lo scaffale e' fermo,
-   dopo la chiusura se c'e' una scatola aperta. Durante `closing` non si
-   fa niente: ci pensa la chiusura gia' avviata. */
+   dopo la chiusura se c'e' una scatola aperta.
+
+   Durante `closing` la richiesta NON si butta via: si segna e si fa
+   appena la chiusura ha finito. Buttarla via costava un difetto vero --
+   chi eliminava un gioco nel mezzo secondo in cui una scatola si stava
+   richiudendo se lo ritrovava sullo scaffale, perche' nessuno rifaceva
+   piu' la scena. Ed e' proprio la sequenza di chi elimina: chiude la
+   scatola, apre l'elenco, cancella. */
+let ridisponiDopo = false;
+
 function ridisponi(){
   if (state.phase === 'focus' || state.phase === 'review'){
     unfocus(function(){ applyLibrary({ animate: true }); });
     return;
   }
-  if (state.phase === 'closing') return;
+  if (state.phase === 'closing'){ ridisponiDopo = true; return; }
   applyLibrary({ animate: true });
 }
 
-/* --- admin: togli il gioco che si sta guardando ----------------- */
+// La chiama chi finisce una chiusura: se nel frattempo qualcuno ha
+// chiesto di ridisporre, adesso si puo'.
+function ridisponiSeAtteso(){
+  if (ridisponiDopo) applyLibrary({ animate: true });
+}
+
+/* --- togli il gioco che si sta guardando -------------------------
+
+   I DATI SE NE VANNO SUBITO, l'animazione viene dopo. Prima era il
+   contrario: `LIB.remove` stava dentro il seguito del tween, cioe' la
+   cancellazione avveniva solo se l'animazione arrivava in fondo. Ma la
+   coda delle animazioni si svuota (`anims.length = 0`) ogni volta che
+   una scatola si apre o si chiude, e una cancellazione che dipende da
+   un'animazione e' una cancellazione che puo' non avvenire -- senza che
+   niente lo dica, con il gioco che resta dov'era.
+
+   Cancellare e' un fatto, non un'animazione. La scatola esce da `boxes`
+   nello stesso momento, cosi' un `applyLibrary` che arrivi nel mezzo
+   non se la ritrova fra i piedi e non prova a rimandarla a casa. */
 function removeFocused(){
   const box = state.focused;
-  if (!box) return;
+  if (!box || state.phase === 'closing') return;   // niente doppie partenze
   const game = box.userData.game;
 
   state.phase = 'closing';
+  state.focused = null;
   hidePanel();
   anims.length = 0;
+
+  const i = boxes.indexOf(box);
+  if (i >= 0) boxes.splice(i, 1);
+  LIB.remove(game.id);
 
   const p0 = box.position.clone();
   const cam0 = camBase.clone();
@@ -1917,10 +1954,6 @@ function removeFocused(){
     state.focusLight = 1 - e;
   }, function(){
     killGroup(box, true);
-    const i = boxes.indexOf(box);
-    if (i >= 0) boxes.splice(i, 1);
-    state.focused = null;
-    LIB.remove(game.id);
     state.bayLight = 1;
     applyLibrary({ animate: true });
     state.phase = 'browse';
@@ -3468,6 +3501,8 @@ function disegnaNomeCorrente(){
   /* Sul mobile di scorta il campo e' spento: dirlo e' meglio che
      lasciarlo vuoto e muto, perche' la scorta si vede come le altre. */
   inp.placeholder = L ? '' : TP('stanza.nessunMobile');
+  inp.setAttribute('aria-invalid', 'false');
+  inp.title = '';
   if (ok) ok.disabled = true;
   segnaGesti();
   mobileMostrato = Math.round(state.scroll);
@@ -3621,7 +3656,15 @@ function bindLibrerie(){
   if (inp){
     inp.addEventListener('input', function(){
       const L = libCorrente();
-      ok.disabled = !inp.value.trim() || (L && inp.value === L.nome);
+      const t = inp.value.trim();
+      /* Il divieto vero sta in `store.js`, che e' l'unico a sapere quali
+         librerie esistono. Qui la spunta si spegne PRIMA del clic e il
+         campo dice perche': scoprire di aver sbagliato dopo aver premuto
+         salva e' il modo peggiore di dirlo. */
+      const preso = !!(t && L && LIB.nomeLibPreso(t, L.id));
+      ok.disabled = !t || (L && inp.value === L.nome) || preso;
+      inp.setAttribute('aria-invalid', preso ? 'true' : 'false');
+      inp.title = preso ? TP('err.libNomePreso', {n: t}) : '';
     });
     inp.addEventListener('keydown', function(e){
       e.stopPropagation();                       // se no Esc chiude il pannello
@@ -4543,6 +4586,7 @@ function azzeraSchermata(){
   });
   state.vista = 'tutti';
   state.vpar = 'gioco';
+  state.wrAperto = false;
 }
 
 function bindProfilo(){
@@ -4766,7 +4810,7 @@ function oggiIso(){
   return d.getFullYear() + '-' + due(d.getMonth() + 1) + '-' + due(d.getDate());
 }
 
-/* Una serata: il gioco e il quando in alto, chi c'era sotto. Il
+/* Una partita: il gioco e il quando in alto, chi c'era sotto. Il
    vincitore in ocra, che nel resto del sito e' gia' il colore di cio'
    che conta. */
 function rigaGiocata(p, conTitolo){
@@ -4814,7 +4858,7 @@ function vinceDi(partite){
                    : TP('par.vince', {n: ordine[0]});
 }
 
-/* Raggruppate per gioco. Un elenco di serate in ordine di data non dice
+/* Raggruppate per gioco. Un elenco di partite in ordine di data non dice
    niente; "a Root avete giocato tre volte e vince sempre Giulia" e'
    quello che uno vuole sapere aprendo questa sezione. */
 /* --- LE PARTITE, NELLA LORO SCHERMATA -----------------------------
@@ -4851,24 +4895,96 @@ function setVistaPartite(v){
   disegnaPartite();
 }
 
-/* Tre numeri in cima: quante serate, su quanti giochi diversi, e chi
-   vince piu' spesso. Sono le domande per cui si apre questa schermata,
-   e messe prima dell'elenco si leggono in un colpo d'occhio invece che
-   contando le righe. */
+/* --- l'anello del winrate ----------------------------------------
+
+   Un numero da solo si legge, ma non si CONFRONTA a colpo d'occhio
+   mentre si scorre un elenco: la carica di un anello si', ed e' la
+   prima cosa che l'occhio prende scendendo lungo una colonna. Il numero
+   resta accanto, perche' un anello dice "circa due terzi" e non "67%".
+
+   Il cerchio parte da mezzogiorno: la rotazione la fa il CSS, cosi' qui
+   restano solo i numeri. La corsa intera e' la circonferenza, e quanto
+   ne resta scoperto e' `dashoffset` -- niente archi da calcolare a mano
+   e nessun caso limite a 100%, che con un `path` sarebbe un arco di 360
+   gradi, cioe' un arco che non si disegna. */
+const WR_R = 8, WR_GIRO = 2 * Math.PI * WR_R;
+
+function anelloWr(perc){
+  const v = (perc === null || perc === undefined) ? 0 : clamp(perc, 0, 100);
+  return '<svg class="wr-anello" viewBox="0 0 20 20" aria-hidden="true" focusable="false">' +
+    '<circle class="wr-vuoto" cx="10" cy="10" r="' + WR_R + '"/>' +
+    '<circle class="wr-carica" cx="10" cy="10" r="' + WR_R + '" ' +
+      'stroke-dasharray="' + WR_GIRO.toFixed(2) + '" ' +
+      'stroke-dashoffset="' + (WR_GIRO * (1 - v / 100)).toFixed(2) + '"/></svg>';
+}
+
+/* Sulla riga di un gioco. Niente anello dove non ho mai giocato io: un
+   anello a zero si legge come "non ne ho vinta nessuna", che e' un'altra
+   cosa. Ma il POSTO resta occupato da uno span vuoto, se no il chevron
+   scivolerebbe addosso al testo e gli anelli delle altre righe non
+   sarebbero piu' incolonnati -- ed e' in colonna che si confrontano. */
+function chipWr(w){
+  if (!w || !w.gioc) return '<span class="wr"></span>';
+  return '<span class="wr" title="' + esc(TP('par.wrTitolo', {v: w.vinte, n: w.gioc})) + '">' +
+    anelloWr(w.perc) + '<b>' + w.perc + '%</b></span>';
+}
+
+/* Il winrate gioco per gioco, sotto la pastiglia che lo apre. Sta qui e
+   non in una finestra sopra perche' e' il dettaglio di un numero che si
+   sta gia' guardando: si apre sotto, e sotto c'e' ancora l'elenco. */
+function disegnaWinratePerGioco(){
+  const el = q('#par-wr');
+  if (!el) return;
+  const righe = PARTITE.winratePerGioco();
+  el.hidden = !state.wrAperto || !righe.length;
+  if (el.hidden){ el.innerHTML = ''; return; }
+  el.innerHTML = '<p class="eyebrow">' + T('par.wrPerGioco') + '</p>' +
+    '<ul class="wr-lista">' + righe.map(function(g){
+      return '<li>' + anelloWr(g.perc) +
+        '<b>' + esc(g.titolo) + '</b>' +
+        '<span>' + T('par.wrSu', {v: g.vinte, n: g.gioc}) + '</span>' +
+        '<i>' + g.perc + '%</i></li>';
+    }).join('') + '</ul>';
+}
+
+/* Tre numeri in cima: quante partite, su quanti giochi diversi, e come
+   stai andando tu. Sono le domande per cui si apre questa schermata, e
+   messe prima dell'elenco si leggono in un colpo d'occhio invece che
+   contando le righe.
+
+   Il terzo diceva "vince Samuel", cioe' chi sta in testa fra tutti. Ma
+   una schermata che si intitola "le tue partite" deve rispondere prima
+   di tutto su di te: adesso e' il TUO winrate, ed e' un pulsante --
+   dietro c'e' lo stesso numero gioco per gioco, che e' la domanda
+   subito successiva. */
 function disegnaSommaPartite(tutte, quantiGiochi){
   const el = q('#par-somma');
   if (!el) return;
   if (!tutte.length){ el.innerHTML = ''; return; }
-  const re = vinceDi(tutte);
   const voci = [
     [tutte.length, T(tutte.length === 1 ? 'par.serata' : 'par.serate')],
     [quantiGiochi, T(quantiGiochi === 1 ? 'par.gioco' : 'par.giochi')]
   ];
+  const w = PARTITE.winrateTotale();
+  const io = PARTITE.mioNome();
+  /* Senza nessuna partita a proprio nome non si mostra uno zero: zero
+     per cento vuol dire "ho giocato e non ho mai vinto", ed e' falso.
+     Si dice cosa manca, che e' anche come si rimedia. */
+  const muto = w.perc === null;
+  const perche = muto ? (io ? TP('par.wrChiSei', {n: io}) : TP('par.wrNick'))
+                      : TP('par.wrApri');
   el.innerHTML = voci.map(function(v){
     return '<div class="par-dato"><b>' + v[0] + '</b><span>' + v[1] + '</span></div>';
   }).join('') +
-  (re ? '<div class="par-dato largo"><b>' + esc(re) + '</b><span>' +
-        T('par.inTesta') + '</span></div>' : '');
+  '<button type="button" id="par-wr-apri" class="par-dato largo par-wr"' +
+    (muto ? ' disabled' : '') +
+    ' aria-expanded="' + (state.wrAperto && !muto ? 'true' : 'false') + '"' +
+    ' aria-controls="par-wr" title="' + esc(perche) + '">' +
+    anelloWr(w.perc) +
+    '<b>' + (muto ? '&mdash;' : w.perc + '%') + '</b>' +
+    '<span>' + T(muto ? 'par.wrSenza' : 'par.wr') + '</span>' +
+  '</button>';
+  if (muto) state.wrAperto = false;
 }
 
 function disegnaPartite(){
@@ -4885,11 +5001,12 @@ function disegnaPartite(){
 
   disegnaVistePartite();
   disegnaSommaPartite(tutte, gruppi.length);
+  disegnaWinratePerGioco();
 
   if (state.vpar === 'data'){
     /* In ordine di tempo, la piu' recente in cima: e' la vista di "cosa
        abbiamo giocato l'ultima volta". Qui il titolo del gioco serve su
-       ogni riga -- e' l'unica cosa che le distingue. */
+       ogni riga -- e' l'unica cosa che distingue una partita dall'altra. */
     const ordinate = tutte.slice().sort(function(x, y){
       return String(y.giocata_il || '').localeCompare(String(x.giocata_il || '')) ||
              String(y.ora || '').localeCompare(String(x.ora || ''));
@@ -4902,11 +5019,20 @@ function disegnaPartite(){
     el.innerHTML = gruppi.map(function(g, i){
       const n = g.partite.length;
       const chi = vinceDi(g.partite);
+      // il tuo winrate su questo gioco, se ci hai giocato
+      const w = PARTITE.winrate(g.partite);
       return '<div class="gio-gruppo">' +
+        /* Titolo e didascalia stanno in un involucro loro, e il winrate
+           fuori: se no su schermo stretto una didascalia lunga -- "8
+           partite . vince Anna" -- spinge la pastiglia a capo, e gli
+           anelli si sfilano dalla colonna in cui si confrontano. */
         '<button type="button" class="gio-gioco" aria-expanded="false" data-g="' + i + '">' +
-          '<b>' + esc(g.titolo) + '</b>' +
-          '<span>' + T(n === 1 ? 'par.unaPartita' : 'par.partite', {n: n}) +
-          (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span>' +
+          '<span class="gio-t">' +
+            '<b>' + esc(g.titolo) + '</b>' +
+            '<span>' + T(n === 1 ? 'par.unaPartita' : 'par.partite', {n: n}) +
+            (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span>' +
+          '</span>' +
+          chipWr(w) +
         '</button>' +
         '<ul class="giocate" hidden>' +
           g.partite.map(function(p){ return rigaGiocata(p, false); }).join('') +
@@ -5082,13 +5208,13 @@ function aggiornaTavoloInPosto(){
 /* --- il gioco si cerca -------------------------------------------
 
    Prima si scriveva a mano il titolo e, a fianco, l'id BGG: un numero
-   che nessuno sa a memoria e che senza nessuno aggancia la serata al
+   che nessuno sa a memoria e che senza nessuno aggancia la partita al
    catalogo. Adesso si cerca, e scegliendo un risultato l'id arriva da
    solo -- e' quello a tenere insieme partite, recensioni e catalogo.
 
    Si cerca PRIMA nella collezione, che e' dove stanno i giochi a cui si
    gioca davvero, e solo dopo nel catalogo. Chi scrive un titolo che non
-   esiste da nessuna parte ha comunque la sua serata, senza aggancio:
+   esiste da nessuna parte ha comunque la sua partita, senza aggancio:
    `titolo` e `bgg` sono due colonne diverse apposta. */
 let paGiro = 0;
 
@@ -5392,6 +5518,17 @@ function bindPartite(){
     if (b) setVistaPartite(b.getAttribute('data-vpar'));
   });
 
+  /* L'ascoltatore sta sul contenitore e non sul pulsante: la pastiglia
+     del winrate si rifa' a ogni `disegnaSommaPartite`, e attaccarglielo
+     addosso vorrebbe dire rimetterlo ogni volta. */
+  q('#par-somma').addEventListener('click', function(e){
+    const b = e.target.closest('#par-wr-apri');
+    if (!b || b.disabled) return;
+    state.wrAperto = !state.wrAperto;
+    b.setAttribute('aria-expanded', state.wrAperto ? 'true' : 'false');
+    disegnaWinratePerGioco();
+  });
+
   // riaprire una partita gia' segnata, da tutti e due gli elenchi
   ['#pro-partite', '#p-giocate'].forEach(function(sel){
     q(sel).addEventListener('click', function(e){
@@ -5676,6 +5813,15 @@ async function boot(){
     b.classList.toggle('on', b.getAttribute('data-sort') === state.sort);
   });
   LIB.suErrore(flash);                    // le scritture rifiutate le racconta il flash
+  /* ...e le rimette anche a posto: una cancellazione rifiutata dal
+     server rimette il gioco nei dati, e la scatola deve tornare sullo
+     scaffale. Senza, la scena e i dati restavano in disaccordo fino al
+     ricaricamento -- che e' il momento in cui il gioco "ricompariva". */
+  LIB.suRipristino(function(){
+    ridisponi();
+    updateConta();
+    if (document.body.classList.contains('elenco')) disegnaMia();
+  });
   I18N.suCambio(rilingua);                // quello che disegna il JS lo rifa' il JS
   buildFlatList();
 
