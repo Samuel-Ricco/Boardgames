@@ -2195,6 +2195,34 @@ uno, e per un'uscita e' anche il tono giusto.
 Vale in generale: **`#fff` su `--accent` regge a quattordici pixel in grassetto e
 non regge a dodici.** Dove serve un comando piccolo, il fondo va scuro.
 
+### Una targa, non un alone — e il binario torna sulla sua pastiglia
+
+Il nome del mobile e il binario in basso stanno **sulla stanza**, e la stanza
+cambia colore: la luce si abbassa fino a spegnerla quasi del tutto. Ci ho
+provato due volte prima di arrivarci.
+
+1. Testo scuro dipinto sulla parete. Spariva sul muro scuro.
+2. Testo scuro con un **alone chiaro** dietro. Regge, ma si vede che e' un
+   ripiego: si nota l'alone e non si capisce cosa sia.
+3. **Una targa.** Carta chiara con gli angoli tondi e la sua ombra, come tutto
+   quello che galleggia sulla scena in questo sito. Il testo ci sta sopra scuro,
+   e da quel momento **il muro dietro non conta piu' niente.**
+
+`targhetta()` la disegna sul canvas (`rettTondo` usa `roundRect` dove c'e' e le
+quattro `arcTo` dove non c'e'), e il binario ha la stessa pastiglia in CSS.
+
+**E qui e' stata rovesciata una decisione scritta.** Il binario la superficie
+l'aveva, ed era stata tolta: «sul pavimento chiaro sembrava una macchia,
+bastano il contrasto del testo e la barra». Era vero **finche' il pavimento era
+chiaro**. Da quando la luce arriva a spegnere la stanza, quel fondo puo' essere
+nero e un numero grigio al 55% su nero non si legge. La lezione generale:
+**una superficie che serve solo quando il fondo la perdona non e' una
+superficie, e' una scommessa sul colore di dietro.**
+
+Con la pastiglia visibile, il numero **torna dentro**: stava fuori, appeso a
+sinistra, perche' senza un fondo centrare il gruppo faceva sembrare la barra
+spostata di mezza scritta. Adesso quello che l'occhio centra e' la pastiglia.
+
 ### Quello che galleggia su una stanza che si spegne
 
 Il binario e il contatore erano carta al 90%. Va bene su una stanza chiara; con

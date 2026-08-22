@@ -859,32 +859,59 @@ function avatar(av, S){
    scritto**: un serif editoriale in maiuscole e minuscole, spaziato
    appena. Tutto maiuscolo e tracciato di sei pixel era il modo di far
    funzionare un condensato, ed era l'opposto di questo. */
+/* Un rettangolo con gli angoli tondi, con la scorciatoia del canvas
+   quando c'e' e a mano quando non c'e'. */
+function rettTondo(x, bx, by, bw, bh, r){
+  if (x.roundRect){ x.beginPath(); x.roundRect(bx, by, bw, bh, r); return; }
+  x.beginPath();
+  x.moveTo(bx + r, by);
+  x.arcTo(bx + bw, by,      bx + bw, by + bh, r);
+  x.arcTo(bx + bw, by + bh, bx,      by + bh, r);
+  x.arcTo(bx,      by + bh, bx,      by,      r);
+  x.arcTo(bx,      by,      bx + bw, by,      r);
+  x.closePath();
+}
+
+/* IL NOME DEL MOBILE, SU UNA TARGA.
+
+   Prima era testo scuro dipinto sulla parete, poi testo scuro con un
+   alone chiaro dietro. Nessuna delle due regge: la parete cambia
+   colore e con la luce bassa diventa quasi nera, e un alone e' un
+   ripiego -- si vede che c'e' e non si capisce cosa sia.
+
+   Una targa invece e' una cosa: carta chiara con gli angoli tondi e
+   la sua ombra, come tutto quello che galleggia sulla scena in questo
+   sito. Il testo ci sta sopra scuro, e da quel momento il muro dietro
+   non conta piu' niente. */
 function targhetta(nome){
   const testo = String(nome || '');
-  const H = 128, pad = 24;
+  const H = 152, padX = 52;
   const mis = cnv(8, 8)[1];
-  mis.font = '600 96px "Poppins", system-ui, sans-serif';
+  mis.font = '600 88px "Poppins", system-ui, sans-serif';
   mis.letterSpacing = '2px';
-  const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + pad * 2);
+  const larg = Math.max(300, Math.ceil(mis.measureText(testo).width) + padX * 2);
 
   const cx = cnv(larg, H), c = cx[0], x = cx[1];
+  // margine attorno alla targa: e' li' che ci sta l'ombra
+  const bx = 14, by = 16, bw = larg - 28, bh = H - 38, r = bh * .40;
+
+  x.shadowColor = 'rgba(28,20,10,.34)';
+  x.shadowBlur = 18;
+  x.shadowOffsetY = 6;
+  x.fillStyle = 'rgba(243,241,236,.95)';
+  rettTondo(x, bx, by, bw, bh, r); x.fill();
+  x.shadowBlur = 0; x.shadowOffsetY = 0;
+
+  // un filo di bordo, come le altre superfici chiare del sito
+  x.strokeStyle = 'rgba(51,53,43,.12)'; x.lineWidth = 2;
+  rettTondo(x, bx, by, bw, bh, r); x.stroke();
+
   x.font = mis.font;
   x.letterSpacing = '2px';
   x.textAlign = 'center';
   x.textBaseline = 'middle';
-
-  /* UN ALONE CHIARO DIETRO LE LETTERE. Il nome sta sulla parete, e la
-     parete cambia colore -- e con la luce bassa diventa quasi nera:
-     scritto in scuro e basta, spariva. L'alone e' luce, quindi su un
-     muro chiaro non si vede (chiaro su chiaro) e su uno scuro fa da
-     foglio sotto le lettere. Tre passate perche' l'ombra del canvas si
-     somma a se stessa: una sola resta troppo tenue per reggere il nero. */
-  x.shadowColor = 'rgba(248,245,238,.92)';
-  x.shadowBlur = 16;
-  x.fillStyle = 'rgba(44,36,27,.82)';
-  for (let i = 0; i < 3; i++) x.fillText(testo, larg / 2, H * .54);
-  x.shadowBlur = 0;
-  x.fillText(testo, larg / 2, H * .54);
+  x.fillStyle = 'rgba(44,36,27,.92)';
+  x.fillText(testo, larg / 2, by + bh / 2 + 2);
   return c;
 }
 

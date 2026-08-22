@@ -1972,10 +1972,14 @@ body.elenco #conta b{color:#fff}
    carta al 90% non basta piu': va opaca, con la sfocatura dietro come
    tutto quello che galleggia. Stessa ragione del contatore in testata:
    il fondo dietro cambia con la luce, il testo no. */
+/* La stessa pastiglia della targa del mobile: carta chiara, angoli
+   tondi, la sua ombra. Era un rettangolo a spigoli vivi appiccicato
+   alla barra, che sulla stanza si leggeva come una toppa. */
 #rail{
   background:rgba(242,241,237,.96);
   backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  box-shadow:0 2px 14px rgba(20,18,14,.22);
+  box-shadow:0 3px 16px rgba(20,18,14,.20), inset 0 0 0 1px rgba(51,53,43,.07);
+  border-radius:999px;
 }
 #rail-txt{color:var(--ink); opacity:.85}
 .rail-bar{background:rgba(51,53,43,.22)}
@@ -2047,14 +2051,18 @@ body.elenco #conta b{color:#fff}
 #stanza-apri{padding:8px}
 #stanza-apri .ico{width:17px; height:17px}
 
-/* Il binario stava su una pastiglia bianca che sul pavimento chiaro
-   sembrava una macchia. Non serve una superficie: bastano il contrasto
-   del testo e la barra. */
-#rail{
-  background:none; box-shadow:none; backdrop-filter:none;
-  -webkit-backdrop-filter:none; padding:6px 10px;
-}
-#rail-txt{color:var(--ink); opacity:.55; font-size:12px}
+/* QUI C'ERA IL CONTRARIO, e vale la pena dire perche' e' cambiato.
+
+   La pastiglia era stata tolta: "sul pavimento chiaro sembrava una
+   macchia, bastano il contrasto del testo e la barra". Era vero
+   FINCHE' il pavimento era chiaro. Da quando la luce si abbassa fino a
+   spegnere quasi la stanza, quel fondo puo' essere nero, e il numero
+   grigio al 55% su nero non si legge -- ed e' arrivato come
+   segnalazione. Una superficie che c'e' solo quando il fondo la
+   perdona non e' una superficie: e' una scommessa sul colore di
+   dietro. Adesso la pastiglia c'e' sempre, come la targa del mobile e
+   come tutto quello che galleggia sulla scena. */
+#rail-txt{color:var(--ink); opacity:.72; font-size:12.5px}
 .rail-bar{background:rgba(51,53,43,.20)}
 
 /* L'anello arancione era il fuoco del campo di ricerca, che il pannello
@@ -2457,11 +2465,14 @@ body.arreda #stanza{transform:none}
 
    La traccia e' anche un po' piu' larga: con il margine ai capi il
    cursore ha meno corsa, e a duecento pixel i passi diventavano corti. */
-#rail{position:fixed; padding:14px 0}
-#rail-txt{
-  position:absolute; right:100%; top:50%; transform:translateY(-50%);
-  margin-right:14px;
-}
+/* Il numero torna DENTRO la pastiglia. Stava fuori, appeso a sinistra,
+   perche' senza un fondo visibile centrare il gruppo faceva sembrare la
+   barra spostata a destra di mezza scritta. Con una pastiglia vera
+   attorno a tutti e due, quello che l'occhio centra e' la pastiglia --
+   e il numero fuori dal fondo chiaro tornava illeggibile sulla stanza,
+   che era il punto di partenza. */
+#rail{position:fixed; padding:10px 20px; gap:14px}
+#rail-txt{position:static; transform:none; margin:0}
 .rail-bar{width:min(260px,58vw); max-width:none; flex:0 0 auto}
 #rail-thumb{transition:left .18s var(--ease), width .18s var(--ease)}
 .rail-bar.presa #rail-thumb{transition:none}
