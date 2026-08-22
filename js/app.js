@@ -5090,6 +5090,15 @@ function apriPartita(dati){
   q('#pa-ora').value    = paCorrente.ora ? String(paCorrente.ora).slice(0, 5) : '';
   q('#pa-note').value   = paCorrente.note || '';
   q('#pa-togli').hidden = !paCorrente.id;
+  q('#pa-chi-q').value = '';
+  chiudiSuggChi();
+  leggiNomiNoti();
+  /* I punti non si salvano -- sul database ci sono nome, posizione e
+     vincitore -- quindi riaprendo una partita la corona che si vede e'
+     un fatto registrato, non qualcosa da ricalcolare. Se poi si mettono
+     dei punti, non deve sparire da sotto: chi l'ha messa lo ha fatto
+     una volta e vale ancora. */
+  paCorrente.coroneAMano = paCorrente.chi.some(function(x){ return x.vincitore; });
   q('#pa-msg').textContent = '';
 
   disegnaTavolo();
@@ -5113,9 +5122,13 @@ function chiudiPartita(){
    tutti e due, e il successivo e' terzo, che e' come si contano le
    classifiche ovunque.
 
-   La corona segue i punti solo se i punti ci sono. Ci sono giochi che
-   non ne hanno -- si vince e basta -- e li' la corona la si mette a
-   mano: per questo `posizione` puo' restare nulla, che vuol dire
+   La corona segue i punti FINCHE' nessuno la tocca. Ci sono giochi che
+   i punti non ce li hanno -- si vince e basta -- e ce ne sono in cui i
+   punti li segni solo per qualcuno: in tutti e due i casi il vincitore
+   lo si mette a mano, e da quel momento i punti decidono le posizioni
+   ma non piu' la corona. Prima toccarla con dei punti a schermo veniva
+   rifiutato, cioe' chi non segnava i punti di tutti non poteva dire chi
+   aveva vinto. `posizione` puo' restare nulla, che vuol dire
    "classifica non registrata" ed e' il caso normale. */
 function ricalcolaPosizioni(){
   if (!paCorrente) return;
@@ -5130,6 +5143,10 @@ function ricalcolaPosizioni(){
       x.posizione = null;
       if (x.daPunti){ x.vincitore = false; x.daPunti = false; }
     });
+    /* Tavolo senza punti e senza corone: si riparte da zero, cosi' i
+       punti possono tornare a decidere. Senza questo, chi ha messo una
+       corona a mano una volta non poteva piu' tornare indietro. */
+    if (!paCorrente.chi.some(function(x){ return x.vincitore; })) paCorrente.coroneAMano = false;
     return;                                   // niente punti: comanda la corona
   }
   const ordinati = paCorrente.chi.slice().sort(function(a, b){
@@ -5143,6 +5160,11 @@ function ricalcolaPosizioni(){
     visti++;
     if (v !== ultimo){ pos = visti; ultimo = v; }
     x.posizione = v === null ? null : pos;
+    /* Le posizioni vengono sempre dai punti; la corona no, se qualcuno
+       l'ha gia' toccata. Chi tocca una corona sta dicendo "il vincitore
+       lo decido io", e il modulo gli crede invece di rimettergliela
+       sotto le dita al tasto successivo. */
+    if (paCorrente.coroneAMano) return;
     x.vincitore = (x.posizione === 1);
     x.daPunti = true;                      // questa corona l'ha decisa la classifica
   });
@@ -5165,25 +5187,111 @@ function disegnaTavolo(){
     '</li>';
   }).join('');
 
-  /* Nella tendina stanno INSIEME i giocatori salvati e gli amici che non
-     lo sono ancora: al tavolo la differenza non conta -- conta chi
-     c'era -- e tenerli in due elenchi vuol dire cercare due volte. */
-  const alTavolo = {};
-  paCorrente.chi.forEach(function(x){ alTavolo[x.nome] = true; });
-  const liberi = PARTITE.giocatori().filter(function(g){ return !alTavolo[g.nome]; });
-  const amici = (PARTITE.amiciDaAggiungere ? PARTITE.amiciDaAggiungere() : [])
-    .map(function(a){ return (a.profilo && (a.profilo.nick || a.profilo.nome)) || ''; })
-    .filter(function(n){ return n && !alTavolo[n]; });
-  const pastiglia = function(valore, nome, amico){
-    return '<button type="button" class="pa-tocca' + (amico ? ' amico' : '') + '" ' +
-      'data-chi="' + esc(valore) + '">' + esc(nome) + '</button>';
-  };
-  const tutte = amici.map(function(n){ return pastiglia('amico:' + n, n, true); })
-    .concat(liberi.map(function(g){ return pastiglia(g.id, g.nome, false); }));
+  // i suggerimenti si rifanno con quello che c'e' scritto adesso
+  const campo = q('#pa-chi-q');
+  if (campo && !document.getElementById('pa-chi-sugg').hidden) suggerisciChi(campo.value);
+}
 
-  q('#pa-scelta').innerHTML = tutte.length
-    ? tutte.join('')
-    : '<p class="pa-vuoto">' + T('pa.nessunoAlTavolo') + '</p>';
+/* --- i nomi che il sito conosce ------------------------------------
+
+   Tu per primo, poi gli amici, poi i giocatori salvati. Stanno INSIEME
+   in un elenco solo perche' al tavolo la differenza non conta -- conta
+   chi c'era -- e tenerli separati vuol dire cercare due volte. La
+   pastiglia accanto dice da dove viene ognuno, che e' l'unico posto in
+   cui la differenza serve ancora.
+
+   TU CI SEI SEMPRE: e' la tua collezione e sono le tue partite, e non
+   essere fra i nomi proponibili voleva dire riscrivere il proprio nome
+   ogni volta -- o, come e' successo, non mettersi mai e ritrovarsi il
+   winrate a zero. */
+function nomiNoti(){
+  const piatti = {};
+  (paCorrente ? paCorrente.chi : []).forEach(function(x){ piatti[piattoNome(x.nome)] = true; });
+
+  const fuori = [];
+  const metti = function(nome, tipo, id){
+    const k = piattoNome(nome);
+    if (!nome || piatti[k]) return;
+    piatti[k] = true;                          // niente doppioni fra le tre fonti
+    fuori.push({ nome: nome, tipo: tipo, id: id || null });
+  };
+
+  metti(PARTITE.mioNome(), 'io', null);
+  (PARTITE.amiciDaAggiungere ? PARTITE.amiciDaAggiungere() : []).forEach(function(a){
+    metti((a.profilo && (a.profilo.nick || a.profilo.nome)) || '', 'amico', null);
+  });
+  PARTITE.giocatori().forEach(function(g){ metti(g.nome, 'salvato', g.id); });
+  return fuori;
+}
+
+function piattoNome(s){
+  return String(s == null ? '' : s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+const TAG_CHI = { io: 'pa.tu', amico: 'pa.amicoTag', salvato: 'pa.salvatoTag' };
+
+/* Amici e giocatori salvati li leggeva solo il profilo. Finche' chi
+   c'era era una fila di pastiglie dentro la sezione partite non si
+   notava; adesso il campo li propone, e il modulo si apre anche dalla
+   scatola aperta -- cioe' da un punto del sito dove nessuno li ha
+   ancora chiesti. Si chiedono qui, una volta per sessione, e i
+   suggerimenti si rifanno da soli quando arrivano. */
+let nomiLetti = false;
+
+function leggiNomiNoti(){
+  if (nomiLetti) return;
+  nomiLetti = true;
+  const poi = function(){
+    const el = q('#pa-chi-sugg');
+    if (paCorrente && el && !el.hidden) suggerisciChi(q('#pa-chi-q').value);
+  };
+  PARTITE.caricaGiocatori().then(poi).catch(function(){});
+  if (typeof PROFILO !== 'undefined' && PROFILO.mio()){
+    PROFILO.caricaAmici().then(poi).catch(function(){});
+  }
+}
+
+/* A campo vuoto si mostrano tutti: e' quello che facevano le pastiglie,
+   e per due o tre nomi resta il modo piu' rapido. Scrivendo si
+   restringe, e in fondo c'e' sempre la riga per aggiungere il nome
+   scritto -- che e' l'unica strada per chi al tavolo c'era ma sul sito
+   non c'e'. */
+function suggerisciChi(testo){
+  const t = String(testo || '').trim();
+  const q1 = piattoNome(t);
+  const noti = nomiNoti().filter(function(x){
+    return !q1 || piattoNome(x.nome).indexOf(q1) >= 0;
+  }).slice(0, 8);
+
+  const esatto = noti.some(function(x){ return piattoNome(x.nome) === q1; });
+  const righe = noti.map(function(x){
+    return { nome: x.nome, id: x.id, tag: TAG_CHI[x.tipo], accento: x.tipo === 'io' };
+  });
+  if (t && !esatto) righe.push({ nome: t, id: null, tag: 'pa.nuovoTag', nuovo: true });
+  mostraSuggChi(righe);
+}
+
+function mostraSuggChi(righe){
+  const el = q('#pa-chi-sugg'), campo = q('#pa-chi-q');
+  if (!el || !campo) return;
+  if (!righe.length){ chiudiSuggChi(); return; }
+  el.innerHTML = righe.map(function(x){
+    return '<li><button type="button" role="option" ' +
+      'data-nome="' + esc(x.nome) + '" data-gio="' + esc(x.id || '') + '">' +
+      '<b>' + (x.nuovo ? esc(TP('pa.aggiungiNome', {n: x.nome})) : esc(x.nome)) + '</b>' +
+      '<span' + (x.accento ? ' class="tu"' : '') + '>' + esc(TP(x.tag)) + '</span>' +
+      '</button></li>';
+  }).join('');
+  el.hidden = false;
+  campo.setAttribute('aria-expanded', 'true');
+}
+
+function chiudiSuggChi(){
+  const el = q('#pa-chi-sugg'), campo = q('#pa-chi-q');
+  if (!el) return;
+  el.hidden = true; el.innerHTML = '';
+  if (campo) campo.setAttribute('aria-expanded', 'false');
 }
 
 /* Aggiorna posizioni e corone SENZA rifare l'elenco: chi sta scrivendo
@@ -5279,7 +5387,12 @@ function metteAlTavolo(nome, idGiocatore){
   paCorrente.chi.push({ nome: t, giocatore: idGiocatore || null,
                         punti: null, posizione: null, vincitore: false });
   q('#pa-msg').textContent = '';
-  disegnaTavolo();
+  /* Il campo si svuota e i suggerimenti restano aperti: al tavolo i nomi
+     si mettono in fila, e richiudere tutto a ogni nome vorrebbe dire
+     ricominciare da capo quattro volte. */
+  const campo = q('#pa-chi-q');
+  if (campo) campo.value = '';
+  disegnaTavolo();          // che rimette anche i suggerimenti, se sono aperti
 }
 
 async function salvaPartita(){
@@ -5414,33 +5527,31 @@ function bindPartite(){
     } catch(e){ flash(TP('msg.nonEliminata', {e: e.message})); }
   });
 
-  /* Un ascoltatore solo: le pastiglie si rifanno a ogni aggiunta, e
-     attaccarne uno per pastiglia vorrebbe dire rimetterli ogni volta. */
-  q('#pa-scelta').addEventListener('click', function(e){
-    const b = e.target.closest('button[data-chi]');
-    if (!b) return;
-    const v = b.getAttribute('data-chi');
-    if (v.slice(0, 6) === 'amico:'){
-      // un amico che non e' ancora un giocatore salvato: entra col nome
-      metteAlTavolo(v.slice(6), null);
-    } else {
-      const g = PARTITE.giocatori().find(function(x){ return x.id === v; });
-      if (g) metteAlTavolo(g.nome, g.id);
-    }
+  /* Chi c'era: un campo, e i nomi che appaiono scrivendo. Un
+     ascoltatore solo sull'elenco, che si rifa' a ogni lettera. */
+  const chiQ = q('#pa-chi-q');
+  chiQ.addEventListener('input', function(){ suggerisciChi(chiQ.value); });
+  chiQ.addEventListener('focus', function(){ suggerisciChi(chiQ.value); });
+  chiQ.addEventListener('blur', function(){ setTimeout(chiudiSuggChi, 160); });
+  chiQ.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){ chiudiSuggChi(); return; }
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    /* Invio mette al tavolo quello che c'e' scritto. Se il nome e' uno
+       di quelli noti si porta dietro il suo id di giocatore salvato --
+       se no la partita perderebbe il collegamento per una differenza di
+       maiuscole. */
+    const t = chiQ.value.trim();
+    if (!t) return;
+    const noto = nomiNoti().filter(function(x){ return piattoNome(x.nome) === piattoNome(t); })[0];
+    metteAlTavolo(noto ? noto.nome : t, noto ? noto.id : null);
   });
-
-  /* Un giocatore nuovo si crea nella SUA sezione. Qui c'e' la porta:
-     si chiude la partita, si apre il profilo con il cassetto dei
-     giocatori gia' aperto e il campo pronto. Crearlo di sfuggita dentro
-     un modulo vuol dire ritrovarselo dopo senza sapere da dove esca. */
-  q('#pa-vai-giocatori').addEventListener('click', function(){
-    chiudiPartita();
-    setSezione('profilo');
-    const tit = q('[aria-controls="blocco-giocatori"]');
-    const blocco = q('#blocco-giocatori');
-    if (blocco && blocco.hidden && tit) tit.click();
-    const campo = q('#gio-nuovo');
-    if (campo) setTimeout(function(){ campo.focus(); }, 120);
+  q('#pa-chi-sugg').addEventListener('mousedown', function(e){
+    // mousedown e non click: il blur del campo chiuderebbe l'elenco prima
+    const b = e.target.closest('button[data-nome]');
+    if (!b || !paCorrente) return;
+    e.preventDefault();
+    metteAlTavolo(b.getAttribute('data-nome'), b.getAttribute('data-gio') || null);
   });
   qa('#partitalayer input, #partitalayer textarea').forEach(function(i){
     i.addEventListener('keydown', function(e){ e.stopPropagation(); });
@@ -5457,16 +5568,27 @@ function bindPartite(){
       disegnaTavolo();
       return;
     }
-    /* Con i punti la corona la decide la classifica, e toccarla a mano
-       vorrebbe dire dire due cose diverse nello stesso modulo. Senza
-       punti -- e ci sono giochi che non ne hanno -- si mette a mano. */
-    const conPunti = paCorrente.chi.some(function(x){ return x.punti != null && x.punti !== ''; });
-    if (conPunti){
-      q('#pa-msg').textContent = TP('pa.conPunti');
-      return;
+    /* La corona si tocca SEMPRE, anche con dei punti a schermo. Prima
+       era rifiutata, e la conseguenza era che chi non segnava i punti di
+       tutti -- il caso normale: quasi sempre si ricorda il punteggio di
+       due su quattro -- non poteva piu' dire chi aveva vinto. Da qui in
+       poi i punti fanno le posizioni e la corona la fa la persona. */
+    const riga = paCorrente.chi[i];
+    const eraSu = !!riga.vincitore;
+    if (!paCorrente.coroneAMano){
+      /* Il PRIMO tocco toglie di mezzo le corone che venivano dai punti:
+         da qui in poi comanda la persona, e lasciare accesa anche quella
+         della classifica vorrebbe dire due vincitori per due motivi
+         diversi. Dopo, ogni tocco e' solo un tocco -- due corone insieme
+         si possono ancora fare, ma perche' le ha messe qualcuno. */
+      paCorrente.chi.forEach(function(x){ if (x.daPunti){ x.vincitore = false; x.daPunti = false; } });
+      paCorrente.coroneAMano = true;
     }
-    paCorrente.chi[i].vincitore = !paCorrente.chi[i].vincitore;
-    paCorrente.chi[i].daPunti = false;     // questa l'ha messa una persona
+    // `eraSu` si legge PRIMA di spegnere: se no toccare la corona che
+    // i punti avevano gia' acceso la riaccenderebbe invece di toglierla
+    riga.vincitore = !eraSu;
+    riga.daPunti = false;                  // questa l'ha messa una persona
+    q('#pa-msg').textContent = '';
     disegnaTavolo();
   });
   /* I punti ricalcolano le posizioni a ogni tasto, ma la riga NON si

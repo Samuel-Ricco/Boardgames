@@ -1127,18 +1127,35 @@ nascosta con l'opacità.
 - Le richieste al catalogo passano dalla rete: **ognuna prende un numero e la
   risposta controlla di essere ancora l'ultima chiesta**, se no si butta via da
   sola. Stessa regola del catalogo vero.
-- **Un giocatore nuovo si crea nella sua sezione**, non dentro il modulo. Qui c'è
-  la porta: chiude la partita, apre il profilo col cassetto dei giocatori già
-  aperto e il campo pronto. Crearlo di sfuggita vuol dire ritrovarselo dopo senza
-  sapere da dove esca.
-- **Chi c'era si tocca, non si sceglie da una tendina.** Un `select` apre il
-  selettore del sistema operativo — una lista grigia che non somiglia a niente
-  del resto del sito — e per due o tre nomi è anche un giro inutile: si vedono
-  tutti insieme e si toccano quelli giusti. Le pastiglie si rifanno a ogni
-  aggiunta, quindi l'ascoltatore è **uno solo sul contenitore**: attaccarne uno
-  per pastiglia vorrebbe dire rimetterli tutti ogni volta.
+- **Chi c'era si scrive, e i nomi appaiono mentre scrivi.** Erano pastiglie, e
+  restano una buona idea per tre nomi: si vedono tutti insieme e si toccano
+  quelli giusti. Diventano un muro appena sono venti — ma soprattutto **non
+  davano modo di mettere al tavolo qualcuno che sul sito non c'è**, che al
+  tavolo è quasi sempre il caso. Ora l'ultima riga dei suggerimenti è sempre
+  «aggiungi «Giulia»», e un nome che non risulta a nessuno vale come gli
+  altri.
+- Resta un **campo di testo, non un `select`**: il selettore del sistema
+  operativo continua a non somigliare a niente del resto del sito. A campo vuoto
+  si mostrano tutti, che è quello che facevano le pastiglie.
+- **Tu ci sei sempre, e sei il primo.** Non essere fra i nomi proponibili voleva
+  dire riscrivere il proprio nome ogni volta — o, com'è successo, non
+  mettersi mai e ritrovarsi il winrate a zero senza capire perché. La
+  pastiglietta accanto dice «tu», in terracotta.
 - Amici e giocatori salvati stanno **insieme**: al tavolo la differenza non
   conta, conta chi c'era, e tenerli in due elenchi vuol dire cercare due volte.
+  La pastiglietta a destra dice da dove viene ognuno, che è l'unico posto in
+  cui la differenza serve ancora.
+- **La porta verso i giocatori del profilo non c'è più.** Serviva perché un
+  nome nuovo si poteva creare solo lì; adesso lo si scrive e basta, e mandare
+  qualcuno in un'altra sezione per una parola sarebbe il giro che il sito evita
+  già nei gruppi.
+- **Amici e giocatori salvati li leggeva solo il profilo.** Finché erano
+  pastiglie dentro la sezione partite non si notava; adesso il campo li propone,
+  e il modulo si apre **anche dalla scatola** — cioè da un punto del sito
+  dove nessuno li ha ancora chiesti. Si chiedono all'apertura, una volta per
+  sessione, e i suggerimenti si rifanno da soli quando arrivano.
+- L'ascoltatore dei suggerimenti è su `mousedown` e non su `click`: il `blur`
+  del campo chiuderebbe l'elenco prima che il clic arrivi a destinazione.
 
 ### Le posizioni non si scrivono: si calcolano
 
@@ -1147,10 +1164,29 @@ punti e si assegna 1, 2, 3… con i **pari merito** che dividono la posizione �
 a 61 sono primi tutti e due e il successivo è terzo, come si contano le
 classifiche ovunque.
 
-- **La corona segue i punti solo se i punti ci sono.** Ci sono giochi che non ne
-  hanno — si vince e basta — e lì la corona si mette a mano. Con i punti a
-  schermo toccarla è rifiutato con un messaggio: due comandi che dicono la stessa
-  cosa in modo diverso sono un modulo che si contraddice.
+- **La corona segue i punti finché nessuno la tocca.** Ci sono giochi che i punti
+  non ce li hanno — si vince e basta — e ce ne sono in cui i punti li segni
+  solo per qualcuno, che è il caso normale: quasi sempre ti ricordi il punteggio
+  di due su quattro. Prima toccare la corona con dei punti a schermo veniva
+  **rifiutato**, cioè chi non segnava i punti di tutti non poteva più dire chi
+  aveva vinto. Adesso i punti fanno le **posizioni** e la corona la fa la
+  **persona**.
+- **Il primo tocco spegne le corone che venivano dai punti.** Se no ne restavano
+  due accese per due motivi diversi, che è un modulo che si contraddice davvero.
+  Dopo, ogni tocco è solo un tocco: due corone insieme si possono ancora fare,
+  ma perché le ha messe qualcuno.
+- **`eraSu` si legge prima di spegnere.** Toccando la corona che i punti avevano
+  già acceso, spegnerle tutte e poi invertire la rimetterebbe su: si guarda com'era
+  **prima**, e il gesto toglie invece di riaccendere.
+- **Si può tornare indietro.** Tolti tutti i punti e tolte tutte le corone, il
+  tavolo riparte da zero e i punti tornano a decidere: senza, chi aveva messo una
+  corona a mano una volta non aveva più modo di rimettere la classifica al
+  comando.
+- **I punti non si salvano.** Sul database ci sono nome, posizione e vincitore:
+  riaprendo una partita la corona che si vede è un fatto registrato, non
+  qualcosa da ricalcolare, quindi `coroneAMano` parte già vera se c'è un
+  vincitore. Se no, al primo punto scritto il vincitore segnato sarebbe cambiato
+  da solo.
 - **Tolti i punti se ne vanno le corone che venivano dai punti**, non quelle
   messe a mano: per questo ogni riga ricorda `daPunti`. Senza, svuotando i campi
   restava addosso all'ultimo calcolato una corona che nessuno gli aveva messo.
@@ -2120,6 +2156,26 @@ eliminato dall'elenco, e **riletto dal server dopo un ricaricamento** per essere
 sicuri che non fosse tornato. Il pannello dell'anteprima non componeva frame,
 quindi la scatola che esce dalla scena è stata guardata **dal grafo**,
 agganciando `Object3D.remove` come dicono le note più su.
+
+### La sessione del 2026-08-22, terza parte: il modulo della partita
+
+Quattro cose, tutte dentro «segna una partita», e tutte dalla stessa radice:
+il modulo sapeva proporre solo chi era già registrato, e decideva lui chi
+aveva vinto.
+
+| cosa | dove sta scritto |
+|---|---|
+| io fra i nomi proponibili | «Il modulo della partita» |
+| chi c'era si scrive, e i nomi appaiono | idem |
+| via le pastiglie e la porta verso il profilo | idem |
+| il vincitore a mano anche senza i punti di tutti | «Le posizioni non si scrivono» |
+
+Verificato entrando davvero, sui dati veri: il campo che propone **Samuel (tu),
+samuel2 (amico), d (giocatore)**, il filtro mentre si scrive, la riga
+«aggiungi «Giulia»» per chi sul sito non c'è, e i cinque passaggi della
+corona — punti a due su tre, corona a mano sul terzo, cambio dei punti,
+spenta e rimessa, punti tolti. Chiuso con «annulla»: sul server non è
+finita nessuna partita di prova.
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 

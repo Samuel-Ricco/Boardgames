@@ -675,17 +675,21 @@
 
     <p class="eyebrow pa-eye" data-i18n="pa.chiCera">chi c&rsquo;era</p>
 
-    <!-- Si sceglie fra gli amici e i giocatori salvati. Un nome nuovo si
-         crea nella sua sezione, non qui: e' li' che vive, e crearlo di
-         sfuggita dentro un modulo vuol dire ritrovarselo senza sapere
-         da dove sia uscito. -->
-    <!-- Chi c'era si TOCCA, non si sceglie da una tendina. Un `select`
-         apre il selettore del sistema operativo -- una lista grigia che
-         non somiglia a niente del resto del sito -- e per due o tre
-         nomi e' anche un giro inutile: si vedono tutti insieme e si
-         toccano quelli giusti. -->
-    <div id="pa-scelta" class="pa-scelta"></div>
-    <button id="pa-vai-giocatori" type="button" data-i18n="pa.vaiGiocatori">aggiungi un giocatore</button>
+    <!-- Chi c'era si SCRIVE, e i nomi che il sito conosce appaiono
+         mentre scrivi: tu per primo, poi gli amici, poi i giocatori
+         salvati. Prima era una fila di pastiglie, che va bene per tre
+         nomi e diventa un muro appena sono venti -- ma soprattutto non
+         dava modo di mettere al tavolo qualcuno che sul sito non c'e',
+         che al tavolo e' quasi sempre il caso. Adesso un nome che non
+         risulta si aggiunge lo stesso, dall'ultima riga dei
+         suggerimenti: per questo la porta verso i giocatori del profilo
+         non c'e' piu'. Resta un campo di testo, non un `select`: il
+         selettore del sistema operativo continua a non somigliare a
+         niente del resto del sito. -->
+    <input id="pa-chi-q" type="text" autocomplete="off" role="combobox"
+           aria-autocomplete="list" aria-expanded="false" aria-controls="pa-chi-sugg"
+           data-i18n-ph="pa.chiPh" placeholder="scrivi un nome">
+    <ul id="pa-chi-sugg" class="pa-sugg" role="listbox" hidden></ul>
 
     <ul id="pa-chi" class="pa-chi"></ul>
     <p id="pa-msg" class="add-msg"></p>

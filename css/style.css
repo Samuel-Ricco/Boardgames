@@ -844,22 +844,6 @@ body.sez-partite #partite{display:block}
 .pa-chi button:hover{color:var(--ink); border-color:var(--accent)}
 .pa-chi button.vince.on{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
 .pa-chi button.via:hover{color:var(--wood); border-color:var(--wood)}
-.pa-agg{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px}
-#pa-scelta{
-  font-family:var(--ff-text); font-size:13px; color:var(--ink);
-  background:var(--card); border:1px solid var(--line); padding:9px 10px; max-width:46%;
-}
-#pa-nuovo{
-  flex:1; min-width:120px; font-family:var(--ff-text); font-size:13px; color:var(--ink);
-  background:var(--card); border:1px solid var(--line); padding:9px 11px;
-}
-#pa-nuovo:focus, #pa-scelta:focus{outline:none; border-color:var(--accent)}
-#pa-piu{
-  font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:var(--card); border:0; padding:9px 12px; border-radius:var(--r-s);
-}
-#pa-piu:hover{color:var(--ink); border-color:var(--accent)}
 .pa-foot #pa-salva{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:#f2f1ed;
@@ -2617,18 +2601,19 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .pa-sugg b{font-size:14px; font-weight:500; color:var(--ink)}
 .pa-sugg span{margin-left:auto; font-size:11px; color:var(--ink-soft); flex:none}
 
-/* --- chi mettere al tavolo ------------------------------------------ */
-.pa-agg{display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin:12px 0 0}
-#pa-scelta{
-  flex:1 1 160px; min-width:0; font-family:var(--ff); font-size:14px; color:var(--ink);
-  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s); padding:11px 12px;
+/* --- chi mettere al tavolo ------------------------------------------
+   Un campo, e i nomi che appaiono scrivendo. Ha la faccia degli altri
+   campi del modulo e non quella di una barra di ricerca: quello che si
+   scrive qui e' un nome, e se non risulta a nessuno vale lo stesso. */
+#pa-chi-q{
+  width:100%; font-family:var(--ff); font-size:14px; color:var(--ink);
+  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  padding:11px 12px; margin:0 0 4px;
 }
-#pa-piu{flex:0 0 auto; padding:11px 15px; font-size:13px}
-#pa-vai-giocatori{
-  flex:0 0 auto; background:none; color:var(--accent); font-weight:500;
-  padding:11px 6px; font-size:13px; border:0; cursor:pointer;
-}
-#pa-vai-giocatori:hover{text-decoration:underline}
+#pa-chi-q:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
+/* Tu sei sempre il primo nome, e si vede: l'accento dice "questo sei tu"
+   senza doverlo scrivere. */
+.pa-sugg span.tu{color:var(--accent); font-weight:600}
 
 /* --- il tavolo ------------------------------------------------------
    Una riga per persona: corona, nome, posizione calcolata, punti.
@@ -2670,9 +2655,6 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   .pa-chi li{gap:7px; padding:8px 9px}
   .pa-chi .punti{flex:0 0 58px; width:58px; padding:8px 6px}
   .pa-chi .corona, .pa-chi .via{width:30px; height:30px}
-  .pa-agg{gap:8px}
-  #pa-scelta{flex:1 1 100%}
-  #pa-vai-giocatori{padding:11px 0}
 }
 
 /* ===================================================================
@@ -2735,24 +2717,6 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 /* Un livello sotto il titolo il testo pesa meno, come nelle partite. */
 #blocco-amici .chi b, #blocco-giocatori .chi b{font-weight:500}
 
-/* --- chi c'era: pastiglie, non una tendina di sistema --------------- */
-.pa-scelta{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 0}
-.pa-tocca{
-  font-family:var(--ff); font-size:13px; font-weight:500; cursor:pointer;
-  color:var(--ink); background:rgba(51,53,43,.06); border:0;
-  border-radius:999px; padding:9px 14px;
-  transition:background-color .2s var(--ease), color .2s var(--ease), transform .12s var(--ease);
-}
-.pa-tocca:hover{background:rgba(200,106,60,.14); color:var(--accent)}
-.pa-tocca:active{transform:scale(.96)}
-/* un amico del sito si distingue da un nome scritto a mano */
-.pa-tocca.amico::before{content:'CF'; color:var(--accent); font-size:9px; margin-right:7px; vertical-align:2px}
-.pa-vuoto{margin:0; font-size:13px; color:var(--ink-soft); line-height:1.6}
-#pa-vai-giocatori{
-  display:inline-block; margin:12px 0 0; background:none; color:var(--accent);
-  font-weight:500; padding:9px 0; font-size:13px; border:0; cursor:pointer;
-}
-#pa-vai-giocatori:hover{text-decoration:underline}
 
 /* --- eliminare un gioco: rosso, e in due tempi ---------------------- */
 .riga-azioni .elimina{color:#a8341f}
