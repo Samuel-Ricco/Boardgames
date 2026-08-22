@@ -2254,6 +2254,41 @@ In «tutti i giochi» restavano accesi e filtravano una lista che i gruppi non l
 mostra nemmeno: due comandi che dicono cose diverse sulla stessa schermata.
 `body.vista-tutti` li toglie.
 
+### Dentro la scatola aperta
+
+Era un fondo marrone piatto con tre sagome appoggiate sopra. Adesso c'e' il
+cartone che prende luce dal davanti, **le quattro pareti interne** in trapezio
+— sono quelle a far capire che si guarda DENTRO una scatola e non una figurina
+stesa — e **ogni oggetto ha la sua ombra a terra**: senza, galleggiavano tutti
+sullo stesso piano. Ci sono anche due dadi d'avorio, che di questo sito sono il
+soggetto.
+
+E i meeple usano `sagomaMeeple`. Prima ne avevano **una loro, fatta a spezzata**:
+era il terzo meeple diverso dentro lo stesso sito, cioe' esattamente quello
+contro cui mette in guardia la nota qui sotto.
+
+### Le tendine si aprono, non compaiono
+
+Tutto quello che si apre sotto qualcos'altro — le informazioni di un gioco
+nell'elenco, la recensione dentro la riga del catalogo, le partite di un gioco, i
+cassetti del profilo, le due tendine del pannello della libreria — compariva di
+colpo. Adesso scende, con `apreSotto`.
+
+Serve una **`animation` e non una `transition`**: questi blocchi passano da
+`display:none` a visibile, e una transizione su quel salto non parte proprio.
+È la stessa ragione delle sezioni, scritta un piano piu' su.
+
+### La schermata di caricamento
+
+Era un fondo piatto con un dado in mezzo. Adesso la luce viene da sopra come
+nella stanza che si sta per aprire, cosi' il caricamento e' gia' il sito e non
+una sala d'attesa. Il dado e' d'**avorio** e non bianco carta — un dado da
+tavolo non e' mai bianco — ha il bordo interno smussato che gli da' lo
+spessore, e **i pallini sono scavati**: l'ombra viene da sopra e il riflesso sta
+in basso. Prima era il contrario e sembravano appiccicati sopra. Sotto c'e'
+un'ombra a terra che si stringe e si allarga col rotolare: e' quella che lo fa
+stare in un posto invece che galleggiare.
+
 ### Il meeple è una sagoma sola
 
 Il giro parte dal piede sinistro e va in senso orario: gamba, fianco, sotto il
