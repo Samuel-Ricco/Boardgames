@@ -801,9 +801,9 @@ lui, e puoi dire che ti è piaciuto.
   solo il codice lascia passare il caso più probabile — la migrazione non
   ancora applicata. È la stessa lezione dei nomi di colonna, un piano più su.
 
-## Le tre sezioni
+## Le quattro sezioni
 
-`collezione` | `catalogo` | `profilo`, in `state.sezione`. Due navigazioni che
+`collezione` | `catalogo` | `partite` | `profilo`, in `state.sezione`. Due navigazioni che
 comandano le stesse voci: nella testata sugli schermi larghi, **in basso** sotto
 gli 880 px, dove arriva il pollice.
 
@@ -1119,6 +1119,31 @@ vista dove tagliare l'elenco significa qualcosa.
 Le cartelle **partono chiuse**: aperte, con qualche gruppo, la vista a gruppi
 diventava l'elenco intero con dei titoli in mezzo — cioè la vista accanto, più
 rumore.
+
+## Le partite sono una schermata, non un cassetto
+
+Stavano in fondo al profilo, dentro il terzo cassetto, sotto amici e giocatori.
+Ma **il profilo risponde a «chi sono» e le partite a «cosa abbiamo giocato»** — e
+di una collezione di giochi da tavolo quella è la metà più interessante, che da
+dentro un cassetto chiuso non si vedeva mai.
+
+La composizione è **quella dell'elenco della collezione**: occhiello, due viste,
+un «+». Non per pigrizia — è la stessa cosa, un elenco che si scorre, e chi ha
+imparato a usare quello sa già usare questo.
+
+- **Due viste, come nell'elenco**: *per gioco* (quante volte a Root, e chi vince)
+  e *le ultime* (in ordine di tempo, la più recente in cima). Nella seconda il
+  titolo del gioco compare su ogni riga — `rigaGiocata(p, conTitolo)` lo prevedeva
+  già — perché lì è l'unica cosa che distingue una serata dall'altra.
+- **Tre numeri in cima**: quante serate, su quanti giochi, chi è in testa. Sono
+  le domande per cui si apre questa schermata, e dall'elenco si ricavavano solo
+  contando le righe. Le basi del flex li mettono in fila su schermo largo e
+  mandano a capo il terzo su un telefono, senza una media query.
+- Nella vista *le ultime* **non c'è il filo verticale**: le serate sono una fila
+  sola, senza un livello di mezzo a cui appartenere, e un rientro che non
+  appartiene a niente è solo un rientro.
+- `#pro-partite`, `#par-msg` e `#par-nuova` **hanno tenuto il loro id**: il
+  markup si è spostato, il codice che ci parlava no.
 
 ## Le partite hanno tre livelli, e si devono vedere
 

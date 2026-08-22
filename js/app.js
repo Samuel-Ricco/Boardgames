@@ -108,6 +108,7 @@ const state = {
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   soloPreferiti: false,        // mostra solo i giochi segnati
   vista: 'gruppi',             // come si guarda l'elenco: 'gruppi' o 'tutti'
+  vpar: 'gioco',               // come si guardano le partite: 'gioco' o 'data'
   presa: null,                 // la scatola che si sta spostando a mano
   zoom: 1,                     // quanto la camera e' arretrata: 1 = normale
   libs: 1,                     // quante librerie in fila lungo la parete
@@ -2069,8 +2070,9 @@ function rilingua(){
     catNota();
   }
   if (state.sezione === 'profilo'){
-    disegnaProfilo(); disegnaAmici(); disegnaGiocatori(); disegnaPartite();
+    disegnaProfilo(); disegnaAmici(); disegnaGiocatori();
   }
+  if (state.sezione === 'partite') disegnaPartite();
   if (document.body.classList.contains('partita')) disegnaTavolo();
   /* La scheda aperta va rifatta con il suo gioco: le specifiche, il
      credito e l'occhiello sono tutti scritti dal JS. */
@@ -2900,13 +2902,16 @@ function setSezione(s){
   document.body.classList.toggle('sez-collezione', s === 'collezione');
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
   document.body.classList.toggle('sez-profilo',  s === 'profilo');
+  document.body.classList.toggle('sez-partite',  s === 'partite');
   qa('#sezioni button, #tabbar button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-sez') === s);
   });
   q('#catalogo').setAttribute('aria-hidden', s === 'catalogo' ? 'false' : 'true');
   q('#profilo').setAttribute('aria-hidden',  s === 'profilo'  ? 'false' : 'true');
+  q('#partite').setAttribute('aria-hidden',  s === 'partite'  ? 'false' : 'true');
   if (s === 'catalogo' && !catVoci.length && !catCarico) catSfoglia(true);
   if (s === 'profilo') apriProfilo();
+  if (s === 'partite') apriPartite();
 }
 
 /* Sfogliare: il catalogo si apre su un elenco, non su un campo vuoto.
@@ -4520,6 +4525,7 @@ function azzeraSchermata(){
     if (b.nextElementSibling) b.nextElementSibling.hidden = true;
   });
   state.vista = 'tutti';
+  state.vpar = 'gioco';
 }
 
 function bindProfilo(){
@@ -4794,6 +4800,60 @@ function vinceDi(partite){
 /* Raggruppate per gioco. Un elenco di serate in ordine di data non dice
    niente; "a Root avete giocato tre volte e vince sempre Giulia" e'
    quello che uno vuole sapere aprendo questa sezione. */
+/* --- LE PARTITE, NELLA LORO SCHERMATA -----------------------------
+
+   Erano un cassetto in fondo al profilo, sotto amici e giocatori. Ma il
+   profilo risponde a "chi sono" e le partite a "cosa abbiamo giocato",
+   e di una collezione di giochi da tavolo quella e' la meta' piu'
+   interessante -- che da dentro un cassetto non si vedeva mai.
+
+   La forma e' quella dell'elenco della collezione: occhiello, due viste,
+   un "+". E' la stessa cosa, un elenco che si scorre, e chi ha capito
+   quello ha capito anche questo. */
+function apriPartite(){
+  PARTITE.carica().then(function(){
+    PARTITE.caricaGiocatori();
+    disegnaPartite();
+  });
+  disegnaPartite();                // intanto si mostra quello che c'e' gia'
+}
+
+function disegnaVistePartite(){
+  qa('#par-viste button').forEach(function(b){
+    const sua = b.getAttribute('data-vpar') === state.vpar;
+    b.classList.toggle('on', sua);
+    b.setAttribute('aria-selected', sua ? 'true' : 'false');
+  });
+  const ind = q('#par-viste .ind');
+  if (ind) ind.style.transform = 'translateX(' + (state.vpar === 'data' ? 100 : 0) + '%)';
+}
+
+function setVistaPartite(v){
+  if (v !== 'gioco' && v !== 'data') return;
+  state.vpar = v;
+  disegnaPartite();
+}
+
+/* Tre numeri in cima: quante serate, su quanti giochi diversi, e chi
+   vince piu' spesso. Sono le domande per cui si apre questa schermata,
+   e messe prima dell'elenco si leggono in un colpo d'occhio invece che
+   contando le righe. */
+function disegnaSommaPartite(tutte, quantiGiochi){
+  const el = q('#par-somma');
+  if (!el) return;
+  if (!tutte.length){ el.innerHTML = ''; return; }
+  const re = vinceDi(tutte);
+  const voci = [
+    [tutte.length, T(tutte.length === 1 ? 'par.serata' : 'par.serate')],
+    [quantiGiochi, T(quantiGiochi === 1 ? 'par.gioco' : 'par.giochi')]
+  ];
+  el.innerHTML = voci.map(function(v){
+    return '<div class="par-dato"><b>' + v[0] + '</b><span>' + v[1] + '</span></div>';
+  }).join('') +
+  (re ? '<div class="par-dato largo"><b>' + esc(re) + '</b><span>' +
+        T('par.inTesta') + '</span></div>' : '');
+}
+
 function disegnaPartite(){
   const el = q('#pro-partite');
   if (!el) return;
@@ -4806,19 +4866,36 @@ function disegnaPartite(){
     per[k].partite.push(p);
   });
 
-  el.innerHTML = gruppi.map(function(g, i){
-    const n = g.partite.length;
-    const chi = vinceDi(g.partite);
-    return '<div class="gio-gruppo">' +
-      '<button type="button" class="gio-gioco" aria-expanded="false" data-g="' + i + '">' +
-        '<b>' + esc(g.titolo) + '</b>' +
-        '<span>' + T(n === 1 ? 'par.unaPartita' : 'par.partite', {n: n}) +
-        (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span>' +
-      '</button>' +
-      '<ul class="giocate" hidden>' +
-        g.partite.map(function(p){ return rigaGiocata(p, false); }).join('') +
-      '</ul></div>';
-  }).join('');
+  disegnaVistePartite();
+  disegnaSommaPartite(tutte, gruppi.length);
+
+  if (state.vpar === 'data'){
+    /* In ordine di tempo, la piu' recente in cima: e' la vista di "cosa
+       abbiamo giocato l'ultima volta". Qui il titolo del gioco serve su
+       ogni riga -- e' l'unica cosa che le distingue. */
+    const ordinate = tutte.slice().sort(function(x, y){
+      return String(y.giocata_il || '').localeCompare(String(x.giocata_il || '')) ||
+             String(y.ora || '').localeCompare(String(x.ora || ''));
+    });
+    el.innerHTML = ordinate.length
+      ? '<ul class="giocate par-tutte">' +
+        ordinate.map(function(p){ return rigaGiocata(p, true); }).join('') + '</ul>'
+      : '';
+  } else {
+    el.innerHTML = gruppi.map(function(g, i){
+      const n = g.partite.length;
+      const chi = vinceDi(g.partite);
+      return '<div class="gio-gruppo">' +
+        '<button type="button" class="gio-gioco" aria-expanded="false" data-g="' + i + '">' +
+          '<b>' + esc(g.titolo) + '</b>' +
+          '<span>' + T(n === 1 ? 'par.unaPartita' : 'par.partite', {n: n}) +
+          (chi ? ' &middot; <i class="vinto">' + esc(chi) + '</i>' : '') + '</span>' +
+        '</button>' +
+        '<ul class="giocate" hidden>' +
+          g.partite.map(function(p){ return rigaGiocata(p, false); }).join('') +
+        '</ul></div>';
+    }).join('');
+  }
 
   quanti('#conta-partite', tutte.length);
   if (PARTITE.problema()){ proMsg('#par-msg', esc(PARTITE.problema()), true); return; }
@@ -5293,6 +5370,10 @@ function bindPartite(){
     apriPartita({ bgg: g.bgg || '', titolo: g.title });
   });
   q('#par-nuova').addEventListener('click', function(){ apriPartita(null); });
+  q('#par-viste').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-vpar]');
+    if (b) setVistaPartite(b.getAttribute('data-vpar'));
+  });
 
   // riaprire una partita gia' segnata, da tutti e due gli elenchi
   ['#pro-partite', '#p-giocate'].forEach(function(sel){

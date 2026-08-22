@@ -57,7 +57,7 @@ Non sono mie: sono state chieste e scelte, e cambiano l'impianto.
 |---|---|
 | Ordine manuale dei giochi | **trascinamento in 3D**, non frecce né lista |
 | Presentazione del catalogo | **elenco 2D**, una riga per gioco (non la scena 3D) |
-| Da dove si segnano le partite | **da tutti e due**: scatola aperta e profilo |
+| Da dove si segnano le partite | **da tutti e due**: scatola aperta e (dal 2026-08-22) la schermata Partite |
 | A che giochi si aggancia una partita | all'**id BGG**, così vale anche per giochi che non hai |
 | Fonte del catalogo senza token BGG | **Wikidata ora**, BGG quando arriva |
 | «Recensione personale» | **quella che già c'è**, resa visibile agli amici |

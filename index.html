@@ -27,6 +27,7 @@
   <nav id="sezioni" data-i18n-aria="nav.aria" aria-label="sezioni del sito">
     <button type="button" data-sez="collezione" class="on" data-i18n="nav.collezione">collezione</button>
     <button type="button" data-sez="catalogo" data-i18n="nav.catalogo">catalogo</button>
+    <button type="button" data-sez="partite" class="dentro-only" data-i18n="nav.partite">partite</button>
     <button type="button" data-sez="profilo" class="dentro-only" data-i18n="nav.profilo">profilo</button>
   </nav>
 
@@ -241,6 +242,8 @@
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/></svg><span data-i18n="tab.libreria">libreria</span></button>
   <button type="button" data-sez="catalogo">
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="tab.catalogo">catalogo</span></button>
+  <button type="button" data-sez="partite" class="dentro-only">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span data-i18n="tab.partite">partite</span></button>
   <button type="button" data-sez="profilo" class="dentro-only">
     <canvas id="tab-faccia" width="44" height="44" aria-hidden="true"></canvas><span data-i18n="tab.profilo">profilo</span></button>
 </nav>
@@ -393,18 +396,6 @@
       </div>
     </section>
 
-    <section class="pro-blocco">
-      <h3><button type="button" class="pro-tit" aria-expanded="false" aria-controls="blocco-partite">
-        <span data-i18n="pro.partite">Partite</span> <span class="quanti" id="conta-partite"></span></button></h3>
-      <div class="pro-dentro" id="blocco-partite" hidden>
-        <p id="par-msg" class="pro-msg"></p>
-        <div id="pro-partite"></div>
-        <p class="pro-fondo">
-          <button id="par-nuova" type="button" class="pro-lin" data-i18n="pro.parNuova">segna una partita</button>
-        </p>
-      </div>
-    </section>
-
     <!-- La lingua sta qui e nel cancello: sono i due momenti in cui uno
          si guarda intorno invece di guardare i giochi. E sotto di lei
          l'uscita, ULTIMA cosa della pagina -- stava in mezzo, appesa al
@@ -416,9 +407,49 @@
     </p>
 
     <p class="pro-fondo pro-uscita">
-      <button id="pro-esci" type="button" class="pro-lin esci">esci dall&rsquo;account</button>
+      <button id="pro-esci" type="button" class="distruttivo esci">esci dall&rsquo;account</button>
     </p>
 
+  </div>
+</section>
+
+<!-- LE PARTITE: UNA SCHERMATA LORO.
+
+     Stavano in un cassetto del profilo, in fondo, sotto amici e
+     giocatori. Ma il profilo risponde a "chi sono" e le partite a "cosa
+     abbiamo giocato": sono la meta' piu' interessante di una collezione
+     di giochi da tavolo, e da dentro un cassetto non si vedevano mai.
+
+     La forma e' quella dell'elenco della collezione -- occhiello, due
+     viste, un "+" -- perche' e' la stessa cosa: un elenco che si
+     scorre. Chi ha capito quello ha capito anche questo. -->
+<section id="partite" aria-hidden="true" data-i18n-aria="par.aria" aria-label="le tue partite">
+  <div class="cat-in">
+    <div class="cat-testa">
+      <p class="eyebrow" data-i18n="par.occhiello">le tue partite</p>
+
+      <!-- Tre numeri in cima: quante serate, su quanti giochi, e chi
+           vince piu' spesso. Sono le domande per cui uno apre questa
+           schermata, e stanno prima dell'elenco perche' si leggono in
+           un colpo d'occhio. -->
+      <div id="par-somma" class="par-somma"></div>
+
+      <!-- Due modi di guardarle: per gioco (quante volte a Root, e chi
+           vince) e in ordine di tempo (cosa abbiamo giocato l'ultima
+           volta). Stesso componente delle due viste della collezione. -->
+      <div class="viste" id="par-viste" role="tablist">
+        <button type="button" data-vpar="gioco" role="tab" data-i18n="par.perGioco">per gioco</button>
+        <button type="button" data-vpar="data" role="tab" data-i18n="par.perData">le ultime</button>
+        <i class="ind" aria-hidden="true"></i>
+      </div>
+
+      <div class="mia-barra">
+        <button id="par-nuova" type="button" class="aggiungi" data-i18n="par.nuova">+ segna una partita</button>
+      </div>
+      <p id="par-msg" class="pro-msg"></p>
+    </div>
+
+    <div id="pro-partite"></div>
   </div>
 </section>
 

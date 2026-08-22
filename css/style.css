@@ -457,6 +457,7 @@ body.ospite #sezioni [data-sez="collezione"]{display:none}
    da li' che ci si torna. Sparisce solo cio' che parla dello scaffale:
    l'imbuto e il binario delle librerie. */
 body.sez-catalogo #rail,       body.sez-profilo #rail,
+body.sez-partite #rail, body.sez-partite #vista-apri,
 body.sez-catalogo #vista-apri, body.sez-profilo #vista-apri{opacity:0 !important; pointer-events:none}
 
 /* --- il catalogo ------------------------------------------------
@@ -618,6 +619,17 @@ body.sez-catalogo #catalogo{display:block}
   background:rgba(207,204,200,.975);
 }
 body.sez-profilo #profilo{display:block}
+/* Stessa cassa delle altre due sezioni: da bordo a bordo, sopra la
+   scena e sotto la testata. Partendo da `--y-alto` restava una striscia
+   di stanza scoperta in cima, e il mobile si vedeva spuntare da sotto
+   il titolo. Il respiro in alto lo mette `.cat-in`, come per il
+   catalogo e il profilo. */
+#partite{
+  position:fixed; inset:0; z-index:2; display:none;
+  overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+  background:rgba(207,204,200,.975);
+}
+body.sez-partite #partite{display:block}
 .pro-in{max-width:760px; margin:0 auto; padding:96px clamp(16px,4vw,40px) 80px}
 
 .pro-testa{display:flex; gap:26px; align-items:flex-start}
@@ -1016,6 +1028,7 @@ body.browse #stanza-apri{opacity:1}
    pannello -- ed era anche l'unico modo di richiuderlo con lo stesso
    gesto con cui lo si era aperto. */
 body.sez-catalogo #stanza-apri, body.sez-profilo #stanza-apri,
+body.sez-partite #stanza-apri,
 body.visita #stanza-apri, body.elenco #stanza-apri,
 body.review #stanza-apri{display:none !important}
 
@@ -1584,6 +1597,7 @@ body.no3d #scene,body.no3d #vig,body.no3d #panel{display:none}
 body.elenco    #mia,
 body.sez-catalogo #catalogo,
 body.sez-profilo  #profilo{animation:entraSezione .46s var(--ease) both}
+body.sez-partite  #partite{animation:entraSezione .46s var(--ease) both}
 
 /* La testata di una sezione entra prima del suo contenuto: si legge
    dove si e' arrivati, e solo dopo cosa c'e' dentro. */
@@ -2821,13 +2835,82 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    leggere, e dove il sito mette gia' l'azione di ogni piede di
    pannello. Resta in due tempi, come ogni cosa che si puo' rimpiangere. */
 .pro-uscita{margin:22px 0 0; display:flex; justify-content:flex-end}
-#profilo .pro-uscita .esci{
-  color:#a8341f; background:rgba(190,60,40,.10); border:0;
-  font-weight:600; padding:12px 20px; border-radius:var(--r-s);
-}
-#profilo .pro-uscita .esci:hover{background:#a8341f; color:#fff; border-color:#a8341f}
+/* Il rosso NON si scrive qui: il pulsante porta la classe
+   `distruttivo`, e il colore glielo da' la sezione I COMANDI come a
+   ogni altro comando che ha conseguenze. Scriverlo a mano voleva dire
+   perdere contro
+   `#profilo button:not(.primario):not(.secondario):not(.distruttivo)`,
+   che pesa un id e TRE classi -- la stessa trappola del selettore della
+   lingua. Con la classe giusta quella regola si esclude da sola. */
+#profilo .pro-uscita .esci{font-weight:600; padding:12px 20px}
+#profilo .pro-uscita .esci:hover{background:#a8341f; color:#fff}
 #profilo .pro-uscita .esci.armed{background:#a8341f; color:#fff; font-weight:700}
 
 @media (pointer:coarse){
   .lingua button{min-height:44px}
 }
+
+
+/* ===================================================================
+   LE PARTITE: UNA SCHERMATA LORO
+
+   Stavano in un cassetto in fondo al profilo, sotto amici e giocatori.
+   Ma il profilo risponde a "chi sono" e le partite a "cosa abbiamo
+   giocato" -- che di una collezione di giochi da tavolo e' la meta' piu'
+   interessante, e da dentro un cassetto non si vedeva mai.
+
+   La composizione e' quella dell'elenco della collezione: occhiello, due
+   viste, un "+". Non per pigrizia: e' la stessa cosa, un elenco che si
+   scorre, e chi ha imparato quello sa gia' usare questo.
+   =================================================================== */
+
+/* Tre numeri in cima. Rispondono in un colpo d'occhio alle domande per
+   cui uno apre questa schermata -- quante serate, su quanti giochi, chi
+   vince -- che dall'elenco si ricavano solo contando le righe. */
+.par-somma{
+  display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 0;
+}
+/* Le basi del flex fanno il lavoro senza media query: su schermo largo
+   i tre riquadri stanno in fila (120+120+240 ci stanno), su un telefono
+   il terzo non ci sta e va a capo da solo, prendendosi tutta la riga.
+   Che e' esattamente come li si vuole nei due casi. */
+.par-dato{
+  flex:1 1 120px;
+  background:var(--card); border-radius:var(--r-m); padding:12px 14px;
+}
+.par-dato.largo{flex:2 1 240px}
+.par-dato b{
+  display:block; font-family:var(--ff-display); font-weight:400;
+  font-size:23px; line-height:1.05; letter-spacing:0; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.par-dato span{
+  display:block; margin-top:3px;
+  font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft);
+}
+/* Chi e' in testa e' la riga che si legge, non un numero: prende il
+   colore di tutto quello che conta. */
+.par-dato.largo b{font-size:17px; color:var(--accent)}
+
+/* L'elenco per gioco riusa le tendine delle partite, che erano gia'
+   scritte per il profilo: rientro, filo verticale, peso minore. */
+#partite #pro-partite{margin:16px 0 0}
+
+/* Nella vista "le ultime" le serate sono una fila sola, in ordine di
+   tempo: non c'e' un livello di mezzo, quindi non c'e' nemmeno il filo
+   -- un rientro che non appartiene a niente e' solo un rientro. */
+.par-tutte{
+  list-style:none; margin:0; padding:0;
+  background:var(--card); border-radius:var(--r-m);
+  padding:2px 14px;
+}
+.par-tutte > li{padding:12px 0; border-bottom:1px solid rgba(51,53,43,.07); cursor:pointer}
+.par-tutte > li:last-child{border-bottom:0}
+.par-tutte > li:hover .gio-testa b{color:var(--accent)}
+.par-tutte .gio-testa b{font-size:14px; font-weight:600}
+.par-tutte .gio-testa span{font-size:11px; letter-spacing:.04em; text-transform:none}
+.par-tutte .gio-chi{font-size:12.5px; margin-top:3px}
+
+/* Il "+" sta dove sta quello della collezione, e ha la stessa faccia. */
+#partite .mia-barra{margin:14px 0 0}
+#partite #par-msg{margin:12px 0 0}

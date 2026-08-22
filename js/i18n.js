@@ -56,6 +56,7 @@ it: {
   'nav.aria':           'sezioni del sito',
   'nav.collezione':     'collezione',
   'nav.catalogo':       'catalogo',
+  'nav.partite':        'partite',
   'nav.profilo':        'profilo',
   'testa.contaTitolo':  'vedi la collezione come elenco',
   'testa.entra':        'entra',
@@ -145,6 +146,7 @@ it: {
   /* --- le sezioni in basso --- */
   'tab.libreria':       'libreria',
   'tab.catalogo':       'catalogo',
+  'tab.partite':        'partite',
   'tab.profilo':        'profilo',
 
   /* --- la collezione come elenco --- */
@@ -405,6 +407,16 @@ it: {
   'nick.unAttimo':      'un attimo&hellip;',
 
   /* --- partite e giocatori --- */
+  'par.aria':           'le tue partite',
+  'par.occhiello':      'le tue partite',
+  'par.perGioco':       'per gioco',
+  'par.perData':        'le ultime',
+  'par.nuova':          '+ segna una partita',
+  'par.serata':         'serata',
+  'par.serate':         'serate',
+  'par.gioco':          'gioco',
+  'par.giochi':         'giochi',
+  'par.inTesta':        'in testa',
   'par.tuePartite':     'le tue partite',
   'par.nessunoStacca':  'nessuno stacca gli altri',
   'par.vince':          'vince {n}',
@@ -561,6 +573,7 @@ en: {
   'nav.aria':           'site sections',
   'nav.collezione':     'collection',
   'nav.catalogo':       'catalogue',
+  'nav.partite':        'game nights',
   'nav.profilo':        'profile',
   'testa.contaTitolo':  'see the collection as a list',
   'testa.entra':        'sign in',
@@ -645,6 +658,7 @@ en: {
 
   'tab.libreria':       'shelves',
   'tab.catalogo':       'catalogue',
+  'tab.partite':        'nights',
   'tab.profilo':        'profile',
 
   'mia.aria':           'your collection as a list',
@@ -887,6 +901,16 @@ en: {
   'ami.unAmico':        'a friend',
   'nick.unAttimo':      'one moment&hellip;',
 
+  'par.aria':           'your game nights',
+  'par.occhiello':      'your game nights',
+  'par.perGioco':       'by game',
+  'par.perData':        'most recent',
+  'par.nuova':          '+ log a game night',
+  'par.serata':         'night',
+  'par.serate':         'nights',
+  'par.gioco':          'game',
+  'par.giochi':         'games',
+  'par.inTesta':        'ahead',
   'par.tuePartite':     'your game nights',
   'par.nessunoStacca':  'nobody is ahead',
   'par.vince':          '{n} wins',
