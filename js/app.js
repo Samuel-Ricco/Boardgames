@@ -6134,16 +6134,35 @@ async function boot(){
   applyLibrary({});
   await wait(20); setProg(.92, TP('load.lampada'));
 
-  bindInput();
-  bindTools();
-  bindVista();
-  bindRail();
-  bindCuore();
-  bindPiedeGruppi();
-  bindStanza();
-  bindClicFuori();
-  bindLibrerie();
-  bindGruppi();
+  /* UN AGGANCIO CHE SALTA NON SI PORTA VIA GLI ALTRI.
+
+     Erano dieci chiamate in fila: la prima che lanciava un'eccezione
+     lasciava scollegate tutte quelle dopo -- e, peggio di tutto, non si
+     arrivava nemmeno a `requestAnimationFrame(frame)`, quindi la scena
+     restava ferma sul caricamento.
+
+     Non e' un caso di scuola: succede ogni volta che il browser tiene
+     in cache un `index.html` e un `js/app.js` di due versioni diverse
+     (vedi la nota sulla cache dell'anteprima). Un pulsante tolto dal
+     markup e ancora agganciato dal codice vecchio basta: `q('#x')`
+     torna nullo, `addEventListener` esplode, e sparisce il pannello
+     della libreria -- che sta nove righe piu' sotto e non c'entra
+     niente.
+
+     Ognuno per conto suo, quindi, e chi non si aggancia LO DICE: un
+     pezzo di interfaccia muto senza spiegazione e' peggio di un pezzo
+     rotto che si lamenta. */
+  const mancati = [];
+  [['input', bindInput], ['strumenti', bindTools], ['vista', bindVista],
+   ['binario', bindRail], ['cuore', bindCuore], ['gruppi', bindPiedeGruppi],
+   ['stanza', bindStanza], ['clic fuori', bindClicFuori],
+   ['librerie', bindLibrerie], ['etichette', bindGruppi]
+  ].forEach(function(x){
+    try { x[1](); }
+    catch(e){ mancati.push(x[0]); if (window.console) console.error('aggancio "' + x[0] + '" fallito:', e); }
+  });
+  if (mancati.length) flash(TP('msg.aggancioNo', {n: mancati.join(', ')}));
+
   setSort(state.sort);
   requestAnimationFrame(frame);
   setProg(1, 'ci siamo');

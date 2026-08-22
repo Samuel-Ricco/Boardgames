@@ -1755,6 +1755,27 @@ Il numero di elementi da disegnare si può leggere anche dal **grafo di scena**,
 senza un solo fotogramma: materiale singolo → uno, array → uno per gruppo. Utile
 quando il pannello non compone.
 
+## Un aggancio che salta non si porta via gli altri
+
+In fondo a `boot()` c'erano dieci chiamate in fila — `bindInput()`,
+`bindTools()`, ... — e **la prima che lanciava un'eccezione lasciava
+scollegate tutte quelle dopo**. Peggio: non si arrivava nemmeno a
+`requestAnimationFrame(frame)`, quindi la scena restava ferma sul
+caricamento.
+
+Non è un caso di scuola, ed è arrivato come segnalazione: «non funziona
+più il tasto della modifica estetica». Il listener di `#edit` sta dentro
+**`bindInput()`**, che gira **per primo**; `bindStanza()` e `bindLibrerie()`
+— cioè il pannello che cambia legno, muro e arredi — girano nove righe
+piu' sotto. Basta un `index.html` nuovo e un `js/app.js` vecchio in cache
+(vedi la nota qui sotto) perche' `q('#edit')` torni nullo, `addEventListener`
+esploda, e sparisca un pannello che non c'entra niente.
+
+Adesso ognuno è avvolto per conto suo, e **chi non si aggancia lo dice**
+(`msg.aggancioNo`, che suggerisce anche il ricaricamento senza cache): un
+pezzo di interfaccia muto senza spiegazione è peggio di un pezzo rotto che
+si lamenta. La regola vale per qualunque sequenza di agganci futura.
+
 ### Il browser dell'anteprima tiene in cache anche i `.js`
 
 Era già scritto per il CSS; vale **identico per il JavaScript**. `python
