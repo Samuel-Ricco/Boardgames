@@ -4,13 +4,18 @@ Sito di recensioni di giochi da tavolo. **Il sito è una libreria a cubi in 3D**
 una KALLAX: la camera si avvicina all'avvio, una scatola per cubo, cliccandone
 una esce, si apre e mostra la recensione. Niente build, niente dipendenze.
 
-Questo ramo è la variante «libreria» del progetto: su `main` il mobile è un
-armadio con le ante e la scena è notturna.
+Si lavora sul ramo `libreria`. **`main` punta allo stesso commit** dal
+2026-08-20 e serve GitHub Pages: si spinge su tutti e due. L'armadio con le ante
+e la scena notturna che `main` aveva una volta non esistono più da nessuna parte
+se non nella storia.
 
 Accanto a questo file c'è **`contest_boardgame.md`**: racconta *cosa è successo*
-— le decisioni prese e da chi, i difetti trovati verificando, lo stato dei dati
-e cosa resta aperto. Questo file racconta *com'è fatto* il sito. Si leggono nei
-due ordini a seconda di cosa serve, ma dopo un contesto perso conviene questo.
+— le decisioni prese e da chi, i difetti trovati verificando, e il racconto lungo
+di com'è nato tutto. Questo file racconta *com'è fatto* il sito.
+
+**Se stai ripartendo a freddo, leggi prima «Stato attuale» in fondo a questo
+file**: dice a che punto è il sito, com'è messo il database in questo momento, e
+cosa non va toccato senza chiedere. Poi torna qui sopra per il resto.
 
 ## Dove sta cosa
 
@@ -1946,13 +1951,53 @@ settimana senza traffico, e si riattiva a mano dal pannello.
 
 ## Stato attuale
 
-**Aggiornato al 2026-08-21.** Per *cosa è successo* e *cosa resta aperto* vedi
-`contest_boardgame.md`, punti 8-11: lì ci sono lo stato dei dati, i difetti
-ancora da correggere e il blocco IT/EN mai iniziato.
+**Aggiornato al 2026-08-22.** Questa sezione e la prossima bastano a ripartire a
+freddo: cosa c'è, cosa è appena cambiato, com'è messo il database e cosa resta
+da fare. Per il racconto lungo di com'è nato tutto c'è `contest_boardgame.md`.
 
-In breve: **35 giochi su tre librerie**, tutte e undici le migrazioni applicate,
-il sito rifatto graficamente — un font solo (Poppins), sei tinte, e un posto solo
-che decide com'è fatto un pulsante — e **due lingue**, con 433 chiavi per ramo.
+Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
+profilo — **due lingue** con 448 chiavi per ramo, e tutte e undici le migrazioni
+applicate.
+
+### Cos'è successo nella sessione del 2026-08-22
+
+Otto commit, tutti su `libreria` e portati anche su `main` (Pages serve quello).
+In ordine:
+
+| commit | cosa |
+|---|---|
+| `3983ba2` | **IT/EN, prima metà**: `js/i18n.js`, chiavi puntate, tutto il markup |
+| `5065002` | **IT/EN, seconda metà**: le stringhe che scrive il JS |
+| `b1f2c52` | il cancello smetteva di dire «ultima volta» a chiunque |
+| `bb461eb` | rimessi in una nota i backtick che si era mangiati la shell |
+| `f8d1939` | **il dump di BGG**: 106.694 giochi, ricerca e classifica vera |
+| `a0bc16d` | il mobile di scorta diventa un'ombra, i due pulsanti si comportano uguale, lo stato si azzera cambiando schermata |
+| `bcb985c` | **le partite diventano una schermata**, e l'uscita diventa rossa |
+| `b5d6e75` | il mobile si ricostruisce anche quando cambia il numero di librerie **vere** |
+
+### Lo stato dei dati (riletto dal server, non dalla cache)
+
+- Account `admin@smlrcc.it`, nick **Samuel**, codice `HH67 6BY7`. Secondo account
+  di prova **samuel2**, amicizia accettata.
+- **36 giochi**, di cui **24 con un posto** e **12 senza**.
+- **5 librerie**: `Libreria 2` (ordine 1), **tre** `Libreria 3` (tutte ordine 2),
+  `Libreria 5` (ordine 4).
+- **Due cose in sospeso, e sono decisioni dell'utente, non difetti:** i tre
+  doppioni «Libreria 3» andrebbero rinominati o fusi, e i 12 giochi senza posto
+  sono quelli rimasti orfani quando in una sessione precedente sparirono
+  `Libreria 1` e `Libreria 2`. **Non toccare né gli uni né gli altri senza che
+  l'utente lo chieda.**
+- Le recensioni sono ancora **lorem ipsum** sui 10 giochi vecchi; i 25 aggiunti
+  per nome hanno la recensione vuota.
+- Una **partita di prova** rimasta, titolo `pa`, giocatori `s, d, sa`.
+
+### Come si lavora qui, in tre righe
+
+Server locale su **8124** (`.claude/launch.json`, `autoPort:false` — la porta è
+obbligata dai Redirect URLs di Supabase, e la 8125 è del proxy BGG). Modifiche
+con **sostituzioni verificate** (`assert count == 1`) e ricontrollo che i `.js`
+siano ancora **ASCII**. Commit e push a ogni passo finito, messaggi in inglese
+che dicono *cosa* e *perché*.
 
 ## Stato del backend
 
@@ -2007,6 +2052,19 @@ Cosa manca, in ordine di fastidio:
 5. Su telefono la scatola è **90 px di larghezza**: si riconosce la copertina ma
    non si legge il titolo. È il prezzo delle tre colonne; se dà fastidio,
    l'alternativa è tornare a due.
+6. **Nel catalogo non ci sono più le miniature.** Il dump non ha immagini e
+   quelle di Wikidata arrivano solo aprendo una scheda. Le righe mostrano rank e
+   media BGG al posto di autore ed editore, che su un elenco in classifica dice
+   di più — ma se le miniature servono, si possono chiedere a Wikidata per gli id
+   visibili, una passata sola.
+7. **Le partite restano private.** Gli amici vedono libreria e recensioni, non le
+   serate: è il cambio di una policy, ed è una scelta dell'utente.
+
+### Quello che è stato chiesto e non si può fare qui
+
+- **Le recensioni vere** sono opinioni dell'utente sui suoi giochi: non si
+  inventano.
+- **L'edge function per BGG** vuole il token, che non è ancora arrivato.
 
 Prossimi passi già discussi, non ancora fatti:
 
