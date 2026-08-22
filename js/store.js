@@ -455,10 +455,30 @@ async function caricaLibrerie(chi){
 async function creaLibreria(nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
+  /* Nome e ordine non si contano piu' con `librerie.length`: dopo una
+     cancellazione quel numero e' gia' stato usato, e ci si ritrovava
+     tre "Libreria 3" tutte con lo stesso `ordine`. Si guarda cosa c'e'
+     davvero: l'ordine e' uno piu' del massimo, e il nome sale finche'
+     non ne trova uno libero. */
+  let ordine = 0, alto = 0;
+  const presi = {};
+  librerie.forEach(function(L){
+    presi[String(L.nome)] = true;
+    if ((L.ordine || 0) + 1 > ordine) ordine = (L.ordine || 0) + 1;
+    const n = /^Libreria (\d+)$/.exec(String(L.nome || ''));
+    if (n && +n[1] > alto) alto = +n[1];
+  });
+  let scelto = String(nome || '').trim();
+  if (!scelto){
+    let k = Math.max(alto, librerie.length) + 1;
+    while (presi['Libreria ' + k]) k++;
+    scelto = 'Libreria ' + k;
+  }
+
   const r = await c.from('librerie').insert({
     proprietario: AUTH.stato().id,
-    nome: String(nome || '').trim() || ('Libreria ' + (librerie.length + 1)),
-    ordine: librerie.length
+    nome: scelto,
+    ordine: ordine
   }).select().single();
   if (r.error) throw r.error;
   librerie.push(r.data);

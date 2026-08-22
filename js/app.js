@@ -112,6 +112,7 @@ const state = {
   presa: null,                 // la scatola che si sta spostando a mano
   zoom: 1,                     // quanto la camera e' arretrata: 1 = normale
   libs: 1,                     // quante librerie in fila lungo la parete
+  libsVere: -1,                // quante di quelle esistono davvero (le altre sono la scorta)
   scroll: 0, scrollTo: 0,      // 0 = la prima libreria; si scorre in orizzontale
   dragging: false,
   distShelf: 26, distFar: 42,
@@ -324,7 +325,11 @@ function matsFantasma(){
     m.__comune = true;            // non lo butta `killGroup`: vedi la nota
     return m;
   };
-  MATS_FANTASMA = { vert: fai(.20), orizz: fai(.16), fondo: fai(.10) };
+  /* Abbastanza da vedersi, non tanto da sembrare un mobile. Con valori
+     piu' bassi, chi non aveva NESSUNA libreria vedeva una stanza vuota
+     e pensava che il sito fosse rotto -- e chi non ha librerie e' chi ha
+     piu' bisogno di vedere dove va la prima. */
+  MATS_FANTASMA = { vert: fai(.34), orizz: fai(.28), fondo: fai(.16) };
   return MATS_FANTASMA;
 }
 
@@ -1166,8 +1171,20 @@ function applyLibrary(opts){
   const disp = disposizione(list);
   const posti = disp.posti;
 
-  if (disp.libs !== state.libs || !cabGroup){
+  /* Si ricostruisce quando cambia il numero di mobili IN FILA oppure
+     quello dei mobili VERI. I due non vanno di pari passo: `disposizione`
+     restituisce `max(librerie + 1, ceil((giochi + 1) / 12))`, e con
+     trentasei giochi il secondo termine e' 4 -- quindi passando da una
+     libreria a due il totale resta 4 e non cambia niente.
+
+     Prima non importava, perche' tutti i mobili erano disegnati uguali.
+     Da quando quello di scorta e' un'ombra, importa moltissimo: senza
+     questo controllo la libreria appena creata restava disegnata come
+     la scorta di un attimo prima, cioe' trasparente e vuota. */
+  const vere = LIB.librerie().length;
+  if (disp.libs !== state.libs || vere !== state.libsVere || !cabGroup){
     state.libs = disp.libs;
+    state.libsVere = vere;
     buildCabinet();
   }
   segnaFerma();

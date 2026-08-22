@@ -1228,6 +1228,23 @@ che dice «nuova libreria». Gli arredi erano la metà del problema: attraverso 
 ripiani trasparenti sembravano galleggiare, e una vetrina piena di roba è peggio
 di un mobile finto.
 
+**E il mobile va ricostruito anche quando cambia quante librerie sono VERE**, non
+solo quante se ne vedono in fila. I due numeri non vanno di pari passo:
+`disposizione()` restituisce `max(librerie + 1, ceil((giochi + 1) / 12))`, e con
+trentasei giochi il secondo termine è **4** — quindi passando da una libreria a
+due il totale resta 4 e `applyLibrary` non ricostruiva niente. Finché tutti i
+mobili erano disegnati uguali non importava; da quando quello di scorta è
+un'ombra, la libreria appena creata restava disegnata come la scorta di un
+attimo prima — trasparente e vuota. Per questo `state.libsVere` sta accanto a
+`state.libs` nella condizione di ricostruzione. È il difetto che si vedeva come
+«ho aggiunto una libreria e il primo posto resta vuoto».
+
+**E i nomi non si contano con `librerie.length`.** `creaLibreria` usava quel
+numero sia per il nome sia per l'`ordine`: dopo una cancellazione era già stato
+usato, e si finiva con tre «Libreria 3» tutte con lo stesso `ordine`. Adesso
+l'ordine è uno più del massimo che c'è, e il nome sale finché non ne trova uno
+libero.
+
 Adesso `libCorrente()` **può rispondere `null`, ed è il punto**: chi chiede deve
 poter sapere che lì non c'è niente. Il campo del nome si spegne con un
 segnaposto, `#st-quale` dice «nessun mobile qui», ed `elimina` **si spegne e
