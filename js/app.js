@@ -2507,6 +2507,8 @@ function openAdd(){
   CATALOGO.fonte(true).then(function(f){
     if (f === 'bgg'){
       msgAdd(T('add.fonteBgg'), '');
+    } else if (f === 'dump'){
+      msgAdd(T('add.fonteDump'), '');
     } else {
       msgAdd(T('add.fonteWiki'), 'warn');
     }
@@ -2910,7 +2912,9 @@ async function catNota(){
   const f = await CATALOGO.fonte();
   const guaio = RECE.problema();
   const n = RECE.quante();
-  const fonte = T(f === 'bgg' ? 'cat.fonteBgg' : 'cat.fonteWiki');
+  const fonte = f === 'bgg'  ? T('cat.fonteBgg')
+              : f === 'dump' ? T('cat.fonteDump', {n: DUMP.quanti().toLocaleString(I18N.corrente())})
+              : T('cat.fonteWiki');
   catMsg(fonte + ' ' + (guaio
     ? T('cat.receGuaio', {e: esc(guaio)})
     : T(n === 1 ? 'cat.receUno' : 'cat.receTanti', {n: n})));
@@ -2928,8 +2932,16 @@ function rigaCatalogo(v, i){
   const rec = RECE.di(v.bgg);
   const img = CATALOGO.miniaturaElenco(v.immagine, 200);
   const gia = !!v.bgg && LIB.all().some(function(g){ return String(g.bgg) === String(v.bgg); });
-  const chi = [v.designer, v.publisher].filter(Boolean).map(esc).join(' &middot; ');
-  const spec = [[v.players, 'giocatori'], [v.time, 'minuti'], [v.year, 'anno']]
+  /* Dal dump non arrivano autore ed editore -- non ci sono nel file dei
+     ranking -- ma arrivano il posto in classifica e la media dei voti,
+     che su un elenco ordinato per classifica sono proprio l'informazione
+     che uno cerca. Meglio quelli di una riga vuota. */
+  const daBgg = [];
+  if (v.rank)     daBgg.push('BGG <b>#' + esc(v.rank) + '</b>');
+  if (v.bggScore) daBgg.push('<b>' + esc(v.bggScore) + '</b>/10');
+  const chi = [v.designer, v.publisher].filter(Boolean).map(esc).join(' &middot; ') ||
+              daBgg.join(' &middot; ');
+  const spec = [[v.players, T('spec.giocatori')], [v.time, T('spec.minuti')], [v.year, T('spec.anno')]]
     .filter(function(x){ return x[0]; })
     .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
 

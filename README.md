@@ -31,7 +31,8 @@ js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori e arredi della stanza
 js/bgg.js             ricerca su BGG, attraverso il proxy locale
-js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
+js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
+js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
 js/art.js             legno, cartone, dadi, copertine di ripiego
 js/app.js             scena 3D, catalogo, animazioni, interazione
 img/                  le copertine delle scatole

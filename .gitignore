@@ -1,2 +1,7 @@
 Thumbs.db
 .DS_Store
+
+# Il dump grezzo di BGG: 11 MB che si riscaricano da loro.
+# Quello che si committa e' l'indice che ne esce,
+# dati/bgg.txt, fatto con tools/bgg-indice.mjs.
+dump_bgg/

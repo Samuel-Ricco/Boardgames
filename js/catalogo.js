@@ -1,17 +1,29 @@
 /* ============================================================
    Da dove arrivano le schede dei giochi.
 
-   Due fonti, scelte da sole:
+   Tre fonti, scelte da sole, in quest'ordine:
 
    - BGG, attraverso tools/bgg-proxy.mjs, quando il proxy e' acceso e
      ha un token approvato. E' la fonte buona: 175.000 titoli, dati
      curati, copertine vere delle scatole.
+   - IL DUMP LOCALE (`dati/bgg.txt`, vedi js/bggdump.js), se c'e'. E'
+     il file dei ranking che BGG pubblica ogni giorno: 106.694 giochi
+     con id, nome, anno e media, IN ORDINE DI CLASSIFICA. Non ha
+     bisogno di token ne' di rete, e da qui arrivano le due cose che a
+     questo elenco mancavano: cercare fra centomila titoli invece di
+     3.429, e sfogliare nella classifica vera invece che in ordine di
+     edizioni linguistiche.
    - Wikidata, altrimenti. Aperta, gratis, senza chiave e con gli
      header CORS a posto, quindi la si interroga dal browser senza
      niente in mezzo. Ma sono circa 4.400 giochi invece di 175.000, i
      dati sono piu' magri e a volte sbagliati (l'editore e' spesso il
      distributore locale) e l'immagine e' quasi sempre una FOTO DEL
      GIOCO ALLESTITO, non la copertina.
+
+   Il dump e Wikidata non si escludono: il dump sa CHI ESISTE e come si
+   chiama, Wikidata sa com'e' fatto. Scegliendo un risultato del dump si
+   chiede a Wikidata la scheda per id BGG, e se non la trova restano
+   nome, anno e id -- che e' comunque piu' di quanto si avesse prima.
 
    Per questo un risultato non viene mai messo sullo scaffale al volo:
    riempie il modulo, e chi lo aggiunge controlla prima di salvare.
@@ -30,7 +42,9 @@ let fonteScelta = null;
 async function fonte(rileggi){
   if (fonteScelta && !rileggi) return fonteScelta;
   const s = await BGG.ping();
-  fonteScelta = (s.su && s.token) ? 'bgg' : 'wikidata';
+  if (s.su && s.token) fonteScelta = 'bgg';
+  else if (await DUMP.c_e()) fonteScelta = 'dump';
+  else fonteScelta = 'wikidata';
   return fonteScelta;
 }
 
@@ -172,12 +186,40 @@ function sparqlDettagli(ids){
   ].join('\n');
 }
 
+/* La scheda a partire dall'ID BGG, che e' l'unica cosa che il dump e
+   Wikidata hanno in comune. P2339 e' l'id BGG su Wikidata, ed e' una
+   stringa: il confronto va fatto con le virgolette. */
+function sparqlPerBgg(bgg){
+  return [
+    'SELECT ?g ?nome ?anno ?bgg',
+    '  (SAMPLE(?autoreL) AS ?autore)',
+    '  (GROUP_CONCAT(DISTINCT ?editoreL; separator=" / ") AS ?editori)',
+    '  (SAMPLE(?min) AS ?minp) (SAMPLE(?max) AS ?maxp)',
+    '  (SAMPLE(?dur) AS ?durata) (SAMPLE(?img) AS ?immagine)',
+    'WHERE {',
+    '  ?g wdt:P2339 "' + String(bgg).replace(/[^0-9]/g, '') + '" .',
+    '  BIND("' + String(bgg).replace(/[^0-9]/g, '') + '" AS ?bgg)',
+    '  OPTIONAL { ?g rdfs:label ?nome . FILTER(LANG(?nome) = "en") }',
+    '  OPTIONAL { ?g wdt:P577 ?d . BIND(YEAR(?d) AS ?anno) }',
+    '  OPTIONAL { ?g wdt:P178 ?a . ?a rdfs:label ?autoreL . FILTER(LANG(?autoreL) = "en") }',
+    '  OPTIONAL { ?g wdt:P123 ?e . ?e rdfs:label ?editoreL . FILTER(LANG(?editoreL) = "en") }',
+    '  OPTIONAL { ?g wdt:P1872 ?min }',
+    '  OPTIONAL { ?g wdt:P1873 ?max }',
+    '  OPTIONAL { ?g wdt:P2047 ?dur }',
+    '  OPTIONAL { ?g wdt:P18 ?img }',
+    '} GROUP BY ?g ?nome ?anno ?bgg LIMIT 1'
+  ].join('\n');
+}
+
 async function sfoglia(offset, limit){
   const f = await fonte();
   if (f === 'bgg'){
-    // col token qui ci andra' la classifica di BGG, che e' quello che
-    // questo elenco vuole essere davvero. Finche' non c'e', Wikidata.
+    // col token qui ci andra' la classifica di BGG presa dall'API.
   }
+  /* Dal dump si sfoglia la classifica vera, ed e' gratis: il file e'
+     gia' in ordine, quindi una pagina e' una fetta di righe. */
+  if (f === 'dump') return DUMP.sfoglia(offset || 0, limit || 24);
+
   const r = await query(sparqlSfoglia(offset || 0, limit || 24));
   const ids = (r.results.bindings || []).map(function(b){
     return val(b, 'g').split('/').pop();
@@ -215,12 +257,38 @@ async function cerca(q){
       return { fonte: 'bgg', id: String(h.id), title: h.title, year: h.year || '', bgg: h.id };
     });
   }
+  if (f === 'dump') return DUMP.cerca(q);
   return cercaWikidata(q);
 }
 
 /* La scheda completa. Da Wikidata ce l'abbiamo gia' dalla ricerca; da
-   BGG serve una seconda chiamata al proxy. */
+   BGG serve una seconda chiamata al proxy; dal dump serve un giro su
+   Wikidata, perche' il dump sa chi esiste ma non com'e' fatto.
+
+   Se Wikidata non lo conosce -- e su centomila giochi capita spesso --
+   non e' un errore: restano nome, anno e id BGG, e il resto si scrive a
+   mano nel modulo. Che e' esattamente quello che si faceva prima, ma
+   partendo da un titolo giusto invece che da un campo vuoto. */
 async function dettagli(voce){
+  if (voce.fonte === 'dump'){
+    if (!voce.bgg) return voce;
+    try {
+      const r = await query(sparqlPerBgg(voce.bgg));
+      const b = (r.results.bindings || [])[0];
+      if (!b) return voce;
+      const w = daWikidata(b);
+      /* Il nome buono e' quello del dump: e' il titolo con cui BGG lo
+         conosce, ed e' la chiave con cui il sito lo ritrova. */
+      return Object.assign({}, w, {
+        fonte: 'dump', id: voce.id, bgg: voce.bgg,
+        title: voce.title || w.title,
+        year: voce.year || w.year,
+        rank: voce.rank, bggScore: voce.bggScore
+      });
+    } catch(e){
+      return voce;                 // Wikidata giu' non deve fermare niente
+    }
+  }
   if (voce.fonte !== 'bgg') return voce;
   const g = await BGG.scheda(voce.id);
   return {

@@ -58,14 +58,16 @@ js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori e arredi scelti da chi ci abita
 js/bgg.js             ricerca BGG (passa dal proxy locale)
-js/catalogo.js        due fonti per le schede: BGG col token, Wikidata senza
+js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
+js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
 js/art.js             grafica generata su canvas
 js/app.js             scena 3D e interazione
 img/                  le copertine vere delle scatole (due: root, scythe)
 fonts/                Poppins, cinque pesi, in locale
 vendor/                three.js r152 e supabase-js, committati
 supabase/migrations/   lo schema del database
-tools/bgg-*.mjs        scarico dati BGG e proxy per la ricerca admin
+dati/bgg.txt           l'indice committato: 106.694 giochi in ordine di classifica
+tools/bgg-*.mjs        scarico dati BGG, proxy, e il convertitore dell'indice
 ```
 
 **Niente risorse esterne, mai.** three.js, font e copertine sono nel repo: il
@@ -571,6 +573,57 @@ campo vuoto: chi arriva senza sapere cosa cercare deve avere qualcosa da guardar
   con 502 anche query che un secondo dopo funzionano — è capitato in prova.
   Insistere di più non aiuta, e in un elenco che si sfoglia aspettare mezzo
   minuto per un errore è peggio che leggerlo subito.
+
+### L'indice di BGG in casa
+
+`js/bggdump.js` + `dati/bgg.txt`. BGG pubblica ogni giorno un CSV con tutti i
+giochi del database e la loro posizione in classifica, **senza chiedere token**.
+`tools/bgg-indice.mjs` lo riduce all'osso e ne esce l'indice che il sito scarica:
+**106.694 giochi** (id, nome, anno, media), di cui **31.183 in classifica**,
+3,76 MB.
+
+Risolve le due cose che a questo elenco mancavano di piu':
+
+- **cercare fra centomila titoli invece di 3.429.** E senza rete: il file e' gia'
+  in memoria, quindi la ricerca risponde in **5 ms** invece dei due secondi buoni
+  di una query a Wikidata.
+- **la classifica vera.** Il catalogo si sfogliava in ordine di edizioni
+  linguistiche della voce Wikidata — scacchi e Monopoly in cima, veri classici ma
+  non la classifica che un sito di recensioni vuole. Adesso il primo e' Brass:
+  Birmingham, che e' il numero uno di BGG.
+
+Le scelte che vale la pena ricordare:
+
+- **Il dump e Wikidata non si escludono.** Il dump sa *chi esiste* e come si
+  chiama; Wikidata sa *com'e' fatto*. Scegliendo un risultato si chiede la scheda
+  a Wikidata **per id BGG** (`P2339`), e se non la trova — su centomila giochi
+  capita spesso — restano nome, anno e id, che e' comunque piu' di un campo
+  vuoto. Wikidata giu' non deve fermare niente: `dettagli()` cattura e tira
+  dritto.
+- **Il rank non ha una colonna sua.** Le righe sono ordinate: prima le
+  classificate in classifica, poi le altre per numero di voti, e l'intestazione
+  dice quante sono le prime. Il rank e' la posizione della riga. Sfogliare il
+  catalogo diventa "prendi le prime N righe".
+- **Si carica una volta sola e solo se serve.** 3,76 MB non si scaricano a chi
+  apre il sito per guardare la propria libreria: se li prende chi apre il
+  catalogo o cerca un gioco. Verificato: all'avvio il file non viene chiesto.
+- **Fuori le espansioni e le schede con zero voti**: 180.226 record diventano
+  106.694 giochi. Una scheda che nessuno ha mai votato e' un abbozzo, e chi ha
+  davvero un gioco cosi' lo scrive a mano — il modulo lo permette da sempre.
+- **I nomi si appiattiscono al caricamento**, non a ogni lettera scritta:
+  rifarlo per tasto vorrebbe dire centomila `normalize()` a colpo.
+- **L'ordine dei risultati non e' quello del file**: prima chi si chiama
+  esattamente cosi', poi chi comincia cosi', poi il resto — e dentro ogni gruppo
+  vince chi sta piu' in alto in classifica. Se no cercando «root» usciva prima
+  una espansione dimenticata e Root era in fondo.
+
+**Il CSV grezzo non si committa** (11 MB, e si riscarica da BGG): sta in
+`dump_bgg/`, che e' in `.gitignore`. Si committa quello che ne esce.
+
+**Il ping al proxy ha preso un limite di tempo.** `BGG.ping()` aspettava una
+porta chiusa per un paio di secondi, e con Wikidata dietro non si notava perche'
+anche quella ce ne metteva due. Con un file in casa era diventata l'unica attesa
+rimasta: adesso sono 400 ms, che su localhost sono gia' larghi.
 
 ### Le miniature sono un caso diverso dalle copertine
 
@@ -1819,23 +1872,26 @@ Cosa manca, in ordine di fastidio:
 
 1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito con *modifica*, e
    da lì si pubblicano nel catalogo con la casella in fondo al modulo.
-2. **Il token BGG non è ancora arrivato, e ora serve davvero.** Provato il
-   2026-08-21: `boardgamegeek.com/xmlapi2` risponde **401 a qualunque
-   user-agent**, cioè non c'è più nessuna via pubblica. La pagina `browse`
-   risponde 200 ma è HTML da raschiare, e le loro condizioni lo vietano. Finché
-   non c'è il token la ricerca cade su Wikidata: ~4.400 giochi contro 175.000,
-   dati più magri e a volte sbagliati (l'editore è spesso il distributore
-   locale). Per questo un risultato **riempie il modulo** invece di finire dritto
-   sullo scaffale.
+2. **Il token BGG non è ancora arrivato**, ma dal 2026-08-22 serve molto meno.
+   `boardgamegeek.com/xmlapi2` risponde **401 a qualunque user-agent** e la
+   pagina `browse` è HTML che le loro condizioni vietano di raschiare — quella
+   strada resta chiusa. Ma il **dump dei ranking** è pubblico e scaricabile
+   senza chiave, e copre le due cose per cui il token serviva di più: cercare
+   fra centomila titoli e sfogliare in classifica. Restano fuori **autore,
+   editore, durata e le copertine vere**: per quelli si passa ancora da
+   Wikidata, che è magra e a volte sbagliata (l'editore è spesso il distributore
+   locale). Per questo un risultato **riempie il modulo** invece di finire
+   dritto sullo scaffale.
 3. **Wikidata non ha le copertine, e non le avrà mai**: le sue immagini vengono da
    Wikimedia Commons, che accetta solo licenze libere, e la grafica di una scatola
    è protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%) e sono foto
    di partite sul tavolo. Per le copertine c'è il **campo file** nel modulo, che
    vince sempre sull'immagine della fonte — la fonte giusta è il press kit
    dell'editore.
-4. **L'ordine del catalogo è quello di Wikidata**, cioè i classici in cima:
-   scacchi, backgammon, Monopoly. Non è la classifica che un sito di recensioni
-   vuole — quella è la lista di BGG, e arriva col token.
+4. ~~L'ordine del catalogo è quello di Wikidata.~~ **Risolto il 2026-08-22, e
+   senza token**: il dump dei ranking che BGG pubblica ogni giorno è in
+   `dati/bgg.txt`, e il catalogo si sfoglia nella classifica vera — primo Brass:
+   Birmingham. Vedi «L'indice di BGG in casa».
 5. Su telefono la scatola è **90 px di larghezza**: si riconosce la copertina ma
    non si legge il titolo. È il prezzo delle tre colonne; se dà fastidio,
    l'alternativa è tornare a due.

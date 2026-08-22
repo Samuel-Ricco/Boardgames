@@ -17,15 +17,21 @@ const BGG = (function(){
 
 const PROXY = 'http://localhost:8125';
 
-async function ping(){
-  try {
-    const r = await fetch(PROXY + '/ping', { cache: 'no-store' });
-    if (!r.ok) return { su: false };
-    const j = await r.json();
-    return { su: true, token: !!j.token };
-  } catch(e){
-    return { su: false };
-  }
+/* Il proxy o c'e' o non c'e', e sta su localhost: se non risponde in
+   quattro decimi di secondo non risponde. Senza questo taglio la richiesta a una porta
+   chiusa restava appesa un paio di secondi, ed erano un paio di secondi
+   prima di vedere qualunque cosa nel catalogo -- prima non si notavano
+   perche' la fonte di ripiego era Wikidata, che ce ne metteva altri
+   due; adesso che dietro c'e' un file gia' in casa, era l'unica
+   attesa rimasta. */
+function ping(){
+  const stop = new AbortController();
+  const t = setTimeout(function(){ stop.abort(); }, 400);
+  return fetch(PROXY + '/ping', { cache: 'no-store', signal: stop.signal })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){ return j ? { su: true, token: !!j.token } : { su: false }; })
+    .catch(function(){ return { su: false }; })
+    .finally(function(){ clearTimeout(t); });
 }
 
 async function cerca(q){
