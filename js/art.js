@@ -572,12 +572,54 @@ function cardboard(tone){
 
 // L'interno che si vede quando il coperchio si alza:
 // regolamento, mazzo di carte, segnalini, due meeple.
+/* L'INTERNO DI UNA SCATOLA APERTA.
+
+   Era un fondo marrone piatto con sopra tre sagome. Adesso c'e' il
+   fondo di cartone che prende luce dal davanti, le quattro pareti
+   interne smussate -- e' quello che fa capire che si guarda DENTRO una
+   scatola e non una figurina appoggiata -- e ogni oggetto ha la sua
+   ombra a terra: senza, galleggiavano tutti sullo stesso piano.
+
+   I meeple usano `sagomaMeeple`, la stessa curva del profilo e della
+   scena 3D. Prima ne avevano una loro, fatta a spezzata: era il terzo
+   meeple diverso nello stesso sito, cioe' esattamente quello contro cui
+   mettono in guardia le note. */
+function ombraSotto(x, cx, cy, rx, ry, forza){
+  const g = x.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+  g.addColorStop(0, 'rgba(0,0,0,' + (forza === undefined ? .42 : forza) + ')');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.save(); x.translate(cx, cy); x.scale(1, ry / rx); x.translate(-cx, -cy);
+  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, Math.max(rx, ry), 0, 6.283); x.fill();
+  x.restore();
+}
+
 function inside(){
   const S = 512, [c,x] = cnv(S,S);
-  x.fillStyle = '#3a2f22'; x.fillRect(0,0,S,S);
-  x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(0,0,S,26); x.fillRect(0,0,26,S);
+
+  // il fondo: cartone, piu' chiaro davanti, dove la luce entra
+  const fondo = x.createLinearGradient(0, 0, 0, S);
+  fondo.addColorStop(0, '#2b2217');
+  fondo.addColorStop(.42, '#3b2f21');
+  fondo.addColorStop(1, '#4b3d2b');
+  x.fillStyle = fondo; x.fillRect(0, 0, S, S);
+
+  /* Le quattro pareti interne. Un trapezio per lato, piu' scuro dove il
+     lato e' in ombra: e' la cosa che da' la profondita', molto piu' di
+     qualunque oggetto ci si metta dentro. */
+  const par = 46;
+  const muro = function(punti, tinta){
+    x.fillStyle = tinta; x.beginPath();
+    x.moveTo(punti[0], punti[1]); x.lineTo(punti[2], punti[3]);
+    x.lineTo(punti[4], punti[5]); x.lineTo(punti[6], punti[7]);
+    x.closePath(); x.fill();
+  };
+  muro([0,0, S,0, S-par,par, par,par], 'rgba(18,13,8,.62)');            // sopra
+  muro([0,0, par,par, par,S-par, 0,S], 'rgba(18,13,8,.46)');            // sinistra
+  muro([S,0, S,S, S-par,S-par, S-par,par], 'rgba(18,13,8,.30)');        // destra
+  muro([0,S, par,S-par, S-par,S-par, S,S], 'rgba(60,48,32,.20)');       // davanti, in luce
 
   // regolamento
+  ombraSotto(x, 126, 168, 108, 62);
   x.save(); x.translate(120,150); x.rotate(-.06);
   x.fillStyle = '#e8dcc0'; x.fillRect(-84,-110,168,220);
   x.fillStyle = 'rgba(60,44,26,.8)'; x.fillRect(-60,-84,120,7);
@@ -586,6 +628,7 @@ function inside(){
   x.restore();
 
   // mazzo di carte
+  ombraSotto(x, 356, 156, 96, 56);
   x.save(); x.translate(350,140); x.rotate(.1);
   for (let i=4;i>=0;i--){
     x.fillStyle = i === 0 ? '#8f4a2c' : '#6e3a22';
@@ -594,25 +637,59 @@ function inside(){
   x.fillStyle = 'rgba(240,220,180,.85)'; x.fillRect(-40,-40,80,80);
   x.restore();
 
-  // segnalini di cartone
+  // segnalini di cartone, ognuno appoggiato per davvero
   const tok = ['#c1552c','#4f6b48','#b98d4f','#4b5b70','#8a5730'];
   for (let i=0;i<14;i++){
+    const cx = rnd(80,430), cy = rnd(300,462), r = rnd(12,22);
+    ombraSotto(x, cx + 3, cy + 5, r * 1.5, r * .9, .34);
     x.fillStyle = tok[i % tok.length];
-    x.beginPath(); x.arc(rnd(70,440), rnd(300,470), rnd(12,22), 0, 6.283); x.fill();
-    x.strokeStyle = 'rgba(0,0,0,.3)'; x.lineWidth = 2; x.stroke();
+    x.beginPath(); x.arc(cx, cy, r, 0, 6.283); x.fill();
+    // il bordo del cartone: chiaro sopra, scuro sotto
+    x.strokeStyle = 'rgba(255,240,215,.22)'; x.lineWidth = 2;
+    x.beginPath(); x.arc(cx, cy, r - 1, 3.6, 6.0); x.stroke();
+    x.strokeStyle = 'rgba(0,0,0,.34)';
+    x.beginPath(); x.arc(cx, cy, r - 1, .4, 2.9); x.stroke();
   }
 
-  // due meeple
-  const meeple = function(mx,my,s,col){
-    x.fillStyle = col; x.save(); x.translate(mx,my); x.scale(s,s);
-    x.beginPath(); x.arc(0,-20,11,0,6.283); x.fill();
+  /* Due dadi d'avorio: sono il soggetto del sito, e in una scatola
+     aperta ci stanno sempre. */
+  const dado = function(dx, dy, s, ang, pips){
+    ombraSotto(x, dx + 4, dy + s * .8, s * 1.5, s * .8, .40);
+    x.save(); x.translate(dx, dy); x.rotate(ang);
+    const gg = x.createLinearGradient(-s, -s, s, s);
+    gg.addColorStop(0, '#f6f1e4'); gg.addColorStop(1, '#d9cbb0');
+    x.fillStyle = gg;
     x.beginPath();
-    x.moveTo(-9,-8); x.lineTo(9,-8); x.lineTo(20,4); x.lineTo(20,12); x.lineTo(7,10);
-    x.lineTo(11,28); x.lineTo(-11,28); x.lineTo(-7,10); x.lineTo(-20,12); x.lineTo(-20,4);
-    x.closePath(); x.fill(); x.restore();
+    if (x.roundRect) x.roundRect(-s, -s, s*2, s*2, s * .28);
+    else x.rect(-s, -s, s*2, s*2);
+    x.fill();
+    x.strokeStyle = 'rgba(70,52,30,.28)'; x.lineWidth = 1.4; x.stroke();
+    x.fillStyle = '#33261a';
+    pips.forEach(function(p){
+      x.beginPath(); x.arc(p[0] * s * .46, p[1] * s * .46, s * .15, 0, 6.283); x.fill();
+    });
+    x.restore();
   };
-  meeple(150, 400, 1.5, '#d8552c');
-  meeple(240, 430, 1.2, '#e8c05f');
+  dado(408, 300, 26, -.18, [[-1,-1],[1,-1],[-1,1],[1,1],[0,0]]);
+  dado(452, 356, 21,  .26, [[-1,-1],[1,1],[0,0]]);
+
+  /* I meeple, con la SAGOMA VERA -- la stessa del profilo e della scena
+     in tre dimensioni. Averne una terza qui dentro voleva dire tre
+     meeple diversi nello stesso sito. */
+  const meeple = function(mx, my, s, col){
+    ombraSotto(x, mx + 4, my + s * .34, s * .62, s * .26, .44);
+    x.save();
+    x.fillStyle = col;
+    sagomaMeeple(x, s, mx, my);
+    x.fill();
+    // un filo di luce sul lato da cui viene la luce
+    x.globalAlpha = .22; x.fillStyle = '#fff9ec';
+    sagomaMeeple(x, s * .93, mx - s * .04, my - s * .03);
+    x.fill();
+    x.restore();
+  };
+  meeple(146, 398, 62, '#d8552c');
+  meeple(238, 434, 48, '#e8c05f');
 
   vignette(x, S, S, .5);
   grain(x, S, S, 14);

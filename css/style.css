@@ -1546,13 +1546,33 @@ body.visita #p-fuori{display:none !important}
 #flash.on{opacity:1; visibility:visible; transform:translate(-50%,0); transition:opacity .3s ease, transform .3s ease, visibility 0s}
 
 /* --- caricamento: il dado che gira ---------------------------- */
+/* La prima schermata che si vede. Era un fondo piatto con un dado in
+   mezzo; adesso la luce viene da sopra come nella stanza che si sta per
+   aprire, cosi' il caricamento e' gia' il sito e non una sala d'attesa. */
 #load{
-  position:fixed; inset:0; z-index:9; background:var(--bg);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:34px;
+  position:fixed; inset:0; z-index:9;
+  background:
+    radial-gradient(120% 78% at 50% 8%, #efe9df 0%, rgba(239,233,223,0) 62%),
+    linear-gradient(180deg, #d8d4ce 0%, var(--bg) 46%, #c2beb8 100%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px;
   transition:opacity .7s ease, visibility 0s .7s;
 }
 body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
-.stage{perspective:700px; width:110px; height:110px}
+/* L'ombra a terra sotto il dado: e' quella che lo fa stare in un posto
+   invece che galleggiare. Si stringe e si allarga insieme al rotolare. */
+.stage{perspective:760px; width:130px; height:130px; position:relative}
+.stage::after{
+  content:''; position:absolute; left:50%; bottom:-14px; width:86px; height:15px;
+  transform:translateX(-50%);
+  background:radial-gradient(closest-side, rgba(60,46,28,.30), rgba(60,46,28,0));
+  animation:ombraDado 3.6s cubic-bezier(.62,.02,.38,1) infinite;
+}
+@keyframes ombraDado{
+  0%,100%{transform:translateX(-50%) scale(1);   opacity:.85}
+  25%    {transform:translateX(-50%) scale(.78); opacity:.55}
+  50%    {transform:translateX(-50%) scale(1.04);opacity:.9}
+  75%    {transform:translateX(-50%) scale(.82); opacity:.6}
+}
 .die{
   position:relative; width:88px; height:88px; margin:11px auto;
   transform-style:preserve-3d;
@@ -1565,14 +1585,26 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
   75%  {transform:rotateX(246deg) rotateY(288deg)}
   100% {transform:rotateX(336deg) rotateY(378deg)}
 }
+/* Avorio, non bianco: un dado da tavolo non e' mai bianco carta. Il
+   bordo interno smussato e' quello che gli da' lo spessore. */
 .f{
-  position:absolute; inset:0; padding:11px; border-radius:12px;
+  position:absolute; inset:0; padding:12px; border-radius:15px;
   display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr);
-  background:linear-gradient(150deg,#f2f1ed,#e2d3b8);
-  box-shadow:inset 0 0 0 1px rgba(80,60,35,.22), 0 2px 10px rgba(90,70,40,.10);
+  background:linear-gradient(148deg,#fbf7ec 0%,#f0e7d4 46%,#ddceb2 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(96,72,42,.26),
+    inset 0 6px 12px rgba(255,252,244,.85),
+    inset 0 -8px 14px rgba(120,94,58,.20),
+    0 3px 14px rgba(90,70,40,.14);
 }
-.f i{align-self:center; justify-self:center; width:13px; height:13px; border-radius:50%;
-  background:#3a2c1c; box-shadow:inset 0 -1px 2px rgba(255,255,255,.35)}
+/* I pallini sono SCAVATI: l'ombra viene da sopra e il riflesso sta in
+   basso. Prima era il contrario, e sembravano appiccicati sopra. */
+.f i{
+  align-self:center; justify-self:center; width:14px; height:14px; border-radius:50%;
+  background:radial-gradient(circle at 50% 32%, #241a10, #3f3020);
+  box-shadow:inset 0 2px 3px rgba(0,0,0,.55), inset 0 -2px 2px rgba(255,240,210,.28),
+             0 1px 0 rgba(255,250,240,.55);
+}
 .f1{transform:translateZ(44px)}
 .f2{transform:rotateY(90deg) translateZ(44px)}
 .f3{transform:rotateY(180deg) translateZ(44px)}
@@ -1585,8 +1617,17 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
 .load-txt b i{color:var(--accent); font-style:normal}
 .load-txt span{display:block; margin-top:10px; font-size:11px; letter-spacing:.07em;
   text-transform:uppercase; color:var(--ink-soft)}
-.bar{width:180px; height:2px; background:rgba(51,53,43,.16); overflow:hidden}
-.bar i{display:block; height:100%; width:0; background:var(--accent); transition:width .3s ease}
+.bar{
+  width:190px; height:4px; border-radius:999px;
+  background:rgba(51,53,43,.14); overflow:hidden;
+}
+.bar i{
+  display:block; height:100%; width:0; border-radius:999px;
+  background:linear-gradient(90deg,#d98a52,var(--accent));
+  box-shadow:0 0 10px rgba(200,106,60,.45);
+  transition:width .35s var(--ease);
+}
+.load-txt span{min-height:14px}
 
 /* --- fallback senza WebGL ------------------------------------- */
 #flat{display:none; position:fixed; inset:0; z-index:6; overflow:auto;
@@ -1629,6 +1670,28 @@ body.no3d #scene,body.no3d #vig,body.no3d #panel{display:none}
 @keyframes entraSu{
   from{opacity:0; transform:translateY(-8px)}
   to{opacity:1; transform:none}
+}
+
+/* --- le tendine si aprono ------------------------------------------
+   Tutto quello che si apre sotto qualcos'altro -- le informazioni di un
+   gioco nell'elenco, la recensione dentro la riga del catalogo, le
+   partite di un gioco, i cassetti del profilo, le due tendine del
+   pannello della libreria -- compariva di colpo. Adesso scende.
+
+   Serve una `animation` e non una `transition`: questi blocchi passano
+   da `display:none` a visibile, e una transizione su quel salto non
+   parte proprio. E' la stessa ragione delle sezioni. */
+@keyframes apreSotto{
+  from{opacity:0; transform:translateY(-9px)}
+  to{opacity:1; transform:none}
+}
+.riga-info:not([hidden]),
+.righe > li.aperta .cat-rec,
+.gio-gruppo .giocate:not([hidden]),
+.pro-dentro:not([hidden]),
+.cartella > ol:not([hidden]),
+#stanza details[open] .st-dentro{
+  animation:apreSotto .26s var(--ease) both;
 }
 
 body.elenco    #mia,
