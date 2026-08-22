@@ -1232,10 +1232,24 @@ classifiche ovunque.
 - **Zero non è nullo.** `parseInt(x) || null` trasformerebbe uno zero in «non
   registrato», e a certi giochi si chiude davvero a zero. C'è un `numero()`
   che distingue i due casi, e vale per `posizione` come per `punti`.
-- **Se la migrazione non è applicata la partita si salva lo stesso.** PostgREST
-  su una colonna inesistente butta via l'intera scrittura: `salva()` riprova
-  senza `punti`, e i punti tornano a essere quello che erano, un aiuto del
-  modulo. Meglio una partita senza punteggi che nessuna partita.
+- **Se la migrazione non è applicata la partita si salva lo stesso** — ma lo
+  dice. PostgREST su una colonna inesistente butta via l'intera scrittura, quindi
+  `salva()` riprova senza `punti`; e siccome un ripiegamento che non si vede è
+  peggio di un errore, `puntiPersi()` lo racconta al flash.
+
+### La cache dello schema legge e scrive in due modi diversi
+
+Costato mezz'ora di sconcerto, e vale per **ogni colonna futura**: applicata la
+migrazione, `select('*')` restituiva subito `punti`, ma l'insert con quel campo
+veniva **rifiutato**. Non è una contraddizione: la lettura la espande il
+database, la scrittura la valida la **cache dello schema di PostgREST**, che
+dopo un `alter table` resta indietro finché non le arriva un `NOTIFY pgrst`.
+Per qualche minuto la colonna esiste per chi legge e non per chi scrive.
+
+Quindi: **una colonna che si legge non è la prova che si possa scrivere**, e un
+ripiegamento silenzioso su quel caso fa sparire dei dati veri senza dirlo — che
+è esattamente com'è andata la prima volta. Se succede, si aspetta un minuto e
+si rifa'.
 - **Tolti i punti se ne vanno le corone che venivano dai punti**, non quelle
   messe a mano: per questo ogni riga ricorda `daPunti`. Senza, svuotando i campi
   restava addosso all'ultimo calcolato una corona che nessuno gli aveva messo.
@@ -2215,16 +2229,9 @@ freddo: cosa c'è, cosa è appena cambiato, com'è messo il database e cosa rest
 da fare. Per il racconto lungo di com'è nato tutto c'è `contest_boardgame.md`.
 
 Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
-profilo — **due lingue** con 457 chiavi per ramo, e undici migrazioni applicate
-su dodici.
-
-> **LA DODICESIMA È DA APPLICARE A MANO.**
-> `supabase/migrations/20260822120000_punti_partita.sql` aggiunge la colonna
-> `punti` a `partecipanti` e **non è ancora sul database**: qui non c'è la CLI
-> di Supabase, quindi va incollata nell'SQL editor del pannello. Finché non lo
-> è, le partite si salvano lo stesso ma **senza i punteggi** — `salva()`
-> riprova senza quella colonna — e riaprendo una partita i campi dei punti
-> sono vuoti, che è il difetto che quella migrazione risolve.
+profilo — **due lingue** con 459 chiavi per ramo, e **tutte e dodici le
+migrazioni applicate**, `punti_partita` compresa (2026-08-22, dall'SQL editor del
+pannello: qui non c'è la CLI di Supabase).
 
 ### Cos'è successo nella sessione del 2026-08-22
 
@@ -2297,6 +2304,14 @@ Quindici cose chieste in un colpo solo, in quattro giri.
 **Una cosa è rimasta scoperta apposta, e va detta:** togliendo il pulsante
 «scheda» dal piede, `apriModifica()` non ha più nessuna porta. Autore,
 editore, anno e copertina non si correggono più da nessuna parte del sito.
+
+**E il salvataggio dei punti è stato verificato fino in fondo**, dopo la
+migrazione: partita di prova scritta con 61 / 48 / **0**, riletta dal server,
+riaperta nel modulo dopo un ricaricamento vero (punteggi, posizioni e corona
+tornati), punteggio cambiato per vedere la corona spostarsi, e partita di prova
+cancellata. Lo zero conta perche' è il caso che `numero()` esiste per
+distinguere da «non registrato». Alla prima prova i punti erano spariti in
+silenzio: vedi «La cache dello schema legge e scrive in due modi diversi».
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 

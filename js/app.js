@@ -5451,7 +5451,8 @@ async function salvaPartita(){
     chiudiPartita();
     disegnaPartite();
     disegnaGiocate(state.focused && state.focused.userData.game);
-    flash(TP('msg.partitaSegnata'));
+    // se i punteggi non sono passati lo si dice: la partita c'e' lo stesso
+    flash(TP(PARTITE.puntiPersi() ? 'msg.partitaSenzaPunti' : 'msg.partitaSegnata'));
   } catch(e){
     q('#pa-msg').textContent = TP('pa.nonSalvata', {e: e.message});
   }

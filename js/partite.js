@@ -22,6 +22,10 @@ const PARTITE = (function(){
 let gioca = [];        // i giocatori salvati
 let elenco = [];       // le partite, con dentro i partecipanti
 let guaio = '';
+/* L'ultimo salvataggio ha dovuto rinunciare ai punteggi? Un
+   ripiegamento che non si vede e' peggio di un errore: chi ha scritto
+   i punti deve sapere che sul server non sono arrivati. */
+let puntiPersi = false;
 
 function cli(){
   return (typeof AUTH !== 'undefined' && AUTH.attivo()) ? AUTH.client() : null;
@@ -189,12 +193,22 @@ async function salva(p){
     };
   });
 
+  puntiPersi = false;
   let r = await c.from('partecipanti').insert(righe);
   /* Senza la migrazione `punti_partita` la colonna non c'e' e PostgREST
      butta via l'intera scrittura. Meglio salvare la partita senza i
-     punti che non salvarla: si riprova senza, e i punti tornano a
-     essere quello che erano prima, un aiuto del modulo. */
+     punti che non salvarla: si riprova senza.
+
+     MA LO SI DICE. Un ripiegamento silenzioso qui e' esattamente il
+     guasto muto che questo progetto non vuole: e' successo davvero
+     appena applicata la migrazione, quando la CACHE DELLO SCHEMA di
+     PostgREST era ancora indietro -- la colonna c'era, `select('*')` la
+     leggeva (la lettura la espande il database), ma la scrittura la
+     valida la cache e veniva rifiutata. I punti sparivano e nessuno lo
+     diceva. Ora chi salva se ne accorge, e sa se aspettare un minuto e
+     rifarlo o applicare la migrazione. */
   if (r.error && mancaPunti(r.error)){
+    puntiPersi = true;
     r = await c.from('partecipanti').insert(righe.map(function(x){
       const y = Object.assign({}, x); delete y.punti; return y;
     }));
@@ -321,6 +335,7 @@ return {
   amiciDaAggiungere: amiciDaAggiungere,
   carica: carica, tutte: tutte, diGioco: diGioco,
   salva: salva, togli: togli, classifica: classifica,
+  puntiPersi: function(){ return puntiPersi; },
   mioNome: mioNome, winrate: winrate,
   winrateTotale: winrateTotale, winratePerGioco: winratePerGioco
 };
