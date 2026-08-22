@@ -892,6 +892,14 @@ stava in mezzo, appeso al codice amico, dove sembrava un dettaglio del codice.
 **I nomi delle lingue non si traducono**: «Italiano» e «English» restano scritti
 nella propria lingua, se no chi cerca la sua non la trova.
 
+**Nel cancello «ultima volta» adesso è vera.** Era un  del CSS su una
+classe  scritta **fissa nel markup**: diceva «ultima volta» sulla scheda
+dell’ospite a chiunque, anche a chi arrivava per la prima volta — e da un
+ il dizionario non ci arriva. Ora è un elemento vero con la sua
+chiave, e la classe la mette  leggendo , che si scrive
+scegliendo. Sta **sopra** il titolo e non accanto: accanto gli rubava la
+larghezza e «Sign in with Google» andava a capo.
+
 **La selezione ha dovuto pareggiare una catena di `:not()`.** Il fondo dei
 pulsanti dentro il profilo lo decide
 `#profilo button:not(.primario):not(.secondario):not(.distruttivo)`, che pesa un

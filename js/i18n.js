@@ -211,6 +211,7 @@ it: {
   'gate.entraD':        'La tua libreria ti aspetta: i giochi che aggiungi restano tuoi e li rivedi da qualsiasi dispositivo.',
   'gate.ospiteT':       'Guarda il catalogo',
   'gate.ospiteD':       'Le recensioni si leggono senza account. Niente libreria, per&ograve;: quella comincia quando entri.',
+  'gate.ultima':        'ultima volta',
   'gate.nota':          'Ogni account ha la sua libreria, e la vede solo lui: sono le regole del database a garantirlo, non questa schermata.',
   'gate.nonRiuscito':   'Accesso non riuscito: {e} &mdash; puoi comunque guardare il catalogo.',
 
@@ -703,6 +704,7 @@ en: {
   'gate.entraD':        'Your collection is waiting: the games you add stay yours, and you see them again from any device.',
   'gate.ospiteT':       'Browse the catalogue',
   'gate.ospiteD':       'The reviews read fine without an account. No collection though: that starts when you sign in.',
+  'gate.ultima':        'last time',
   'gate.nota':          'Every account has its own collection and only that account sees it: it is the database rules that guarantee it, not this screen.',
   'gate.nonRiuscito':   'Sign-in failed: {e} &mdash; you can still browse the catalogue.',
 

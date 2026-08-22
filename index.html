@@ -446,13 +446,21 @@
     <b class="gate-logo">il dado <i>&egrave;</i> trap</b>
     <p class="gate-q" data-i18n="gate.q">Chi apre la libreria?</p>
     <div class="gate-pick">
+      <!-- La pastiglia "ultima volta" e' un elemento vero e non un
+           `content:` del CSS: da un `content:` il dizionario non ci
+           arriva. La classe `last` la mette `gate()` sulla porta che si
+           e' scelta davvero l'ultima volta -- prima era scritta fissa
+           nel markup, quindi diceva "ultima volta" a chiunque, anche a
+           chi arrivava per la prima volta. -->
       <button type="button" data-gate="entra">
         <b data-i18n="gate.entraT">Entra con Google</b>
+        <i class="ultima" data-i18n="gate.ultima">ultima volta</i>
         <span data-i18n="gate.entraD">La tua libreria ti aspetta: i giochi che aggiungi restano tuoi
           e li rivedi da qualsiasi dispositivo.</span>
       </button>
-      <button type="button" data-gate="ospite" class="last">
+      <button type="button" data-gate="ospite">
         <b data-i18n="gate.ospiteT">Guarda il catalogo</b>
+        <i class="ultima" data-i18n="gate.ultima">ultima volta</i>
         <span data-i18n="gate.ospiteD">Le recensioni si leggono senza account. Niente libreria, per&ograve;:
           quella comincia quando entri.</span>
       </button>

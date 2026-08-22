@@ -5399,7 +5399,17 @@ function fallbackFlat(){
 /* Risponde con la scelta: 'entra' o 'ospite'. Serve a boot(), perche'
    le due strade sono diverse davvero -- un ospite non ha nessuna
    libreria, quindi non c'e' nessuna scena 3D da costruire. */
+const PORTA = 'dado-cancello';
+
 function gate(giaDentro){
+  /* Quale porta si e' presa l'ultima volta. Non e' un dettaglio: chi
+     torna riconosce la sua invece di rileggere due schede. */
+  try {
+    const scorsa = localStorage.getItem(PORTA);
+    const b = scorsa && q('#gate [data-gate="' + scorsa + '"]');
+    if (b) b.classList.add('last');
+  } catch(e){}
+
   if (giaDentro){
     q('#gate').classList.add('gone');
     return Promise.resolve('entra');
@@ -5408,6 +5418,7 @@ function gate(giaDentro){
     qa('#gate [data-gate]').forEach(function(b){
       b.addEventListener('click', async function(){
         const scelta = b.getAttribute('data-gate');
+        try { localStorage.setItem(PORTA, scelta); } catch(e){}
         if (scelta === 'entra' && AUTH.attivo()){
           b.disabled = true;
           try {

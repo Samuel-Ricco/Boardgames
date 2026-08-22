@@ -1341,10 +1341,18 @@ body.visita #p-fuori{display:none !important}
   display:block; font-family:var(--ff-display); font-weight:400;
   font-size:21.6px; letter-spacing:0; color:var(--ink); margin-bottom:6px;
 }
-.gate-pick button.last b::after{
-  content:'ultima volta'; float:right; font-family:var(--ff-text); font-size:9px;
-  letter-spacing:.18em; color:var(--accent); margin-top:9px;
+/* La pastiglia sta SOPRA il titolo, su una riga sua. Dentro al titolo
+   il `float` la faceva scendere in mezzo alla descrizione; accanto al
+   titolo gli rubava la larghezza e "Sign in with Google" andava a capo.
+   Sopra non toglie spazio a niente ed e' la prima cosa che si legge,
+   che e' esattamente il suo mestiere. */
+.gate-pick button{display:flex; flex-direction:column; align-items:flex-start}
+.ultima{
+  display:none; order:-1; margin-bottom:5px;
+  font-family:var(--ff-text); font-size:9px; font-style:normal;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--accent);
 }
+.gate-pick button.last .ultima{display:block}
 .gate-pick button span{font-size:13px; line-height:1.5}
 .gate-note{margin:28px 0 0; font-size:11px; line-height:1.7;
   color:rgba(51,53,43,.44)}
