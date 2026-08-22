@@ -537,6 +537,11 @@ body.sez-catalogo #catalogo{display:block}
   padding:18px 0; border-top:1px solid var(--line);
 }
 .righe > li:last-child{border-bottom:1px solid var(--line)}
+/* Tolto il pulsante "scheda", ad aprire e' la riga: e allora la riga
+   deve dire che si clicca. */
+#cat-list > li{cursor:pointer}
+#cat-list > li:hover .cat-dati h3{color:var(--accent)}
+#cat-list > li .cat-azioni{cursor:default}
 /* Il riquadro senza copertina e' una carta color sabbia, non un buco
    grigio: nel catalogo ce ne sono a centinaia di fila, e un grigio
    neutro ripetuto cento volte legge come un elenco rotto. La sabbia
@@ -627,17 +632,23 @@ body.sez-catalogo #catalogo{display:block}
   background:var(--card); border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom);
 }
+/* Ogni voce aveva il suo fondo grigio con gli angoli tondi: quattro
+   pastiglie in fila, con gli spigoli della barra che spuntavano fra
+   l'una e l'altra. La pastiglia deve dire QUAL E' quella scelta, quindi
+   ce l'ha solo lei; le altre sono testo su carta, e basta. */
 #tabbar button{
   flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-top:2px solid transparent;
-  padding:9px 4px 10px; margin-top:-1px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:none; border:0;
+  padding:9px 4px 10px; margin:4px 3px; border-radius:var(--r-s);
+  transition:background-color .22s var(--ease), color .22s var(--ease);
 }
 #tabbar button b{font-size:15px; line-height:1; font-weight:400}
 #tabbar button canvas{width:15px; height:15px; display:block}
-#tabbar button.on{color:var(--ink); border-top-color:var(--accent)}
-#tabbar button.on canvas{outline:1px solid var(--accent)}
+#tabbar button.on{
+  color:var(--accent); background:rgba(200,106,60,.12);
+}
 
 /* --- il profilo -------------------------------------------------- */
 #profilo{
@@ -1882,7 +1893,11 @@ button .ico + *{margin-left:2px}
 }
 #stanza-apri:hover, #vista-apri:hover{background:#f2f1ed; color:var(--accent)}
 body.vista #vista-apri, body.arreda #stanza-apri{background:var(--accent); color:#fff}
-#conta{color:var(--ink)}
+#conta{
+  color:var(--ink); background:rgba(242,241,237,.96);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:var(--ombra-lieve);
+}
 #conta b{color:var(--accent)}
 #conta:hover{background:#f2f1ed}
 body.elenco #conta{background:var(--accent); color:#fff}
@@ -1890,12 +1905,17 @@ body.elenco #conta b{color:#fff}
 
 /* Il binario sta sul pavimento della stanza, non su una scheda: deve
    staccarsi da solo. */
+/* Sopra la stanza -- che con la luce bassa diventa quasi nera -- una
+   carta al 90% non basta piu': va opaca, con la sfocatura dietro come
+   tutto quello che galleggia. Stessa ragione del contatore in testata:
+   il fondo dietro cambia con la luce, il testo no. */
 #rail{
-  background:rgba(242,241,237,.9);
-  box-shadow:0 2px 10px rgba(51,53,43,.10);
+  background:rgba(242,241,237,.96);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:0 2px 14px rgba(20,18,14,.22);
 }
-#rail-txt{color:var(--ink); opacity:.7}
-.rail-bar{background:rgba(51,53,43,.18)}
+#rail-txt{color:var(--ink); opacity:.85}
+.rail-bar{background:rgba(51,53,43,.22)}
 
 /* Il cartello di quando sei in casa di un altro, con la stessa mano */
 #visita{
@@ -3101,11 +3121,17 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   overflow:hidden; text-overflow:ellipsis;
 }
 #visita b{font-weight:600}
+/* Bianco su terracotta a dodici pixel e mezzo fa poco piu' di tre a
+   uno: sotto la soglia, ed e' il motivo per cui non si leggeva. Il
+   fondo scuro lo porta oltre dieci a uno, e per un'uscita e' anche il
+   tono giusto -- non e' un'azione allegra, e' il modo di andarsene. */
 #vis-torna{
   flex:none; display:inline-flex; align-items:center; gap:7px;
-  font-size:12.5px; font-weight:600; white-space:nowrap;
+  font-size:13px; font-weight:600; white-space:nowrap;
   padding:9px 15px; border-radius:999px;
+  background:var(--ink); color:#f4f2ee;
 }
+#vis-torna:hover{background:#22241c; color:#fff}
 #vis-torna .ico{width:15px; height:15px; flex:none}
 
 /* --- il tuo winrate su un gioco solo -------------------------------

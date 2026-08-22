@@ -635,6 +635,11 @@ sotto. Il catalogo sta a **z2** — sopra la scena, sotto la barra in alto.
 
 ## Il catalogo
 
+**La riga si clicca, e basta.** C'era anche un pulsante «scheda» che faceva
+esattamente quello che fa la riga intera, e su una riga che si scorre una
+pastiglia di testo ruba larghezza al titolo — che e' la cosa che si sta
+leggendo. Resta il «+», che invece fa un'altra cosa.
+
 Un **elenco piatto**, fuori dalla scena 3D apposta. La libreria in tre dimensioni
 è la tua collezione, una cosa da guardare; il catalogo sono migliaia di titoli da
 scorrere, e per quello un elenco batte qualunque mobile.
@@ -2171,6 +2176,35 @@ mai** — è l'uscita, e un'uscita non va a capo.
 - La freccia sta **fuori da `data-i18n`**: quell'attributo scrive in `innerHTML`,
   e con la chiave sul pulsante il disegno sparirebbe al primo cambio di lingua.
   È la stessa lezione di `#p-pref`.
+
+### La pastiglia dice qual e' quella scelta, non che sono pulsanti
+
+Nella barra in basso **ogni** voce aveva il suo fondo grigio con gli angoli
+tondi: quattro pastiglie in fila, e fra l'una e l'altra spuntavano gli spigoli
+della barra. Il fondo tondo serve a dire **quale** stai guardando, quindi ce
+l'ha solo quella — in terracotta, come tutto il resto di quello che conta.
+Le altre sono testo su carta.
+
+### Bianco su terracotta a dodici pixel non si legge
+
+Il pulsante per tornare a casa propria faceva **poco piu' di tre a uno**, sotto
+la soglia per un testo cosi' piccolo, ed era il motivo per cui restava
+illeggibile anche dopo averlo rifatto. Adesso il fondo e' `--ink`: oltre dieci a
+uno, e per un'uscita e' anche il tono giusto.
+
+Vale in generale: **`#fff` su `--accent` regge a quattordici pixel in grassetto e
+non regge a dodici.** Dove serve un comando piccolo, il fondo va scuro.
+
+### Quello che galleggia su una stanza che si spegne
+
+Il binario e il contatore erano carta al 90%. Va bene su una stanza chiara; con
+la luce al minimo la stanza diventa quasi nera e sotto la carta traspariva il
+buio. Sono opachi, con la sfocatura dietro e un'ombra piu' decisa.
+
+Il **nome della libreria** invece sta nella scena, dipinto su canvas, e sul muro
+scuro spariva: adesso `targhetta()` gli mette dietro un **alone chiaro** (tre
+passate di `shadowBlur`, che si sommano). L'alone e' luce, quindi su un muro
+chiaro non si vede e su uno scuro fa da foglio sotto le lettere.
 
 ### Il lampo azzurro sul tocco
 

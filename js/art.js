@@ -795,7 +795,18 @@ function targhetta(nome){
   x.letterSpacing = '2px';
   x.textAlign = 'center';
   x.textBaseline = 'middle';
+
+  /* UN ALONE CHIARO DIETRO LE LETTERE. Il nome sta sulla parete, e la
+     parete cambia colore -- e con la luce bassa diventa quasi nera:
+     scritto in scuro e basta, spariva. L'alone e' luce, quindi su un
+     muro chiaro non si vede (chiaro su chiaro) e su uno scuro fa da
+     foglio sotto le lettere. Tre passate perche' l'ombra del canvas si
+     somma a se stessa: una sola resta troppo tenue per reggere il nero. */
+  x.shadowColor = 'rgba(248,245,238,.92)';
+  x.shadowBlur = 16;
   x.fillStyle = 'rgba(44,36,27,.82)';
+  for (let i = 0; i < 3; i++) x.fillText(testo, larg / 2, H * .54);
+  x.shadowBlur = 0;
   x.fillText(testo, larg / 2, H * .54);
   return c;
 }

@@ -1926,7 +1926,10 @@ function focusOn(box){
   const cam0 = camBase.clone();
   u.pose = target;
 
-  tween(.9, function(p){
+  /* Piu' svelta di prima: nove decimi per venire avanti piu' sei per il
+     coperchio facevano un secondo e mezzo prima di leggere una riga, e
+     una scatola che si apre e' un passaggio, non uno spettacolo. */
+  tween(.52, function(p){
     const e = easeInOut(p);
     box.position.lerpVectors(p0, target.pos, e);
     box.rotation.set(
@@ -1964,7 +1967,7 @@ function openLid(){
   const z0 = BOX.t/2 - BOX.lid/2;
 
   // si alza piu' che avvicinarsi: venendo avanti ingrandiva di colpo
-  tween(.6, function(p){
+  tween(.36, function(p){
     const e = easeOut(p);
     lid.position.z = z0 + e * .95;
     lid.position.y = e * 1.05;
@@ -3229,8 +3232,11 @@ function rigaCatalogo(v, i){
       (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
       (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
     '</div>' +
+    /* Niente pulsante "scheda": la riga si apre cliccandola, e un
+       pulsante che fa quello che fa gia' la riga intera ruba larghezza
+       al titolo -- che e' la cosa che si sta leggendo. Resta il "+",
+       che invece fa un'altra cosa. */
     '<div class="cat-azioni">' +
-      '<button type="button" class="apri">' + T(rec ? 'cat.recensione' : 'cat.scheda') + '</button>' +
       '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') +
         ' title="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '"' +
         ' aria-label="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '">' +
@@ -3248,8 +3254,6 @@ function apriRiga(li){
   if (!v) return;
   const rec = RECE.di(v.bgg);
   const aperta = li.classList.toggle('aperta');
-  li.querySelector('.apri').textContent =
-    TP(aperta ? 'cat.chiudi' : (rec ? 'cat.recensione' : 'cat.scheda'));
   if (!aperta) return;
 
   const link = v.bgg
@@ -5288,7 +5292,11 @@ function apriPartita(dati){
   disegnaTavolo();
   q('#partitalayer').classList.add('on');
   q('#partitalayer').setAttribute('aria-hidden', 'false');
-  if (!paCorrente.titolo) q('#pa-titolo').focus();
+  /* Il fuoco solo dove c'e' una tastiera vera. Su un telefono prendere
+     il fuoco vuol dire far salire la tastiera di sistema addosso al
+     modulo, prima ancora che si sia visto cosa c'e' dentro: il campo
+     lo tocca chi vuole scriverci. */
+  if (!paCorrente.titolo && !matchMedia('(pointer:coarse)').matches) q('#pa-titolo').focus();
 }
 
 function chiudiPartita(){
