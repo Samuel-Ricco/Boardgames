@@ -101,7 +101,19 @@ const FARI = [
   { v: '#fff1dc', n: 'tinta.biancoCaldo' },
   { v: '#e6eeff', n: 'tinta.biancoFreddo' },
   { v: '#a9c8ff', n: 'tinta.azzurro' },
-  { v: '#c86a3c', n: 'tinta.terracotta' }
+  { v: '#c86a3c', n: 'tinta.terracotta' },
+  /* E i neon. Sono l'unica cosa del sito che esce dalla tavolozza, ed
+     e' giusto cosi': un LED sotto un ripiano non e' un intonaco e non
+     deve andare d'accordo col muro -- deve staccarsene. Sono anche
+     l'unico posto in cui una tinta satura non stona, perche' non
+     colora una superficie: e' luce, e a luce di stanza piena si vede
+     appena. */
+  { v: '#ff2f9e', n: 'tinta.neonRosa' },
+  { v: '#a24bff', n: 'tinta.neonViola' },
+  { v: '#2ee6ff', n: 'tinta.neonCiano' },
+  { v: '#39ff88', n: 'tinta.neonVerde' },
+  { v: '#ffe93c', n: 'tinta.neonGiallo' },
+  { v: '#3b6cff', n: 'tinta.neonBlu' }
 ];
 
 const PAVIMENTI = [

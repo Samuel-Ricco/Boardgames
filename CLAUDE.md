@@ -2723,6 +2723,35 @@ guardando.
   catalogo e nel profilo ce l'ha, e cercare e ordinare sopra l'elenco servono
   esattamente come sugli scaffali.
 
+### Coprire le sezioni non vuol dire coprire la testata
+
+Alzare `#mia` a `z-index:3` per farlo stare sopra catalogo, partite e profilo
+(tutti a 2) lo ha messo **alla pari con la testata**, che sta a 3 — e a parita'
+di livello vince chi viene dopo nel markup. Risultato: l'elenco si disegnava
+sopra la testata, e con lei sparivano il marchio, le sezioni e soprattutto il
+contatore, **che e' l'unico modo di richiudere l'elenco**. Ci si restava
+dentro.
+
+La testata sta a **4**: galleggia su tutto quello che copre la pagina, ed e'
+la regola giusta invece di un numero scelto per un caso solo. Da ricordare:
+**quando si alza qualcosa per superare un vicino, si controlla anche chi si
+supera per sbaglio.**
+
+## Il pulsante dice dove porta, non dove sei
+
+Il contatore in testata e' un interruttore fra due modi di guardare la stessa
+collezione. Chiuso porta all'elenco e dice quanti giochi hai; **aperto riporta
+agli scaffali, e allora dice «le mie librerie»** — se no e' un pulsante acceso
+che ripete il nome della schermata in cui ti trovi gia' e non promette nessuna
+via d'uscita. In casa di un amico dice «la sua libreria».
+
+**Il conto non si e' spostato da nessuna parte.** Il primo tentativo lo aveva
+messo nell'occhiello dell'elenco, per non perderlo quando il pulsante cambia
+parola. Ma `#mia-msg`, due righe sotto, lo dice gia' — e lo dice meglio,
+perche' dice anche quanti sono in vetrina («25 giochi, 12 sugli scaffali», e
+«14 giochi per «ga»» quando si cerca). Sarebbe stato lo stesso numero due volte
+nella stessa schermata.
+
 ## La calcolatrice del tavolo
 
 Segnare i punti di un gioco da tavolo vuol dire quasi sempre sommare quattro o
@@ -2766,6 +2795,13 @@ davvero, e la terracotta, che è il colore di casa.
 - Passa da `applicaLuce` e non da `applicaStanza`: è un colore di **luce**, non
   di superficie. Non c'è nessun materiale da rigenerare — si scrive un
   `emissive` e si è già visto.
+**E i neon.** Sono l'unica cosa del sito che esce dalla tavolozza, ed e'
+giusto cosi': un LED sotto un ripiano non e' un intonaco e non deve andare
+d'accordo col muro — deve staccarsene. E' anche l'unico posto in cui una tinta
+satura non stona, perche' non colora una superficie: e' **luce**, e a stanza
+accesa si vede appena. Sei in piu' — rosa, viola, ciano, verde, giallo, blu —
+per dodici bollini in due file.
+
 - **Le lampade dei vani si tingono nella stessa proporzione.** Fanno due
   mestieri (la luce della stanza dentro al cubo e la quota di faretti che serve
   a non lasciare al buio la copertina): scegliendo l'azzurro con quella lampada
@@ -2895,6 +2931,8 @@ nuova. Nessuna migrazione: il colore dei faretti sta nel jsonb della stanza.
 | la calcolatrice | dentro il modulo della partita, si apre dal campo dei punti di una persona e ci scrive il totale |
 | l'inglese | pannello dei gruppi, dentro/aggiungi, specifiche della riga aperta; e `rilingua()` guardava una classe inesistente |
 | esci | «sign out» in tutte e due le lingue |
+| i neon | sei tinte di luce in piu' per i faretti, e la testata sale a `z-index:4` perche' l'elenco non le si disegni sopra |
+| il contatore | con l'elenco aperto diventa «le mie librerie»: dice dove porta, non dove sei |
 
 I dati di prova sono stati ripuliti: la partita di collaudo è stata annullata
 senza salvarla, e la collezione è rimasta **25 giochi, una libreria, una

@@ -93,8 +93,15 @@ canvas{display:block}
   background:radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(51,53,43,.26) 100%)}
 
 /* --- interfaccia --------------------------------------------- */
+/* z-index 4 e non 3: l'elenco della collezione e' salito a 3 per
+   coprire catalogo, partite e profilo, e a parita' di livello vince chi
+   viene dopo nel markup -- cioe' l'elenco si disegnava sopra la
+   TESTATA. Sparivano il marchio, le sezioni e soprattutto il contatore,
+   che e' l'unico modo di richiudere l'elenco: ci si restava dentro.
+   La testata galleggia su tutto quello che copre la pagina, e questo e'
+   il numero che lo dice. */
 header{
-  position:fixed; z-index:3; top:0; left:0; right:0;
+  position:fixed; z-index:4; top:0; left:0; right:0;
   display:flex; align-items:center; justify-content:space-between; gap:16px;
   padding:18px clamp(16px,4vw,40px);
   opacity:0; transform:translateY(-10px);
@@ -2432,7 +2439,12 @@ body.arreda #stanza{transform:none}
    La selezione non e' un contorno che gira attorno alla forma: sulle
    tinte e' un anello staccato -- serve lo stacco, se no su un colore
    chiaro l'anello ci si confonde -- e sulle voci e' il pieno. */
-.pastiglie.tinte button, #st-scaffali button, #st-muro button, #st-pavimento button{
+/* Tutte le file di tinte del pannello sono BOLLINI tondi. `#st-nome-tinta`
+   era rimasto quadrato e `#st-fari-tinta` sarebbe nato tale: quattro file
+   di colori nello stesso pannello, due tonde e due squadrate, si leggono
+   come due cose diverse che non lo sono. */
+.pastiglie.tinte button, #st-scaffali button, #st-muro button,
+#st-pavimento button, #st-nome-tinta button, #st-fari-tinta button{
   width:30px; height:30px; border-radius:50%; padding:0; border:0;
   box-shadow:inset 0 0 0 1px rgba(51,53,43,.14);
 }
@@ -2482,7 +2494,8 @@ body.arreda #stanza{transform:none}
   flex:none; font-size:11px; letter-spacing:.05em;
 }
 #stanza .pastiglie{gap:9px}
-#st-scaffali button, #st-muro button, #st-pavimento button{width:34px; height:34px}
+#st-scaffali button, #st-muro button, #st-pavimento button,
+#st-nome-tinta button, #st-fari-tinta button{width:34px; height:34px}
 
 /* Anche gli arredi con l'etichetta sopra: con le tre righe di colore
    incolonnate cosi', l'unica rimasta a fianco sembrava un errore. */

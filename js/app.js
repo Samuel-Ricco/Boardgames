@@ -2958,11 +2958,26 @@ function updateConta(){
      filtro si e' messo e dove si vede che c'e'. Fuori, il contatore
      torna a dire quanti giochi hai -- restava filtrato anche in
      libreria e nel catalogo, dove nessuno sapeva piu' perche'. */
-  const filtrato = document.body.classList.contains('elenco') &&
-                   (state.q || state.gruppo || state.soloPreferiti);
-  el.innerHTML = filtrato
-    ? T('mia.contaCerca', {n: lista().length, m: tot})
+  const aperto = document.body.classList.contains('elenco');
+
+  /* IL PULSANTE DICE DOVE PORTA, NON DOVE SEI.
+
+     E' un interruttore fra due modi di guardare la stessa collezione:
+     chiuso porta all'elenco e dice quanti giochi hai, aperto riporta
+     agli scaffali -- e allora deve dirlo, se no e' un pulsante acceso
+     che ripete il nome della schermata in cui ci si trova gia' e non
+     promette nessuna via d'uscita. */
+  el.innerHTML = aperto
+    ? T(sua ? 'mia.tornaSua' : 'mia.torna')
     : T(sua ? 'mia.contaSua' : 'mia.conta', {n: tot});
+  el.title = TP(aperto ? 'mia.tornaTitolo' : 'mia.apriTitolo');
+
+  /* E il conto non si sposta da nessuna parte: `#mia-msg`, due righe
+     sotto l'occhiello, lo dice gia' -- e lo dice meglio, perche' dice
+     anche quanti sono in vetrina ("25 giochi, 12 sugli scaffali", e
+     "14 giochi per <<ga>>" quando si cerca). Metterlo anche
+     nell'occhiello voleva dire lo stesso numero due volte nella stessa
+     schermata. */
 }
 
 /* --- aggiunta -------------------------------------------------- */
@@ -4721,12 +4736,14 @@ function apriElenco(){
   document.body.classList.add('elenco');
   q('#mia').setAttribute('aria-hidden', 'false');
   disegnaMia();
+  updateConta();          // il pulsante adesso e' la via del ritorno
 }
 
 function chiudiElenco(){
   document.body.classList.remove('elenco');
   q('#mia').setAttribute('aria-hidden', 'true');
   scordaFiltri();          // i filtri non escono dalla schermata in cui si mettono
+  updateConta();           // e torna a dire quanti giochi hai
 }
 
 /* Dall'elenco allo scaffale: si chiude l'elenco, la camera va alla
