@@ -3098,6 +3098,37 @@ sfocata sopra — un materiale e una geometria in cache per tutti i mobili, cioe
   vede, e quello che resta a vista e' esattamente la frangia — che e' l'ombra
   di contatto.
 
+## La testata sta su una parete che si puo' spegnere
+
+Sulla libreria il velo della testata e' piu' leggero — 55% invece di 82% —
+perche' li' dietro non scorre niente e coprire la stanza sarebbe un peccato. Ma
+quell'eccezione **non aveva un fondo**: con il muro scuro, o semplicemente con
+la luce bassa, dietro la carta c'e' il buio e il testo scuro su carta scurita
+non si legge piu'. Misurato: **3,42 a 1**, contro i 4,5 di soglia.
+
+E non e' un caso raro. Il fattore che scurisce lo sfondo e' `.10 + .90*luce`:
+gia' a luce 0,14 vale 0,23, quindi **anche il grigio caldo di partenza** dietro
+la testata diventa scuro. Chi tiene la stanza in penombra ce l'ha sempre.
+
+Adesso `applicaLuce()` misura quanto e' buio davvero (`lumDietroTestata`) e
+sotto la soglia mette `body.muro-scuro`: la testata torna una superficie piena
+al 94%, cioe' **9,01 a 1**. E' la regola gia' scritta — «la testata e' una
+superficie, non un velo» — con il fondo che le mancava. Con il muro chiaro a
+luce piena resta leggera com'era.
+
+### `state.sezione` e la classe sul body partivano in disaccordo
+
+Trovato cercando perche' il velo al 55% non si applicava mai all'avvio:
+`state.sezione` nasce a `'collezione'`, ma la **classe** `body.sez-collezione`
+la mette solo `setSezione()` — e sul percorso normale non la chiamava nessuno.
+Compariva al primo clic sulla navigazione, quindi fino a quel momento tutte le
+regole che ci dipendono erano inerti e la testata cambiava velo da sola appena
+toccavi una voce.
+
+Vale in generale: **uno stato iniziale scritto in `state` non e' applicato
+finche' qualcuno non lo applica.** Il valore di partenza e la funzione che lo
+mette in scena devono partire d'accordo, e il posto per farlo e' il boot.
+
 ## Stato attuale
 
 **Aggiornato al 2026-08-23 (quinta sessione).** Questa sezione e la prossima bastano a ripartire a
@@ -3205,6 +3236,8 @@ Un difetto, una taratura e due cose nuove sul pavimento. Nessuna migrazione.
 | il bagliore al centro | misurato 3,7x fra colonna di mezzo e lati. Spostare le lampade lo risolve e illumina la stanza intera, quindi restano dove sono e la luce sulle copertine viene dal loro `emissive` — che per costruzione non ha centro |
 | il parquet | listoni in corsa sfalsata, ripetibili per costruzione, ognuno col suo tono e il suo smusso |
 | l'ombra di contatto | un piano sfocato sotto ogni mobile vero: una chiamata di disegno in piu' per libreria |
+| la testata | illeggibile sulla stanza in penombra (3,42:1): sotto una soglia di buio torna una superficie piena (9,01:1) |
+| `sez-collezione` | la classe non veniva messa all'avvio: compariva al primo clic sulla navigazione |
 
 Il conto non e' cambiato: **99 chiamate contro le 98 di partenza, GPU 0,25 ms**
 (era 0,548 all'inizio della sessione precedente).

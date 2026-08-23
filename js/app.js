@@ -666,8 +666,39 @@ function sincronizzaFari(m){
   m.emissiveIntensity = 1.6 * f.forza;
 }
 
+/* LA TESTATA STA SU UNA PARETE CHE SI PUO' SPEGNERE.
+
+   Sulla libreria il velo della testata e' piu' leggero -- 55% invece
+   di 82% -- perche' li' dietro non scorre niente e coprire la stanza
+   sarebbe un peccato. Ma quell'eccezione non aveva un fondo: con il
+   muro scuro, o semplicemente con la luce bassa, dietro la carta c'e'
+   il buio e il testo scuro su carta scurita non si legge piu'.
+
+   Non e' un caso raro. Il fattore che scurisce lo sfondo e' `.10 +
+   .90*luce`: a luce 0,14 vale 0,23, quindi anche il grigio caldo di
+   partenza dietro la testata diventa scuro. Chi tiene la stanza in
+   penombra ce l'ha sempre.
+
+   Quindi si misura quanto e' buio davvero, e sotto una soglia la
+   testata torna a essere una superficie piena. E' la regola gia'
+   scritta -- «la testata e' una superficie, non un velo» -- con il
+   fondo che le mancava. */
+function lumDietroTestata(){
+  const st = STANZA.corrente();
+  const h = String(st.muro || '').replace('#', '');
+  if (h.length < 6) return 1;
+  const r = parseInt(h.slice(0,2), 16), g = parseInt(h.slice(2,4), 16), b = parseInt(h.slice(4,6), 16);
+  const k = .10 + .90 * Math.min(1.3, st.luce);      // com'e' scurito lo sfondo
+  return (.2126*r + .7152*g + .0722*b) * k / 255;    // 0..1
+}
+
+function testataLeggibile(){
+  document.body.classList.toggle('muro-scuro', lumDietroTestata() < .38);
+}
+
 function applicaLuce(){
   const l = STANZA.corrente().luce;
+  testataLeggibile();
   if (hemiLight) hemiLight.intensity = .52 * Math.pow(l, 1.05);
   if (ambLight)  ambLight.intensity  = .20 * Math.pow(l, .60);
   if (keyLight)  keyLight.intensity  = .95 * Math.pow(l, 1.35);
@@ -6936,6 +6967,13 @@ async function boot(){
 
   await wait(Math.max(0, 1400 - (performance.now() - t0)));
   document.body.classList.add('ready');
+  /* `state.sezione` nasce a 'collezione', ma la CLASSE sul body la
+     mette solo `setSezione`, e sul percorso normale non la chiamava
+     nessuno: `body.sez-collezione` compariva al primo clic sulla
+     navigazione, e fino a quel momento tutte le regole che ci
+     dipendono erano inerti -- la testata cambiava velo da sola appena
+     toccavi una voce. Lo stato e la classe partono d'accordo. */
+  setSezione('collezione');
   intro();
   disegnaProfilo();
 
