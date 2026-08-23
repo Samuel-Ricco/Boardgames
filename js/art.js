@@ -859,99 +859,38 @@ function avatar(av, S){
    scritto**: un serif editoriale in maiuscole e minuscole, spaziato
    appena. Tutto maiuscolo e tracciato di sei pixel era il modo di far
    funzionare un condensato, ed era l'opposto di questo. */
-/* Un rettangolo con gli angoli tondi, con la scorciatoia del canvas
-   quando c'e' e a mano quando non c'e'. */
-function rettTondo(x, bx, by, bw, bh, r){
-  if (x.roundRect){ x.beginPath(); x.roundRect(bx, by, bw, bh, r); return; }
-  x.beginPath();
-  x.moveTo(bx + r, by);
-  x.arcTo(bx + bw, by,      bx + bw, by + bh, r);
-  x.arcTo(bx + bw, by + bh, bx,      by + bh, r);
-  x.arcTo(bx,      by + bh, bx,      by,      r);
-  x.arcTo(bx,      by,      bx + bw, by,      r);
-  x.closePath();
-}
+/* IL NOME DEL MOBILE: UNA SCRITTA SUL MURO, E BASTA.
 
-/* IL NOME DEL MOBILE, SU UNA TARGA.
+   Ci sono passate tre versioni prima di tornare qui. Testo scuro sulla
+   parete; poi lo stesso testo con un alone chiaro dietro; poi una targa
+   di carta con gli angoli tondi, l'ombra e l'icona della libreria. Ogni
+   giro rispondeva allo stesso problema -- la parete cambia colore, e
+   con la luce bassa diventa quasi nera, quindi una scritta scura ci
+   spariva dentro.
 
-   Prima era testo scuro dipinto sulla parete, poi testo scuro con un
-   alone chiaro dietro. Nessuna delle due regge: la parete cambia
-   colore e con la luce bassa diventa quasi nera, e un alone e' un
-   ripiego -- si vede che c'e' e non si capisce cosa sia.
+   Ma quel problema non si risolve mettendo un foglio sotto le lettere:
+   si risolve **lasciando scegliere il colore della scritta**, che e' il
+   modo in cui si risolve in una stanza vera. Cosi' la scritta resta una
+   scritta, senza bordo, senza ombra e senza icona -- e su un muro scuro
+   la si mette chiara.
 
-   Una targa invece e' una cosa: carta chiara con gli angoli tondi e
-   la sua ombra, come tutto quello che galleggia sulla scena in questo
-   sito. Il testo ci sta sopra scuro, e da quel momento il muro dietro
-   non conta piu' niente. */
-/* L'icona della libreria a cubi, la stessa del corredo SVG del sito,
-   disegnata sul canvas. `Path2D` prende il `d` cosi' com'e', quindi il
-   disegno resta uno solo: se un giorno cambia l'icona, cambia anche
-   questa. Dove `Path2D` non c'e' si salta e resta il nome, che e'
-   l'informazione. */
-const D_SCAFFALE = 'M4 3.5h16v16H4zM4 11.5h16M12 3.5v16M7 19.5v2M17 19.5v2';
-
-function iconaScaffale(x, cx, cy, lato, tinta){
-  if (typeof Path2D === 'undefined') return false;
-  const s = lato / 24;
-  x.save();
-  x.translate(cx - lato / 2, cy - lato / 2);
-  x.scale(s, s);
-  x.strokeStyle = tinta;
-  x.lineWidth = 1.6;
-  x.lineCap = 'round';
-  x.lineJoin = 'round';
-  x.stroke(new Path2D(D_SCAFFALE));
-  x.restore();
-  return true;
-}
-
-/* IL NOME DEL MOBILE, SU UNA TARGA.
-
-   Con la mano del resto del sito, non con una sua: raggio `--r-m`
-   riportato in scala (le schede del sito, non una pastiglia), il font
-   dei titoli a peso 400 e **senza spaziatura** -- quella larga viene
-   dai tempi del condensato e le note dicono da un pezzo di non usarla
-   -- e l'icona della libreria a cubi davanti, la stessa che apre il
-   pannello del mobile e che porta allo scaffale. */
-function targhetta(nome){
+   `tinta` arriva da `STANZA.corrente().nome`. Se manca resta
+   l'inchiostro di sempre, che e' come stava prima di poterlo cambiare. */
+function targhetta(nome, tinta){
   const testo = String(nome || '');
-  const H = 152;
-  const CORPO = 78;                     // il testo
-  const ICO_L = 60, ICO_GAP = 22;       // l'icona e lo stacco dal nome
-  const padX = 46;
+  const H = 128, CORPO = 78, padX = 18;
 
   const mis = cnv(8, 8)[1];
   mis.font = '400 ' + CORPO + 'px "Poppins", system-ui, sans-serif';
-  const wTesto = Math.ceil(mis.measureText(testo).width);
-  const dentro = ICO_L + ICO_GAP + wTesto;
-  const larg = Math.max(300, dentro + padX * 2);
+  const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + padX * 2);
 
   const cx = cnv(larg, H), c = cx[0], x = cx[1];
-  // margine attorno alla targa: e' li' che ci sta l'ombra
-  const bx = 14, by = 16, bw = larg - 28, bh = H - 38;
-  const r = bh * .26;                   // `--r-m` sulle schede, in scala
-
-  x.shadowColor = 'rgba(28,20,10,.30)';
-  x.shadowBlur = 18;
-  x.shadowOffsetY = 6;
-  x.fillStyle = 'rgba(242,241,237,.96)';
-  rettTondo(x, bx, by, bw, bh, r); x.fill();
-  x.shadowBlur = 0; x.shadowOffsetY = 0;
-
-  // un filo di bordo, come le altre superfici chiare del sito
-  x.strokeStyle = 'rgba(51,53,43,.10)'; x.lineWidth = 2;
-  rettTondo(x, bx, by, bw, bh, r); x.stroke();
-
-  const cy = by + bh / 2;
-  const x0 = (larg - dentro) / 2;       // il gruppo icona+nome, centrato
-  const conIcona = iconaScaffale(x, x0 + ICO_L / 2, cy, ICO_L, 'rgba(200,106,60,.85)');
-
   x.font = mis.font;
   x.letterSpacing = '0px';
-  x.textAlign = 'left';
+  x.textAlign = 'center';
   x.textBaseline = 'middle';
-  x.fillStyle = 'rgba(51,53,43,.94)';
-  x.fillText(testo, conIcona ? x0 + ICO_L + ICO_GAP : (larg - wTesto) / 2, cy + 2);
+  x.fillStyle = tinta || '#33352b';
+  x.fillText(testo, larg / 2, H * .54);
   return c;
 }
 

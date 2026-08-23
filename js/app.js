@@ -651,7 +651,7 @@ function buildCabinet(){
          misura fissa in scena: su un telefono la camera arretra per far
          stare i dodici cubi, e il nome finiva la meta' di quello che e'
          su un monitor. */
-      const c = ART.targhetta(scritta);
+      const c = ART.targhetta(scritta, STANZA.corrente().nome);
       const alt = TARGA_ALT, larg = alt * (c.width / c.height);
       const targa = new THREE.Mesh(
         new THREE.PlaneGeometry(larg, alt),
@@ -4060,6 +4060,7 @@ function disegnaStanza(){
   gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false);
   gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false);
   gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false);
+  gruppo('#st-nome-tinta', STANZA.NOMI,     cur.nome,       false);
   gruppo('#st-arredo',    STANZA.ARREDI,    suo.arredo,     true);
 }
 
@@ -4186,7 +4187,8 @@ function bindStanza(){
   });
 
   // muro e pavimento sono la stanza
-  [['#st-muro','muro'], ['#st-pavimento','pavimento']].forEach(function(par){
+  [['#st-muro','muro'], ['#st-pavimento','pavimento'],
+   ['#st-nome-tinta','nome']].forEach(function(par){
     q(par[0]).addEventListener('click', function(e){
       const b = e.target.closest('button[data-v]');
       if (!b) return;

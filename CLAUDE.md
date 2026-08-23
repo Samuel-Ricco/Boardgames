@@ -2227,87 +2227,36 @@ uno, e per un'uscita e' anche il tono giusto.
 Vale in generale: **`#fff` su `--accent` regge a quattordici pixel in grassetto e
 non regge a dodici.** Dove serve un comando piccolo, il fondo va scuro.
 
-### Una targa, non un alone — e il binario torna sulla sua pastiglia
+### Il nome del mobile e' una scritta, e il colore lo scegli tu
 
-Il nome del mobile e il binario in basso stanno **sulla stanza**, e la stanza
-cambia colore: la luce si abbassa fino a spegnerla quasi del tutto. Ci ho
-provato due volte prima di arrivarci.
+Il nome sta **sulla parete**, e la parete cambia colore: la luce si abbassa
+fino a spegnerla quasi del tutto. Ci sono passate tre versioni prima di tornare
+al punto di partenza, e vale la pena averle scritte tutte e tre.
 
 1. Testo scuro dipinto sulla parete. Spariva sul muro scuro.
-2. Testo scuro con un **alone chiaro** dietro. Regge, ma si vede che e' un
+2. Lo stesso testo con un **alone chiaro** dietro. Regge, ma si vede che e' un
    ripiego: si nota l'alone e non si capisce cosa sia.
-3. **Una targa.** Carta chiara con gli angoli tondi e la sua ombra, come tutto
-   quello che galleggia sulla scena in questo sito. Il testo ci sta sopra scuro,
-   e da quel momento **il muro dietro non conta piu' niente.**
+3. Una **targa** di carta con gli angoli tondi, l'ombra e l'icona della libreria.
+   Risolveva la leggibilita' e ne apriva altri tre problemi: e' un'immagine di
+   testo accanto a testo vero (e si vede che e' piu' morbida), pesa troppo per la
+   riga in cui sta, e l'icona era la stessa del pulsante a cinquanta pixel di
+   distanza.
 
-`targhetta()` la disegna sul canvas (`rettTondo` usa `roundRect` dove c'e' e le
-quattro `arcTo` dove non c'e'), e il binario ha la stessa superficie in CSS.
+**Il problema non era il fondo, era il colore.** Una scritta che sparisce su un
+muro scuro non si aggiusta mettendole un foglio sotto: si aggiusta scrivendola
+chiara, che e' quello che si fa in una stanza vera. Quindi la scritta e' tornata
+nuda — senza bordo, senza ombra, senza icona — e il colore e' una scelta
+nel pannello, accanto a muro e pavimento.
 
-**E hanno la mano del resto del sito, non una loro.** Al primo giro erano usciti
-tutti e due fuori scala: pastiglia a 999px, testo a peso 600 con due pixel di
-spaziatura. Nessuna delle due cose e' del sito.
-
-- **Raggio `--r-m`**, che nella scala di questo foglio vuol dire *scheda*. I
-  999px sono la forma delle **pastigliette** — i gruppi, i nomi al tavolo, le
-  tinte — e queste due non sono pastigliette: sono superfici. Sulla targa il
-  raggio e' riportato in proporzione al canvas (`bh * .26`).
-- **Il testo dei titoli sta a peso 400 e senza spaziatura.** Quella larga viene
-  dai tempi in cui il font era condensato, e le note lo dicono da un pezzo per i
-  comandi: vale anche qui.
-- **L'icona.** Sulla targa c'e' la libreria a cubi, la stessa che apre il
-  pannello del mobile e che porta allo scaffale: due comandi che portano allo
-  stesso oggetto portano la stessa figura, e questa e' l'oggetto. Sul canvas la
-  disegna `Path2D` **con lo stesso `d` dell'SVG**, cosi' il disegno resta uno
-  solo: se un giorno cambia l'icona cambia anche questa. Dove `Path2D` non c'e'
-  si salta e resta il nome, che e' l'informazione.
-
-**Le frecce del binario non c'erano.** Si passava di mobile in mobile solo
-trascinando una riga alta quattro pixel o con le frecce della tastiera, che su
-un telefono non esistono. Adesso ci sono due chevron di livello «nudo», che
-**ai due capi si spengono**: un pulsante che risponde a vuoto e' peggio di uno
-spento.
-
-**La targa non ha una misura in scena: ha una fetta di schermo.** Era un piano
-alto 1,05 unita' fisse, e su un telefono il nome usciva la meta' di quello che e'
-su un monitor — segnalato con lo screenshot. Il motivo e' geometrico: per far
-stare i dodici cubi in un formato stretto **la camera arretra**, e tutto quello
-che ha una misura fissa in scena rimpicciolisce con lei.
-
-Adesso la costruisce a un'altezza di riferimento (`TARGA_ALT`) e la **scala
-`allineaComandi()`**, che e' l'unico posto che sa quanto spazio c'e' davvero: la
-targa prende una fetta della fascia libera fra il fondo della testata e la cima
-del mobile, misurata **in pixel di schermo** e riportata in scena con `mondoY`
-alla z della parete. Cosi' il nome pesa uguale ovunque, e a un `resize` si
-riadatta senza ricostruire niente.
-
-- La fetta e' **piu' generosa sullo schermo stretto** (.46 contro .30). Non e' un
-  capriccio: su un telefono la fascia libera e' poca e tutto il resto —
-  testata, pulsanti, barra — e' proporzionalmente piu' grande, quindi un nome
-  misurato col metro del monitor ci si perde dentro. Su un monitor la fascia e'
-  larga, e prendersene la meta' vuol dire un nome che pesa piu' del mobile di cui
-  parla.
-- Un tetto e un pavimento in pixel evitano i due estremi, e se il nome e' lungo
-  si stringe **tutta la targa** invece di schiacciare il testo: prima la
-  larghezza veniva tagliata a `W - .6` lasciando l'altezza dov'era, cioe' le
-  lettere compresse.
-
-**E la targa entra invece di comparire.** Si accende, con la curva unica del sito e uno
-scaglionamento per mobile — come le righe di un elenco. Era l'unica cosa della
-scena a spuntare di colpo a ogni ricostruzione. **Solo l'opacita'**: la quota e
-la scala le tiene `allineaComandi`, e animarle anche qui vorrebbe dire due pezzi
-di codice che scrivono la stessa proprieta' nello stesso fotogramma.
-
-**E qui e' stata rovesciata una decisione scritta.** Il binario la superficie
-l'aveva, ed era stata tolta: «sul pavimento chiaro sembrava una macchia,
-bastano il contrasto del testo e la barra». Era vero **finche' il pavimento era
-chiaro**. Da quando la luce arriva a spegnere la stanza, quel fondo puo' essere
-nero e un numero grigio al 55% su nero non si legge. La lezione generale:
-**una superficie che serve solo quando il fondo la perdona non e' una
-superficie, e' una scommessa sul colore di dietro.**
-
-Con la pastiglia visibile, il numero **torna dentro**: stava fuori, appeso a
-sinistra, perche' senza un fondo centrare il gruppo faceva sembrare la barra
-spostata di mezza scritta. Adesso quello che l'occhio centra e' la pastiglia.
+- Sta in `profili.stanza` come luce, muro e pavimento: **e' della stanza, non del
+  singolo mobile.** Due nomi di colore diverso sulla stessa parete non si
+  leggono come due nomi, si leggono come un errore. E' un jsonb, quindi non
+  serve nessuna migrazione.
+- La tavolozza non serve a decorare, serve a farsi leggere: il molto scuro e il
+  molto chiaro ai due capi — che sono quelli che rispondono ai muri estremi —
+  e in mezzo le tinte del sito.
+- `normalizza()` riempie il valore per chi non l'ha mai scelto, quindi le stanze
+  gia' salvate continuano a vedere l'inchiostro di sempre.
 
 ### Quello che galleggia su una stanza che si spegne
 

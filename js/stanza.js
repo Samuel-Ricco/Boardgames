@@ -25,7 +25,8 @@ const DEFAULT = {
   scaffali: '#8e6a4b',
   muro: '#cfccc8',
   pavimento: '#c7af98',
-  arredo: 'misto'
+  arredo: 'misto',
+  nome: '#33352b'
 };
 
 /* I legni tirati verso l'oliva. Un mobile scuro contro una parete
@@ -61,6 +62,23 @@ const MURI = [
   { v: '#747760', n: 'tinta.oliva' },
   { v: '#c86a3c', n: 'tinta.terracotta' },
   { v: '#33352b', n: 'tinta.olivaScuro' }
+];
+
+/* Il colore del NOME della libreria, quello scritto sulla parete.
+   E' una scelta della stanza e non del singolo mobile: due nomi di
+   colore diverso sulla stessa parete si leggerebbero come due cose che
+   non c'entrano fra loro.
+
+   La tavolozza qui non serve a decorare, serve a farsi leggere: ci sono
+   il molto scuro e il molto chiaro ai due capi -- che sono quelli che
+   rispondono ai muri estremi -- e in mezzo le tinte del sito. */
+const NOMI = [
+  { v: '#33352b', n: 'tinta.olivaScuro' },
+  { v: '#f2f1ed', n: 'tinta.carta' },
+  { v: '#c86a3c', n: 'tinta.terracotta' },
+  { v: '#8e6a4b', n: 'tinta.noce' },
+  { v: '#c7af98', n: 'tinta.sabbia' },
+  { v: '#747760', n: 'tinta.oliva' }
 ];
 
 const PAVIMENTI = [
@@ -105,6 +123,7 @@ function normalizza(s){
   o.muro      = dentro(MURI,      o.muro,      DEFAULT.muro);
   o.pavimento = dentro(PAVIMENTI, o.pavimento, DEFAULT.pavimento);
   o.arredo    = dentro(ARREDI,    o.arredo,    DEFAULT.arredo);
+  o.nome      = dentro(NOMI,      o.nome,      DEFAULT.nome);
   return o;
 }
 
@@ -152,10 +171,10 @@ async function salva(){
   if (p) p.stanza = ora;
 }
 
-function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI }; }
+function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI }; }
 
 return {
-  DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI,
+  DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI,
   LUCE_MIN: LUCE_MIN, LUCE_MAX: LUCE_MAX,
   corrente: corrente, miaStanza: miaStanza, normalizza: normalizza,
   daProfilo: daProfilo, daAltri: daAltri, cambia: cambia, salva: salva,
