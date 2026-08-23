@@ -126,6 +126,119 @@ function wood(o){
 }
 
 /* ---------------------------------------------------------------
+   IL PARQUET
+
+   Il pavimento era la stessa tavola del mobile, stirata: una venatura
+   sola lunga tutta la stanza, che a terra non esiste da nessuna parte.
+   Un pavimento di legno e' fatto di PEZZI, e sono le fughe fra i pezzi
+   a dire quanto e' grande la stanza -- senza, manca il metro con cui
+   si legge la distanza.
+
+   Si disegna a listoni in corsa sfalsata: colonne larghe uguale, due
+   listoni per colonna, e ogni colonna spostata rispetto alla vicina
+   cosi' che non ci siano mai due teste in fila. La ripetizione e'
+   verticale per costruzione -- i listoni sono alti mezzo riquadro,
+   quindi il disegno si richiude su se' stesso -- e orizzontale perche'
+   le colonne sono un numero intero.
+
+   Ogni listone ha il suo tono, perche' due tavole dello stesso legno
+   non sono mai identiche, ed e' proprio quella differenza a farlo
+   leggere come legno posato invece che come carta da parati. */
+function parquet(o){
+  o = o || {};
+  const w = o.w || 512, h = o.h || 512;
+  const base = new THREE.Color(o.base || '#c7af98');
+  const scuro = o.dark || '#8f7a66', chiaro = o.light || '#e3d3c2';
+  const [c, x] = cnv(w, h);
+
+  // il fondo e' la fuga: quello che resta scoperto fra un listone e l'altro
+  x.fillStyle = scuro;
+  x.fillRect(0, 0, w, h);
+
+  const cols = o.cols || 11;
+  const lw = w / cols;
+  const lung = h / 2;                    // due per colonna: cosi' si ripete
+  const fuga = Math.max(1, Math.round(lw * .035));
+
+  for (let i = 0; i < cols; i++){
+    // sfalsatura: un numero primo di pixel per colonna, cosi' le teste
+    // non si allineano mai e il motivo non si ripete a occhio
+    const off = (i * 173) % lung;
+    for (let k = -1; k <= 2; k++){
+      const X = i * lw, Y = off + k * lung;
+      const tono = base.clone().multiplyScalar(.86 + Math.random() * .28);
+      x.fillStyle = '#' + tono.getHexString();
+      x.fillRect(X + fuga, Y + fuga, lw - fuga * 2, lung - fuga * 2);
+
+      // la venatura corre per il lungo, come su una tavola vera
+      x.save();
+      x.beginPath();
+      x.rect(X + fuga, Y + fuga, lw - fuga * 2, lung - fuga * 2);
+      x.clip();
+      for (let v = 0; v < 14; v++){
+        const vx = X + rnd(fuga, lw - fuga);
+        x.strokeStyle = Math.random() < .55 ? scuro : chiaro;
+        x.globalAlpha = rnd(.04, .13);
+        x.lineWidth = rnd(.5, 2.2);
+        x.beginPath();
+        x.moveTo(vx, Y);
+        for (let py = Y; py <= Y + lung; py += 10){
+          x.lineTo(vx + Math.sin(py * .035 + i) * 1.8, py);
+        }
+        x.stroke();
+      }
+      x.globalAlpha = 1;
+      x.restore();
+
+      /* Lo smusso: chiaro sui due lati da cui viene la luce, scuro
+         sugli altri due. E' un pixel per lato e fa tutto il lavoro --
+         senza, i listoni sono rettangoli colorati e non pezzi di legno
+         che stanno uno accanto all'altro. */
+      x.fillStyle = 'rgba(255,255,255,.16)';
+      x.fillRect(X + fuga, Y + fuga, lw - fuga * 2, 1);
+      x.fillRect(X + fuga, Y + fuga, 1, lung - fuga * 2);
+      x.fillStyle = 'rgba(0,0,0,.16)';
+      x.fillRect(X + fuga, Y + lung - fuga - 1, lw - fuga * 2, 1);
+      x.fillRect(X + lw - fuga - 1, Y + fuga, 1, lung - fuga * 2);
+    }
+  }
+
+  grain(x, w, h, 9);
+  return c;
+}
+
+/* ---------------------------------------------------------------
+   L'OMBRA DI CONTATTO
+
+   Sotto un mobile appoggiato a terra la luce non arriva, e quel poco
+   di buio dove il legno tocca il pavimento e' l'unica cosa che dice
+   che il mobile ci POGGIA sopra invece di galleggiarci un dito sopra.
+   L'ombra proiettata dalla finestra non basta: quella dice da che
+   parte viene la luce, non che i due si toccano.
+
+   E' una macchia sfocata sull'impronta del mobile, su un piano appena
+   sopra il pavimento. Il `filter` del canvas fa la sfocatura in una
+   riga: farla a mano vorrebbe dire una sequenza di gradienti attorno
+   a un rettangolo, che e' lo stesso disegno scritto in venti righe. */
+function contatto(w, h, mx, my, forza, sfoca){
+  const [c, x] = cnv(w, h);
+  const X = w * mx, Y = h * my;
+  /* Due passate: una stretta e scura, che e' il contatto vero -- il
+     buio proprio dove il legno tocca -- e una larga e tenue, che e' la
+     luce che manca tutto attorno. Con una sola sfocatura si ottiene o
+     un alone senza contatto o un contatto senza alone, e serve tutte e
+     due: e' cosi' che si legge un oggetto appoggiato. */
+  x.filter = 'blur(' + Math.max(4, Math.round(sfoca * 2.6)) + 'px)';
+  x.fillStyle = 'rgba(0,0,0,' + (forza * .5).toFixed(3) + ')';
+  x.fillRect(X, Y, w - X * 2, h - Y * 2);
+  x.filter = 'blur(' + Math.max(2, Math.round(sfoca)) + 'px)';
+  x.fillStyle = 'rgba(0,0,0,' + forza.toFixed(3) + ')';
+  x.fillRect(X, Y, w - X * 2, h - Y * 2);
+  x.filter = 'none';
+  return c;
+}
+
+/* ---------------------------------------------------------------
    L'OMBRA DENTRO I CUBI  (occlusione ambientale, dipinta)
 
    Un cubo di libreria non e' illuminato come la stanza attorno: la
@@ -1018,6 +1131,7 @@ function quadro(seed){
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
   aoCubi: aoCubi, fariCubi: fariCubi, copia: copia,
+  parquet: parquet, contatto: contatto,
   avatar: avatar, quadro: quadro, targhetta: targhetta,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,

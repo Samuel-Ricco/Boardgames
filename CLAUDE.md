@@ -2991,9 +2991,116 @@ davanti a una macchina fotografica, ed e' per quello che si legge come neon.
 Costa **zero**: e' la stessa texture di prima sullo stesso schienale, che e'
 una tavola sola per tutto il mobile.
 
+## I faretti erano spenti finche' non li toccavi
+
+Segnalato cosi': «all'apertura dell'app i LED sono spenti e si spengono anche
+se modifichi l'estetica della libreria, poi toccando lo slider si sistema
+tutto». Tutto vero, e la causa e' un ordine.
+
+`applicaStanza()` chiama `applicaLuce()` **per prima cosa** e solo dopo
+ricostruisce i materiali. Un legno mai usato prima nasce in quel momento, con
+`emissiveIntensity` a zero, e nessuno tornava piu' a dirglielo — lo stesso
+all'avvio, dove il mobile si costruisce prima che qualcuno accenda niente.
+Muovere il cursore chiamava `applicaLuce()` di nuovo, questa volta sui
+materiali che esistevano davvero, e sembrava una magia.
+
+La regola che ne esce: **uno stato che va applicato non si applica in un punto
+solo, si applica da chi nasce e da chi c'e' gia'.**
+
+- `fariOra()` calcola i faretti **dalla stanza a ogni chiamata**, invece di
+  leggere una variabile riempita altrove: cosi' non dipende dall'ordine in cui
+  le cose vengono costruite;
+- `sincronizzaFari(m)` mette in pari un materiale, e la chiamano tutti e due:
+  `matsDi()` appena ne crea uno, `applicaLuce()` su quelli in cache.
+
+Due strade, nessun ordine da rispettare.
+
+## Il bagliore al centro non si toglie spostando le lampade
+
+Le quattro lampade dei vani stanno sull'asse del mobile: la colonna di mezzo la
+colpiscono in pieno e le due di fianco di sbieco. Misurato **su una scena tutta
+bianca** — si sostituiscono tutti i materiali con un MeshStandard bianco, si
+rende con e senza quelle lampade e si sottrae, cosi' quello che si legge e'
+solo LUCE e non l'albedo delle copertine — il centro prendeva **3,7 volte** i
+lati, uguale su tutte e quattro le file.
+
+**Portarle avanti lo appiattisce davvero** (misurato: 1,1 volte) **e non si
+puo' fare.** Una lampada a cinque unita' dal mobile non e' piu' una luce dentro
+un vano: e' un faro puntato sulla stanza, e illuminava parete, pavimento e la
+faccia del mobile finche' la penombra non spariva. Il baratto non si vince —
+distribuzione piatta vuol dire portata, e portata vuol dire luce dappertutto.
+
+**La luce che non ha un centro se la fanno le copertine.** Ogni copertina si
+accende un poco da se', della tinta dei faretti e in proporzione a quanto sono
+accesi: per costruzione e' identica su tutte e dodici, nessun centro e nessun
+angolo. Non e' nemmeno una furbata — una scatola sotto una striscia LED rimanda
+indietro quella luce, ed e' quello che si vede davvero.
+
+Costa **zero**: e' l'`emissive` che c'era gia' per l'alzata dell'hover. Quello
+pero' era bianco, e adesso porta la tinta scelta: una copertina sotto una
+striscia azzurra non puo' schiarirsi di bianco. Le lampade restano dove stanno
+e pesano meno (la loro quota di faretti da .62 a .34), quindi il poco che resta
+del bagliore e' un accento e non un faro.
+
+## Il pavimento e' fatto di pezzi
+
+Era la stessa tavola del mobile, stirata: **una venatura sola lunga tutta la
+stanza**, che a terra non esiste da nessuna parte. Un pavimento di legno e'
+fatto di pezzi, e sono **le fughe fra i pezzi a dire quanto e' grande la
+stanza** — senza, manca il metro con cui si legge la distanza.
+
+`ART.parquet()` disegna listoni in corsa sfalsata:
+
+- **si ripete per costruzione.** I listoni sono alti mezzo riquadro, quindi il
+  disegno si richiude su se' stesso in verticale; le colonne sono un numero
+  intero, quindi anche in orizzontale.
+- **la sfalsatura e' un numero primo di pixel per colonna** (173), cosi' due
+  teste non si allineano mai e il motivo non si ripete a occhio.
+- **ogni listone ha il suo tono.** Due tavole dello stesso legno non sono mai
+  identiche, ed e' proprio quella differenza a farlo leggere come legno posato
+  invece che come carta da parati.
+- **lo smusso e' un pixel per lato** — chiaro sui due lati da cui viene la
+  luce, scuro sugli altri due. Senza, i listoni sono rettangoli colorati; con,
+  sono pezzi di legno che stanno uno accanto all'altro.
+- il rilievo sale da .012 a **.05**: sulle fughe c'e' davvero uno scalino, ed
+  e' quello che le fa leggere da lontano.
+
+**Il riquadro deve restare quadrato.** La ripetizione e' 13 sulla profondita' e
+`stanzaLarga` mette la stessa scala in larghezza, quindi un riquadro copre circa
+diciotto unita' per lato. Se le due scale divergessero, i listoni uscirebbero
+stirati — che e' esattamente il difetto da cui si e' partiti.
+
+## L'occlusione fra il mobile e il pavimento
+
+Sotto un mobile appoggiato a terra la luce non arriva, e quel poco di buio dove
+il legno tocca il pavimento e' **l'unica cosa che dice che il mobile ci poggia
+sopra** invece di galleggiarci un dito sopra. L'ombra proiettata dalla finestra
+non basta: quella dice da che parte viene la luce, non che i due si toccano.
+
+E' **un piano solo** appena sopra il pavimento, con l'impronta del mobile
+sfocata sopra — un materiale e una geometria in cache per tutti i mobili, cioe'
+**una chiamata di disegno in piu' per libreria**.
+
+- **Due passate di sfocatura, non una.** Una stretta e scura, che e' il
+  contatto vero, e una larga e tenue, che e' la luce che manca tutto attorno.
+  Con una sola si ottiene o un alone senza contatto o un contatto senza alone,
+  e servono tutte e due: e' cosi' che si legge un oggetto appoggiato.
+- Il `filter` del canvas fa la sfocatura in una riga. A mano vorrebbe dire una
+  sequenza di gradienti attorno a un rettangolo — lo stesso disegno scritto in
+  venti righe.
+- **Le misure escono dal mobile**, non da numeri a occhio: il piano e' largo
+  `LIB_W + 2.2` e profondo `KAL.d + 2.6`, quindi l'impronta cade a frazioni
+  note del riquadro e il buio comincia dove finisce il legno.
+- **Il fantasma non ce l'ha**, come non ha l'ombra: un mobile che non c'e' non
+  poggia da nessuna parte.
+- Sta a `y = SUOLO + .012`, cioe' **dentro** il ripiano di fondo. Non e' un
+  problema, e' il punto: sotto il mobile il piano e' coperto dal legno e non si
+  vede, e quello che resta a vista e' esattamente la frangia — che e' l'ombra
+  di contatto.
+
 ## Stato attuale
 
-**Aggiornato al 2026-08-23 (quarta sessione).** Questa sezione e la prossima bastano a ripartire a
+**Aggiornato al 2026-08-23 (quinta sessione).** Questa sezione e la prossima bastano a ripartire a
 freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
 racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
 è fatto* c'è tutto il resto di questo file, che è aggiornato.
@@ -3087,6 +3194,23 @@ Ottimizzazione e neon. Nessuna migrazione, nessuna colonna nuova.
 
 I dati non sono stati toccati: **25 giochi, una libreria, una partita**, e i
 faretti sono tornati al caldo a 0,44 dopo le prove con il viola e il ciano.
+
+### La sessione del 2026-08-23 (quinta)
+
+Un difetto, una taratura e due cose nuove sul pavimento. Nessuna migrazione.
+
+| argomento | cosa |
+|---|---|
+| i LED spenti | erano spenti all'avvio e a ogni cambio d'aspetto: `applicaLuce()` girava prima che i materiali nascessero. Adesso chi nasce si mette in pari da solo |
+| il bagliore al centro | misurato 3,7x fra colonna di mezzo e lati. Spostare le lampade lo risolve e illumina la stanza intera, quindi restano dove sono e la luce sulle copertine viene dal loro `emissive` — che per costruzione non ha centro |
+| il parquet | listoni in corsa sfalsata, ripetibili per costruzione, ognuno col suo tono e il suo smusso |
+| l'ombra di contatto | un piano sfocato sotto ogni mobile vero: una chiamata di disegno in piu' per libreria |
+
+Il conto non e' cambiato: **99 chiamate contro le 98 di partenza, GPU 0,25 ms**
+(era 0,548 all'inizio della sessione precedente).
+
+I dati non sono stati toccati: 25 giochi, una libreria, una partita, e la
+stanza e' tornata com'era (caldo a 0,44, luce 0,14).
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 

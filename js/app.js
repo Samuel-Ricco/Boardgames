@@ -275,7 +275,7 @@ function killGroup(g, deep){
 
 function makeWoodMat(o){
   o = o || {};
-  const c = ART.wood(o);
+  const c = o.parquet ? ART.parquet(o) : ART.wood(o);
   /* Il RILIEVO viene dalla venatura e basta: l'ombra dipinta sopra e'
      luce che manca, non legno che sporge, e messa anche nel bump map
      scaverebbe un fossato lungo ogni bordo. Per questo l'occlusione va
@@ -366,6 +366,8 @@ function matsDi(tinta){
                    ao: function(cv){ return ART.aoCubi(cv, celleCubi()); },
                    fari: function(w, h){ return ART.fariCubi(w, h, celleCubi()); } })
   };
+  // un legno appena nato non aspetta il prossimo giro di `applicaLuce`
+  sincronizzaFari(MATS_PER_TINTA[tinta].fondo);
   return MATS_PER_TINTA[tinta];
 }
 
@@ -417,9 +419,45 @@ function makeMats(){
   MATS = matsDi(STANZA.corrente().scaffali);
 }
 
+/* Il pavimento e' a LISTONI, non una tavola sola stirata per tutta la
+   stanza. La ripetizione e' 13 sulla profondita' e `stanzaLarga` mette
+   la stessa scala in larghezza, quindi un riquadro di texture copre
+   circa diciotto unita' per lato -- un quadrato, che e' l'unico modo
+   perche' i listoni non escano stirati.
+
+   Il rilievo sale (`bump` da .012 a .05): sulle fughe c'e' davvero uno
+   scalino, ed e' quello che le fa leggere da lontano. */
 function legnoPavimento(){
   return legno(STANZA.corrente().pavimento,
-               { lines:180, knots:1, repeat:[1,13], rough:.72, bump:.012 });
+               { parquet: true, cols: 13, repeat:[1,13], rough:.74, bump:.05 });
+}
+
+/* L'OMBRA DI CONTATTO SOTTO UN MOBILE.
+
+   Un piano solo, appena sopra il pavimento, con l'impronta del mobile
+   sfocata sopra. Non e' l'ombra della finestra -- quella c'e' gia' e
+   dice da che parte viene la luce: questa dice che il mobile TOCCA
+   terra, e senza si vede che galleggia.
+
+   Materiale e geometria stanno in cache: sono uguali per tutti i
+   mobili, e `killGroup` non li butta via perche' `comune` li segna. */
+function geoPiano(){
+  return comune('piano', function(){ return new THREE.PlaneGeometry(1, 1); });
+}
+
+function matContatto(){
+  return comune('contatto', function(){
+    return new THREE.MeshBasicMaterial({
+      /* Le misure escono dal mobile: il piano e' largo LIB_W + 2.2 e
+         profondo KAL.d + 2.6, quindi l'impronta cade a queste frazioni
+         del riquadro e il buio comincia esattamente dove finisce il
+         legno. Sfocatura in pixel, non in frazione: qui conta quanto e'
+         larga la sfumatura per terra, non quanto e' grande la texture. */
+      map: ART.toTex(ART.contatto(256, 128, .081, .203, .62, 9)),
+      transparent: true, opacity: 1, depthWrite: false,
+      color: 0x000000
+    });
+  });
 }
 
 /* Un fantasma non proietta ombra: sarebbe l'ombra di un mobile che non
@@ -524,6 +562,26 @@ function buildRoom(){
      del tutto. Sono quattro e SEGUONO LA CAMERA invece di essercene un
      gruppo per ogni libreria: le librerie possono diventare tante, e
      accenderle tutte vorrebbe dire pagare luci che nessuno vede. */
+  /* IL BAGLIORE AL CENTRO, E PERCHE' NON SI TOGLIE SPOSTANDO QUESTE.
+
+     Sono quattro, una per fila, tutte sull'asse del mobile: la colonna
+     di mezzo la colpiscono in pieno e le due di fianco di sbieco.
+     Misurato su una scena tutta bianca -- cosi' quello che si legge e'
+     solo luce e non l'albedo delle copertine -- il centro prendeva
+     **3,7 volte** i lati.
+
+     Portarle avanti lo appiattisce davvero (misurato: 1,1 volte), ma
+     non si puo' fare: una lampada a cinque unita' dal mobile non e'
+     piu' una luce dentro un vano, e' un faro puntato sulla stanza --
+     illuminava parete, pavimento e la faccia del mobile, e la penombra
+     spariva. E' un baratto che non si vince: distribuzione piatta vuol
+     dire portata, e portata vuol dire luce dappertutto.
+
+     Quindi restano dove stanno, e a pesare di meno (la loro quota di
+     faretti e' scesa da .62 a .34). La luce che manca alle colonne
+     laterali arriva da un'altra parte, che per costruzione non ha
+     nessun centro: le copertine si accendono da sole -- vedi
+     `updateBoxes`. */
   for (let r = 0; r < RIGHE; r++){
     const l = new THREE.PointLight(0xfff0da, 0, 8, 1.9);
     l.position.set(0, rigaY(r) + KAL.cell * .34, KAL.front + .5);
@@ -568,6 +626,46 @@ function makeAlone(){
    Sfondo e nebbia sono tinte piatte che nessuna luce tocca: vanno
    scurite a mano, se no la stanza si abbuia e la parete in fondo resta
    accesa come a mezzogiorno. */
+/* QUANTO SONO ACCESI I FARETTI, ADESSO.
+
+   Si calcola dalla stanza a ogni chiamata invece di leggere una
+   variabile riempita altrove, ed e' tutto il punto: cosi' non dipende
+   dall'ordine in cui le cose vengono costruite. Prima dipendeva, e si
+   vedeva -- i LED erano spenti all'apertura del sito e si rispegnevano
+   cambiando legno o arredi, e bastava sfiorare il cursore per
+   rimetterli a posto.
+
+   Il motivo: `applicaStanza()` chiama `applicaLuce()` per PRIMA cosa e
+   solo dopo ricostruisce i materiali. Un legno mai usato prima nasce
+   in quel momento, con `emissiveIntensity` a zero, e nessuno tornava
+   piu' a dirglielo. Lo stesso all'avvio, dove il mobile si costruisce
+   prima che qualcuno accenda niente.
+
+   Adesso chi nasce si mette in pari da solo (vedi `matsDi`), e chi c'e'
+   gia' lo rimette in pari `applicaLuce`. Due strade, nessun ordine da
+   rispettare. */
+function fariOra(){
+  const st = STANZA.corrente();
+  /* I faretti NON seguono la stanza, ma non la ignorano del tutto: a
+     mezzogiorno un faretto acceso si nota appena, e tenerlo alla stessa
+     forza farebbe sembrare lo schienale luminescente invece che
+     illuminato. Cala pianissimo -- fra buio e luce piena c'e' un terzo
+     scarso -- contro il crollo di tutto il resto. */
+  const cal = Math.min(1.3, Math.pow(Math.min(1.6, Math.max(.25, st.luce)), -.30));
+  return { forza: st.faretti * cal, tinta: st.fariTinta };
+}
+
+/* Sopra l'unita' apposta: il nucleo della striscia esce dalla scala e
+   il tone mapping lo brucia verso il bianco, mentre la coda -- che
+   nella mappa vale un quinto -- resta dentro e resta satura. E' quel
+   contrasto a far leggere "acceso" invece di "dipinto di chiaro". */
+function sincronizzaFari(m){
+  if (!m || !m.__fari) return;
+  const f = fariOra();
+  m.emissive.set(f.tinta);
+  m.emissiveIntensity = 1.6 * f.forza;
+}
+
 function applicaLuce(){
   const l = STANZA.corrente().luce;
   if (hemiLight) hemiLight.intensity = .52 * Math.pow(l, 1.05);
@@ -587,20 +685,10 @@ function applicaLuce(){
      forza farebbe sembrare lo schienale luminescente invece che
      illuminato. Cala pianissimo -- fra buio e luce piena c'e' un terzo
      scarso -- contro il crollo di tutto il resto. */
-  const cal = Math.min(1.3, Math.pow(Math.min(1.6, Math.max(.25, l)), -.30));
-  luceFari = STANZA.corrente().faretti * cal;
+  luceFari = fariOra().forza;
   const tintaFari = new THREE.Color(STANZA.corrente().fariTinta);
   Object.keys(MATS_PER_TINTA).forEach(function(t){
-    const m = MATS_PER_TINTA[t].fondo;
-    if (m && m.__fari){
-      m.emissive.copy(tintaFari);
-      /* Sopra l'unita' apposta: il nucleo della striscia esce dalla
-         scala e il tone mapping lo brucia verso il bianco, mentre la
-         coda -- che nella mappa vale un quinto -- resta dentro e resta
-         satura. E' quel contrasto a far leggere "acceso" invece di
-         "dipinto di chiaro". */
-      m.emissiveIntensity = 1.6 * luceFari;
-    }
+    sincronizzaFari(MATS_PER_TINTA[t].fondo);
   });
 
   /* Le lampade dei vani fanno due mestieri: la luce della stanza dentro
@@ -610,9 +698,11 @@ function applicaLuce(){
      diverse. Quindi il colore si mescola nella stessa proporzione in cui
      si mescolano le due intensita' -- calcolato qui e non nel ciclo,
      perche' `state.bayLight` e' solo un moltiplicatore comune. */
-  const quota = (.62 * luceFari) / Math.max(.0001, luceVani + .62 * luceFari);
+  const quota = (.34 * luceFari) / Math.max(.0001, luceVani + .34 * luceFari);
   const coloreVani = new THREE.Color(0xfff0da).lerp(tintaFari, Math.min(1, quota));
   bayLights.forEach(function(x){ x.color.copy(coloreVani); });
+  // e le copertine gia' in scena: la tinta la scelgono i faretti
+  boxes.forEach(function(b){ if (b.userData.cover) b.userData.cover.emissive.copy(tintaFari); });
 
   /* Lo sfondo scende molto piu' della luce: e' quello che fa la
      differenza fra "stanza in penombra" e "filtro grigio". Con il
@@ -702,6 +792,17 @@ function buildCabinet(){
     // parete e le scatole perdono il loro sfondo
     g.add(ombra(slab(W - T*2, H - T*2, .10, MATS.fondo, ox, fondo + H/2, -D/2 + .07), !fantasma));
 
+    /* Il buio dove il mobile tocca terra. Non ce l'ha il fantasma: un
+       mobile che non c'e' non poggia da nessuna parte. */
+    if (!fantasma){
+      const ct = new THREE.Mesh(geoPiano(), matContatto());
+      ct.rotation.x = -Math.PI/2;
+      ct.position.set(ox, fondo + .012, .25);
+      ct.scale.set(W + 2.2, D + 2.6, 1);
+      ct.renderOrder = 1;              // dopo il pavimento, se no non lo vede
+      g.add(ct);
+    }
+
     /* Il nome, sopra il mobile. Sulla parete e non su un cartello
        appeso: un cartello vero avrebbe voluto cornice, spessore e
        ombra, e sopra una libreria c'e' gia' abbastanza roba.
@@ -786,8 +887,13 @@ function makeGameBox(game){
   }
   const H = BOX.w / aspect;
 
+  /* L'`emissive` della copertina serviva solo all'alzata dell'hover,
+     bianco. Adesso porta anche la quota di faretti, quindi prende la
+     tinta scelta: una copertina che sta sotto una striscia azzurra non
+     puo' schiarirsi di bianco. */
   const cover = new THREE.MeshStandardMaterial({
-    map: coverTex, emissiveMap: coverTex, emissive: 0xffffff, emissiveIntensity: 0,
+    map: coverTex, emissiveMap: coverTex,
+    emissive: new THREE.Color(fariOra().tinta), emissiveIntensity: 0,
     roughness: .58, metalness: .02
   });
   const sideV = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.spine(game, true)),  roughness: .64 });
@@ -6422,11 +6528,27 @@ function bindPartite(){
 /* Torna vero se qualche scatola si sta ancora muovendo: l'alzata
    dell'hover e' smorzata, quindi continua per qualche frame dopo che
    il puntatore si e' fermato -- e finche' si muove l'ombra cambia. */
+/* LA LUCE CHE NON HA UN CENTRO.
+
+   Quattro lampade sull'asse del mobile non possono illuminare allo
+   stesso modo tre colonne: quella di mezzo la prendono in faccia e le
+   altre di taglio, ed e' geometria, non un valore da tarare. La strada
+   che funziona e' non chiedere a loro la luce sulle copertine.
+
+   Ogni copertina si accende un poco da se', della tinta dei faretti e
+   in proporzione a quanto sono accesi. Per costruzione e' identica su
+   tutte e dodici -- nessun centro, nessun angolo -- e costa zero: e'
+   un `emissive` che c'era gia', usato per l'alzata dell'hover.
+
+   Non e' nemmeno una furbata: una scatola sotto una striscia LED
+   *rimanda indietro* quella luce, ed e' esattamente quello che si
+   vede. */
 function updateBoxes(dt){
   let mosso = false;
+  const fari = .17 * luceFari;
   for (let i = 0; i < boxes.length; i++){
     const b = boxes[i], u = b.userData;
-    if (u.busy){ u.cover.emissiveIntensity = .10; continue; }
+    if (u.busy){ u.cover.emissiveIntensity = Math.max(.10, fari); continue; }
 
     // il cubo di destinazione si annuncia alzando la scatola che ci sta
     // gia': e' quella che sta per scambiarsi di posto
@@ -6437,7 +6559,7 @@ function updateBoxes(dt){
 
     b.position.set(u.homePos.x, u.homePos.y + u.hover * .10, u.homePos.z + u.hover * .5);
     b.rotation.y = u.homeRot.y + u.hover * .07;
-    u.cover.emissiveIntensity = u.hover * .30;
+    u.cover.emissiveIntensity = fari + u.hover * .30;
   }
   return mosso;
 }
@@ -6505,7 +6627,7 @@ function frame(now){
        salato del sito -- e l'effetto sotto il ripiano lo fa gia' la
        luce dipinta sullo schienale. Questa serve solo a non lasciare al
        buio la copertina della scatola. */
-    bayLights[i].intensity = state.bayLight * luceVani + .62 * luceFari;
+    bayLights[i].intensity = state.bayLight * luceVani + .34 * luceFari;
     bayLights[i].position.x = camBase.x;
   }
   if (keyLight){
