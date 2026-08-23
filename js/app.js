@@ -681,6 +681,21 @@ function buildCabinet(){
   stanzaLarga(state.libs);
   cabGroup = g;
   scene.add(g);
+
+  /* LA TARGA APPENA FATTA VA SUBITO SCALATA.
+
+     Il piano si costruisce a `TARGA_ALT`, che e' una misura di
+     riferimento e non quella che si vede: la misura vera la decide
+     `allineaComandi`, che sa quanto spazio c'e' fra la testata e la
+     cima del mobile. Senza questa chiamata, il nome restava a scala 1
+     -- cioe' alla vecchia misura fissa, molto piu' piccola -- fino al
+     primo scorrimento o ridimensionamento.
+
+     Si vedeva **rinominando**: si salvava il nome, il mobile si
+     ricostruiva, e la scritta rimpiccioliva di colpo. Vale per ogni
+     ricostruzione, non solo per la rinomina: cambiare legno o
+     aggiungere una libreria facevano lo stesso. */
+  allineaComandi();
   rifaiOmbre();
 }
 

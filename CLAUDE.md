@@ -2258,6 +2258,17 @@ nel pannello, accanto a muro e pavimento.
 - `normalizza()` riempie il valore per chi non l'ha mai scelto, quindi le stanze
   gia' salvate continuano a vedere l'inchiostro di sempre.
 
+**E chi ricostruisce il mobile deve riscalare la targa.** Il piano si costruisce
+a `TARGA_ALT`, che e' una misura di riferimento e non quella che si vede: la
+misura vera la decide `allineaComandi`. `buildCabinet` non la chiamava, quindi
+dopo ogni ricostruzione il nome restava a scala 1 — cioe' alla vecchia misura
+fissa, molto piu' piccola — fino al primo scorrimento o ridimensionamento.
+
+Si vedeva **rinominando**: si salvava il nome e la scritta rimpiccioliva di
+colpo. Ma valeva per ogni ricostruzione: anche cambiare legno o aggiungere una
+libreria. La regola: **chi costruisce a una misura di riferimento deve chiedere
+subito la misura vera a chi la sa**, se no il valore di comodo resta a schermo.
+
 ### Quello che galleggia su una stanza che si spegne
 
 Il binario e il contatore erano carta al 90%. Va bene su una stanza chiara; con
