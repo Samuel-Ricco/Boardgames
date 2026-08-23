@@ -1488,9 +1488,14 @@ function allineaComandi(){
      un nome misurato con il metro del monitor ci si perde dentro. Su un
      monitor invece la fascia e' larga, e prendersene la meta' vuol dire
      un nome che pesa piu' del mobile di cui parla. */
+  /* La fetta e' tarata per rendere la stessa misura che la scritta
+     aveva quando era un piano di dimensione fissa: con il peso 600 quel
+     corpo si legge, ed e' quello che il mobile chiede. Un filo piu'
+     generosa sullo schermo stretto, dove tutto il resto -- testata,
+     pulsanti, barra -- e' proporzionalmente piu' grande. */
   const stretto = window.innerWidth < 700;
   const banda = Math.max(24, cima - hb);
-  const altaPx = clamp(banda * (stretto ? .46 : .30), 28, stretto ? 74 : 54);
+  const altaPx = clamp(banda * (stretto ? .27 : .25), 24, 62);
   const altaMondo = Math.abs(mondoY(alto - altaPx / 2, zT, cx) -
                              mondoY(alto + altaPx / 2, zT, cx));
 

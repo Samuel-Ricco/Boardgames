@@ -2255,6 +2255,15 @@ nel pannello, accanto a muro e pavimento.
 - La tavolozza non serve a decorare, serve a farsi leggere: il molto scuro e il
   molto chiaro ai due capi — che sono quelli che rispondono ai muri estremi —
   e in mezzo le tinte del sito.
+
+**E qui il peso 600 ci vuole, contro la regola generale.** Il foglio dice da un
+pezzo che la spaziatura larga e i pesi alti vengono dai tempi del condensato, e
+per i comandi e' vero. Questa scritta pero' e' un caso a parte: sta sul muro,
+e' piccola e **non ha niente sotto** — niente targa, niente alone, niente
+riquadro. Portata a peso 400 era diventata sottile, e per compensare l'avevo
+fatta crescere finche' non pesava piu' del mobile di cui dice il nome.
+**Meglio piccola e piena che grande e magra**, e la fetta di schermo e' tarata
+per rendere la misura che aveva quando era un piano di dimensione fissa.
 - `normalizza()` riempie il valore per chi non l'ha mai scelto, quindi le stanze
   gia' salvate continuano a vedere l'inchiostro di sempre.
 

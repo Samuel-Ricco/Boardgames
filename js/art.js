@@ -878,15 +878,23 @@ function avatar(av, S){
    l'inchiostro di sempre, che e' come stava prima di poterlo cambiare. */
 function targhetta(nome, tinta){
   const testo = String(nome || '');
-  const H = 128, CORPO = 78, padX = 18;
+  const H = 128, CORPO = 96, padX = 24;
 
+  /* Peso 600 e un filo di spaziatura: e' la tipografia che questa
+     scritta ha sempre avuto, ed e' quella giusta QUI e non altrove.
+     Sul muro il nome e' piccolo e non ha niente sotto -- niente targa,
+     niente alone -- quindi deve avere corpo per reggersi da solo;
+     portato a peso 400 era diventato sottile, e per compensare lo
+     avevo fatto crescere finche' non pesava piu' del mobile.
+     Meglio piccola e piena che grande e magra. */
   const mis = cnv(8, 8)[1];
-  mis.font = '400 ' + CORPO + 'px "Poppins", system-ui, sans-serif';
+  mis.font = '600 ' + CORPO + 'px "Poppins", system-ui, sans-serif';
+  mis.letterSpacing = '2px';
   const larg = Math.max(120, Math.ceil(mis.measureText(testo).width) + padX * 2);
 
   const cx = cnv(larg, H), c = cx[0], x = cx[1];
   x.font = mis.font;
-  x.letterSpacing = '0px';
+  x.letterSpacing = '2px';
   x.textAlign = 'center';
   x.textBaseline = 'middle';
   x.fillStyle = tinta || '#33352b';
