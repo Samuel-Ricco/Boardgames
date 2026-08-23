@@ -2546,120 +2546,82 @@ settimana senza traffico, e si riattiva a mano dal pannello.
 
 ## Stato attuale
 
-**Aggiornato al 2026-08-22.** Questa sezione e la prossima bastano a ripartire a
-freddo: cosa c'è, cosa è appena cambiato, com'è messo il database e cosa resta
-da fare. Per il racconto lungo di com'è nato tutto c'è `contest_boardgame.md`.
+**Aggiornato al 2026-08-23.** Questa sezione e la prossima bastano a ripartire a
+freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
+racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
+è fatto* c'è tutto il resto di questo file, che è aggiornato.
 
 Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
-profilo — **due lingue** con 459 chiavi per ramo, e **tutte e dodici le
-migrazioni applicate**, `punti_partita` compresa (2026-08-22, dall'SQL editor del
-pannello: qui non c'è la CLI di Supabase).
+profilo — **due lingue** con 465 chiavi per ramo, e **tutte e dodici le
+migrazioni applicate**, `punti_partita` compresa.
 
-### Cos'è successo nella sessione del 2026-08-22
+Le misure, per sapere in che cosa si mette le mani: `index.html` 765 righe,
+`css/style.css` 3.253, `js/app.js` 6.418.
 
-Otto commit, tutti su `libreria` e portati anche su `main` (Pages serve quello).
-In ordine:
+### La sessione del 2026-08-23
 
-| commit | cosa |
-|---|---|
-| `3983ba2` | **IT/EN, prima metà**: `js/i18n.js`, chiavi puntate, tutto il markup |
-| `5065002` | **IT/EN, seconda metà**: le stringhe che scrive il JS |
-| `b1f2c52` | il cancello smetteva di dire «ultima volta» a chiunque |
-| `bb461eb` | rimessi in una nota i backtick che si era mangiati la shell |
-| `f8d1939` | **il dump di BGG**: 106.694 giochi, ricerca e classifica vera |
-| `a0bc16d` | il mobile di scorta diventa un'ombra, i due pulsanti si comportano uguale, lo stato si azzera cambiando schermata |
-| `bcb985c` | **le partite diventano una schermata**, e l'uscita diventa rossa |
-| `b5d6e75` | il mobile si ricostruisce anche quando cambia il numero di librerie **vere** |
+Diciassette commit, tutti su `libreria` e portati anche su `main` (Pages serve
+quello). Raggruppati per argomento, non in ordine di tempo:
 
-### La sessione del 2026-08-22, seconda parte
+| argomento | commit | cosa |
+|---|---|---|
+| il winrate | `5f7e239` `2e9e120` | winrate del profilo al posto di «vince X», con l'anello; poi anche sul singolo gioco, dal pannello e dal catalogo |
+| il modulo della partita | `ca4c5a3` `2e9e120` `a029955` | ti proponi fra i nomi, chi c'era si scrive, i punti si salvano, la corona a mano anche senza tutti i punti |
+| i difetti dei dati | `1c6cafa` | lo scambio di due scatole, la posizione rifiutata che non tornava indietro, i giochi nel mobile fantasma, la luce che lasciava accesa una colonna |
+| la grafica della scena | `4d3e2ae` `bcecaa2` | occlusione ambientale dipinta nei cubi, interno della scatola, dado e caricamento |
+| l'estetica dell'interfaccia | `2ac7a29` `147ee2d` | barra in basso, catalogo senza «scheda», leggibilità, tendine che si aprono |
+| il nome del mobile | `8bda6b8` `cd0f483` `be2f1f3` `998134a` `a9109cb` `728288f` | quattro giri prima di arrivarci: vedi «Il nome del mobile è una scritta» |
+| il quadro | `62fa780` | un passo indietro col mobile, binario piu' piccolo, comandi equidistanti |
+| la tenuta | `b831d07` | un aggancio che salta non si porta via gli altri |
 
-Cinque cose chieste in un colpo solo. In ordine di quanto è costato capirle:
+**Le lezioni generali** di questa sessione stanno tutte nelle sezioni sopra, e
+sono quelle che varra' la pena rileggere prima di toccare le stesse cose:
 
-| cosa | dove sta scritto |
-|---|---|
-| i giochi eliminati restavano nella libreria | «Cancellare è un fatto, non un'animazione» |
-| due librerie non possono chiamarsi uguale | «Due librerie non si chiamano allo stesso modo» |
-| un winrate per gioco, con l'anello | «Il winrate: chi vince e come vado io» |
-| il winrate del profilo al posto di «vince X» | idem |
-| «partita» al posto di «serata» | «Le partite sono una schermata» |
-
-**Come è stato verificato**, che qui conta più del cosa: la logica del winrate e
-quella dei nomi con dei casi in Node, presi **dal file vero** e non da una copia;
-il resto sul server locale contro il database vero, entrando davvero. La
-cancellazione fino in fondo — gioco di prova aggiunto, messo sullo scaffale,
-eliminato dall'elenco, e **riletto dal server dopo un ricaricamento** per essere
-sicuri che non fosse tornato. Il pannello dell'anteprima non componeva frame,
-quindi la scatola che esce dalla scena è stata guardata **dal grafo**,
-agganciando `Object3D.remove` come dicono le note più su.
-
-### La sessione del 2026-08-22, terza parte: il modulo della partita
-
-Quattro cose, tutte dentro «segna una partita», e tutte dalla stessa radice:
-il modulo sapeva proporre solo chi era già registrato, e decideva lui chi
-aveva vinto.
-
-| cosa | dove sta scritto |
-|---|---|
-| io fra i nomi proponibili | «Il modulo della partita» |
-| chi c'era si scrive, e i nomi appaiono | idem |
-| via le pastiglie e la porta verso il profilo | idem |
-| il vincitore a mano anche senza i punti di tutti | «Le posizioni non si scrivono» |
-
-Verificato entrando davvero, sui dati veri: il campo che propone **Samuel (tu),
-samuel2 (amico), d (giocatore)**, il filtro mentre si scrive, la riga
-«aggiungi «Giulia»» per chi sul sito non c'è, e i cinque passaggi della
-corona — punti a due su tre, corona a mano sul terzo, cambio dei punti,
-spenta e rimessa, punti tolti. Chiuso con «annulla»: sul server non è
-finita nessuna partita di prova.
-
-### La sessione del 2026-08-22, quarta parte: la scheda e il tavolo
-
-Quindici cose chieste in un colpo solo, in quattro giri.
-
-| giro | cosa |
-|---|---|
-| il modulo | i punti si salvano; via l'ora e le note; la corona a destra del nome e solo al vincitore; i punti tornano a comandare riaprendo |
-| il winrate | compare anche sul singolo gioco, dal pannello e dal catalogo |
-| l'elenco e il piede | stella accanto al nome; il piede va a capo, «rimuovi» in basso a destra, via «scheda», «dallo scaffale» diventa «in collezione» |
-| l'estetica | via il capolettera; etichette dei riquadri leggibili; il chiudi pieno; il cartello di casa d'altri rifatto |
-
-**Una cosa è rimasta scoperta apposta, e va detta:** togliendo il pulsante
-«scheda» dal piede, `apriModifica()` non ha più nessuna porta. Autore,
-editore, anno e copertina non si correggono più da nessuna parte del sito.
-
-**E il salvataggio dei punti è stato verificato fino in fondo**, dopo la
-migrazione: partita di prova scritta con 61 / 48 / **0**, riletta dal server,
-riaperta nel modulo dopo un ricaricamento vero (punteggi, posizioni e corona
-tornati), punteggio cambiato per vedere la corona spostarsi, e partita di prova
-cancellata. Lo zero conta perche' è il caso che `numero()` esiste per
-distinguere da «non registrato». Alla prima prova i punti erano spariti in
-silenzio: vedi «La cache dello schema legge e scrive in due modi diversi».
+- «Un cubo tiene una scatola sola, e il database lo fa rispettare»
+- «Quando non c'è posto si fa un mobile»
+- «La cache dello schema legge e scrive in due modi diversi»
+- «Un aggancio che salta non si porta via gli altri»
+- «Il browser dell'anteprima tiene in cache anche i `.js`»
+- «La camera va messa al suo posto PRIMA di misurare»
+- «L'ombra dentro i cubi» e «Sessanta fotogrammi: dov'erano già»
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 
 - Account `admin@smlrcc.it`, nick **Samuel**, codice `HH67 6BY7`. Secondo account
   di prova **samuel2**, amicizia accettata.
-- **26 giochi**, di cui **6 con un posto** e **20 senza**.
-- **Una libreria sola**, `Libreria 5` (ordine 4). I tre doppioni «Libreria 3» non
-  ci sono più: li ha tolti l'utente. Da qui in poi non possono ripresentarsi.
-- **Due partite**: `Arcs` (samuel2 vince, con `d`) e la vecchia partita di prova
-  `pa` (`s, d, sa`).
-- **Il winrate del profilo è a zero per una ragione vera, non per un guasto:**
-  il nick è `Samuel` e in nessuna delle due partite compare quel nome. Il
-  riquadro in cima lo dice e spiega come rimediare. Se si vuole che il winrate
-  cominci a contare, basta aggiungersi fra chi c'era — oppure decidere che chi
-  segna la partita ci finisce dentro da solo, che è una scelta da fare, non un
-  difetto da correggere.
+- **25 giochi**, di cui **12 sullo scaffale** e **13 solo in collezione**. Non è
+  un guasto: la libreria è una vetrina, l'elenco è la collezione.
+- **Una libreria sola**, `Libreria 5` (ordine 4).
+- **Una partita**: `Arcs`, con **Samuel** (vincitore) e `samuel2`. La vecchia
+  partita di prova `pa` non c'è piu'.
+- **Il winrate è 100%** (1 su 1): il nick `Samuel` adesso compare fra chi
+  c'era, quindi il riquadro in cima alle partite conta davvero.
+- La stanza: luce **0,38**, scaffali noce, muro grigio caldo, pavimento sabbia,
+  arredo misto, colore del nome oliva scuro.
 - Le recensioni sono ancora **lorem ipsum** sui giochi vecchi; quelli aggiunti
   per nome hanno la recensione vuota.
 
-### Come si lavora qui, in tre righe
+### Due cose lasciate scoperte apposta
+
+1. **`apriModifica()` non ha piu' nessuna porta.** Togliendo il pulsante
+   «scheda» dal piede della scheda, autore, editore, anno, voto e copertina
+   non si correggono piu' da nessuna parte del sito. La funzione è intatta e il
+   listener è scritto per non esplodere se il pulsante manca; il posto naturale
+   dove rimetterla è il menu a tre punti dell'elenco.
+2. **Sul database non c'è un indice unico su `(proprietario, nome)`** delle
+   librerie. Il divieto dei nomi doppi vive in `store.js`. Quando fu scritto la
+   collezione aveva tre «Libreria 3» e la migrazione non sarebbe passata;
+   adesso i doppioni non ci sono piu', quindi si puo' aggiungere quando si vuole.
+
+### Come si lavora qui, in quattro righe
 
 Server locale su **8124** (`.claude/launch.json`, `autoPort:false` — la porta è
 obbligata dai Redirect URLs di Supabase, e la 8125 è del proxy BGG). Modifiche
 con **sostituzioni verificate** (`assert count == 1`) e ricontrollo che i `.js`
-siano ancora **ASCII**. Commit e push a ogni passo finito, messaggi in inglese
-che dicono *cosa* e *perché*.
+siano ancora **ASCII**. Si verifica **sul server locale contro il database vero**,
+entrando davvero, e i dati di prova si ripuliscono a fine giro. Commit e push a
+ogni passo finito, su **tutti e due i rami**, messaggi in inglese che dicono
+*cosa* e *perche'*.
 
 ## Stato del backend
 
@@ -2670,9 +2632,17 @@ rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
 faccia** salvati sul profilo, le due funzioni di **richiesta amicizia**
 (codice inesistente, proprio codice, email ignota: nessuna crea righe),
 **giocatori salvati** con il rifiuto del doppione, e una **partita** completa di
-partecipanti, posizioni e vincitore. **Tutte e undici le migrazioni sono
-applicate**, `apprezzamenti` compresa (2026-08-20).
+partecipanti, posizioni e vincitore. **Tutte e dodici le migrazioni sono
+applicate**, `punti_partita` compresa (2026-08-22, dall'SQL editor del pannello:
+qui non c'è la CLI di Supabase).
 Verificato rileggendo il database dall'esterno, non dalla cache del browser.
+
+Collaudato di nuovo il **2026-08-23**, sempre contro il progetto vero: lo
+scambio di due scatole sullo scaffale (che prima falliva sull'indice unico), la
+cancellazione di un gioco fino alla rilettura dal server dopo un ricaricamento,
+il salvataggio dei punti di una partita **zero compreso**, e la riapertura del
+modulo con punteggi, posizioni e corona al loro posto. I dati di prova sono
+stati ripuliti a fine giro.
 
 Provato anche **con due account veri** (2026-08-20): amicizia accettata, la
 libreria dell'amico che si apre in scena con le sue recensioni, tutti i comandi
@@ -2721,6 +2691,13 @@ Cosa manca, in ordine di fastidio:
    visibili, una passata sola.
 7. **Le partite restano private.** Gli amici vedono libreria e recensioni, non le
    partite: è il cambio di una policy, ed è una scelta dell'utente.
+8. **La scheda di un gioco non si corregge piu' da nessuna parte.** Autore,
+   editore, anno, voto e copertina: `apriModifica()` è intatta ma senza porta,
+   da quando il pulsante «scheda» è uscito dal piede della scheda. Vedi
+   «Il piede della scheda».
+9. **Manca l'indice unico su `(proprietario, nome)`** delle librerie. Il divieto
+   dei nomi doppi vive in `store.js` e regge; l'indice sarebbe la garanzia, e
+   adesso che i doppioni non ci sono piu' la migrazione passerebbe.
 
 ### Quello che è stato chiesto e non si può fare qui
 
