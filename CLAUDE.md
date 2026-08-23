@@ -2674,9 +2674,156 @@ Traccia da 150 px (36vw), alta tre pixel, frecce da 22, numero a undici. Era
 gia' stato ristretto una volta per stare nella sua fascia: e' un indicatore che
 si puo' trascinare, non un comando da leggere da lontano.
 
+## Annullare deve costare quanto quello che si annulla
+
+«Sto aprendo un gioco, clicco da un'altra parte, e il sito resta congelato
+come se aspettasse comunque la fine dell'animazione.» Era vero, ed era
+letterale: `unfocus()` rigiocava **sempre** la chiusura per intero — 0,12 di
+attesa, 0,42 di coperchio, 0,80 di ritorno = **1,34 s** — anche quando si
+interrompeva dopo due decimi, cioè quando il coperchio non si era mosso e la
+scatola era appena partita. E per tutto quel tempo la fase è `closing`, che
+non risponde a niente.
+
+- **La durata si misura sullo stato, non sulla costante.** Quanto è alzato il
+  coperchio si legge da `lid.position.z`, quanto è uscita la scatola dalla
+  distanza da `homePos` in frazione di `pose.pos`. Annullare a due decimi
+  adesso costa **0,27 s** invece di 1,34; chiudere una scheda davvero aperta
+  costa **1,35 s**, cioè quanto prima. Misurato, non stimato.
+- **I minimi non sono un vezzo.** Una durata zero fa `0/0` dentro `stepAnims`,
+  cioè `NaN`, cioè `lerp` con NaN, cioè una scatola con le coordinate rotte che
+  sparisce dalla scena. `Math.max(.05, ...)` e `Math.max(.20, ...)`.
+- **Il clic durante `closing` non si butta più via.** Non era `browse` (quindi
+  `focusOn` usciva subito) e non era `focus`/`review` (quindi nemmeno
+  `unfocus` lo prendeva): spariva nel vuoto. Adesso si **segna**
+  (`apriDopo`) e si apre appena la chiusura ha finito, esattamente come
+  `ridisponiDopo` fa con le richieste di ridisporre. La scatola va
+  ricontrollata prima di aprirla: nel frattempo `applyLibrary` può averla
+  portata via.
+
+**E non era un blocco permanente.** Provato interrompendo in quattro punti
+diversi e con il cambio di sezione nel mezzo: ogni strada tornava a `browse`,
+nessuna scatola restava `busy`. Quello che si vedeva era un secondo e mezzo di
+sito sordo, che è una cosa diversa da un guasto e si corregge in un altro modo.
+
+## L'elenco della collezione si apre da dovunque
+
+Il contatore in testata c'è in tutte le sezioni, ma premendolo dal catalogo o
+dal profilo non succedeva niente. Non era il pulsante: `#mia`, `#catalogo`,
+`#profilo` e `#partite` stanno **tutti a `z-index:2`**, e a parità di livello
+decide l'ordine nel documento — le tre sezioni vengono dopo `#mia`, quindi gli
+si disegnavano sopra. L'elenco si apriva davvero, sotto la pagina che si stava
+guardando.
+
+- `#mia` sale a **3**. È un modo di guardare la propria collezione, e la
+  propria collezione la si guarda da dove si è — senza essere teletrasportati
+  nella libreria 3D e senza perdere il posto nel catalogo.
+- **`vai allo scaffale` deve tornare in collezione.** Da lì la camera si
+  muoveva dietro una pagina piatta e il gesto non faceva niente.
+- **L'imbuto sopra l'elenco vuole `!important`.** La riga che lo spegne nel
+  catalogo e nel profilo ce l'ha, e cercare e ordinare sopra l'elenco servono
+  esattamente come sugli scaffali.
+
+## La calcolatrice del tavolo
+
+Segnare i punti di un gioco da tavolo vuol dire quasi sempre sommare quattro o
+cinque pezzi, e spesso moltiplicarne uno — tre città per due punti l'una.
+Farlo a mente col telefono in mano è il modo più rapido di sbagliare, e
+sbagliare lì vuol dire **un vincitore sbagliato**.
+
+- **Si apre dal campo dei punti di una persona, e il totale ci finisce
+  dentro.** È l'unica cosa che la lega a questo modulo invece di renderla un
+  aggeggio qualunque appiccicato a un sito di giochi.
+- **Niente tasto «uguale»**: il totale sta sempre in vista mentre si digita, e
+  l'unico gesto che chiude il conto è quello che lo porta nel campo. Un
+  «uguale» in mezzo sarebbe un passo che non decide niente.
+- **Si apre già carica** di quello che c'è scritto nel campo — quasi sempre si
+  aggiunge a un punteggio — ma la prima cifra lo sostituisce, come su qualunque
+  calcolatrice. Se no chi voleva riscrivere si ritrovava le cifre in coda.
+- **Interi e tre segni, quindi niente `eval`**: i tasti producono solo cifre,
+  `+`, `−` e `×`, e il parser sta in dieci righe — moltiplicazioni prima,
+  somme dopo. Non c'è niente da sanificare perché non entra niente da fuori.
+- **Anche da tastiera**, in cattura e fermando l'evento: se no `Escape`
+  chiuderebbe l'intero modulo invece della sola calcolatrice, e i numeri
+  finirebbero nelle scorciatoie della scena.
+- **`direction:rtl` non è un modo di guardare la coda di una riga.** Serviva a
+  tenere in vista l'ultimo pezzo del conto e invece **ribaltava l'ordine**:
+  «7 + 12 + 4» si leggeva «4 + 12 + 7», cioè un conto diverso da quello scritto.
+  La coda si tiene in vista con `scrollLeft`, che sposta la vista e basta.
+- Due id (`#partitalayer #calc`) per i pulsanti: dentro quel modulo c'è già una
+  regola con **tre `:not()`** che decide il fondo di ogni pulsante, e ogni
+  `:not()` pesa quanto quello che contiene. È la lezione della pastiglia della
+  lingua.
+
+## Il colore dei faretti
+
+Una lampadina non è un intonaco: la tavolozza qui non sono le sei tinte del
+sito ma le **temperature che una luce può davvero avere** — dal calduccio
+della sera al bianco da vetrina — più l'azzurro, che nelle vetrine si vede
+davvero, e la terracotta, che è il colore di casa.
+
+- Sta **attaccato al cursore dei faretti** e non giù con muro e pavimento:
+  quanto sono accesi e di che colore sono la stessa domanda.
+- Passa da `applicaLuce` e non da `applicaStanza`: è un colore di **luce**, non
+  di superficie. Non c'è nessun materiale da rigenerare — si scrive un
+  `emissive` e si è già visto.
+- **Le lampade dei vani si tingono nella stessa proporzione.** Fanno due
+  mestieri (la luce della stanza dentro al cubo e la quota di faretti che serve
+  a non lasciare al buio la copertina): scegliendo l'azzurro con quella lampada
+  rimasta ambrata, lo schienale e la scatola davanti raccontavano due storie
+  diverse. Il colore si mescola con lo stesso peso con cui si mescolano le due
+  intensità, calcolato in `applicaLuce` e non nel ciclo — `state.bayLight` è
+  solo un moltiplicatore comune.
+
+## `rilingua()` guardava una classe che non esiste
+
+`if (document.body.classList.contains('partita')) disegnaTavolo();` — quella
+classe **non esiste in nessun punto del sito**, quindi la riga non è mai
+scattata: cambiando lingua col modulo della partita aperto, il tavolo restava
+nella lingua di prima, segnaposti e corone comprese. La condizione vera è
+`paCorrente`, che vale esattamente finché il modulo è aperto.
+
+Vale in generale: **una condizione basata su una classe si verifica cercando
+chi quella classe la mette.** Se non la mette nessuno, il ramo è codice morto
+che sembra vivo.
+
+### Quello che era rimasto in italiano
+
+Trovato passando il sito in inglese e rileggendo ogni schermata, non a memoria:
+
+- il **pannello dei gruppi** — «N giochi», «chiudi»/«giochi», «togli»;
+- i pulsanti **dentro/aggiungi** dell'elenco di un gruppo, che avevano già le
+  loro chiavi (`gru.dentro`, `gru.aggiungi`) e semplicemente non le usavano;
+- le **specifiche nella riga aperta dell'elenco** — «giocatori», «minuti»,
+  «anno»: il catalogo le traduceva da sempre con `spec.*`, questa copia era
+  rimasta indietro.
+
+**Il tasto per uscire dice «sign out» in tutte e due le lingue**, ed è una
+scelta esplicita: due parole al posto di quattro in fondo a una pagina dove
+l'uscita è l'ultima cosa che si legge. Non porta `data-i18n`: il testo lo
+scrive `armaBottone`, che tiene anche lo stato armato — con l'attributo,
+`applica()` glielo riscriverebbe sotto e il «sicuro? tocca ancora» sparirebbe
+a metà conferma.
+
+### Il pannello di anteprima non dà un solo frame
+
+`document.visibilityState` è `hidden` e `requestAnimationFrame` **non gira
+affatto**: misurato, zero frame in un secondo. Quindi l'intro non finisce, le
+fasi non avanzano, e ogni prova sulle animazioni sembra un blocco.
+
+Si aggira esponendo `stepAnims` con un gancio temporaneo e chiamandolo a mano
+con un passo fisso (`for (let t=0;t<sec;t+=1/60) step(1/60)`). Con quello le
+fasi avanzano davvero e si può misurare quanto dura una chiusura.
+
+**E i clic sintetici vanno sul CANVAS, non su `#scene`.** I listener stanno su
+`renderer.domElement`, che è figlio di `#scene`: un evento dispatchato sul
+padre non arriva al figlio, e la prova «non fa niente» senza dire perché. Le
+coordinate poi sono quelle della **pagina** (1184×1270 qui), non quelle dello
+screenshot (800×858): lo screenshot è scalato, e mirare con i suoi pixel manca
+ogni bersaglio.
+
 ## Stato attuale
 
-**Aggiornato al 2026-08-23 (seconda sessione).** Questa sezione e la prossima bastano a ripartire a
+**Aggiornato al 2026-08-23 (terza sessione).** Questa sezione e la prossima bastano a ripartire a
 freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
 racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
 è fatto* c'è tutto il resto di questo file, che è aggiornato.
@@ -2734,6 +2881,24 @@ colonna nuova.
 I dati di prova sono stati ripuliti: la libreria creata dal collaudo del
 catalogo e il gioco aggiunto non ci sono piu', e la collezione e' tornata a
 **25 giochi in una libreria sola**.
+
+### La sessione del 2026-08-23 (terza)
+
+Sei richieste. Una era un difetto vero, il resto rifinitura e una funzione
+nuova. Nessuna migrazione: il colore dei faretti sta nel jsonb della stanza.
+
+| argomento | cosa |
+|---|---|
+| annullare l'apertura | la chiusura dura quanto quello che c'è da chiudere (0,27 s invece di 1,34), e il clic durante la chiusura non si butta più via |
+| il colore dei faretti | sei temperature di luce, attaccate al loro cursore; anche le lampade dei vani si tingono |
+| la mia collezione | l'elenco si apre da tutte le sezioni: era `z-index:2` come le pagine che gli si disegnavano sopra |
+| la calcolatrice | dentro il modulo della partita, si apre dal campo dei punti di una persona e ci scrive il totale |
+| l'inglese | pannello dei gruppi, dentro/aggiungi, specifiche della riga aperta; e `rilingua()` guardava una classe inesistente |
+| esci | «sign out» in tutte e due le lingue |
+
+I dati di prova sono stati ripuliti: la partita di collaudo è stata annullata
+senza salvarla, e la collezione è rimasta **25 giochi, una libreria, una
+partita**.
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 

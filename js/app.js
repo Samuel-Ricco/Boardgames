@@ -224,7 +224,11 @@ const ICO = {
      frattempo il pulsante restava un "+" spento: chi premeva non
      sapeva se avesse premuto. Il cerchio e' quasi chiuso apposta: e'
      quel pezzo mancante a farlo leggere come qualcosa che gira. */
-  rotella:  '<svg class="ico gira" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3.6a8.4 8.4 0 1 0 8.4 8.4"/></svg>'
+  rotella:  '<svg class="ico gira" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3.6a8.4 8.4 0 1 0 8.4 8.4"/></svg>',
+  /* Una calcolatrice: la cassa, il display, i tasti. Sta accanto al
+     campo dei punti di ogni giocatore, ed e' l'unico posto del sito
+     dove serve fare un conto. */
+  conta:    '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3" width="14" height="18" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M8.4 7.4h7.2"/><circle cx="9" cy="12" r="1.05" fill="currentColor"/><circle cx="12" cy="12" r="1.05" fill="currentColor"/><circle cx="15" cy="12" r="1.05" fill="currentColor"/><circle cx="9" cy="16.4" r="1.05" fill="currentColor"/><circle cx="12" cy="16.4" r="1.05" fill="currentColor"/><circle cx="15" cy="16.4" r="1.05" fill="currentColor"/></svg>'
 };
 
 const q  = s => document.querySelector(s);
@@ -577,10 +581,25 @@ function applicaLuce(){
      scarso -- contro il crollo di tutto il resto. */
   const cal = Math.min(1.3, Math.pow(Math.min(1.6, Math.max(.25, l)), -.30));
   luceFari = STANZA.corrente().faretti * cal;
+  const tintaFari = new THREE.Color(STANZA.corrente().fariTinta);
   Object.keys(MATS_PER_TINTA).forEach(function(t){
     const m = MATS_PER_TINTA[t].fondo;
-    if (m && m.__fari) m.emissiveIntensity = .85 * luceFari;
+    if (m && m.__fari){
+      m.emissive.copy(tintaFari);
+      m.emissiveIntensity = .85 * luceFari;
+    }
   });
+
+  /* Le lampade dei vani fanno due mestieri: la luce della stanza dentro
+     al cubo, e la quota di faretti che serve a non lasciare al buio la
+     copertina. Se i faretti si scelgono azzurri e quella lampada resta
+     ambrata, lo schienale e la scatola davanti raccontano due storie
+     diverse. Quindi il colore si mescola nella stessa proporzione in cui
+     si mescolano le due intensita' -- calcolato qui e non nel ciclo,
+     perche' `state.bayLight` e' solo un moltiplicatore comune. */
+  const quota = (.55 * luceFari) / Math.max(.0001, luceVani + .55 * luceFari);
+  const coloreVani = new THREE.Color(0xfff0da).lerp(tintaFari, Math.min(1, quota));
+  bayLights.forEach(function(x){ x.color.copy(coloreVani); });
 
   /* Lo sfondo scende molto piu' della luce: e' quello che fa la
      differenza fra "stanza in penombra" e "filtro grigio". Con il
@@ -2128,7 +2147,32 @@ function unfocus(poi){
                rx: lid.rotation.x, rz: lid.rotation.z };
   const z0 = BOX.t/2 - BOX.lid/2;
 
-  tween(.42, function(p){
+  /* LA CHIUSURA DURA QUANTO QUELLO CHE C'E' DAVVERO DA CHIUDERE.
+
+     Era fissa: un secondo e mezzo di coperchio che si riabbassa e di
+     scatola che torna al suo posto, anche quando si interrompeva
+     l'apertura dopo due decimi -- cioe' quando il coperchio non si era
+     ancora mosso e la scatola era appena partita. E per tutto quel
+     tempo la fase e' `closing`, che non risponde a niente: si clicca
+     per annullare e il sito sta zitto per un secondo e mezzo. Letto da
+     fuori e' esattamente "e' rimasto congelato ad aspettare la fine
+     dell'animazione", ed e' proprio quello che faceva.
+
+     Adesso si misura dove sono le cose ADESSO -- quanto e' alzato il
+     coperchio, quanto e' uscita la scatola -- e si torna indietro in
+     proporzione. Annullare a due decimi costa tre decimi invece di uno
+     e mezzo; chiudere una scheda aperta davvero costa quanto prima.
+
+     I minimi non sono un vezzo: una durata zero fa `0/0` dentro
+     `stepAnims`, cioe' `NaN`, cioe' una scatola che sparisce dalla
+     scena con le coordinate rotte. */
+  const u0 = box.userData;
+  const apertura = clamp((lid.position.z - z0) / .95, 0, 1);
+  const dTot = (u0.pose && u0.homePos) ? u0.homePos.distanceTo(u0.pose.pos) : 0;
+  const fuori = dTot > .001
+    ? clamp(box.position.distanceTo(u0.homePos) / dTot, 0, 1) : 1;
+
+  tween(Math.max(.05, .42 * apertura), function(p){
     const e = easeInOut(p);
     lid.position.z = lerp(l0.z, z0, e);
     lid.position.y = lerp(l0.y, 0, e);
@@ -2143,7 +2187,7 @@ function unfocus(poi){
     const cam0 = camBase.clone();
     const camTo = new THREE.Vector3(camXFor(state.scrollTo), VISTA_Y, state.distShelf);
 
-    tween(.8, function(p){
+    tween(Math.max(.20, .80 * fuori), function(p){
       const e = easeInOut(p);
       box.position.lerpVectors(p0, u.homePos, e);
       box.rotation.set(
@@ -2162,8 +2206,27 @@ function unfocus(poi){
       document.body.classList.add('browse');
       if (poi) poi();
       ridisponiSeAtteso();
+      apriSeAtteso();
     });
-  }, .12);
+  }, .12 * apertura);
+}
+
+/* --- una scatola chiesta mentre se ne stava chiudendo un'altra -----
+
+   Durante `closing` il clic non veniva raccolto da nessuno: la fase
+   non e' `browse`, quindi `focusOn` esce subito, e non e' `focus` ne'
+   `review`, quindi nemmeno `unfocus` la prende. Il gesto spariva nel
+   vuoto, e con una chiusura lunga era la meta' dei gesti.
+
+   Adesso si segna, come si segna una richiesta di ridisporre, e si fa
+   appena la chiusura ha finito. La scatola va ricontrollata: nel
+   frattempo `applyLibrary` puo' averla portata via. */
+let apriDopo = null;
+
+function apriSeAtteso(){
+  const b = apriDopo;
+  apriDopo = null;
+  if (b && state.phase === 'browse' && boxes.indexOf(b) >= 0) focusOn(b);
 }
 
 /* Rifa' la disposizione appena si puo': subito se lo scaffale e' fermo,
@@ -2400,7 +2463,12 @@ function rilingua(){
     disegnaProfilo(); disegnaAmici(); disegnaGiocatori();
   }
   if (state.sezione === 'partite') disegnaPartite();
-  if (document.body.classList.contains('partita')) disegnaTavolo();
+  /* `paCorrente` e non `body.partita`: quella classe non esiste da
+     nessuna parte del sito, quindi questa riga non e' mai scattata e
+     cambiando lingua col modulo aperto il tavolo restava nella lingua
+     di prima -- segnaposti, corone e la calcolatrice comprese.
+     `paCorrente` invece vale esattamente finche' il modulo e' aperto. */
+  if (paCorrente) disegnaTavolo();
   /* La scheda aperta va rifatta con il suo gioco: le specifiche, il
      credito e l'occhiello sono tutti scritti dal JS. */
   const g = state.focused && state.focused.userData && state.focused.userData.game;
@@ -2654,6 +2722,9 @@ function bindInput(){
       if (hit) focusOn(hit);
     } else if (state.phase === 'review' || state.phase === 'focus'){
       unfocus();
+    } else if (state.phase === 'closing'){
+      // si segna e si apre appena la chiusura ha finito: vedi apriSeAtteso
+      apriDopo = pick() || null;
     }
   });
 
@@ -3637,11 +3708,11 @@ function disegnaGruppiElenco(){
     const n = perGruppo[G.id] || 0;
     return '<li data-id="' + esc(G.id) + '">' +
       '<span class="chi"><b>' + esc(G.nome) + '</b>' +
-      '<span>' + n + ' ' + (n === 1 ? 'gioco' : 'giochi') + '</span></span>' +
+      '<span>' + (n === 1 ? T('gru.unGioco') : T('gru.nGiochi', {n: n})) + '</span></span>' +
       '<span class="fa">' +
         '<button type="button" class="quali" data-fa="quali">' +
-        (gruppoAperto === G.id ? 'chiudi' : 'giochi') + '</button>' +
-        '<button type="button" class="no" data-fa="via">togli</button>' +
+        T(gruppoAperto === G.id ? 'gru.chiudiQuali' : 'gru.quali') + '</button>' +
+        '<button type="button" class="no" data-fa="via">' + T('gru.togli') + '</button>' +
       '</span></li>';
   }).join('');
   disegnaGiochiDelGruppo();
@@ -3747,7 +3818,7 @@ function bindGruppi(){
     const id = b.closest('li').getAttribute('data-id');
     const dentro = !b.classList.contains('on');
     b.classList.toggle('on', dentro);
-    b.textContent = dentro ? 'dentro' : 'aggiungi';
+    b.textContent = TP(dentro ? 'gru.dentro' : 'gru.aggiungi');
     const G = gruppoAperto;
     LIB.segnaGruppo(id, G, dentro).then(function(){
       /* NON si ridisegna l'elenco dei giochi. Sostituirlo a ogni tocco
@@ -3760,13 +3831,14 @@ function bindGruppi(){
         const n = LIB.all().filter(function(x){
           return LIB.gruppiDi(x.id).indexOf(G) >= 0;
         }).length;
-        li.querySelector('.chi span').textContent = n + ' ' + (n === 1 ? 'gioco' : 'giochi');
+        li.querySelector('.chi span').textContent =
+          TP(n === 1 ? 'gru.unGioco' : 'gru.nGiochi', {n: n});
       }
       disegnaGruppiFiltro();
       disegnaMia();
     }).catch(function(err){
       b.classList.toggle('on', !dentro);
-      b.textContent = dentro ? 'aggiungi' : 'dentro';
+      b.textContent = TP(dentro ? 'gru.aggiungi' : 'gru.dentro');
       flash(TP('msg.nonRiuscito', {e: err.message}));
     });
   });
@@ -4130,6 +4202,7 @@ function disegnaStanza(){
   gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false);
   gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false);
   gruppo('#st-nome-tinta', STANZA.NOMI,     cur.nome,       false);
+  gruppo('#st-fari-tinta', STANZA.FARI,     cur.fariTinta,  false);
   gruppo('#st-arredo',    STANZA.ARREDI,    suo.arredo,     true);
 }
 
@@ -4266,6 +4339,19 @@ function bindStanza(){
     salvaStanzaTraPoco();
   });
 
+  /* La tinta dei faretti passa da `applicaLuce` e non da
+     `applicaStanza`: e' un colore di LUCE, non di superficie. Non c'e'
+     nessun materiale da rigenerare ne' nessun arredo da ricostruire --
+     si scrive un `emissive` e si e' gia' visto. */
+  q('#st-fari-tinta').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-v]');
+    if (!b) return;
+    STANZA.cambia({ fariTinta: b.getAttribute('data-v') });
+    disegnaStanza();
+    applicaLuce();
+    salvaStanzaTraPoco();
+  });
+
   // muro e pavimento sono la stanza
   [['#st-muro','muro'], ['#st-pavimento','pavimento'],
    ['#st-nome-tinta','nome']].forEach(function(par){
@@ -4389,7 +4475,7 @@ function rigaMia(g){
 function contenutoInfo(g){
   const L = g.libreria && LIB.librerie().find(function(x){ return x.id === g.libreria; });
   const chi = [g.designer, g.publisher].filter(Boolean).map(esc).join(' &middot; ');
-  const spec = [[g.players, 'giocatori'], [g.time, 'minuti'], [g.year, 'anno']]
+  const spec = [[g.players, T('spec.giocatori')], [g.time, T('spec.minuti')], [g.year, T('spec.anno')]]
     .filter(function(x){ return x[0]; })
     .map(function(x){ return '<li><b>' + esc(x[0]) + '</b>' + x[1] + '</li>'; }).join('');
   const testo = (g.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('');
@@ -4649,6 +4735,11 @@ function chiudiElenco(){
    si contenderebbero l'inquadratura. */
 function apriSulloScaffale(id){
   chiudiElenco();
+  /* L'elenco si apre da tutte le sezioni, quindi "vai allo scaffale"
+     puo' partire dal catalogo o dal profilo -- dove la scena 3D non
+     viene nemmeno disegnata. Senza tornare in collezione, la camera si
+     spostava dietro una pagina piatta e il gesto non faceva niente. */
+  setSezione('collezione');
   goToGame(id);
   setTimeout(function(){
     const b = boxes.find(function(x){ return x.userData.id === id; });
@@ -5480,6 +5571,7 @@ function apriPartita(dati){
 
 function chiudiPartita(){
   chiudiSugg();
+  calcChiudi();          // se no riaprendo il modulo si ritrova aperta su un altro tavolo
   q('#partitalayer').classList.remove('on');
   q('#partitalayer').setAttribute('aria-hidden', 'true');
   paCorrente = null;
@@ -5541,6 +5633,131 @@ function ricalcolaPosizioni(){
   });
 }
 
+/* ===============================================================
+   LA CALCOLATRICE DEL TAVOLO
+   ===============================================================
+
+   Un gioco da tavolo si conta sommando pezzi: le carte, gli obiettivi,
+   i gettoni, e quasi sempre qualcosa moltiplicato per qualcos'altro --
+   tre citta' per due punti l'una. Farlo a mente col telefono in mano
+   e' il modo piu' rapido di sbagliare, e sbagliare qui vuol dire un
+   vincitore sbagliato.
+
+   E' volutamente piccola: interi, tre operazioni, e un totale sempre
+   in vista invece di un tasto "uguale". Non e' una calcolatrice
+   scientifica appiccicata a un sito di giochi -- e' la striscia di
+   carta su cui si somma a bordo tavolo.
+
+   Il totale non si legge e si ricopia: si scrive nel campo di quella
+   persona, che e' la ragione per cui vive dentro questo modulo. */
+let calcTok = [];        // ['12','+','3','x','4']
+let calcChi = -1;        // la riga a cui va il totale
+let calcFresco = false;  // il primo tasto sostituisce, non aggiunge
+
+/* Moltiplicazioni prima, somme dopo. Nessun `eval`: i tasti producono
+   solo cifre e tre segni, quindi il parser sta in dieci righe e non
+   c'e' niente da sanificare. */
+function calcTotale(){
+  const t = calcTok.slice();
+  if (t.length && /^[+\-x]$/.test(t[t.length - 1])) t.pop();
+  if (!t.length) return 0;
+  let i = 1;
+  while (i < t.length - 1){
+    if (t[i] === 'x') t.splice(i - 1, 3, String(Number(t[i - 1]) * Number(t[i + 1])));
+    else i += 2;
+  }
+  let tot = Number(t[0]) || 0;
+  for (let j = 1; j < t.length - 1; j += 2){
+    tot += (t[j] === '-' ? -1 : 1) * (Number(t[j + 1]) || 0);
+  }
+  return tot;
+}
+
+function calcDisegna(){
+  const segno = { x: '&times;', '-': '&minus;', '+': '+' };
+  const e = q('#calc-espr');
+  e.innerHTML = calcTok.map(function(t){
+    return segno[t] || esc(t);
+  }).join(' ');
+  // il conto puo' diventare lungo: si guarda sempre la coda, che e' il
+  // pezzo che si sta scrivendo
+  e.scrollLeft = e.scrollWidth;
+  q('#calc-tot').textContent = calcTotale();
+}
+
+function calcTasto(c){
+  const ultimo = calcTok[calcTok.length - 1];
+  const eSegno = function(t){ return t === '+' || t === '-' || t === 'x'; };
+
+  if (c === 'C'){ calcTok = []; calcFresco = false; calcDisegna(); return; }
+  if (c === 'del'){
+    if (!calcTok.length) return;
+    if (eSegno(ultimo) || ultimo.length === 1) calcTok.pop();
+    else calcTok[calcTok.length - 1] = ultimo.slice(0, -1);
+    calcFresco = false;
+    calcDisegna();
+    return;
+  }
+  if (c === 'ok'){ calcUsa(); return; }
+
+  if (eSegno(c)){
+    if (!calcTok.length) return;             // un segno non apre un conto
+    if (eSegno(ultimo)) calcTok[calcTok.length - 1] = c;   // si cambia idea
+    else calcTok.push(c);
+    calcFresco = false;
+    calcDisegna();
+    return;
+  }
+
+  // una cifra
+  if (calcFresco){ calcTok = []; calcFresco = false; }
+  if (!calcTok.length || eSegno(calcTok[calcTok.length - 1])) calcTok.push(c);
+  else {
+    const n = calcTok[calcTok.length - 1];
+    if (n.length >= 6) return;               // sei cifre bastano a qualunque partita
+    calcTok[calcTok.length - 1] = (n === '0') ? c : n + c;
+  }
+  calcDisegna();
+}
+
+/* Si apre GIA' CARICA di quello che c'e' scritto nel campo: quasi
+   sempre si aggiunge a un punteggio, non si riparte da zero. Ma la
+   prima cifra lo sostituisce, come su qualunque calcolatrice -- se no
+   chi voleva riscrivere il punteggio si ritrovava le cifre in coda. */
+function calcApri(i){
+  if (!paCorrente || !paCorrente.chi[i]) return;
+  calcChi = i;
+  const p = paCorrente.chi[i].punti;
+  const ce = p !== null && p !== undefined && p !== '';
+  calcTok = ce ? [String(p)] : [];
+  calcFresco = ce;
+  q('#calc-nome').textContent = paCorrente.chi[i].nome;
+  const el = q('#calc');
+  el.hidden = false;
+  el.setAttribute('aria-hidden', 'false');
+  calcDisegna();
+  if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+}
+
+function calcChiudi(){
+  const el = q('#calc');
+  if (!el) return;
+  el.hidden = true;
+  el.setAttribute('aria-hidden', 'true');
+  calcChi = -1;
+  calcTok = [];
+}
+
+function calcUsa(){
+  if (!paCorrente || calcChi < 0 || !paCorrente.chi[calcChi]){ calcChiudi(); return; }
+  // lo stesso tetto del campo: quattro cifre, segno compreso
+  const v = Math.max(-9999, Math.min(9999, calcTotale()));
+  paCorrente.chi[calcChi].punti = v;
+  ricalcolaPosizioni();
+  calcChiudi();
+  disegnaTavolo();                 // la calcolatrice sta FUORI da #pa-chi
+}
+
 function disegnaTavolo(){
   if (!paCorrente) return;
   q('#pa-chi').innerHTML = paCorrente.chi.map(function(x, i){
@@ -5562,6 +5779,10 @@ function disegnaTavolo(){
       '<input class="punti" type="text" inputmode="numeric" maxlength="4" ' +
         'value="' + esc(x.punti == null ? '' : x.punti) + '" ' +
         'placeholder="' + esc(TP('pa.punti')) + '" aria-label="' + esc(TP('pa.puntiDi', {n: x.nome})) + '">' +
+      /* La calcolatrice sta ATTACCATA al campo dei punti, non in fondo
+         al modulo: e' di quel campo, e il totale ci finisce dentro. */
+      '<button type="button" class="conta" data-fa="conta" aria-label="' +
+        esc(TP('calc.apriPer', {n: x.nome})) + '">' + ICO.conta + '</button>' +
       '<button type="button" class="via" data-fa="via" aria-label="' + esc(TP('pa.togliChi', {n: x.nome})) + '">' +
         ICO.chiudi + '</button>' +
     '</li>';
@@ -5948,7 +6169,12 @@ function bindPartite(){
     const b = e.target.closest('button[data-fa]');
     if (!b || !paCorrente) return;
     const i = parseInt(b.closest('li').getAttribute('data-i'), 10);
+    if (b.getAttribute('data-fa') === 'conta'){ calcApri(i); return; }
     if (b.getAttribute('data-fa') === 'via'){
+      // se si toglie chi si stava contando, la calcolatrice non ha piu'
+      // un posto dove scrivere: si chiude invece di puntare a una riga
+      // che nel frattempo e' un'altra persona
+      if (calcChi >= 0) calcChiudi();
       paCorrente.chi.splice(i, 1);
       ricalcolaPosizioni();
       disegnaTavolo();
@@ -5977,6 +6203,36 @@ function bindPartite(){
     q('#pa-msg').textContent = '';
     disegnaTavolo();
   });
+  q('#calc-tasti').addEventListener('click', function(e){
+    const b = e.target.closest('button[data-c]');
+    if (b) calcTasto(b.getAttribute('data-c'));
+  });
+  q('#calc-x').addEventListener('click', calcChiudi);
+
+  /* Anche da tastiera. Su un telefono si tocca, ma questo modulo si
+     riempie spesso a tavolino con la tastiera sotto le mani, e una
+     calcolatrice su cui non si possono battere i numeri e' una
+     calcolatrice a meta'. Si ascolta in CATTURA e si ferma l'evento:
+     se no lo `Escape` chiuderebbe l'intero modulo invece della sola
+     calcolatrice, e i numeri finirebbero nelle scorciatoie della
+     scena. */
+  document.addEventListener('keydown', function(e){
+    const el = q('#calc');
+    if (!el || el.hidden) return;
+    let c = null;
+    if (/^[0-9]$/.test(e.key)) c = e.key;
+    else if (e.key === '+') c = '+';
+    else if (e.key === '-') c = '-';
+    else if (e.key === '*' || e.key === 'x' || e.key === 'X') c = 'x';
+    else if (e.key === 'Backspace') c = 'del';
+    else if (e.key === 'Enter') c = 'ok';
+    else if (e.key === 'Escape'){ e.stopPropagation(); e.preventDefault(); calcChiudi(); return; }
+    if (c === null) return;
+    e.stopPropagation();
+    e.preventDefault();
+    calcTasto(c);
+  }, true);
+
   /* I punti ricalcolano le posizioni a ogni tasto, ma la riga NON si
      ridisegna: rifare l'elenco sotto il dito sposterebbe il campo in
      cui si sta scrivendo -- e' la stessa lezione dell'elenco dei

@@ -146,6 +146,11 @@
            data-i18n-aria="stanza.farettiAria" aria-label="faretti della libreria">
     <b id="st-faretti-n">40%</b>
   </p>
+  <!-- Il colore dei faretti sta attaccato al loro cursore e non giu'
+       con muro e pavimento: quanto sono accesi e di che colore sono
+       la stessa domanda, e separarle vorrebbe dire cercare in due
+       posti la stessa manopola. -->
+  <p class="st-riga"><span data-i18n="stanza.fariTinta">tinta</span><span id="st-fari-tinta" class="pastiglie"></span></p>
 
   <!-- Il nome sta in chiaro e non dentro una tendina: e' quello che
        distingue un mobile dall'altro, e si cambia spesso all'inizio. -->
@@ -452,7 +457,7 @@
     </p>
 
     <p class="pro-fondo pro-uscita">
-      <button id="pro-esci" type="button" class="distruttivo esci">esci dall&rsquo;account</button>
+      <button id="pro-esci" type="button" class="distruttivo esci">sign out</button>
     </p>
 
   </div>
@@ -738,6 +743,39 @@
     <ul id="pa-chi-sugg" class="pa-sugg" role="listbox" hidden></ul>
 
     <ul id="pa-chi" class="pa-chi"></ul>
+
+    <!-- LA CALCOLATRICE DEL TAVOLO. Segnare i punti di un gioco da
+         tavolo vuol dire quasi sempre sommare quattro o cinque pezzi --
+         le carte, gli obiettivi, i gettoni -- e farlo a mente col
+         telefono in mano e' il modo piu' rapido di sbagliare. Si apre
+         dal campo dei punti di una persona e ci scrive il totale: e'
+         quello che la lega a questo modulo invece di essere un
+         aggeggio qualunque. -->
+    <div id="calc" class="calc" hidden aria-hidden="true">
+      <p class="calc-testa">
+        <span><span data-i18n="calc.per">punti di</span> <b id="calc-nome"></b></span>
+        <button type="button" id="calc-x" data-i18n-aria="calc.chiudi" aria-label="chiudi"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </p>
+      <p class="calc-schermo"><span id="calc-espr"></span><b id="calc-tot">0</b></p>
+      <div class="calc-tasti" id="calc-tasti">
+        <button type="button" data-c="7">7</button>
+        <button type="button" data-c="8">8</button>
+        <button type="button" data-c="9">9</button>
+        <button type="button" class="fun" data-c="x" data-i18n-aria="calc.per_" aria-label="per">&times;</button>
+        <button type="button" data-c="4">4</button>
+        <button type="button" data-c="5">5</button>
+        <button type="button" data-c="6">6</button>
+        <button type="button" class="fun" data-c="-" data-i18n-aria="calc.meno" aria-label="meno">&minus;</button>
+        <button type="button" data-c="1">1</button>
+        <button type="button" data-c="2">2</button>
+        <button type="button" data-c="3">3</button>
+        <button type="button" class="fun" data-c="+" data-i18n-aria="calc.piu" aria-label="piu">+</button>
+        <button type="button" class="fun" data-c="C" data-i18n-aria="calc.pulisci" aria-label="pulisci">C</button>
+        <button type="button" data-c="0">0</button>
+        <button type="button" class="fun" data-c="del" data-i18n-aria="calc.cancella" aria-label="cancella"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12zM12.5 9.5l5 5M17.5 9.5l-5 5"/></svg></button>
+        <button type="button" class="ok" data-c="ok" data-i18n-aria="calc.usa" aria-label="usa il totale"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+      </div>
+    </div>
     <p id="pa-msg" class="add-msg"></p>
 
     <p class="add-foot pa-foot">

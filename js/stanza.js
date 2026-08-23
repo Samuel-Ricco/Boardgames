@@ -29,6 +29,7 @@ const DEFAULT = {
      dentro. A luce piena non si notano quasi, come i faretti veri a
      mezzogiorno. */
   faretti: 0.4,
+  fariTinta: '#ffb877',
   scaffali: '#8e6a4b',
   muro: '#cfccc8',
   pavimento: '#c7af98',
@@ -88,6 +89,21 @@ const NOMI = [
   { v: '#747760', n: 'tinta.oliva' }
 ];
 
+/* Il COLORE dei faretti. Una lampadina non e' un intonaco: qui la
+   tavolozza non sono le sei tinte del sito ma le temperature che una
+   luce puo' davvero avere -- dal calduccio della sera al bianco da
+   vetrina, piu' l'azzurro che nelle vetrine si vede davvero e la
+   terracotta, che e' il colore di casa. Restano sei, e restano
+   chiuse: un selettore libero qui dava scaffali al neon fucsia. */
+const FARI = [
+  { v: '#ffb877', n: 'tinta.caldo' },
+  { v: '#ff8a3d', n: 'tinta.ambra' },
+  { v: '#fff1dc', n: 'tinta.biancoCaldo' },
+  { v: '#e6eeff', n: 'tinta.biancoFreddo' },
+  { v: '#a9c8ff', n: 'tinta.azzurro' },
+  { v: '#c86a3c', n: 'tinta.terracotta' }
+];
+
 const PAVIMENTI = [
   { v: '#c7af98', n: 'tinta.sabbia' },
   { v: '#cfccc8', n: 'tinta.cementoChiaro' },
@@ -136,6 +152,7 @@ function normalizza(s){
   o.pavimento = dentro(PAVIMENTI, o.pavimento, DEFAULT.pavimento);
   o.arredo    = dentro(ARREDI,    o.arredo,    DEFAULT.arredo);
   o.nome      = dentro(NOMI,      o.nome,      DEFAULT.nome);
+  o.fariTinta = dentro(FARI,      o.fariTinta, DEFAULT.fariTinta);
   return o;
 }
 
@@ -183,10 +200,11 @@ async function salva(){
   if (p) p.stanza = ora;
 }
 
-function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI }; }
+function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI, FARI: FARI }; }
 
 return {
   DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI,
+  FARI: FARI,
   LUCE_MIN: LUCE_MIN, LUCE_MAX: LUCE_MAX,
   corrente: corrente, miaStanza: miaStanza, normalizza: normalizza,
   daProfilo: daProfilo, daAltri: daAltri, cambia: cambia, salva: salva,

@@ -481,8 +481,14 @@ body.sez-catalogo #vista-apri, body.sez-profilo #vista-apri{opacity:0 !important
 /* --- il catalogo ------------------------------------------------
    Sta sopra la scena (z2) ma sotto la testata (z3): la barra in alto
    resta la stessa, si cambia solo cosa c'e' sotto. */
+/* z-index 3 e non 2: catalogo, partite e profilo stanno tutti a 2 e
+   vengono DOPO nel markup, quindi a parita' di livello vincevano loro.
+   Il contatore in testata c'e' in tutte le sezioni, ma premendolo
+   l'elenco si apriva sotto la pagina che si stava guardando -- cioe'
+   non si apriva. E' un modo di guardare la propria collezione, e la
+   propria collezione la si guarda da dovunque si sia. */
 #mia{
-  position:fixed; inset:0; z-index:2; display:none;
+  position:fixed; inset:0; z-index:3; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
   background:rgba(207,204,200,.975);
 }
@@ -500,7 +506,11 @@ body.elenco #rail{opacity:0 !important}
    scaffali, ed e' lo stesso pannello -- stessa ricerca, stesso ordine,
    stesso posto. Quello che sparisce e' la sola riga che parla del
    mobile in tre dimensioni, che sopra un elenco non vuol dire niente. */
-body.elenco #vista-apri{opacity:1; pointer-events:auto; z-index:7}
+/* `!important` perche' la riga che spegne l'imbuto nel catalogo e nel
+   profilo ce l'ha: sopra l'elenco l'imbuto serve -- cercare e ordinare
+   valgono li' come sugli scaffali -- e senza pareggiare il peso restava
+   invisibile proprio nelle sezioni da cui adesso l'elenco si apre. */
+body.elenco #vista-apri{opacity:1 !important; pointer-events:auto !important; z-index:7}
 body.elenco #vista{z-index:7}
 body.elenco #vista .dentro-only{display:none !important}
 
@@ -3311,3 +3321,92 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    suoi colori dentro, quindi l'unica delle quattro voci che non
    poteva accendersi di terracotta quando la scegli. Adesso e' una
    sagoma neutra come le altre tre, e prende `currentColor`. */
+
+/* ===================================================================
+   LA CALCOLATRICE DEL TAVOLO
+
+   Sta DENTRO il modulo della partita, sotto l'elenco di chi c'era, e
+   si apre dal campo dei punti di una persona: il totale finisce li',
+   che e' l'unica ragione per cui una calcolatrice ha senso su un sito
+   di giochi da tavolo invece di essere un aggeggio qualunque.
+
+   Niente tasto "uguale": il totale sta sempre in vista mentre si
+   digita, e l'unico gesto che chiude il conto e' quello che lo porta
+   nel campo. Un "uguale" in mezzo sarebbe un passo che non decide
+   niente.
+   =================================================================== */
+.calc{
+  margin:12px 0 0; padding:12px;
+  background:rgba(51,53,43,.05); border-radius:var(--r-m);
+}
+.calc-testa{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin:0 0 9px; font-size:11px; letter-spacing:.05em; color:var(--ink-soft);
+}
+.calc-testa b{
+  font-weight:600; color:var(--ink); letter-spacing:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+/* Il display: a sinistra il conto che si sta scrivendo, a destra il
+   totale grande. Il conto puo' diventare lungo, quindi scorre da solo
+   e resta agganciato alla fine -- e' l'ultimo pezzo quello che si sta
+   guardando. */
+.calc-schermo{
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  margin:0 0 10px; padding:9px 12px;
+  background:var(--card); border-radius:var(--r-s);
+}
+/* Niente `direction:rtl` per tenere visibile la coda: su una riga fatta
+   di numeri e segni non sposta la vista, RIBALTA l'ordine dei pezzi --
+   "7 + 12 + 4" si leggeva "4 + 12 + 7", cioe' un conto diverso da
+   quello che si stava scrivendo. La coda la tiene in vista `scrollLeft`
+   dopo ogni tasto, che sposta la vista e basta. */
+.calc-schermo span{
+  flex:1; min-width:0; overflow-x:auto; white-space:nowrap;
+  font-size:13px; color:var(--ink-soft); text-align:left;
+}
+.calc-schermo b{
+  flex:none; font-family:var(--ff-display); font-weight:400;
+  font-size:25.9px; line-height:1; letter-spacing:0; color:var(--ink);
+}
+.calc-tasti{display:grid; grid-template-columns:repeat(4,1fr); gap:7px}
+
+/* Due id perche' dentro `#partitalayer` c'e' gia' una regola con tre
+   `:not()` che decide il fondo di ogni pulsante, e ogni `:not()` pesa
+   quanto quello che contiene: una sola classe non ci arriva. E' la
+   lezione della pastiglia della lingua, un piano piu' su. */
+#partitalayer #calc .calc-tasti button{
+  display:flex; align-items:center; justify-content:center;
+  min-height:44px; padding:0; border:0; cursor:pointer;
+  font-family:var(--ff-text); font-size:17px; font-weight:500; letter-spacing:0;
+  color:var(--ink); background:var(--card); border-radius:var(--r-s);
+  transition:background-color .18s var(--ease), color .18s var(--ease),
+             transform .12s var(--ease);
+}
+#partitalayer #calc .calc-tasti button:hover{background:#fff; color:var(--accent)}
+#partitalayer #calc .calc-tasti button:active{transform:scale(.94)}
+#partitalayer #calc .calc-tasti button.fun{
+  background:rgba(51,53,43,.09); color:var(--ink-soft); font-size:16px;
+}
+#partitalayer #calc .calc-tasti button.fun:hover{color:var(--accent)}
+#partitalayer #calc .calc-tasti button.ok{background:var(--accent); color:#f2f1ed}
+#partitalayer #calc .calc-tasti button.ok:hover{background:var(--ink); color:#f2f1ed}
+#partitalayer #calc .calc-tasti .ico{width:18px; height:18px}
+#partitalayer #calc .calc-testa button{
+  flex:none; width:28px; height:28px; min-height:0; padding:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:0; border-radius:999px; cursor:pointer;
+  background:none; color:var(--ink-soft);
+}
+#partitalayer #calc .calc-testa button:hover{background:rgba(51,53,43,.08); color:var(--ink)}
+#partitalayer #calc .calc-testa .ico{width:14px; height:14px}
+
+/* Il pulsante sulla riga: sta accanto al campo dei punti, non in mezzo
+   ai comandi. Resta appena accennato come la corona spenta -- si accende
+   sotto il dito -- perche' una fila di calcolatrici accese sopra un
+   tavolo direbbe "qui si preme" a ogni riga. */
+.pa-chi button.conta{
+  flex:none; color:var(--ink-soft); background:none; border:0;
+  opacity:.5; transition:opacity .18s var(--ease), color .18s var(--ease);
+}
+.pa-chi button.conta:hover, .pa-chi button.conta:focus-visible{opacity:1; color:var(--accent)}
