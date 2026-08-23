@@ -189,16 +189,53 @@ function fariCubi(w, h, celle, forza){
   x.fillStyle = '#000';
   x.fillRect(0, 0, w, h);
   const f = forza === undefined ? 1 : forza;
+  const a = v => 'rgba(255,255,255,' + Math.min(1, v).toFixed(3) + ')';
+
+  /* Si somma invece di sovrascrivere: il nucleo, la coda e il rimbalzo
+     sono tre luci sulla stessa parete, non tre strati di vernice. */
+  x.globalCompositeOperation = 'lighter';
+
   celle.forEach(function(r){
     const X = r[0] * w, Y = r[1] * h, W = (r[2] - r[0]) * w, H = (r[3] - r[1]) * h;
-    const g = x.createLinearGradient(X, Y, X, Y + H * .82);
-    g.addColorStop(0,    'rgba(255,255,255,' + f.toFixed(3) + ')');
-    g.addColorStop(.16,  'rgba(255,255,255,' + (f * .58).toFixed(3) + ')');
-    g.addColorStop(.55,  'rgba(255,255,255,' + (f * .16).toFixed(3) + ')');
-    g.addColorStop(1,    'rgba(255,255,255,0)');
+
+    /* IL NUCLEO E LA CODA.
+
+       Prima era una sfumatura sola che partiva forte e scendeva: si
+       leggeva come una parete verniciata di chiaro in alto, non come
+       una luce. Una striscia LED vera ha due parti ben diverse -- un
+       filo quasi bianco largo pochissimo, che e' la sorgente, e una
+       coda lunga e satura che e' la luce sulla parete -- ed e' quel
+       salto a farla leggere come qualcosa di ACCESO.
+
+       Il bianco del nucleo non si dipinge: si ottiene lasciando che
+       l'esposizione lo bruci. La mappa qui e' in scala di grigi e viene
+       moltiplicata per il colore scelto, quindi da qui non si puo'
+       uscire piu' chiari di quel colore; ma con `emissiveIntensity`
+       sopra l'unita' il picco esce dalla scala e il tone mapping lo
+       porta verso il bianco, mentre la coda resta satura. E' come si
+       comporta un neon vero davanti a una macchina fotografica. */
+    const g = x.createLinearGradient(X, Y, X, Y + H);
+    g.addColorStop(0,    a(f));
+    g.addColorStop(.045, a(f));            // la striscia: sottile, e' la sorgente
+    g.addColorStop(.10,  a(f * .55));
+    g.addColorStop(.30,  a(f * .22));
+    g.addColorStop(.62,  a(f * .07));
+    g.addColorStop(1,    a(0));
     x.fillStyle = g;
     x.fillRect(X, Y, W, H);
+
+    /* IL RIMBALZO DAL FONDO DEL CUBO. Poco -- un settimo del nucleo --
+       ma e' quello che fa la differenza fra un VANO illuminato e una
+       parete illuminata: senza, la luce muore a meta' e il cubo sembra
+       profondo il doppio di quello che e'. */
+    const b = x.createLinearGradient(X, Y + H, X, Y + H * .52);
+    b.addColorStop(0, a(f * .15));
+    b.addColorStop(1, a(0));
+    x.fillStyle = b;
+    x.fillRect(X, Y + H * .5, W, H * .5);
   });
+
+  x.globalCompositeOperation = 'source-over';
   return c;
 }
 

@@ -507,8 +507,16 @@ function buildRoom(){
   fillLight.position.set(16, 8, 18);
   scene.add(fillLight);
 
+  /* LA LAMPADA DEL FOCUS STA FUORI DALLA SCENA FINCHE' NON SERVE.
+
+     Restava dentro sempre, spenta a intensita' zero. Ma una luce
+     spenta non e' una luce gratis: three.js compila lo shader di OGNI
+     materiale con il numero di luci che trova, e ogni frammento paga
+     il conto di quella lampada anche quando non illumina niente.
+     Misurato: le cinque point light sono il 28% del tempo GPU, e
+     questa e' una su cinque -- pagata per il 99% del tempo, che e'
+     quanto si passa a guardare lo scaffale invece di una scheda. */
   focusLight = new THREE.PointLight(0xfff1dd, 0, 26, 1.6);
-  scene.add(focusLight);
 
   /* Una luce per fila, appena davanti al bordo dei cubi: serve poco --
      la stanza e' gia' chiara -- ma e' quello che fa risaltare le
@@ -586,7 +594,12 @@ function applicaLuce(){
     const m = MATS_PER_TINTA[t].fondo;
     if (m && m.__fari){
       m.emissive.copy(tintaFari);
-      m.emissiveIntensity = .85 * luceFari;
+      /* Sopra l'unita' apposta: il nucleo della striscia esce dalla
+         scala e il tone mapping lo brucia verso il bianco, mentre la
+         coda -- che nella mappa vale un quinto -- resta dentro e resta
+         satura. E' quel contrasto a far leggere "acceso" invece di
+         "dipinto di chiaro". */
+      m.emissiveIntensity = 1.6 * luceFari;
     }
   });
 
@@ -597,7 +610,7 @@ function applicaLuce(){
      diverse. Quindi il colore si mescola nella stessa proporzione in cui
      si mescolano le due intensita' -- calcolato qui e non nel ciclo,
      perche' `state.bayLight` e' solo un moltiplicatore comune. */
-  const quota = (.55 * luceFari) / Math.max(.0001, luceVani + .55 * luceFari);
+  const quota = (.62 * luceFari) / Math.max(.0001, luceVani + .62 * luceFari);
   const coloreVani = new THREE.Color(0xfff0da).lerp(tintaFari, Math.min(1, quota));
   bayLights.forEach(function(x){ x.color.copy(coloreVani); });
 
@@ -779,9 +792,33 @@ function makeGameBox(game){
   });
   const sideV = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.spine(game, true)),  roughness: .64 });
   const sideH = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.spine(game, false)), roughness: .64 });
-  const dark  = new THREE.MeshStandardMaterial({ color: 0x3a2c1e, roughness: .95 });
-  const card  = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.cardboard('#a5855c'), {repeat:[2,2]}), roughness: .92 });
-  const inMat = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.inside()), roughness: .88 });
+
+  /* TRE DEI SEI MATERIALI DI UNA SCATOLA SONO UGUALI PER TUTTE.
+
+     Copertina e dorsi sono di quel gioco e restano suoi. Ma il fondello
+     scuro del coperchio, il cartone del fondo e l'interno erano
+     costruiti da capo dodici volte -- stesso colore, stessi argomenti,
+     stesso disegno -- e ognuno si portava dietro un canvas dipinto e
+     caricato sulla scheda. Trentasei materiali e ventiquattro texture
+     dove ne bastano tre e due.
+
+     L'interno in particolare: e' il dentro di una scatola CHIUSA in
+     undici casi su dodici, perche' una sola si apre per volta. Dodici
+     interni diversi erano dodici disegni per una cosa che si vede una
+     volta sola -- e due qualunque di loro non si distinguono, essendo
+     grana casuale sullo stesso cartone.
+
+     E' la stessa cache degli arredi: chi ci sta dentro e' segnato
+     `__comune` e `killGroup` non lo butta via. */
+  const dark  = comune('scatolaFondello', function(){
+    return new THREE.MeshStandardMaterial({ color: 0x3a2c1e, roughness: .95 });
+  });
+  const card  = comune('scatolaCartone', function(){
+    return new THREE.MeshStandardMaterial({ map: ART.toTex(ART.cardboard('#a5855c'), {repeat:[2,2]}), roughness: .92 });
+  });
+  const inMat = comune('scatolaDentro', function(){
+    return new THREE.MeshStandardMaterial({ map: ART.toTex(ART.inside()), roughness: .88 });
+  });
 
   const lid = new THREE.Mesh(geoCoperchio(), [sideV, sideH, cover, dark]);
   lid.scale.set(BOX.w, H, BOX.lid);
@@ -2062,6 +2099,29 @@ function intro(){
   }, .5);
 }
 
+/* Aggiungere o togliere una luce cambia il numero di luci, quindi
+   three.js ricompila lo shader di tutti i materiali. Lo si fa fare UNA
+   volta sola, sul caricamento (vedi `scaldaShader`), dove un
+   singhiozzo non lo vede nessuno: da li' in poi i due programmi sono
+   in cache e lo scambio non costa niente. */
+function accendiFocus(si){
+  if (!focusLight || !scene) return;
+  if (si){ if (!focusLight.parent) scene.add(focusLight); }
+  else if (focusLight.parent) scene.remove(focusLight);
+}
+
+/* I due programmi -- con e senza la lampada del focus -- si compilano
+   qui, mentre la barra di caricamento e' ancora a schermo. Senza,
+   il conto si paga alla prima scatola che si apre: cioe' esattamente
+   nel fotogramma in cui comincia a muoversi. */
+function scaldaShader(){
+  if (!renderer || !scene || !camera) return;
+  try {
+    accendiFocus(true);  renderer.compile(scene, camera);
+    accendiFocus(false); renderer.compile(scene, camera);
+  } catch(e){ if (window.console) console.warn('scaldaShader:', e); }
+}
+
 function focusOn(box){
   if (state.phase !== 'browse' || box.userData.busy) return;
   state.phase = 'focus';
@@ -2069,6 +2129,7 @@ function focusOn(box){
   state.hover = null;
   document.body.classList.remove('browse');
 
+  accendiFocus(true);
   const u = box.userData;
   u.busy = true;
   const p0 = box.position.clone();
@@ -2203,6 +2264,7 @@ function unfocus(poi){
       u.busy = false;
       state.focused = null;
       state.phase = 'browse';
+      accendiFocus(false);
       document.body.classList.add('browse');
       if (poi) poi();
       ridisponiSeAtteso();
@@ -2297,6 +2359,7 @@ function removeFocused(){
     state.bayLight = 1;
     applyLibrary({ animate: true });
     state.phase = 'browse';
+    accendiFocus(false);     // anche da qui si torna allo scaffale
     document.body.classList.add('browse');
     flash(TP('msg.toltoDaLib', {g: game.title}));
   });
@@ -6442,7 +6505,7 @@ function frame(now){
        salato del sito -- e l'effetto sotto il ripiano lo fa gia' la
        luce dipinta sullo schienale. Questa serve solo a non lasciare al
        buio la copertina della scatola. */
-    bayLights[i].intensity = state.bayLight * luceVani + .55 * luceFari;
+    bayLights[i].intensity = state.bayLight * luceVani + .62 * luceFari;
     bayLights[i].position.x = camBase.x;
   }
   if (keyLight){
@@ -6714,6 +6777,7 @@ async function boot(){
   await wait(20); setProg(.72, TP('load.mensole'));
   applyLibrary({});
   await wait(20); setProg(.92, TP('load.lampada'));
+  scaldaShader();
 
   /* UN AGGANCIO CHE SALTA NON SI PORTA VIA GLI ALTRI.
 

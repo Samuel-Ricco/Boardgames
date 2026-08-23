@@ -2857,9 +2857,143 @@ coordinate poi sono quelle della **pagina** (1184×1270 qui), non quelle dello
 screenshot (800×858): lo screenshot è scalato, e mirare con i suoi pixel manca
 ogni bersaglio.
 
+## Sessanta fotogrammi: misurati sulla GPU, non sui frame al secondo
+
+**I frame al secondo non dicono niente su questa macchina.** Ogni prova, in
+ogni condizione, tornava 160 fps: e' il vsync, non il margine. Con un tetto
+fisso davanti, tutto sembra veloce uguale — anche quello che veloce non e'.
+
+Il numero vero lo da' **`EXT_disjoint_timer_query_webgl2`**: si apre una query
+`TIME_ELAPSED_EXT` all'inizio del fotogramma e si chiude alla fine, e il
+risultato arriva qualche fotogramma dopo. E' il tempo che la GPU passa
+davvero a disegnare, e non ha nessun tetto sopra.
+
+Punto di partenza, a 1184x1270: **GPU 0,548 ms mediana, CPU 0,60 ms, 98
+chiamate di disegno, 562 triangoli, 86 materiali.** Cioe' poco piu' di un
+millisecondo su un budget di 16,7: **quindici volte dentro i sessanta**. Il
+lavoro qui non era togliere un collo di bottiglia che non c'e' — era togliere
+quello che si paga senza vederlo, perche' e' quello che su un telefono si
+sente.
+
+Dov'e' finito: **GPU 0,332 ms (-39%), CPU 0,40 ms (-33%), 53 materiali
+(-38%)**, a parita' di pixel sullo schermo.
+
+### Dove stava il costo
+
+Misurato togliendo una cosa per volta e rimettendola:
+
+- **le cinque point light valgono il 28% del tempo GPU.** Sono il conto piu'
+  salato della scena, e si paga per frammento su tutto lo schermo;
+- **la passata d'ombra vale 0,151 ms**, ma solo quando qualcosa si muove: a
+  riposo non c'e' proprio (vedi «Le ombre si ridisegnano solo se qualcosa si
+  e' mosso»);
+- la geometria non conta niente: **562 triangoli in 98 chiamate** sono dodici
+  triangoli a chiamata. Qui non si e' mai trattato di poligoni.
+
+### Una luce spenta non e' una luce gratis
+
+`focusLight` — quella che si accende aprendo una scheda — stava nella scena
+**sempre**, a intensita' zero. Ma three.js compila lo shader di **ogni**
+materiale con il numero di luci che trova, e ogni frammento paga il conto di
+quella lampada anche quando non illumina niente. Una su cinque, per il 99% del
+tempo: perche' il tempo si passa a guardare lo scaffale, non una scheda.
+
+Adesso entra in scena con la scatola e ne esce quando la scatola torna a posto
+— da tutte e due le uscite, `unfocus` e `removeFocused`.
+
+**E i due shader si scaldano sul caricamento.** Cambiare il numero di luci fa
+ricompilare tutti i materiali: senza precauzioni il conto si sarebbe pagato
+alla prima scatola aperta, cioe' esattamente nel fotogramma in cui comincia a
+muoversi. `scaldaShader()` compila la variante con la lampada e quella senza
+mentre la barra di caricamento e' ancora a schermo, e da li' in poi sono tutte
+e due in cache. Verificato: il picco di CPU nei primi 120 ms dopo l'apertura e'
+**1,6 ms** — se ricompilasse li', sarebbero decine.
+
+### Tre dei sei materiali di una scatola sono uguali per tutte
+
+Copertina e dorsi sono di quel gioco. Ma il **fondello** scuro del coperchio,
+il **cartone** del fondo e l'**interno** venivano costruiti da capo dodici
+volte, con gli stessi identici argomenti, e ognuno si portava dietro un canvas
+dipinto e caricato sulla scheda: trentasei materiali e ventiquattro texture
+dove ne bastano tre e due.
+
+L'interno in particolare: e' il dentro di una scatola **chiusa** in undici casi
+su dodici, perche' una sola si apre per volta. Dodici interni diversi erano
+dodici disegni per una cosa che si vede una volta sola — e due qualunque di
+loro non si distinguono, essendo grana casuale sullo stesso cartone.
+
+Passano da `comune()`, la stessa cache degli arredi, quindi sono segnati
+`__comune` e `killGroup` non se li porta via alla prima ricostruzione.
+Verificato che restino condivisi fra due scatole e che copertine e dorsi
+restino distinti.
+
+**Attenzione: condividere i materiali NON toglie chiamate di disegno.** Quelle
+le fa il numero di GRUPPI di una geometria, non l'identita' del materiale — la
+lezione e' gia' scritta un piano sopra. Restano 98. Quello che si guadagna e'
+altrove, ed e' molto: meno canvas dipinti, meno texture caricate sulla scheda,
+meno programmi shader da compilare all'avvio, meno memoria. Su un telefono
+sono proprio quelli i costi che si sentono.
+
+### Quello che e' stato misurato e NON si e' fatto
+
+Vale la pena scriverlo, se no qualcuno lo rimisura fra sei mesi:
+
+- **PCF al posto di PCFSoft per le ombre: nessun guadagno** (0,55 contro
+  0,531, cioe' rumore). Solo `BasicShadowMap` costa davvero meno — 0,389 — ma
+  quello si vede, e brutto.
+- **Anisotropia da 8 a 1: 0,121 ms.** Sembra tanto, ma il rumore di fondo di
+  questa misura e' 0,09 (la stessa configurazione, rimisurata, e' passata da
+  0,425 a 0,334). Sotto quella soglia non e' una prova, e non si scambia
+  qualita' sul pavimento — che e' la superficie di scorcio, quella dove
+  l'anisotropia si vede — per un numero dentro il rumore.
+- **Non ridisegnare le ombre per l'alzata dell'hover.** Costerebbe 0,151 ms a
+  ogni movimento del mouse. Ma **l'hover esiste solo col mouse**: sarebbe un
+  risparmio esattamente sulle macchine che il margine ce l'hanno gia', pagato
+  con l'ombra della scatola che non segue piu' la scatola.
+- **Ridurre i gruppi del coperchio da quattro a tre**, dando al fondello la
+  texture delle teste: dodici chiamate in meno (12%), ma il fondello scuro e'
+  quello che disegna la linea d'ombra fra coperchio e fondo, e a scatola
+  chiusa e' l'unica cosa che fa leggere due pezzi invece di uno.
+
+### La memoria delle texture, che e' l'altra meta'
+
+**46 MB con le mipmap**, e la fetta grossa sono le copertine vere (8 texture da
+720x520 e 3 da 760x570 fanno 22 MB). Non si toccano: su uno scaffale sono
+larghe 90 px, ma con una scheda aperta sono larghe 400 e a densita' 2 fanno
+800 — la risoluzione la comanda quel caso li', non lo scaffale.
+
+## Il neon si dipinge come si dipinge una luce, non un muro
+
+La prima versione dei faretti era **una sfumatura sola** che partiva forte
+sotto il ripiano e scendeva: si leggeva come una parete verniciata di chiaro
+in alto, non come qualcosa di acceso.
+
+Una striscia LED vera ha **due parti ben diverse**, ed e' il salto fra le due a
+farla leggere come una sorgente:
+
+- **il nucleo** — un filo quasi bianco largo pochissimo (il 4,5% dell'altezza
+  del cubo), che e' il LED;
+- **la coda** — lunga, satura, che e' la luce sulla parete.
+
+E poi il **rimbalzo dal fondo del cubo**: poco, un settimo del nucleo, ma senza
+la luce muore a meta' e il vano sembra profondo il doppio di quello che e'.
+Le tre sfumature si sommano (`globalCompositeOperation = 'lighter'`), perche'
+sono tre luci sulla stessa parete e non tre strati di vernice.
+
+**Il bianco del nucleo non si dipinge: si lascia bruciare all'esposizione.** La
+mappa e' in scala di grigi e viene moltiplicata per il colore scelto, quindi da
+li' non si puo' uscire piu' chiari di quel colore. Ma con `emissiveIntensity`
+sopra l'unita' (1,6 invece di 0,85) il picco esce dalla scala e il tone mapping
+ACES lo porta verso il bianco, mentre la coda — che nella mappa vale un quinto
+— resta dentro e resta satura. E' esattamente come si comporta un neon vero
+davanti a una macchina fotografica, ed e' per quello che si legge come neon.
+
+Costa **zero**: e' la stessa texture di prima sullo stesso schienale, che e'
+una tavola sola per tutto il mobile.
+
 ## Stato attuale
 
-**Aggiornato al 2026-08-23 (terza sessione).** Questa sezione e la prossima bastano a ripartire a
+**Aggiornato al 2026-08-23 (quarta sessione).** Questa sezione e la prossima bastano a ripartire a
 freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
 racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
 è fatto* c'è tutto il resto di questo file, che è aggiornato.
@@ -2937,6 +3071,22 @@ nuova. Nessuna migrazione: il colore dei faretti sta nel jsonb della stanza.
 I dati di prova sono stati ripuliti: la partita di collaudo è stata annullata
 senza salvarla, e la collezione è rimasta **25 giochi, una libreria, una
 partita**.
+
+### La sessione del 2026-08-23 (quarta)
+
+Ottimizzazione e neon. Nessuna migrazione, nessuna colonna nuova.
+
+| argomento | cosa |
+|---|---|
+| la misura | i frame al secondo qui sono bloccati dal vsync e non dicono niente: il numero vero viene da `EXT_disjoint_timer_query_webgl2` |
+| il punto di partenza | GPU 0,548 ms, CPU 0,60 ms, 98 chiamate, 86 materiali — cioe' gia' quindici volte dentro i sessanta |
+| dove arriva | **GPU 0,332 ms (-39%), CPU 0,40 ms (-33%), 53 materiali (-38%)** |
+| la lampada del focus | esce dalla scena quando e' spenta: era una point light su cinque, pagata per il 99% del tempo |
+| i materiali delle scatole | fondello, cartone e interno sono uguali per tutte: trentasei materiali e ventiquattro texture diventano tre e due |
+| il neon | nucleo quasi bianco piu' coda satura piu' rimbalzo dal fondo del cubo, e il bianco lo fa l'esposizione invece della vernice |
+
+I dati non sono stati toccati: **25 giochi, una libreria, una partita**, e i
+faretti sono tornati al caldo a 0,44 dopo le prove con il viola e il ciano.
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 
