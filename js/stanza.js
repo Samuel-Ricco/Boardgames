@@ -22,6 +22,13 @@ const STANZA = (function(){
        cambiare, cosi' chi non tocca niente non vede niente cambiare */
 const DEFAULT = {
   luce: 1,
+  /* I faretti dentro la libreria. Sono una cosa diversa dalla luce
+     della stanza, e apposta: quella si abbassa fino a spegnere il
+     muro, questi restano dove sono. E' quello che succede in casa la
+     sera -- si spegne il lampadario e la libreria resta accesa da
+     dentro. A luce piena non si notano quasi, come i faretti veri a
+     mezzogiorno. */
+  faretti: 0.4,
   scaffali: '#8e6a4b',
   muro: '#cfccc8',
   pavimento: '#c7af98',
@@ -116,6 +123,11 @@ let miei = true;              // stiamo guardando la propria stanza?
 function normalizza(s){
   const o = Object.assign({}, DEFAULT, s || {});
   o.luce = Math.max(LUCE_MIN, Math.min(LUCE_MAX, parseFloat(o.luce) || 1));
+  /* Zero e' un valore vero -- "spenti" -- quindi non si puo' usare
+     `|| DEFAULT`: si controlla che sia un numero, non che sia diverso
+     da zero. E' lo stesso inciampo dei punti di una partita. */
+  const f = parseFloat(o.faretti);
+  o.faretti = Math.max(0, Math.min(1, isFinite(f) ? f : DEFAULT.faretti));
   const dentro = function(lista, v, d){
     return lista.some(function(x){ return x.v === v; }) ? v : d;
   };

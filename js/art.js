@@ -165,6 +165,43 @@ function aoCubi(c, celle, forza){
   return c;
 }
 
+/* ---------------------------------------------------------------
+   I FARETTI SOTTO I RIPIANI, dipinti
+
+   Il gemello di `aoCubi`, e per la stessa ragione: lo schienale e' UNA
+   tavola sola per tutto il mobile, quindi una luce dipinta li' dentro
+   non costa ne' una lampada ne' una chiamata di disegno in piu'.
+
+   Dodici punti luce veri -- uno per cubo -- sarebbero dodici lampade
+   nello shader di ogni materiale della scena, cioe' il conto piu'
+   salato che si possa pagare per un effetto che a mezzogiorno non si
+   vede nemmeno. E una lampada sola per fila, centrata, riaccenderebbe
+   il difetto gia' pagato una volta: la colonna di mezzo accesa e le
+   due di fianco al buio.
+
+   Dipinto, invece, ogni cubo riceve la stessa identica luce: bianco
+   pieno sotto il ripiano che scende verso il nero in fondo al vano,
+   che e' come cade la luce di un faretto incassato. Il colore caldo e
+   quanto e' acceso li mette il materiale (`emissive` e
+   `emissiveIntensity`), cosi' il cursore non deve ridipingere niente. */
+function fariCubi(w, h, celle, forza){
+  const [c, x] = cnv(w, h);
+  x.fillStyle = '#000';
+  x.fillRect(0, 0, w, h);
+  const f = forza === undefined ? 1 : forza;
+  celle.forEach(function(r){
+    const X = r[0] * w, Y = r[1] * h, W = (r[2] - r[0]) * w, H = (r[3] - r[1]) * h;
+    const g = x.createLinearGradient(X, Y, X, Y + H * .82);
+    g.addColorStop(0,    'rgba(255,255,255,' + f.toFixed(3) + ')');
+    g.addColorStop(.16,  'rgba(255,255,255,' + (f * .58).toFixed(3) + ')');
+    g.addColorStop(.55,  'rgba(255,255,255,' + (f * .16).toFixed(3) + ')');
+    g.addColorStop(1,    'rgba(255,255,255,0)');
+    x.fillStyle = g;
+    x.fillRect(X, Y, W, H);
+  });
+  return c;
+}
+
 // una copia su cui dipingere senza sporcare l'originale
 function copia(c){
   const [d, x] = cnv(c.width, c.height);
@@ -943,7 +980,7 @@ function quadro(seed){
 
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
-  aoCubi: aoCubi, copia: copia,
+  aoCubi: aoCubi, fariCubi: fariCubi, copia: copia,
   avatar: avatar, quadro: quadro, targhetta: targhetta,
   coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
   coverTitolo: coverTitolo,

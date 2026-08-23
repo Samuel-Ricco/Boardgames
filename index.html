@@ -77,7 +77,7 @@
   <p class="eyebrow" data-i18n="vista.occhiello">la vista</p>
 
   <div class="cercawrap">
-    <input id="cerca" type="text" data-i18n-ph="vista.cercaPh" placeholder="cerca un gioco&hellip;"
+    <input id="cerca" type="text" data-i18n-ph="vista.cercaPh" maxlength="60" placeholder="cerca un gioco&hellip;"
            autocomplete="off" spellcheck="false"
            data-i18n-aria="vista.cercaAria" aria-label="cerca nella collezione">
     <button id="cerca-x" type="button" data-i18n-title="vista.pulisciTitolo" title="pulisci la ricerca"
@@ -135,10 +135,22 @@
     <b id="st-luce-n">100%</b>
   </p>
 
+  <!-- I FARETTI SOTTO I RIPIANI. Non seguono la luce della stanza: e'
+       tutto il punto. Abbassando la luce la stanza si spegne e il
+       mobile resta acceso da dentro, che e' quello che fa una libreria
+       illuminata la sera -- e a luce piena si notano appena, come si
+       notano appena i faretti veri a mezzogiorno. -->
+  <p class="st-riga luce">
+    <span data-i18n="stanza.faretti">faretti</span>
+    <input id="st-faretti" type="range" min="0" max="1" step="0.02" value="0.4"
+           data-i18n-aria="stanza.farettiAria" aria-label="faretti della libreria">
+    <b id="st-faretti-n">40%</b>
+  </p>
+
   <!-- Il nome sta in chiaro e non dentro una tendina: e' quello che
        distingue un mobile dall'altro, e si cambia spesso all'inizio. -->
   <p class="st-nome">
-    <input id="st-rinomina" type="text" maxlength="40" autocomplete="off"
+    <input id="st-rinomina" type="text" maxlength="24" autocomplete="off"
            spellcheck="false" data-i18n-aria="stanza.nomeAria" aria-label="nome di questa libreria">
     <button id="st-rinomina-ok" type="button" class="primario" disabled
             data-i18n="stanza.salva">salva</button>
@@ -209,7 +221,7 @@
      per sapere in che scaffale si trova. -->
 <!-- pannello della recensione: si apre come un'anta, incernierato sul lato -->
 <aside id="panel" role="dialog" aria-modal="false" aria-labelledby="p-title" aria-hidden="true">
-  <button id="close" type="button"><span data-i18n="pan.chiudi">chiudi</span> &times;</button>
+  <button id="close" type="button" data-i18n-aria="pan.chiudi" aria-label="chiudi"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
   <div class="pan-scroll">
     <p class="eyebrow" id="p-eyebrow">la recensione</p>
     <h2 id="p-title"></h2>
@@ -218,7 +230,6 @@
     <div class="score"><b id="p-score"></b><i>/10</i><small data-i18n="pan.voto">il voto della<br>ludoteca</small></div>
     <div class="body" id="p-body"></div>
     <div class="tags" id="p-tags"></div>
-    <div class="gruppi" id="p-gruppi"></div>
     <div class="giocate" id="p-giocate"></div>
     <p class="pan-link">
       <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener"
@@ -243,11 +254,11 @@
     </button>
     <button id="p-segna" type="button" class="dentro-only"
             data-i18n-title="pan.segnaTitolo" title="segna una partita a questo gioco">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8.5v7l8 4.5 8-4.5v-7L12 4zM12 4v16M4 8.5l8 4.5 8-4.5"/></svg> <span data-i18n="pan.segna">partita</span>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg> <span data-i18n="pan.segna">partita</span>
     </button>
     <button id="p-fuori" type="button" class="dentro-only"
             data-i18n-title="pan.fuoriTitolo" title="lascia lo scaffale, resta nella tua collezione">
-      <span data-i18n="pan.fuori">in collezione</span>
+      <span data-i18n="pan.fuori">togli dallo scaffale</span>
     </button>
 
     <!-- Il piede va a capo qui: sopra le cose che si fanno di sfuggita,
@@ -279,7 +290,7 @@
   <button type="button" data-sez="partite" class="dentro-only">
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span data-i18n="tab.partite">partite</span></button>
   <button type="button" data-sez="profilo" class="dentro-only">
-    <canvas id="tab-faccia" width="44" height="44" aria-hidden="true"></canvas><span data-i18n="tab.profilo">profilo</span></button>
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.2a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2zM4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg><span data-i18n="tab.profilo">profilo</span></button>
 </nav>
 
 <!-- LA MIA LIBRERIA COME ELENCO. Lo scaffale in tre dimensioni e' bello
@@ -318,7 +329,7 @@
     <div class="cat-testa">
       <p class="eyebrow" data-i18n="cat.occhiello">il catalogo</p>
       <div class="cat-cerca">
-        <input id="cat-q" type="text" data-i18n-ph="cat.cercaPh" placeholder="cerca un gioco&hellip;"
+        <input id="cat-q" type="text" data-i18n-ph="cat.cercaPh" maxlength="60" placeholder="cerca un gioco&hellip;"
                autocomplete="off" spellcheck="false"
                data-i18n-aria="cat.cercaAria" aria-label="cerca nel catalogo">
         <button id="cat-go" type="button" data-i18n="cat.cerca">cerca</button>
@@ -404,7 +415,7 @@
         <ul id="pro-attesa" class="pro-gente"></ul>
 
         <div class="pro-aggiungi">
-          <input id="ami-q" type="text" data-i18n-ph="pro.amiciPh" placeholder="codice amico, o email"
+          <input id="ami-q" type="text" data-i18n-ph="pro.amiciPh" maxlength="80" placeholder="codice amico, o email"
                  autocomplete="off" spellcheck="false"
                  data-i18n-aria="pro.amiciAria" aria-label="codice amico o email">
           <button id="ami-go" type="button" data-i18n="pro.chiedi">chiedi</button>
@@ -423,7 +434,7 @@
         <p id="gio-msg" class="pro-msg"></p>
         <div class="pro-aggiungi">
           <input id="gio-nuovo" type="text" data-i18n-ph="pro.giocatorePh" placeholder="un nome"
-                 autocomplete="off" maxlength="40"
+                 autocomplete="off" maxlength="24"
                  data-i18n-aria="pro.giocatoreAria" aria-label="nome del giocatore">
           <button id="gio-piu" type="button" data-i18n="pro.giocatoreAgg">aggiungi</button>
         </div>
@@ -500,7 +511,7 @@
     <p class="nick-nota" data-i18n="nick.nota">Il nick e' come ti vedono gli amici. Si cambia quando
       vuoi dal profilo.</p>
     <div class="nick-riga">
-      <input id="nick-q" type="text" maxlength="20" autocomplete="off"
+      <input id="nick-q" type="text" maxlength="12" autocomplete="off"
              spellcheck="false" data-i18n-aria="nick.aria" aria-label="il tuo nick">
       <button id="nick-ok" type="button" data-i18n="nick.ok">avanti</button>
     </div>
@@ -569,12 +580,12 @@
 <!-- admin: cerca e aggiungi -->
 <div id="addlayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="add-h">
-    <button id="add-x" type="button"><span data-i18n="add.chiudi">chiudi</span> &times;</button>
+    <button id="add-x" type="button" data-i18n-aria="add.chiudi" aria-label="chiudi"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
     <p class="eyebrow" data-i18n="add.occhiello">nuovo gioco</p>
     <h2 id="add-h" data-i18n="add.h">Aggiungi alla libreria</h2>
 
     <div class="add-search">
-      <input id="add-q" type="text" data-i18n-ph="add.qPh" placeholder="cerca su BoardGameGeek&hellip;"
+      <input id="add-q" type="text" data-i18n-ph="add.qPh" maxlength="60" placeholder="cerca su BoardGameGeek&hellip;"
              autocomplete="off" spellcheck="false">
       <button id="add-go" type="button" data-i18n="add.go">cerca</button>
     </div>
@@ -584,16 +595,16 @@
     <details id="add-man">
       <summary data-i18n="add.man">oppure scrivilo a mano</summary>
       <div class="add-form">
-        <label><span data-i18n="add.titolo">titolo</span> <input id="m-title" type="text" autocomplete="off"></label>
-        <label><span data-i18n="add.bgg">id BGG</span> <input id="m-bgg" type="text" inputmode="numeric" autocomplete="off"></label>
-        <label><span data-i18n="add.autore">autore</span> <input id="m-designer" type="text" autocomplete="off"></label>
-        <label><span data-i18n="add.editore">editore</span> <input id="m-publisher" type="text" autocomplete="off"></label>
-        <label><span data-i18n="add.anno">anno</span> <input id="m-year" type="text" inputmode="numeric" autocomplete="off"></label>
-        <label><span data-i18n="add.giocatori">giocatori</span> <input id="m-players" type="text" placeholder="2-4" autocomplete="off"></label>
-        <label><span data-i18n="add.durata">durata</span> <input id="m-time" type="text" placeholder="60-90" autocomplete="off"></label>
-        <label><span data-i18n="add.voto">voto</span> <input id="m-score" type="text" placeholder="8.0" autocomplete="off"></label>
+        <label><span data-i18n="add.titolo">titolo</span> <input id="m-title" type="text" maxlength="80" autocomplete="off"></label>
+        <label><span data-i18n="add.bgg">id BGG</span> <input id="m-bgg" type="text" inputmode="numeric" maxlength="8" autocomplete="off"></label>
+        <label><span data-i18n="add.autore">autore</span> <input id="m-designer" type="text" maxlength="60" autocomplete="off"></label>
+        <label><span data-i18n="add.editore">editore</span> <input id="m-publisher" type="text" maxlength="60" autocomplete="off"></label>
+        <label><span data-i18n="add.anno">anno</span> <input id="m-year" type="text" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+        <label><span data-i18n="add.giocatori">giocatori</span> <input id="m-players" type="text" placeholder="2-4" maxlength="12" autocomplete="off"></label>
+        <label><span data-i18n="add.durata">durata</span> <input id="m-time" type="text" placeholder="60-90" maxlength="12" autocomplete="off"></label>
+        <label><span data-i18n="add.voto">voto</span> <input id="m-score" type="text" placeholder="8.0" maxlength="4" autocomplete="off"></label>
         <label class="wide"><span data-i18n="add.recensione">recensione</span>
-          <textarea id="m-review" rows="7" data-i18n-ph="add.recPh" placeholder="Scrivi qui. Una riga vuota separa un capoverso dall&rsquo;altro."></textarea>
+          <textarea id="m-review" rows="7" maxlength="4000" data-i18n-ph="add.recPh" placeholder="Scrivi qui. Una riga vuota separa un capoverso dall&rsquo;altro."></textarea>
         </label>
         <label class="wide riga" id="m-pub-riga">
           <input id="m-pub" type="checkbox">
@@ -628,7 +639,7 @@
       dove sta.</p>
 
     <div class="pro-aggiungi">
-      <input id="gru-nuovo" type="text" data-i18n-ph="gru.ph" placeholder="party games, strategici&hellip;"
+      <input id="gru-nuovo" type="text" data-i18n-ph="gru.ph" maxlength="30" placeholder="party games, strategici&hellip;"
              autocomplete="off" maxlength="30" data-i18n-aria="gru.aria" aria-label="nome del gruppo">
       <button id="gru-piu" type="button" data-i18n="gru.crea">crea</button>
     </div>
@@ -660,7 +671,7 @@
      nella tua libreria. -->
 <div id="mialayer" aria-hidden="true">
   <div class="add-card" role="dialog" aria-labelledby="mia-h">
-    <button id="mia-x" type="button"><span data-i18n="rec.chiudi">chiudi</span> &times;</button>
+    <button id="mia-x" type="button" data-i18n-aria="rec.chiudi" aria-label="chiudi"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
     <p class="eyebrow" data-i18n="rec.occhiello">quello che ne pensi tu</p>
     <h2 id="mia-h" data-i18n="rec.h">La tua recensione</h2>
     <!-- spezzata attorno a `#mia-gioco`, che lo riempie il JS -->
@@ -668,10 +679,10 @@
       <i data-i18n="rec.nota2">nella tua libreria. Poche righe bastano.</i></p>
 
     <div class="add-form">
-      <label><span data-i18n="rec.voto">voto</span> <input id="mia-voto" type="text" inputmode="decimal"
+      <label><span data-i18n="rec.voto">voto</span> <input id="mia-voto" type="text" inputmode="decimal" maxlength="4"
                          placeholder="8.0" autocomplete="off"></label>
       <label class="wide"><span data-i18n="rec.recensione">recensione</span>
-        <textarea id="mia-testo" rows="7" data-i18n-ph="rec.ph"
+        <textarea id="mia-testo" rows="7" maxlength="4000" data-i18n-ph="rec.ph"
           placeholder="Com&rsquo;&egrave;? A chi lo consiglieresti? Una riga vuota separa un capoverso."></textarea>
       </label>
     </div>
@@ -698,7 +709,7 @@
          comunque la sua partita, solo senza aggancio al catalogo. -->
     <div class="add-form pa-form">
       <label class="wide"><span data-i18n="pa.gioco">gioco</span>
-        <input id="pa-titolo" type="text" autocomplete="off" role="combobox"
+        <input id="pa-titolo" type="text" maxlength="80" autocomplete="off" role="combobox"
                aria-autocomplete="list" aria-expanded="false" aria-controls="pa-sugg"
                data-i18n-ph="pa.giocoPh" placeholder="cerca nella tua collezione o nel catalogo">
       </label>
@@ -721,7 +732,7 @@
          non c'e' piu'. Resta un campo di testo, non un `select`: il
          selettore del sistema operativo continua a non somigliare a
          niente del resto del sito. -->
-    <input id="pa-chi-q" type="text" autocomplete="off" role="combobox"
+    <input id="pa-chi-q" type="text" maxlength="24" autocomplete="off" role="combobox"
            aria-autocomplete="list" aria-expanded="false" aria-controls="pa-chi-sugg"
            data-i18n-ph="pa.chiPh" placeholder="scrivi un nome">
     <ul id="pa-chi-sugg" class="pa-sugg" role="listbox" hidden></ul>

@@ -133,6 +133,13 @@ let cabGroup, propGroup, bayLights = [], focusLight, keyLight, alone;
    non dentro `frame()` perche' cambia solo quando si muove il cursore
    della luce, mentre il ciclo gira sessanta volte al secondo. */
 let luceVani = .30;
+/* Quanto sono accesi i faretti del mobile, a questa luce di stanza.
+   Diversa da `luceVani` in una cosa sola, ed e' quella che conta: i
+   vani seguono la stanza e si spengono con lei, i faretti no. La
+   stanza si abbassa e il mobile resta acceso da dentro -- che e' quello
+   che succede in casa la sera, e il motivo per cui questo cursore
+   esiste. */
+let luceFari = 0;
 let hemiLight, ambLight, fillLight;
 let floorMesh, wallMesh;
 let boxes = [];
@@ -211,7 +218,13 @@ const ICO = {
      che si scorre una parola in piu' e' rumore: un "+" lo dice meglio.
      Cosa faccia per esteso resta nel `title`. */
   piu:      '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>',
-  spunta:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+  spunta:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  /* L'attesa fra il "+" e la spunta. Aggiungere un gioco dal catalogo
+     fa due giri di rete -- la scheda, poi la copertina -- e finora nel
+     frattempo il pulsante restava un "+" spento: chi premeva non
+     sapeva se avesse premuto. Il cerchio e' quasi chiuso apposta: e'
+     quel pezzo mancante a farlo leggere come qualcosa che gira. */
+  rotella:  '<svg class="ico gira" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3.6a8.4 8.4 0 1 0 8.4 8.4"/></svg>'
 };
 
 const q  = s => document.querySelector(s);
@@ -266,12 +279,24 @@ function makeWoodMat(o){
   const bump = ART.toTex(c, { repeat: o.repeat, rot: o.rot });
   const map = o.ao ? ART.toTex(o.ao(ART.copia(c)), { repeat: o.repeat, rot: o.rot }) : bump.clone();
   if (o.ao) map.needsUpdate = true;
-  return new THREE.MeshStandardMaterial({
+  const m = new THREE.MeshStandardMaterial({
     map: map,
     bumpMap: bump,
     bumpScale: o.bump === undefined ? .035 : o.bump,
     roughness: o.rough === undefined ? .74 : o.rough, metalness: .04
   });
+  /* I faretti sono una luce DIPINTA, non una lampada: la stessa
+     ragione per cui l'occlusione dei cubi sta qui e non in una passata
+     di post-produzione. Va nell'`emissiveMap`, che condivide le UV con
+     la tavola, e quanto e' accesa la decide `applicaLuce` toccando
+     `emissiveIntensity` -- cosi' il cursore non ridipinge niente. */
+  if (o.fari){
+    m.emissive = new THREE.Color(0xffb877);
+    m.emissiveMap = ART.toTex(o.fari(c.width, c.height), { repeat: o.repeat, rot: o.rot });
+    m.emissiveIntensity = 0;
+    m.__fari = true;
+  }
+  return m;
 }
 
 /* I dodici cubi in frazioni dello schienale. Lo schienale e' largo
@@ -334,7 +359,8 @@ function matsDi(tinta){
        cache per tinta va bene com'e'. */
     fondo: legno(esa(c.clone().multiplyScalar(.88)),
                  { lines:160, knots:1, rough:.86, bump:.02,
-                   ao: function(cv){ return ART.aoCubi(cv, celleCubi()); } })
+                   ao: function(cv){ return ART.aoCubi(cv, celleCubi()); },
+                   fari: function(w, h){ return ART.fariCubi(w, h, celleCubi()); } })
   };
   return MATS_PER_TINTA[tinta];
 }
@@ -543,6 +569,18 @@ function applicaLuce(){
      proprio sul mobile che si sta guardando, e restavano al massimo
      mentre tutto il resto si spegneva. */
   luceVani = .30 * Math.pow(l, 1.15);
+
+  /* I faretti NON seguono la stanza, ma non la ignorano del tutto: a
+     mezzogiorno un faretto acceso si nota appena, e tenerlo alla stessa
+     forza farebbe sembrare lo schienale luminescente invece che
+     illuminato. Cala pianissimo -- fra buio e luce piena c'e' un terzo
+     scarso -- contro il crollo di tutto il resto. */
+  const cal = Math.min(1.3, Math.pow(Math.min(1.6, Math.max(.25, l)), -.30));
+  luceFari = STANZA.corrente().faretti * cal;
+  Object.keys(MATS_PER_TINTA).forEach(function(t){
+    const m = MATS_PER_TINTA[t].fondo;
+    if (m && m.__fari) m.emissiveIntensity = .85 * luceFari;
+  });
 
   /* Lo sfondo scende molto piu' della luce: e' quello che fa la
      differenza fra "stanza in penombra" e "filtro grigio". Con il
@@ -3384,7 +3422,11 @@ async function mettiInLibreria(v, btn){
   btn.disabled = true;
   const prima = btn.innerHTML;
   try {
-    btn.innerHTML = ICO.piu;
+    /* La rotella al posto del "+": i due giri di rete qui sotto
+       possono durare qualche secondo, e un pulsante spento che non
+       cambia si legge come "non ha funzionato" -- infatti c'e' chi ha
+       premuto due volte. Finita l'attesa diventa la spunta di sempre. */
+    btn.innerHTML = ICO.rotella;
     btn.title = TP('cat.prendoScheda');
     const g = await CATALOGO.dettagli(v);
     const gioco = {
@@ -3614,7 +3656,12 @@ function setGruppo(id){
 }
 
 function bindGruppi(){
-  q('#p-gruppi').addEventListener('click', function(e){
+  /* I gruppi non stanno piu' nella scheda del gioco: si gestiscono
+     dall'elenco, che e' dove si decide cosa sta con cosa. Il pannello
+     e' rimasto senza `#p-gruppi`, e questi due ascoltatori senza casa:
+     si agganciano solo se l'elemento c'e' ancora. */
+  const pg = q('#p-gruppi');
+  if (pg) pg.addEventListener('click', function(e){
     const b = e.target.closest('button[data-g]');
     if (!b || b.disabled) return;
     e.stopPropagation();
@@ -3633,7 +3680,7 @@ function bindGruppi(){
       flash(TP('msg.nonRiuscito', {e: err.message}));
     });
   });
-  q('#p-gruppi').addEventListener('pointerup', function(e){ e.stopPropagation(); });
+  if (pg) pg.addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   q('#mia-gruppi').addEventListener('click', function(e){
     const p = e.target.closest('button[data-pref]');
@@ -4066,6 +4113,8 @@ function disegnaStanza(){
 
   q('#st-luce').value = cur.luce;
   q('#st-luce-n').textContent = Math.round(cur.luce * 100) + '%';
+  q('#st-faretti').value = cur.faretti;
+  q('#st-faretti-n').textContent = Math.round(cur.faretti * 100) + '%';
   q('#st-quale').textContent = L ? L.nome : TP('stanza.nessunMobile');
 
   const gruppo = function(sel, lista, valore, testo){
@@ -4202,6 +4251,17 @@ function bindStanza(){
   q('#st-luce').addEventListener('input', function(){
     STANZA.cambia({ luce: parseFloat(q('#st-luce').value) });
     q('#st-luce-n').textContent = Math.round(STANZA.corrente().luce * 100) + '%';
+    applicaLuce();
+    salvaStanzaTraPoco();
+  });
+
+  /* I faretti passano dalla stessa strada della luce, e per la stessa
+     ragione: e' un cambio di intensita', non di materiali. Quello che
+     si accende e' un `emissiveIntensity` gia' pronto sullo schienale,
+     quindi non si ridipinge niente e il trascinamento resta fluido. */
+  q('#st-faretti').addEventListener('input', function(){
+    STANZA.cambia({ faretti: parseFloat(q('#st-faretti').value) });
+    q('#st-faretti-n').textContent = Math.round(STANZA.corrente().faretti * 100) + '%';
     applicaLuce();
     salvaStanzaTraPoco();
   });
@@ -4690,7 +4750,10 @@ function disegnaProfilo(){
   q('#pro-codice').textContent = p.codice
     ? p.codice.replace(/(.{4})(.{4})/, '$1 $2') : '--';
   disegnaFaccia(q('#pro-avatar'), p.avatar, 160);
-  disegnaFaccia(q('#tab-faccia'), p.avatar, 44);
+  /* La faccia non e' piu' anche l'icona della barra in basso: era
+     l'unica delle quattro voci che non poteva accendersi di terracotta
+     quando la scegli, perche' e' un'immagine coi suoi colori dentro.
+     Adesso li' c'e' una sagoma neutra, come per le altre tre. */
 }
 
 /* --- il laboratorio della faccia ------------------------------- */
@@ -5123,17 +5186,25 @@ function bloccoWr(partite){
     '<span>' + T('par.wrTuoSu', {v: w.vinte, n: w.gioc}) + '</span></div>';
 }
 
-// le partite di quel gioco, nel pannello della recensione
+/* Il tuo winrate su quel gioco, nel pannello della recensione -- e
+   nient'altro.
+
+   Sotto ci stava anche l'elenco delle ultime sei partite. Ma la scheda
+   di un gioco risponde a "che gioco e' e cosa ne penso", e l'elenco di
+   quando ci ho giocato e' un'altra domanda, che ha gia' la sua
+   schermata intera: le partite. Qui allungava il pannello di sei righe
+   che nessuno stava cercando, e spingeva la recensione -- che e' il
+   motivo per cui la scheda si apre -- sotto il bordo.
+
+   Il winrate resta perche' e' un numero solo, e perche' e' l'unica
+   cosa che quella schermata non puo' dire mentre hai QUESTO gioco in
+   mano. */
 function disegnaGiocate(game){
   const el = q('#p-giocate');
   if (!el) return;
   const g = (game && state.dentro && !PARTITE.problema())
     ? PARTITE.diGioco(game.bgg, game.title) : [];
-  el.innerHTML = g.length
-    ? '<p class="eyebrow">' + T('par.tuePartite') + '</p>' + bloccoWr(g) +
-      '<ul class="giocate">' +
-      g.slice(0, 6).map(function(p){ return rigaGiocata(p, false); }).join('') + '</ul>'
-    : '';
+  el.innerHTML = g.length ? bloccoWr(g) : '';
 }
 
 /* Chi vince di piu' in questo gruppo di partite. A parita' non si
@@ -5761,10 +5832,13 @@ async function visitaLibreria(id, nick){
   document.body.classList.remove('cerca');
   state.scrollTo = state.scroll = 0;
 
-  /* Il catalogo e il profilo spariscono: di qui in poi il sito e' la
-     sua libreria e basta, e si esce da un posto solo -- il cartello che
-     dice di chi e'. Portarsi nel proprio catalogo dalla libreria di un
-     altro vuol dire uscire da casa sua senza accorgersene. */
+  /* Il catalogo, LE PARTITE e il profilo spariscono: di qui in poi il
+     sito e' la sua libreria e basta, e si esce da un posto solo -- il
+     cartello che dice di chi e'. Portarsi nel proprio catalogo dalla
+     libreria di un altro vuol dire uscire da casa sua senza
+     accorgersene, e le partite ci erano rimaste per dimenticanza: sono
+     tue e restano tue anche mentre sei da lui, quindi entrarci da qui
+     e' proprio il giro che questa regola vuole evitare. */
   setSezione('collezione');
   await CUORI.carica(id);          // i cuori della sua collezione, in una lettura
   await loadCovers();
@@ -6088,7 +6162,14 @@ function frame(now){
      una libreria e basta -- lasciato fermo all'origine, dalla seconda in
      poi le ombre sparivano di colpo. */
   for (let i = 0; i < bayLights.length; i++){
-    bayLights[i].intensity = state.bayLight * luceVani;
+    /* Due mestieri sulla stessa lampada: la quota dei vani, che segue
+       la stanza, e quella dei faretti, che no. Sommate invece che in
+       due gruppi di lampade separati, perche' dodici punti luce nello
+       shader di ogni materiale della scena sarebbero il conto piu'
+       salato del sito -- e l'effetto sotto il ripiano lo fa gia' la
+       luce dipinta sullo schienale. Questa serve solo a non lasciare al
+       buio la copertina della scatola. */
+    bayLights[i].intensity = state.bayLight * luceVani + .55 * luceFari;
     bayLights[i].position.x = camBase.x;
   }
   if (keyLight){

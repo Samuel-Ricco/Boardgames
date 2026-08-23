@@ -25,6 +25,11 @@
 const PROFILO = (function(){
 'use strict';
 
+/* Dodici caratteri, e il numero sta in un posto solo: lo usano il
+   controllo qui sotto e il messaggio d'errore, e il campo nel markup
+   porta lo stesso `maxlength`. */
+const NICK_MAX = 12;
+
 let io = null;              // il mio profilo, o null
 let gente = [];             // amici e richieste, con dentro il profilo dell'altro
 let guaio = '';
@@ -142,12 +147,17 @@ function serveNick(){ return !!io && !io.nick; }
 function nickValido(n){
   const t = String(n || '').trim();
   if (t.length < 3)  return TP('nick.corto');
-  if (t.length > 20) return TP('nick.lungo');
+  if (t.length > NICK_MAX) return TP('nick.lungo', {n: NICK_MAX});
   // niente spazi ai lati gia' tolti; dentro si', un nick puo' essere due parole
   if (!/^[\w \-.']+$/.test(t)) return TP('nick.segni');
   return '';
 }
 
+/* Dodici e non venti. Il nick sta in testata accanto al marchio,
+   dentro le pastiglie dei giocatori e sopra la libreria di chi ospita:
+   sono tutti posti larghi una manciata di caratteri, e piu' in la' non
+   si allarga il posto, si taglia il nome con dei puntini. Meglio dirlo
+   mentre lo si scrive. */
 async function salvaNick(n){
   const c = cli();
   if (!c || !io) throw new Error(TP('err.nonEntrato'));

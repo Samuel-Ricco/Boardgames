@@ -195,8 +195,10 @@ body.visita #p-pref{display:none !important}
    collezione che si sta guardando. Si esce da un posto solo, il cartello
    che dice di chi e' la libreria. */
 body.visita #sezioni [data-sez="catalogo"],
+body.visita #sezioni [data-sez="partite"],
 body.visita #sezioni [data-sez="profilo"],
 body.visita #tabbar  [data-sez="catalogo"],
+body.visita #tabbar  [data-sez="partite"],
 body.visita #tabbar  [data-sez="profilo"]{display:none !important}
 
 /* il cuore: c'e' solo in visita, ed e' l'unica cosa che si tocca */
@@ -839,9 +841,11 @@ body.sez-partite #partite{display:block}
 .gio-gioco .vinto{color:var(--accent)}
 
 /* nel pannello della recensione lo spazio e' meno e il fondo e' chiaro */
-#p-giocate{margin:22px 0 0; padding-top:16px; border-top:1px solid var(--line)}
+/* Qui dentro adesso c'e' solo il winrate, non piu' l'elenco delle
+   ultime partite: un filo di separazione sopra una pastiglia che ha
+   gia' il suo fondo tinto era una cornice attorno a una cornice. */
+#p-giocate{margin:18px 0 0}
 #p-giocate:empty{display:none}
-#p-giocate .eyebrow{margin:0 0 8px}
 
 /* --- l'editor della partita --------------------------------------- */
 #mialayer{
@@ -1328,9 +1332,9 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 
   .cat-in{padding-top:88px}
   .cat-rec p{font-size:14px}
-  #rail{gap:8px}
-  .rail-bar{width:min(200px,54vw)}
-  #rail-txt{font-size:13px}
+  #rail{gap:5px}
+  .rail-bar{width:min(140px,42vw)}
+  #rail-txt{font-size:11px}
   .add-form{grid-template-columns:1fr}
 }
 
@@ -1991,17 +1995,17 @@ body.elenco #conta b{color:#fff}
    resto del sito. */
 .rail-passo{
   flex:none; display:inline-flex; align-items:center; justify-content:center;
-  width:27px; height:27px; padding:0; cursor:pointer;
+  width:22px; height:22px; padding:0; cursor:pointer;
   color:var(--ink-soft); background:none; border:0; border-radius:var(--r-s);
   pointer-events:auto;
   transition:background-color .2s var(--ease), color .2s var(--ease),
              transform .12s var(--ease), opacity .2s var(--ease);
 }
-.rail-passo .ico{width:16px; height:16px}
+.rail-passo .ico{width:13px; height:13px}
 .rail-passo:hover{background:rgba(200,106,60,.12); color:var(--accent)}
 .rail-passo:active{transform:scale(.92)}
 .rail-passo:disabled{opacity:.26; cursor:default; pointer-events:none}
-@media (pointer:coarse){ .rail-passo{width:32px; height:32px} }
+@media (pointer:coarse){ .rail-passo{width:26px; height:26px} }
 #rail-txt{color:var(--ink); opacity:.85}
 .rail-bar{background:rgba(51,53,43,.22)}
 
@@ -2306,7 +2310,7 @@ body.sez-collezione:not(.elenco) header{
 
 /* --- il binario: piu' su e piu' leggibile -------------------------- */
 #rail{bottom:38px}
-#rail-txt{color:var(--ink); opacity:1; font-weight:600; font-size:13px}
+#rail-txt{color:var(--ink); opacity:1; font-weight:600; font-size:11px}
 .rail-bar{background:rgba(51,53,43,.28)}
 .rail-bar i{background:var(--accent)}
 @media (max-width:879px){
@@ -2492,7 +2496,7 @@ body.arreda #stanza{transform:none}
    attorno a tutti e due, quello che l'occhio centra e' la pastiglia --
    e il numero fuori dal fondo chiaro tornava illeggibile sulla stanza,
    che era il punto di partenza. */
-#rail{position:fixed; padding:5px 8px; gap:7px}
+#rail{position:fixed; padding:3px 6px; gap:4px}
 #rail-txt{position:static; transform:none; margin:0 1px}
 .rail-bar{width:min(260px,58vw); max-width:none; flex:0 0 auto}
 #rail-thumb{transition:left .18s var(--ease), width .18s var(--ease)}
@@ -2527,18 +2531,18 @@ body.arreda #stanza{transform:none}
    -- e la riga sottile e' un `::before` in mezzo. Due mestieri, due
    cose. */
 .rail-bar{
-  position:relative; width:min(230px,52vw); max-width:none; flex:0 0 auto;
-  height:24px; border:0; padding:0; border-radius:0;
+  position:relative; width:min(150px,36vw); max-width:none; flex:0 0 auto;
+  height:20px; border:0; padding:0; border-radius:0;
   background:none; background-color:transparent;
   cursor:pointer; touch-action:none; pointer-events:auto;
 }
 .rail-bar::before{
-  content:''; position:absolute; left:0; right:0; top:50%; height:4px;
-  margin-top:-2px; border-radius:999px; background:rgba(51,53,43,.26);
+  content:''; position:absolute; left:0; right:0; top:50%; height:3px;
+  margin-top:-1.5px; border-radius:999px; background:rgba(51,53,43,.26);
 }
 .rail-bar:hover::before{background:rgba(51,53,43,.34)}
 #rail-thumb{
-  position:absolute; top:50%; margin-top:-2px; height:4px;
+  position:absolute; top:50%; margin-top:-1.5px; height:3px;
   border-radius:999px; background:var(--accent);
 }
 .rail-bar:hover #rail-thumb, .rail-bar.presa #rail-thumb{background:#b85c31}
@@ -3251,3 +3255,59 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   background:rgba(190,60,40,.09); color:#a8341f;
   box-shadow:0 0 0 2px rgba(168,52,31,.35);
 }
+
+/* ===================================================================
+   IL CHIUDI E' UN SEGNO TONDO, NON UN CARTELLINO
+
+   Erano tre pulsanti squadrati incollati all'angolo con dentro la
+   parola "chiudi" e una x: il cartellino di dieci anni fa, e ognuno
+   con le sue misure -- quello della scheda del gioco era gia' stato
+   ritoccato, quelli dei due moduli erano rimasti indietro. Chiudere e'
+   un gesto solo, quindi e' un segno solo: un cerchio pieno con la x
+   dentro, staccato dall'angolo, uguale in tutti e tre i posti.
+
+   Resta terracotta e resta PIENO -- vedi la nota "il chiudi e' pieno,
+   non tinto" piu' su: un fondo al 10% dentro una scheda gia' chiara
+   non si vede, e chiudere e' la prima cosa che si cerca per uscire.
+   =================================================================== */
+#close, #add-x, #mia-x{
+  position:absolute; z-index:4; top:12px; right:12px;
+  width:34px; height:34px; min-height:0; padding:0; margin:0;
+  display:inline-flex; align-items:center; justify-content:center; gap:0;
+  border:0; border-radius:999px; cursor:pointer;
+  background:var(--accent); color:#f2f1ed;
+  box-shadow:var(--ombra-lieve);
+  font-size:0; letter-spacing:0;
+  transition:background-color .2s var(--ease), color .2s var(--ease),
+             transform .12s var(--ease);
+}
+#close .ico, #add-x .ico, #mia-x .ico{width:16px; height:16px; stroke-width:2}
+#close:hover, #add-x:hover, #mia-x:hover{background:var(--ink); color:#f2f1ed}
+#close:active, #add-x:active, #mia-x:active{transform:scale(.9)}
+@media (pointer:coarse){
+  #close, #add-x, #mia-x{width:40px; height:40px}
+}
+/* Il testo che scorre deve passargli SOTTO, non addosso: il cerchio
+   sta nell'angolo in alto a destra e li' il titolo ci arriva. */
+.pan-scroll, .add-card{padding-top:30px}
+@media (max-width:880px){ #close{top:10px; right:10px} }
+
+/* --- LA ROTELLA: UN'ATTESA CHE SI VEDE -----------------------------
+
+   Nel catalogo "aggiungi" fa due giri di rete -- la scheda e poi la
+   copertina -- e nel frattempo il pulsante restava un "+" spento: chi
+   premeva non sapeva se avesse premuto davvero. Adesso diventa una
+   rotella che gira, e finita l'attesa e' la spunta di sempre.
+
+   Con `prefers-reduced-motion` non si spegne: e' un'attesa, non una
+   decorazione, e ferma non direbbe piu' niente. Gira solo piu' piano. */
+@keyframes ruota{ to{ transform:rotate(360deg) } }
+.ico.gira{ animation:ruota .85s linear infinite; transform-origin:50% 50% }
+@media (prefers-reduced-motion:reduce){ .ico.gira{ animation-duration:2.2s } }
+
+/* --- LA VOCE "PROFILO" IN BASSO E' UN'ICONA COME LE ALTRE ----------
+
+   Era la faccia del profilo disegnata su canvas: un'immagine con i
+   suoi colori dentro, quindi l'unica delle quattro voci che non
+   poteva accendersi di terracotta quando la scegli. Adesso e' una
+   sagoma neutra come le altre tre, e prende `currentColor`. */

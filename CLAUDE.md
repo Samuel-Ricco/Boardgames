@@ -2544,9 +2544,139 @@ stesso o altri. Non è una scomodità, è la garanzia.
 Da sapere: il piano gratuito **mette in pausa il progetto** dopo circa una
 settimana senza traffico, e si riattiva a mano dal pannello.
 
+## I faretti sono luce dipinta, non lampade
+
+Abbassando la luce della stanza il mobile spariva col resto: giusto per una
+stanza, sbagliato per una libreria — in casa si spegne il lampadario e la
+libreria resta accesa da dentro. Adesso c'e' un secondo cursore, **faretti**,
+accanto a quello della luce.
+
+**Il punto e' che non seguono la stanza.** La luce cala fino a spegnere il muro,
+i faretti no: calano solo pianissimo (`l^-0.30`, un terzo scarso fra buio e luce
+piena), perche' a mezzogiorno un faretto acceso si nota appena e tenerlo alla
+stessa forza farebbe sembrare lo schienale luminescente invece che illuminato.
+
+- **Non sono lampade, sono un disegno.** `ART.fariCubi` dipinge sotto ogni
+  ripiano una sfumatura bianca che scende verso il nero, sullo **schienale** —
+  che e' una tavola sola per tutto il mobile, quindi una texture, un materiale,
+  **zero chiamate di disegno in piu'**. E' lo stesso ragionamento di
+  `ART.aoCubi` un piano sopra: l'occlusione e' luce che manca, questa e' luce
+  che c'e'.
+- **Dodici punti luce veri erano la strada sbagliata.** Uno per cubo vuol dire
+  dodici lampade nello shader di **ogni** materiale della scena, cioe' il conto
+  piu' salato del sito per un effetto che a luce piena non si vede. E una
+  lampada sola per fila, centrata, riaccenderebbe un difetto gia' pagato una
+  volta — la colonna di mezzo accesa e le due di fianco al buio (vedi «Le luci
+  dei vani seguono la stanza»). Dipinto, ogni cubo riceve la stessa identica
+  luce **per costruzione**.
+- Il colore caldo e quanto e' acceso stanno nel materiale (`emissive`,
+  `emissiveIntensity`), non nel disegno: cosi' il cursore non ridipinge niente
+  e il trascinamento resta fluido, come per la luce.
+- Le lampade dei vani portano **una quota di faretti** oltre alla loro
+  (`state.bayLight * luceVani + .55 * luceFari`): serve solo a non lasciare al
+  buio la copertina della scatola, che e' l'unica cosa davanti allo schienale.
+- Sta in `profili.stanza` come luce, muro e pavimento — e' della **stanza**, non
+  del singolo mobile — ed e' un jsonb: nessuna migrazione. Il mobile fantasma
+  non li ha, e non deve averli: un mobile che non c'e' non ha i faretti accesi.
+- **Zero e' un valore vero.** In `normalizza` non si puo' scrivere
+  `parseFloat(o.faretti) || DEFAULT`, se no «spenti» diventa «come non scelto»:
+  e' lo stesso inciampo dei punti di una partita.
+
+## Chiudere e' un gesto solo, quindi e' un segno solo
+
+Erano tre pulsanti squadrati incollati all'angolo con dentro la parola «chiudi»
+e una `&times;` — il cartellino di dieci anni fa — e ognuno con le sue misure:
+quello della scheda era gia' stato ritoccato una volta, quelli dei due moduli
+erano rimasti indietro. Adesso `#close`, `#add-x` e `#mia-x` sono **lo stesso
+cerchio pieno con la x dentro**, staccato dall'angolo.
+
+Resta terracotta e resta **pieno**: vale ancora la nota «il chiudi e' pieno, non
+tinto» — un fondo al 10% dentro una scheda gia' chiara non si vede, e chiudere
+e' la prima cosa che si cerca per uscire. Sul tocco cresce a 40 px.
+
+## Un'attesa che non si vede sembra un pulsante rotto
+
+Nel catalogo «aggiungi» fa due giri di rete — la scheda, poi la copertina — e il
+pulsante restava un «+» spento: chi premeva non sapeva di aver premuto, e
+premeva di nuovo. Adesso diventa una **rotella che gira** e, finita l'attesa, la
+spunta di sempre.
+
+- Il cerchio e' **quasi** chiuso apposta: e' il pezzo mancante a farlo leggere
+  come qualcosa che gira.
+- Con `prefers-reduced-motion` **non si ferma**: e' un'attesa, non una
+  decorazione, e ferma non direbbe piu' niente. Gira piu' piano.
+- Si verifica **nello stesso tick del clic**: `mettiInLibreria` scrive la
+  rotella prima del primo `await`, e con il dump in casa l'attesa vera puo'
+  durare meno di venticinque millisecondi — un `setInterval` non la vede mai.
+
+## La scheda del gioco dice cosa e' il gioco, non cosa ci hai fatto
+
+Tre cose sono uscite dal pannello della recensione, e per la stessa ragione:
+rispondevano a domande che quella schermata non fa.
+
+- **L'elenco delle ultime partite.** Resta il winrate, che e' un numero solo e
+  soprattutto e' l'unica cosa che la sezione partite non puo' dire mentre hai
+  *questo* gioco in mano. Le sei righe sotto allungavano il pannello e
+  spingevano la recensione — che e' il motivo per cui la scheda si apre — verso
+  il bordo. Tolto anche il filo di separazione sopra: una pastiglia che ha gia'
+  il suo fondo tinto non vuole anche una cornice.
+- **I gruppi.** Si gestiscono dall'elenco, che e' dove si decide cosa sta con
+  cosa, e averli in due posti voleva dire tenerli d'accordo per sempre. Il
+  markup non ha piu' `#p-gruppi`, quindi i due ascoltatori di `bindGruppi` si
+  agganciano **solo se l'elemento c'e'** — se no basta un `index.html` nuovo per
+  portarsi via mezzo pannello (vedi «Un aggancio che salta»).
+- **«in collezione» si chiama «togli dallo scaffale».** Diceva dove va il gioco
+  ma si leggeva come «mettilo in collezione», cioe' il contrario. Adesso dice il
+  gesto. L'altro pulsante resta «rimuovi», rosso e in due tempi: sono due cose
+  diverse e continuano a chiamarsi in due modi diversi.
+
+## In casa d'altri sparivano due sezioni su tre
+
+`body.visita` toglieva catalogo e profilo dalle due navigazioni, **non le
+partite**: si poteva uscire da casa di qualcuno senza accorgersene proprio dal
+posto in cui il sito dice «le tue partite». Sono tue e restano tue anche mentre
+sei da lui — che e' esattamente perche' non si entra da li'. Adesso spariscono
+tutte e tre. Attive non lo erano mai: entrando si fa `setSezione('collezione')`.
+
+## Un'icona sola per le partite, e una faccia che non e' un'icona
+
+- **Il dado della barra in basso e' l'icona delle partite, ovunque.** Nel piede
+  della scheda ce n'era un'altra — una scatola in assonometria — e due figure
+  per la stessa cosa sono due cose diverse, per chi guarda. Vince quella della
+  barra, perche' e' quella che si vede sempre.
+- **La voce «profilo» non e' piu' la tua faccia.** Era un canvas con dentro il
+  meeple e i suoi colori: l'unica delle quattro voci che non poteva accendersi
+  di terracotta quando la scegli. Adesso e' una sagoma neutra che prende
+  `currentColor`, come le altre tre. La faccia resta dov'e' sua, nel profilo.
+
+## Ogni campo ha un tetto, e il tetto non sta solo nel campo
+
+`maxlength` su ogni casella di testo del sito — dal nick (**dodici**) al titolo
+di un gioco (80), passando per il nome di una libreria (24), di un giocatore
+(24), di un gruppo (30) e le due recensioni (4000).
+
+Ma **il `maxlength` non e' il limite**: e' la cortesia. Un valore incollato lo
+rispetta, uno che arriva dal catalogo o da una vecchia riga del database no — e
+dal catalogo arrivano titoli con edizione, sottotitolo ed espansione tutti
+attaccati. Quindi il taglio vero sta **dove il dato si scrive**: `store.js`
+(`NOME_LIB_MAX`, `NOME_GRU_MAX`, `TITOLO_MAX`), `profilo.js` (`NICK_MAX`),
+`partite.js`. E' la stessa regola di «una query che si fida delle policy»: chi
+scrive dice cosa vuole.
+
+Dodici per il nick non e' un numero a caso: sta in testata accanto al marchio,
+nelle pastiglie dei giocatori e sopra la libreria di chi ospita — posti larghi
+una manciata di caratteri, dove piu' in la' non si allarga il posto, si taglia
+il nome con dei puntini.
+
+## Il binario e' piu' piccolo
+
+Traccia da 150 px (36vw), alta tre pixel, frecce da 22, numero a undici. Era
+gia' stato ristretto una volta per stare nella sua fascia: e' un indicatore che
+si puo' trascinare, non un comando da leggere da lontano.
+
 ## Stato attuale
 
-**Aggiornato al 2026-08-23.** Questa sezione e la prossima bastano a ripartire a
+**Aggiornato al 2026-08-23 (seconda sessione).** Questa sezione e la prossima bastano a ripartire a
 freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
 racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
 è fatto* c'è tutto il resto di questo file, che è aggiornato.
@@ -2584,6 +2714,26 @@ sono quelle che varra' la pena rileggere prima di toccare le stesse cose:
 - «Il browser dell'anteprima tiene in cache anche i `.js`»
 - «La camera va messa al suo posto PRIMA di misurare»
 - «L'ombra dentro i cubi» e «Sessanta fotogrammi: dov'erano già»
+
+### La sessione del 2026-08-23 (seconda)
+
+Dodici richieste in un colpo, tutte di rifinitura: nessuna migrazione, nessuna
+colonna nuova.
+
+| argomento | cosa |
+|---|---|
+| i faretti | luce dipinta sotto ogni ripiano, con il suo cursore nel pannello: la stanza si spegne e il mobile resta acceso |
+| il chiudi | un cerchio solo per la scheda, il modulo di aggiunta e quello della recensione |
+| il catalogo | la rotella mentre aggiunge, poi la spunta |
+| la scheda del gioco | via l'elenco delle partite (resta il winrate), via i gruppi, «togli dallo scaffale» al posto di «in collezione» |
+| in casa d'altri | spariscono anche le partite |
+| le icone | un dado solo per le partite; la voce «profilo» diventa neutra e si accende |
+| i limiti | `maxlength` ovunque, e il taglio vero nel punto in cui il dato si scrive |
+| il binario | piu' piccolo |
+
+I dati di prova sono stati ripuliti: la libreria creata dal collaudo del
+catalogo e il gioco aggiunto non ci sono piu', e la collezione e' tornata a
+**25 giochi in una libreria sola**.
 
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 

@@ -304,6 +304,10 @@ function add(g){
     tags: [], review: (typeof LOREM !== 'undefined' ? LOREM : ['']),
     art: 'generic', wrap: '#4a4632', ink: '#f1e2bd'
   }, g);
+  /* Il titolo si taglia qui e non solo nel campo: dal catalogo
+     arrivano nomi lunghissimi -- edizione, sottotitolo ed espansione
+     tutto attaccato -- e nessun campo li vede passare. */
+  game.title = String(game.title || '').trim().slice(0, TITOLO_MAX);
   if (!game.id) game.id = makeId(game.title);
   game.added = next;
 
@@ -480,6 +484,16 @@ async function caricaLibrerie(chi){
   return librerie;
 }
 
+/* I tetti dei nomi. Non sono capricci: il nome di una libreria si
+   dipinge sulla parete dentro la scena 3D -- piu' e' lungo, piu' la
+   scritta rimpicciolisce per starci -- e quello di un gioco vive in
+   una riga d'elenco larga come uno schermo di telefono. Il limite sta
+   QUI e non solo nel `maxlength` del campo: un valore incollato, o
+   arrivato dal catalogo, il campo non lo vede passare. */
+const NOME_LIB_MAX = 24;
+const NOME_GRU_MAX = 30;
+const TITOLO_MAX   = 80;
+
 async function creaLibreria(nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
@@ -494,7 +508,7 @@ async function creaLibreria(nome){
     const n = /^Libreria (\d+)$/.exec(String(L.nome || ''));
     if (n && +n[1] > alto) alto = +n[1];
   });
-  let scelto = String(nome || '').trim();
+  let scelto = String(nome || '').trim().slice(0, NOME_LIB_MAX);
   if (scelto){
     if (nomeLibPreso(scelto, null)) throw new Error(TP('err.libNomePreso', {n: scelto}));
   } else {
@@ -540,7 +554,7 @@ async function stileLibreria(id, patch){
 async function rinominaLibreria(id, nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
-  const t = String(nome || '').trim();
+  const t = String(nome || '').trim().slice(0, NOME_LIB_MAX);
   if (!t) throw new Error(TP('err.serveNome'));
   if (nomeLibPreso(t, id)) throw new Error(TP('err.libNomePreso', {n: t}));
   const r = await c.from('librerie').update({ nome: t })
@@ -713,7 +727,7 @@ async function caricaGruppi(chi){
 async function creaGruppo(nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
-  const t = String(nome || '').trim();
+  const t = String(nome || '').trim().slice(0, NOME_GRU_MAX);
   if (!t) throw new Error(TP('err.serveNome'));
   const r = await c.from('gruppi')
     .insert({ proprietario: AUTH.stato().id, nome: t }).select().single();
@@ -729,7 +743,7 @@ async function creaGruppo(nome){
 async function rinominaGruppo(id, nome){
   const c = AUTH.attivo() ? AUTH.client() : null;
   if (!c || visitata) throw new Error(TP('err.nonSiPuo'));
-  const t = String(nome || '').trim();
+  const t = String(nome || '').trim().slice(0, NOME_GRU_MAX);
   if (!t) throw new Error(TP('err.serveNome'));
   const r = await c.from('gruppi').update({ nome: t })
     .eq('proprietario', AUTH.stato().id).eq('id', id);

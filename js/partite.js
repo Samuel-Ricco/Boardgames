@@ -63,7 +63,7 @@ async function aggiungiGiocatore(nome, amico){
   if (!c) throw new Error(TP('err.nonEntrato'));
   const t = String(nome || '').trim();
   if (!t) throw new Error(TP('err.serveNome'));
-  if (t.length > 40) throw new Error(TP('err.nomeLungo'));
+  if (t.length > 24) throw new Error(TP('err.nomeLungo', {n: 24}));
 
   const r = await c.from('giocatori').insert({
     proprietario: AUTH.stato().id, nome: t, amico: amico || null
