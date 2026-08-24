@@ -15,7 +15,7 @@
    ============================================================ */
 
 import http from 'node:http';
-import { api, parseSearch, parseGame, token } from './bgg-lib.mjs';
+import { api, parseSearch, parseGame, parseMisure, token } from './bgg-lib.mjs';
 
 const PORT = 8125;
 
@@ -105,6 +105,32 @@ const server = http.createServer(async function(req, res){
         while ((m = re.exec(r.xml))){
           const th = m[2].match(/<thumbnail>([\s\S]*?)<\/thumbnail>/);
           if (th) out[m[1]] = th[1].trim();
+        }
+      }
+      return json(res, 200, out);
+    }
+
+    /* LE MISURE DELLA SCATOLA.
+
+       Costano care in banda -- le edizioni di un gioco sono decine, e
+       `versions=1` porta 70 KB per gioco -- ma il conto lo paga il
+       proxy: al browser tornano tre numeri. Dieci per volta e non
+       venti: qui la risposta e' grossa, e mezzo megabyte alla volta
+       basta e avanza. */
+    if (url.pathname === '/misure'){
+      const ids = (url.searchParams.get('ids') || '')
+        .split(',').map(function(x){ return x.trim(); })
+        .filter(function(x){ return /^\d+$/.test(x); }).slice(0, 30);
+      if (!ids.length) return json(res, 400, { error: 'mancano gli ids' });
+      const out = {};
+      for (let i = 0; i < ids.length; i += 10){
+        const r = await api('/thing?id=' + ids.slice(i, i + 10).join(',') + '&versions=1');
+        if (r.queued) continue;
+        const re = /<item[^>]*type="boardgame"[^>]*id="(\d+)"[^>]*>([\s\S]*?)<\/item>\s*(?=<item[^>]*type="boardgame"|<\/items>)/g;
+        let m;
+        while ((m = re.exec(r.xml))){
+          const mis = parseMisure(m[2]);
+          if (mis) out[m[1]] = mis;
         }
       }
       return json(res, 200, out);

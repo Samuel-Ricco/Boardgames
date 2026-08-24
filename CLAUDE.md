@@ -3283,6 +3283,47 @@ di anteprima non compone.** Le immagini restano `complete === false` per
 sempre e sembra che siano rotte: per provarle davvero si forza `eager` e si
 guarda `naturalWidth`.
 
+## Le scatole hanno la misura vera
+
+Una scatola era larga sempre uguale (`BOX.w` = 3.0), alta quanto diceva il
+rapporto della copertina, e spessa sempre 0.84. Ma su uno scaffale e' proprio
+quello che si vede: Carcassonne e' stretta e alta, **Gloomhaven e' un mattone
+da diciannove centimetri**.
+
+Le misure le sa BGG, ed e' l'ultima cosa che il token ha aperto.
+
+- **Stanno sulle EDIZIONI, non sul gioco**: `<width>`, `<length>`, `<depth>` in
+  pollici dentro ogni `<item type="boardgameversion">`. Un gioco ne ha decine —
+  Brass: Birmingham settantaquattro — e non sono uguali: ristampe, deluxe,
+  formati da viaggio.
+- **Si prende la faccia piu' comune** (la coppia larghezza-lunghezza che
+  ricorre di piu': le ristampe condividono lo stampo, quindi la moda e'
+  l'edizione normale e le stranezze restano fuori da sole) e la **mediana degli
+  spessori** fra le edizioni con quella faccia — li' la differenza e' vera, una
+  deluxe e' piu' alta.
+- **BGG non dice come sta in piedi la scatola**: da' due lati e basta. A dirlo
+  e' la **copertina**: se e' piu' larga che alta, il lato lungo e' orizzontale.
+- **Un'unita' della scena e' dieci centimetri.** Il vano di una KALLAX e' 33 cm
+  e `KAL.cell` e' 3.3: il conto torna per costruzione.
+- **Quello che non ci sta si rimpicciolisce, mantenendo le proporzioni.**
+  Gloomhaven e' 40,6 cm e in un vano da 33 davvero non entra. Resta la scatola
+  piu' grande dello scaffale, che e' l'informazione vera.
+
+**E non stanno nel database del sito.** Sono fatti sul *gioco*, uguali per
+tutti, non proprieta' della tua copia — come non ci sta il numero di giocatori.
+Vivono in una **cache locale per id BGG** (`dado-misure`), quindi niente
+migrazione e niente colonne nuove. Chi non ha il proxy acceso vede le scatole
+di prima, senza sapere che gli manca qualcosa. Il posto definitivo, quando ci
+sara', e' la edge function.
+
+Si chiedono **prima di costruire il mobile**: dopo vorrebbe dire rifare tutte
+le scatole. E si chiedono solo se `BGG.ping()` risponde — quel ping ha gia' il
+suo limite di tempo, quindi su un sito senza proxy la riga costa quattrocento
+millisecondi e non blocca niente.
+
+Misurato: Catan 29,7 x 29,7 x 7,1 · Carcassonne 19 x 27,5 x 6,7 · Pandemic
+22,1 x 30,5 x 4,2 · **Gloomhaven 29,2 x 40,6 x 19,1** · Brass 30 x 30 x 5,1.
+
 ### Due difetti che il token ha fatto uscire
 
 Erano li' da sempre e non si erano mai visti, perche' senza token quella

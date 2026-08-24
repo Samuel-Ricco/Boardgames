@@ -85,6 +85,57 @@ export function parseSearch(xml){
   return out;
 }
 
+/* LE MISURE DELLA SCATOLA.
+
+   BGG le tiene sulle EDIZIONI, non sul gioco: `<width>`, `<length>` e
+   `<depth>` in pollici dentro ogni `<item type="boardgameversion">`.
+   Un gioco ne ha parecchie -- Brass: Birmingham ne ha settantaquattro
+   -- e non sono tutte uguali: cambiano le ristampe, le scatole
+   deluxe, i formati da viaggio.
+
+   Si prende la FACCIA PIU' COMUNE, cioe' la coppia larghezza-lunghezza
+   che ricorre di piu': le ristampe condividono lo stampo, quindi la
+   moda e' l'edizione "normale" e le stranezze restano fuori da sole.
+   Lo spessore e' la mediana fra le edizioni con quella faccia -- li'
+   la variazione e' vera (una deluxe e' piu' alta) e la mediana e' il
+   valore che rappresenta il grosso.
+
+   Torna centimetri: i pollici non li usa nessuno qui dentro. */
+export function parseMisure(xml){
+  const versioni = [];
+  const re = /<item[^>]*type="boardgameversion"[^>]*>([\s\S]*?)<\/item>/g;
+  let m;
+  while ((m = re.exec(xml))){
+    const b = m[1];
+    const n = function(tag){ return Number(attr(b, tag, 'value')) || 0; };
+    const w = n('width'), l = n('length'), d = n('depth');
+    // fuori le misure assurde: una scatola da mezzo pollice o da un
+    // metro e' un dato sbagliato, non una scatola
+    if (w < 1 || l < 1 || w > 30 || l > 30) continue;
+    versioni.push({ w: w, l: l, d: d > 0 && d < 20 ? d : 0 });
+  }
+  if (!versioni.length) return null;
+
+  const chiave = function(v){ return v.w.toFixed(2) + 'x' + v.l.toFixed(2); };
+  const conta = {};
+  versioni.forEach(function(v){ conta[chiave(v)] = (conta[chiave(v)] || 0) + 1; });
+  let migliore = null, quante = -1;
+  Object.keys(conta).forEach(function(k){
+    if (conta[k] > quante){ quante = conta[k]; migliore = k; }
+  });
+
+  const gruppo = versioni.filter(function(v){ return chiave(v) === migliore; });
+  const spessori = gruppo.map(function(v){ return v.d; }).filter(Boolean).sort(function(a, b){ return a - b; });
+  const pollici = 2.54;
+  return {
+    larghezza: +(gruppo[0].w * pollici).toFixed(1),
+    lunghezza: +(gruppo[0].l * pollici).toFixed(1),
+    spessore: spessori.length ? +(spessori[Math.floor(spessori.length / 2)] * pollici).toFixed(1) : 0,
+    edizioni: versioni.length,
+    concordi: gruppo.length
+  };
+}
+
 /* Una scheda nella forma che usa js/data.js. */
 export function parseGame(xml, id){
   const primary = xml.match(/<name[^>]*type="primary"[^>]*value="([^"]*)"/);

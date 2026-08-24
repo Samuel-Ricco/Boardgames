@@ -60,6 +60,19 @@ async function miniature(ids){
   } catch(e){ return {}; }
 }
 
+/* Le misure della scatola di un blocco di giochi. Come le miniature:
+   se il proxy non c'e' non e' un guasto, le scatole restano com'erano. */
+async function misure(ids){
+  const lista = (ids || []).filter(Boolean).slice(0, 30);
+  if (!lista.length) return {};
+  try {
+    const r = await fetch(PROXY + '/misure?ids=' + encodeURIComponent(lista.join(',')));
+    if (!r.ok) return {};
+    const o = await r.json();
+    return (o && !o.queued) ? o : {};
+  } catch(e){ return {}; }
+}
+
 /* La copertina arriva dal proxy (che le rimette gli header CORS), viene
    ridisegnata su canvas a larghezza contenuta e salvata come data URL:
    cosi' resta nella libreria anche quando il proxy e' spento, e non
@@ -88,5 +101,5 @@ async function copertina(id){
 }
 
 return { ping: ping, cerca: cerca, scheda: scheda,
-  miniature: miniature, copertina: copertina, PROXY: PROXY };
+  miniature: miniature, misure: misure, copertina: copertina, PROXY: PROXY };
 })();

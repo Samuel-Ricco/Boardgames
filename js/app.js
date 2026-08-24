@@ -910,6 +910,83 @@ function buildCabinet(){
 }
 
 /* --- una scatola di gioco -------------------------------------- */
+/* ===============================================================
+   LE MISURE VERE DELLA SCATOLA
+   ===============================================================
+
+   Fino a qui una scatola era larga sempre uguale (`BOX.w`), alta
+   quanto diceva il rapporto della copertina, e spessa sempre 0.84.
+   Ma le scatole non sono tutte uguali, e su uno scaffale e' proprio
+   quello che si vede: Carcassonne e' una scatola stretta e alta,
+   Gloomhaven e' un mattone da diciannove centimetri.
+
+   Le misure le sa BGG, sulle EDIZIONI. Non stanno nel database del
+   sito e non ci devono stare: sono fatti sul GIOCO, uguali per tutti,
+   non proprieta' della tua copia -- come non ci sta il numero di
+   giocatori. Vivono in una cache locale per id BGG, e chi non ha il
+   proxy acceso vede le scatole di prima. Il posto definitivo, quando
+   ci sara', e' la edge function.
+
+   Un'unita' della scena e' DIECI CENTIMETRI: il cubo interno e' 3.3 e
+   una KALLAX ha il vano da 33 cm. Quindi centimetri diviso dieci. */
+const MIS_KEY = 'dado-misure';
+let MISURE = null;
+
+function misureCache(){
+  if (MISURE) return MISURE;
+  try { MISURE = JSON.parse(localStorage.getItem(MIS_KEY) || '{}') || {}; }
+  catch(e){ MISURE = {}; }
+  return MISURE;
+}
+
+function salvaMisure(){
+  try { localStorage.setItem(MIS_KEY, JSON.stringify(misureCache())); } catch(e){}
+}
+
+/* Le misure di una scatola in unita' di scena, o `null` se non si
+   sanno. `asp` e' il rapporto della copertina: BGG da' due lati della
+   faccia ma non dice come sta in piedi, e a dirlo e' l'immagine. */
+function misureDi(game, asp){
+  const m = game && game.bgg && misureCache()[String(game.bgg)];
+  if (!m || !(m.larghezza > 0) || !(m.lunghezza > 0)) return null;
+
+  const gr = Math.max(m.larghezza, m.lunghezza);
+  const pi = Math.min(m.larghezza, m.lunghezza);
+  // copertina piu' larga che alta -> il lato lungo e' orizzontale
+  const orizz = asp >= 1.02;
+  let w = (orizz ? gr : pi) / 10;
+  let h = (orizz ? pi : gr) / 10;
+
+  /* Una scatola piu' grande del vano va rimpicciolita, se no esce dal
+     mobile: Gloomhaven e' 40,6 cm e in una KALLAX da 33 davvero non ci
+     sta. Si riduce tenendo le proporzioni -- resta la scatola piu'
+     grande dello scaffale, che e' l'informazione vera. */
+  const max = KAL.cell * .92;
+  const k = Math.min(1, max / Math.max(w, h));
+  w *= k; h *= k;
+
+  const t = m.spessore > 0 ? Math.min(KAL.d * .55, m.spessore / 10 * k) : BOX.t;
+  return { w: w, h: h, t: Math.max(.35, t) };
+}
+
+/* Le misure che mancano, chieste in una volta sola. Silenziosa: senza
+   proxy non fa niente e non dice niente. */
+async function caricaMisure(){
+  const c = misureCache();
+  const ids = [];
+  LIB.all().forEach(function(g){
+    if (g.bgg && !c[String(g.bgg)] && ids.indexOf(String(g.bgg)) < 0) ids.push(String(g.bgg));
+  });
+  if (!ids.length) return false;
+  let nuove = {};
+  try { nuove = await BGG.misure(ids.slice(0, 30)); } catch(e){ return false; }
+  const chiavi = Object.keys(nuove || {});
+  if (!chiavi.length) return false;
+  chiavi.forEach(function(k){ c[k] = nuove[k]; });
+  salvaMisure();
+  return true;
+}
+
 function makeGameBox(game){
   const grp = new THREE.Group();
 
@@ -924,7 +1001,14 @@ function makeGameBox(game){
     coverTex = ART.toTex(c);
     aspect = c.width / c.height;
   }
-  const H = BOX.w / aspect;
+  /* Le misure vere se ci sono, se no quelle di sempre: larghezza
+     fissa e altezza dal rapporto della copertina. */
+  const mis = misureDi(game, aspect);
+  const W = mis ? mis.w : BOX.w;
+  const H = mis ? mis.h : BOX.w / aspect;
+  const T = mis ? mis.t : BOX.t;
+  // il coperchio resta la stessa frazione della scatola che era prima
+  const LID = Math.min(T * (BOX.lid / BOX.t), T - .12);
 
   /* L'`emissive` della copertina serviva solo all'alzata dell'hover,
      bianco. Adesso porta anche la quota di faretti, quindi prende la
@@ -966,19 +1050,19 @@ function makeGameBox(game){
   });
 
   const lid = new THREE.Mesh(geoCoperchio(), [sideV, sideH, cover, dark]);
-  lid.scale.set(BOX.w, H, BOX.lid);
-  lid.position.z = BOX.t/2 - BOX.lid/2;
+  lid.scale.set(W, H, LID);
+  lid.position.z = T/2 - LID/2;
   lid.castShadow = true; lid.receiveShadow = true;
 
-  const baseD = BOX.t - BOX.lid;
+  const baseD = T - LID;
   const base = new THREE.Mesh(geoFronte(), [card, inMat]);
-  base.scale.set(BOX.w*.97, H*.97, baseD);
-  base.position.z = BOX.t/2 - BOX.lid - baseD/2;
+  base.scale.set(W*.97, H*.97, baseD);
+  base.position.z = T/2 - LID - baseD/2;
   base.castShadow = true; base.receiveShadow = true;
 
   grp.add(lid, base);
   grp.userData = {
-    game: game, id: game.id, lid: lid, cover: cover, h: H,
+    game: game, id: game.id, lid: lid, cover: cover, h: H, w: W, t: T, lidT: LID,
     hover: 0, busy: false,
     homePos: new THREE.Vector3(), homeRot: new THREE.Euler()
   };
@@ -1786,8 +1870,9 @@ function focusPose(box){
   const half = THREE.MathUtils.degToRad(FOV) / 2, tan = Math.tan(half);
 
   // l'ingombro non e' la scatola chiusa: il coperchio si alza e viene avanti
-  const fitW = BOX.w * scale * 1.24;
-  const fitH = box.userData.h * scale * 1.34 + BOX.w * .18;
+  const larg = box.userData.w || BOX.w;
+  const fitW = larg * scale * 1.24;
+  const fitH = box.userData.h * scale * 1.34 + larg * .18;
   const d = Math.max(fitH / (2 * fh * tan), fitW / (2 * fw * tan * camera.aspect));
 
   const vh = 2 * d * tan, vw = vh * camera.aspect;
@@ -2321,7 +2406,7 @@ function openLid(){
   const box = state.focused;
   if (!box) return;
   const lid = box.userData.lid;
-  const z0 = BOX.t/2 - BOX.lid/2;
+  const z0 = (box.userData.t || BOX.t)/2 - (box.userData.lidT || BOX.lid)/2;
 
   // si alza piu' che avvicinarsi: venendo avanti ingrandiva di colpo
   tween(.36, function(p){
@@ -2351,7 +2436,7 @@ function unfocus(poi){
   const lid = box.userData.lid;
   const l0 = { z: lid.position.z, y: lid.position.y, x: lid.position.x,
                rx: lid.rotation.x, rz: lid.rotation.z };
-  const z0 = BOX.t/2 - BOX.lid/2;
+  const z0 = (box.userData.t || BOX.t)/2 - (box.userData.lidT || BOX.lid)/2;
 
   /* LA CHIUSURA DURA QUANTO QUELLO CHE C'E' DAVVERO DA CHIUDERE.
 
@@ -3770,6 +3855,7 @@ async function mettiInLibreria(v, btn){
     collocaNuovo(messo);
     if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare
       await loadCovers(true);
+      await caricaMisure();            // e quanto e' grande la sua scatola
       applyLibrary({ animate: true });
       goToGame(messo.id);
     }
@@ -7116,6 +7202,12 @@ async function boot(){
   buildFlatList();
   setProg(.56, TP('load.copertine'));
   await loadCovers();
+  /* Le misure vere delle scatole, se il proxy e' acceso. Si chiede
+     PRIMA di costruire: dopo vorrebbe dire rifare tutte le scatole.
+     Il `ping` ha gia' il suo limite di tempo, quindi su un sito senza
+     proxy questa riga costa quattrocento millisecondi e non blocca
+     niente. */
+  try { if ((await BGG.ping()).su) await caricaMisure(); } catch(e){}
   await wait(20); setProg(.72, TP('load.mensole'));
   applyLibrary({});
   await wait(20); setProg(.92, TP('load.lampada'));
