@@ -952,10 +952,30 @@ function misureDi(game, asp){
 
   const gr = Math.max(m.larghezza, m.lunghezza);
   const pi = Math.min(m.larghezza, m.lunghezza);
-  // copertina piu' larga che alta -> il lato lungo e' orizzontale
-  const orizz = asp >= 1.02;
-  let w = (orizz ? gr : pi) / 10;
-  let h = (orizz ? pi : gr) / 10;
+
+  /* COME STA IN PIEDI LA SCATOLA.
+
+     BGG da' due lati della faccia e non dice quale sia in verticale.
+     A romperlo e' l'immagine: fra le due sistemazioni possibili si
+     prende quella il cui rapporto somiglia di piu' a quello della
+     copertina. Se la scatola e' quadrata la domanda non si pone.
+
+     Quello che NON si fa e' lasciare che sia l'immagine a dettare la
+     forma: le immagini di BGG non sono scansioni del fronte, sono
+     spesso rendering ritagliati in 4:3 o in quadrato. Prendendole alla
+     lettera, una scatola quadrata come Terraforming Mars diventava
+     4:3 e Gloomhaven si sdraiava. La forma la dice la SCATOLA;
+     l'immagine dice solo da che parte sta. */
+  let w, h;
+  if (gr / pi < 1.06){                 // quadrata: non c'e' niente da girare
+    w = gr / 10; h = pi / 10;
+  } else {
+    const disteso = gr / pi;           // lato lungo orizzontale
+    const eretto  = pi / gr;           // lato lungo verticale
+    const orizz = Math.abs(Math.log(asp / disteso)) <= Math.abs(Math.log(asp / eretto));
+    w = (orizz ? gr : pi) / 10;
+    h = (orizz ? pi : gr) / 10;
+  }
 
   /* Una scatola piu' grande del vano va rimpicciolita, se no esce dal
      mobile: Gloomhaven e' 40,6 cm e in una KALLAX da 33 davvero non ci
@@ -991,7 +1011,8 @@ function makeGameBox(game){
   const grp = new THREE.Group();
 
   let coverTex, aspect;
-  if (game.img && game.img.naturalWidth && game.img.naturalHeight){
+  const copertinaVera = !!(game.img && game.img.naturalWidth && game.img.naturalHeight);
+  if (copertinaVera){
     coverTex = ART.imgTex(game.img);
     aspect = game.img.naturalWidth / game.img.naturalHeight;
   } else {
@@ -1007,6 +1028,30 @@ function makeGameBox(game){
   const W = mis ? mis.w : BOX.w;
   const H = mis ? mis.h : BOX.w / aspect;
   const T = mis ? mis.t : BOX.t;
+
+  /* LA COPERTINA SI RITAGLIA, NON SI STIRA.
+
+     Con le misure vere la faccia ha il rapporto della scatola, e
+     l'immagine quasi mai lo stesso. Spalmarla sopra la deforma -- una
+     scatola quadrata con una foto 4:3 diventa una scatola schiacciata,
+     e si vede subito. Si fa invece quello che fa una scatola vera: la
+     grafica copre tutto il fronte e quello che avanza esce dai bordi.
+
+     E' `object-fit: cover`, centrato: si stringe la finestra della
+     texture sul lato che abbonda e si sposta di meta' della
+     differenza. Niente da ridisegnare, sono due numeri sulla texture. */
+  if (mis && aspect > 0){
+    const rapp = W / H;
+    if (aspect > rapp){                       // immagine piu' larga: si taglia ai lati
+      const f = rapp / aspect;
+      coverTex.repeat.set(f, 1);
+      coverTex.offset.set((1 - f) / 2, 0);
+    } else if (aspect < rapp){                // piu' alta: si taglia sopra e sotto
+      const f = aspect / rapp;
+      coverTex.repeat.set(1, f);
+      coverTex.offset.set(0, (1 - f) / 2);
+    }
+  }
   // il coperchio resta la stessa frazione della scatola che era prima
   const LID = Math.min(T * (BOX.lid / BOX.t), T - .12);
 
@@ -3556,6 +3601,7 @@ async function addManual(){
   q('#m-review').value = '';
   closeAdd();
   await loadCovers(true);
+  await caricaMisure();          // quanto e' grande la scatola: si chiede subito
   applyLibrary({ animate: true });
   if (game){
     goToGame(game.id);

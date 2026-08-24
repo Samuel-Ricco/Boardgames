@@ -691,6 +691,41 @@ async function mandaPosti(giochi){
       .in('id', lista.map(function(g){ return g.id; }));
     if (via.error) throw via.error;
 
+    /* E SI LIBERA ANCHE IL CUBO DI DESTINAZIONE.
+
+       Sfilare solo le scatole che si stanno spostando basta per uno
+       scambio, dove le due destinazioni sono le due partenze. Non basta
+       quando il cubo dove si va e' occupato da qualcun ALTRO sul
+       server: li' la seconda fase sbatte contro `giochi_posto_unico` e
+       la posizione non si salva.
+
+       E' facilissimo che succeda mettendo in vetrina un gioco dopo
+       l'altro: `mandaAlServer` richiama `sync()` dopo ogni inserimento,
+       la rilettura azzera la posizione che questa funzione sta ancora
+       scrivendo, e il gioco successivo trova "libero" un cubo che
+       libero non e'. Da fuori si vede come "posizione non salvata:
+       duplicate key value violates unique constraint".
+
+       Un cubo per volta, e solo quelli veri: un `posto` nullo non sta
+       nell'indice e non da' fastidio a nessuno. Chi viene sfrattato
+       resta senza posto, che e' uno stato legittimo -- `riparaPosti()`
+       lo rimette sullo scaffale al giro dopo. */
+    const dest = [];
+    lista.forEach(function(g){
+      if (!g.libreria || g.posto === null || g.posto === undefined) return;
+      const k = g.libreria + '#' + g.posto;
+      if (dest.indexOf(k) < 0) dest.push(k);
+    });
+    const ids = lista.map(function(g){ return g.id; });
+    for (let i = 0; i < dest.length; i++){
+      const pezzi = dest[i].split('#');
+      const libero = await c.from('giochi').update({ posto: null })
+        .eq('proprietario', AUTH.stato().id)
+        .eq('libreria', pezzi[0]).eq('posto', Number(pezzi[1]))
+        .not('id', 'in', '(' + ids.map(function(x){ return '"' + x + '"'; }).join(',') + ')');
+      if (libero.error) throw libero.error;
+    }
+
     const esiti = await Promise.all(lista.map(function(g){
       return c.from('giochi')
         .update({ libreria: g.libreria, posto: g.posto })

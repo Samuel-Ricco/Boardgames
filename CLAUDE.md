@@ -3324,6 +3324,66 @@ millisecondi e non blocca niente.
 Misurato: Catan 29,7 x 29,7 x 7,1 · Carcassonne 19 x 27,5 x 6,7 · Pandemic
 22,1 x 30,5 x 4,2 · **Gloomhaven 29,2 x 40,6 x 19,1** · Brass 30 x 30 x 5,1.
 
+### La copertina non si stira: si ritaglia
+
+Con le misure vere la faccia della scatola ha il rapporto della scatola, e
+l'immagine di BGG quasi mai lo stesso. Spalmarla sopra la deforma, e si vede
+subito.
+
+**E l'immagine non puo' dettare la forma.** Il primo tentativo faceva cosi' —
+la faccia prendeva il rapporto della foto — e il risultato era sbagliato,
+perche' **le immagini di BGG non sono scansioni del fronte**: sono spesso
+rendering ritagliati in 4:3 o in quadrato. Terraforming Mars, che ha la scatola
+quadrata, diventava 4:3; Gloomhaven si sdraiava.
+
+Quindi: **la forma la dice la scatola, l'immagine dice solo da che parte sta.**
+
+- **L'orientamento** si sceglie fra le due sistemazioni possibili prendendo
+  quella il cui rapporto somiglia di piu' a quello della copertina — e solo se
+  la scatola non e' quadrata, se no la domanda non si pone. Girare l'immagine
+  non e' mai la risposta: si gira la scatola.
+- **Il ritaglio** e' `object-fit: cover`, centrato: si stringe la finestra
+  della texture sul lato che abbonda e si sposta di meta' della differenza. E'
+  quello che fa una scatola vera -- la grafica copre tutto il fronte e quello
+  che avanza esce dai bordi. Due numeri sulla texture, niente da ridisegnare.
+
+Misurato sulla collezione: il ritaglio e' dell'1-2% dove l'immagine e' davvero
+il fronte (Gloomhaven, Twilight Imperium, War of the Ring) e sale al 22-25% solo
+dove l'immagine e' un rendering di un'altra forma (Terraforming Mars, Arcs).
+Stiramento residuo: **zero, su tutte**.
+
+**E le misure si chiedono a OGNI aggiunta**, non solo all'avvio: dal catalogo,
+dal modulo «aggiungi un gioco», e al caricamento per quelle che mancano.
+
+## "Posizione non salvata": liberare il cubo dove si va, non solo quello da cui si viene
+
+Segnalato come «problema con Supabase, i commit non stanno andando bene». Non
+era Supabase — letture, scritture e storage rispondevano tutti. Era questo, e
+il sito lo scriveva in chiaro sullo schermo:
+
+> posizione non salvata: duplicate key value violates unique constraint
+> "giochi_posto_unico"
+
+`mandaPosti` sfilava dall'indice **solo le scatole che stava spostando**. Basta
+per uno scambio, dove le due destinazioni sono le due partenze. **Non basta
+quando il cubo dove si va e' occupato da qualcun altro sul server.**
+
+E succede facilmente mettendo in vetrina un gioco dopo l'altro:
+`mandaAlServer` richiama `sync()` dopo ogni inserimento, **la rilettura azzera
+la posizione che `mandaPosti` sta ancora scrivendo**, e il gioco successivo
+trova «libero» un cubo che libero non e'. E' la stessa lezione dell'`img`
+qualche riga piu' su: **`sync()` ricostruisce gli oggetti e si porta via quello
+che era ancora in volo.**
+
+Adesso la prima fase libera anche i cubi di destinazione — uno per volta, e
+solo quelli veri, perche' un `posto` nullo non sta nell'indice. Chi viene
+sfrattato resta senza posto, che e' uno stato legittimo: `riparaPosti()` lo
+rimette sullo scaffale al giro dopo.
+
+Verificato sul database vero, provocando la collisione: prima l'errore,
+adesso il gioco prende il cubo, il precedente occupante resta senza posto, e
+non si lamenta nessuno.
+
 ### Due difetti che il token ha fatto uscire
 
 Erano li' da sempre e non si erano mai visti, perche' senza token quella
