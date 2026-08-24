@@ -211,14 +211,23 @@ function sparqlPerBgg(bgg){
   ].join('\n');
 }
 
+/* SFOGLIARE NON PASSA MAI DA BGG, e non e' una mancanza: l'API non ha
+   un modo di chiedere "le prime venti della classifica". L'unica pagina
+   che la mostra e' HTML, e le condizioni di BGG vietano di raschiarla.
+
+   Quindi qui il DUMP vince sempre, qualunque sia la fonte scelta per
+   cercare e per le schede. Prima c'era un ramo `if (f === 'bgg')` vuoto
+   con dentro un promemoria: arrivato il token la fonte e' diventata
+   'bgg', quel ramo non ha fatto niente, il controllo sul dump subito
+   sotto non scattava piu' -- ed e' finito tutto su Wikidata. Cioe' col
+   token il catalogo e' PEGGIORATO: da centoseimila titoli in classifica
+   vera a tremilaquattrocento in ordine di edizioni linguistiche, con
+   scacchi e Monopoly in cima.
+
+   Il dump e BGG non sono in concorrenza, fanno due mestieri: il dump sa
+   CHI ESISTE e in che ordine, l'API sa COM'E' FATTO. */
 async function sfoglia(offset, limit){
-  const f = await fonte();
-  if (f === 'bgg'){
-    // col token qui ci andra' la classifica di BGG presa dall'API.
-  }
-  /* Dal dump si sfoglia la classifica vera, ed e' gratis: il file e'
-     gia' in ordine, quindi una pagina e' una fetta di righe. */
-  if (f === 'dump') return DUMP.sfoglia(offset || 0, limit || 24);
+  if (await DUMP.c_e()) return DUMP.sfoglia(offset || 0, limit || 24);
 
   const r = await query(sparqlSfoglia(offset || 0, limit || 24));
   const ids = (r.results.bindings || []).map(function(b){
@@ -272,6 +281,29 @@ async function cerca(q){
 async function dettagli(voce){
   if (voce.fonte === 'dump'){
     if (!voce.bgg) return voce;
+    /* Col token la scheda la da' BGG, non Wikidata: e' la stessa fonte
+       da cui viene il dump, quindi i due si parlano per id -- e porta
+       autore, editore, voto, peso e **la copertina vera**, che Wikidata
+       non ha e non avra' mai. Wikidata resta il ripiego per chi il
+       token non ce l'ha, e se BGG e' giu' si scende li' invece di
+       restare con un titolo e basta. */
+    if (await fonte() === 'bgg'){
+      try {
+        const g = await BGG.scheda(voce.bgg);
+        return {
+          fonte: 'bgg', id: String(voce.bgg), bgg: g.bgg || voce.bgg,
+          /* Il titolo e l'anno restano quelli del dump: sono la chiave
+             con cui il sito ritrova il gioco, e i due concordano
+             comunque -- vengono tutti e due da BGG. */
+          title: voce.title || g.title,
+          year: voce.year || g.year,
+          designer: g.designer, publisher: g.publisher, players: g.players,
+          time: g.time, age: g.age, weight: g.weight, score: g.score,
+          tags: g.tags, immagine: g.image,
+          rank: voce.rank, bggScore: voce.bggScore
+        };
+      } catch(e){ /* BGG giu': si prova Wikidata qui sotto */ }
+    }
     try {
       const r = await query(sparqlPerBgg(voce.bgg));
       const b = (r.results.bindings || [])[0];

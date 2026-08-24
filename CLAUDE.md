@@ -3212,6 +3212,44 @@ come texture WebGL. E' lo stesso controllo che fa WebGL, ed e' il motivo per
 cui il proxy rilancia l'immagine invece di lasciarla prendere dal browser
 (vedi «`crossOrigin='anonymous'` sulle copertine di un altro dominio»).
 
+### Il token ha PEGGIORATO il catalogo, per un ramo vuoto
+
+Segnalato subito: «non compaiono i giochi del catalogo ma quelli del file».
+Vero, e la causa e' di quelle che fanno male perche' sono banali.
+
+In `sfoglia()` c'era un ramo vuoto con dentro un promemoria:
+
+```js
+if (f === 'bgg'){
+  // col token qui ci andra' la classifica di BGG presa dall'API.
+}
+if (f === 'dump') return DUMP.sfoglia(...);
+```
+
+Finche' il token non c'era, `fonte()` rispondeva `'dump'` e il secondo
+controllo scattava. Arrivato il token `fonte()` e' passata a `'bgg'`, il primo
+ramo non ha fatto niente, il secondo non e' piu' scattato — **e si e' finiti su
+Wikidata**. Cioe' il token ha riportato il catalogo da **106.694 titoli in
+classifica vera** a **3.429 in ordine di edizioni linguistiche**, con scacchi e
+Monopoly in cima. Un miglioramento che peggiora, e in silenzio.
+
+La regola: **un ramo vuoto non e' un segnaposto innocuo.** Prende il posto di
+quello che verra' dopo e disattiva quello che c'era prima; se non fa niente,
+non deve nemmeno esistere.
+
+E la cosa giusta era un'altra ancora: **sfogliare non passa da BGG e non ci
+passera' mai**, perche' l'API non ha un modo di chiedere «le prime venti della
+classifica» — l'unica pagina che la mostra e' HTML, e le condizioni di BGG
+vietano di raschiarla. Quindi il dump vince **sempre**, qualunque sia la fonte
+scelta per cercare e per le schede. Non sono in concorrenza: il dump sa **chi
+esiste e in che ordine**, l'API sa **com'e' fatto**.
+
+**E adesso le due cose si parlano.** Una voce del dump ha l'id BGG, quindi
+aprendola la scheda la da' l'API invece di Wikidata: autore, editore, voto,
+peso e la copertina vera. Prima lo stesso clic finiva su Wikidata e tornava con
+un titolo e poco altro. Wikidata resta il ripiego per chi il token non ce l'ha,
+e per quando BGG e' giu'.
+
 ### Due difetti che il token ha fatto uscire
 
 Erano li' da sempre e non si erano mai visti, perche' senza token quella
