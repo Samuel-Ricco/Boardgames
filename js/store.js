@@ -133,7 +133,31 @@ async function sync(){
       .eq('proprietario', AUTH.stato().id)
       .order('creato', { ascending: true });
     if (r.error) throw r.error;
+    /* L'IMMAGINE DECODIFICATA SOPRAVVIVE ALLA RILETTURA.
+
+       `daRiga` costruisce oggetti NUOVI, quindi ogni `sync()` buttava
+       via l'`img` che `loadCovers()` aveva attaccato -- e `sync()` non
+       si chiama solo all'avvio: lo richiama `mandaAlServer` dopo ogni
+       aggiunta, in sottofondo. Da li' in poi le scatole gia' costruite
+       tenevano la loro texture, ma la prima cosa che rifaceva la scena
+       -- una ricerca, un riordino, un ridimensionamento, un altro
+       gioco aggiunto -- le ricostruiva senza copertina e ripiegava
+       sull'illustrazione disegnata. Cioe' **le copertine sparivano
+       dallo scaffale** e tornavano solo ricaricando la pagina.
+
+       Si riporta solo dove la copertina e' rimasta la stessa: se
+       l'indirizzo e' cambiato, quell'immagine non e' piu' sua e
+       `loadCovers` la riscarichera'. In memoria e basta -- su disco
+       `img` non ci va mai (vedi `salvaLocale`). */
+    const prima = {};
+    (games || []).forEach(function(g){
+      if (g && g.img && g.cover) prima[g.id] = { img: g.img, cover: g.cover };
+    });
     games = (r.data || []).map(daRiga);
+    games.forEach(function(g){
+      const v = prima[g.id];
+      if (v && v.cover === g.cover) g.img = v.img;
+    });
     remota = true;
     salvaLocale();                          // copia per quando manca la rete
     return { remota: true, quanti: games.length, vuota: games.length === 0 };
