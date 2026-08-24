@@ -3184,6 +3184,51 @@ ospite: non serve la sessione vera.
 Da rimettere a posto dopo: `dado-cancello` in `localStorage` si scrive
 scegliendo, e lasciato su `ospite` il sito la prossima volta non chiede piu'.
 
+## Il token di BGG e' arrivato
+
+Dal 2026-08-24 c'e', e sta in **`.bgg-token`** accanto al repo — che e' in
+`.gitignore` e **non ci entra mai**, esattamente come la chiave `sb_secret_`
+di Supabase. `tools/bgg-lib.mjs` lo cerca prima in `BGG_TOKEN` e poi in quel
+file: senza, ogni finestra nuova andrebbe aperta con `$env:BGG_TOKEN='...'` e
+prima o poi ci si dimentica.
+
+**Il posto giusto per davvero resta una edge function**, dove il token sta sul
+server e il browser non lo vede mai. Il file locale e' la comodita' di una
+macchina di sviluppo, non la soluzione.
+
+Verificato contro l'API vera: **401 senza, 200 con**. E quello che si apre non
+e' poco — e' proprio quello che mancava:
+
+| | prima (Wikidata) | adesso (BGG) |
+|---|---|---|
+| autore | spesso assente | c'e' |
+| editore | spesso il distributore locale | quello vero |
+| voto e peso | mai | `8.0` e `3.4` |
+| copertina | **mai** (Commons vuole licenze libere) | **la scatola vera** |
+
+La copertina torna dal proxy come **data URL**, quindi passa il controllo che
+conta: disegnata su un canvas, `getImageData` non lancia — cioe' e' usabile
+come texture WebGL. E' lo stesso controllo che fa WebGL, ed e' il motivo per
+cui il proxy rilancia l'immagine invece di lasciarla prendere dal browser
+(vedi «`crossOrigin='anonymous'` sulle copertine di un altro dominio»).
+
+### Due difetti che il token ha fatto uscire
+
+Erano li' da sempre e non si erano mai visti, perche' senza token quella
+strada non era raggiungibile. E' il caso di scuola: **codice che non si puo'
+eseguire non e' codice che funziona.**
+
+- **`<ratings>` non si cerca con la parentesi chiusa.** BGG lo scrive
+  `<ratings >`, con uno spazio prima, quindi `indexOf('<ratings>')` tornava
+  `-1` — e `slice(-1)` e' l'ultimo carattere della stringa. Voto e peso
+  uscivano vuoti **sempre**, e senza un errore.
+- **La ricerca metteva il gioco vero in fondo.** Cercando «arcs» uscivano
+  prima tre espansioni del 2027 e Arcs quarto: cominciano tutte per «arcs», e
+  a parita' vinceva l'anno piu' recente. Adesso l'ordine e' quello dell'indice
+  in casa — prima chi si chiama **esattamente** cosi', poi chi comincia cosi',
+  poi il resto — e solo dentro ogni gruppo decide l'anno. Chi cerca un titolo
+  cerca quel titolo, non la sua ultima espansione.
+
 ## Stato attuale
 
 **Aggiornato al 2026-08-23 (quinta sessione).** Questa sezione e la prossima bastano a ripartire a
@@ -3376,7 +3421,10 @@ Cosa manca, in ordine di fastidio:
 
 1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito con *modifica*, e
    da lì si pubblicano nel catalogo con la casella in fondo al modulo.
-2. **Il token BGG non è ancora arrivato**, ma dal 2026-08-22 serve molto meno.
+2. ~~**Il token BGG non è ancora arrivato.**~~ **Arrivato il 2026-08-24**, e
+   con lui autore, editore, voto, peso e **le copertine vere**. Sta in
+   `.bgg-token`, fuori dal repo. Vedi «Il token di BGG e' arrivato». Quello
+   che segue resta vero solo per chi il token non ce l'ha:
    `boardgamegeek.com/xmlapi2` risponde **401 a qualunque user-agent** e la
    pagina `browse` è HTML che le loro condizioni vietano di raschiare — quella
    strada resta chiusa. Ma il **dump dei ranking** è pubblico e scaricabile
@@ -3386,7 +3434,12 @@ Cosa manca, in ordine di fastidio:
    Wikidata, che è magra e a volte sbagliata (l'editore è spesso il distributore
    locale). Per questo un risultato **riempie il modulo** invece di finire
    dritto sullo scaffale.
-3. **Wikidata non ha le copertine, e non le avrà mai**: le sue immagini vengono da
+3. ~~**Wikidata non ha le copertine.**~~ Resta vero di Wikidata, ma **non è
+   più un problema**: le copertine arrivano da BGG col token. Il campo file nel
+   modulo resta, per quando si vuole la propria. Il paragrafo sotto spiega
+   perché Wikidata non basta.
+
+   **Wikidata non ha le copertine, e non le avrà mai**: le sue immagini vengono da
    Wikimedia Commons, che accetta solo licenze libere, e la grafica di una scatola
    è protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%) e sono foto
    di partite sul tavolo. Per le copertine c'è il **campo file** nel modulo, che
@@ -3418,7 +3471,8 @@ Cosa manca, in ordine di fastidio:
 
 - **Le recensioni vere** sono opinioni dell'utente sui suoi giochi: non si
   inventano.
-- **L'edge function per BGG** vuole il token, che non è ancora arrivato.
+- **L'edge function per BGG**: adesso il token c'è, quindi si può fare — ma
+  vuole un deploy su Supabase, che non si fa da qui.
 
 Prossimi passi già discussi, non ancora fatti:
 

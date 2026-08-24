@@ -51,13 +51,23 @@ const server = http.createServer(async function(req, res){
       if (!q) return json(res, 400, { error: 'manca q' });
       const r = await api('/search?type=boardgame&query=' + encodeURIComponent(q));
       if (r.queued) return json(res, 202, { queued: true });
-      // BGG non ordina per pertinenza: i titoli che cominciano come la
-      // ricerca vengono prima, gli altri dopo, e i piu' recenti in cima.
+      /* BGG non ordina per pertinenza, e lasciarlo fare porta il gioco
+         VERO in fondo: cercando "arcs" uscivano prima tre espansioni del
+         2027 e Arcs quarto, perche' cominciano tutte per "arcs" e a
+         parita' vinceva l'anno piu' recente.
+
+         Stesso ordine dell'indice in casa (`js/bggdump.js`): prima chi
+         si chiama esattamente cosi', poi chi comincia cosi', poi il
+         resto -- e solo DENTRO ogni gruppo decide l'anno. Chi cerca un
+         titolo cerca quel titolo, non la sua ultima espansione. */
       const qq = q.toLowerCase();
+      const rango = function(t){
+        const p = t.toLowerCase();
+        return p === qq ? 0 : (p.indexOf(qq) === 0 ? 1 : 2);
+      };
       const hits = parseSearch(r.xml).sort(function(a, b){
-        const ap = a.title.toLowerCase().indexOf(qq) === 0 ? 0 : 1;
-        const bp = b.title.toLowerCase().indexOf(qq) === 0 ? 0 : 1;
-        if (ap !== bp) return ap - bp;
+        const d = rango(a.title) - rango(b.title);
+        if (d) return d;
         return (b.year || 0) - (a.year || 0);
       });
       return json(res, 200, hits.slice(0, 12));

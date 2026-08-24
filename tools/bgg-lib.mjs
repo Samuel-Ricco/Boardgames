@@ -7,10 +7,28 @@
    parser XML, bastano due espressioni regolari.
    ============================================================ */
 
+import { readFileSync } from 'node:fs';
+
 const BASE = 'https://boardgamegeek.com/xmlapi2';   // senza www, se no il token non viene letto
 
+/* Il token: prima la variabile d'ambiente, poi il file `.bgg-token`
+   accanto al repo -- che e' in `.gitignore` e non ci entra mai, come la
+   chiave `sb_secret_` di Supabase.
+
+   Il file esiste per comodita' di una macchina di sviluppo: senza,
+   ogni finestra nuova va aperta con `$env:BGG_TOKEN='...'` e prima o
+   poi ci si dimentica. Il posto giusto per davvero resta una edge
+   function, dove il token sta sul server e il browser non lo vede. */
+let letto = null;
+
 export function token(){
-  return process.env.BGG_TOKEN || '';
+  if (process.env.BGG_TOKEN) return process.env.BGG_TOKEN;
+  if (letto === null){
+    try {
+      letto = readFileSync(new URL('../.bgg-token', import.meta.url), 'utf8').trim();
+    } catch(e){ letto = ''; }
+  }
+  return letto;
 }
 
 export async function api(path){
@@ -70,7 +88,13 @@ export function parseSearch(xml){
 /* Una scheda nella forma che usa js/data.js. */
 export function parseGame(xml, id){
   const primary = xml.match(/<name[^>]*type="primary"[^>]*value="([^"]*)"/);
-  const stats = xml.slice(xml.indexOf('<ratings>'));
+  /* `<ratings>` NON si cerca con la parentesi chiusa: BGG lo scrive
+     `<ratings >`, con uno spazio prima, e `indexOf` tornava -1. Uno
+     `slice(-1)` e' l'ultimo carattere della stringa, quindi voto e peso
+     uscivano vuoti da sempre -- non si era mai visto perche' fino al
+     token questa strada non era raggiungibile. */
+  const i = xml.indexOf('<ratings');
+  const stats = i < 0 ? '' : xml.slice(i);
   const title = primary ? unesc(primary[1]) : String(id);
   const weight = Number(attr(stats, 'averageweight', 'value'));
   const score = Number(attr(stats, 'average', 'value'));

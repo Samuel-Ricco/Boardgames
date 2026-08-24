@@ -5,3 +5,9 @@ Thumbs.db
 # Quello che si committa e' l'indice che ne esce,
 # dati/bgg.txt, fatto con tools/bgg-indice.mjs.
 dump_bgg/
+
+# IL TOKEN DI BGG NON ENTRA NEL REPO, come la chiave sb_secret_ di
+# Supabase. Sta qui accanto in chiaro perche' e' una macchina di
+# sviluppo, e lo legge `tools/bgg-lib.mjs` quando BGG_TOKEN non c'e'.
+# Sul serio andrebbe in una edge function, dove non lo vede il client.
+.bgg-token
