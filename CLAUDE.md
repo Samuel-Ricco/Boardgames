@@ -3129,6 +3129,61 @@ Vale in generale: **uno stato iniziale scritto in `state` non e' applicato
 finche' qualcuno non lo applica.** Il valore di partenza e la funzione che lo
 mette in scena devono partire d'accordo, e il posto per farlo e' il boot.
 
+## Il calendario: la domanda a cui un elenco non sa rispondere
+
+Le partite avevano due viste: *per gioco* («a cosa abbiamo giocato») e *le
+ultime* («cosa per ultimo»). Ne manca una terza, ed e' **quando**: un elenco di
+date si legge una riga per volta, una griglia di giorni si legge tutta insieme
+— e da li' si vede il ritmo, i mesi pieni, le settimane vuote, le sere in cui
+si e' giocato piu' di una partita.
+
+**Niente segni nuovi da imparare.** Il fondo tinto vuol dire «qui e' successo
+qualcosa», la terracotta vuol dire «hai vinto tu», e la corona e' la stessa che
+si tocca al tavolo per dire chi ha vinto. Un punto per partita fino a tre:
+oltre non si contano piu' a colpo d'occhio, e il numero esatto sta nel `title`
+e nel giorno aperto.
+
+- **La corona guarda solo le mie vittorie**, con lo stesso metro del winrate:
+  una sera in cui hanno vinto gli altri e' comunque una sera giocata, ma la
+  corona non ce l'ha.
+- **Si apre sul mese dell'ultima partita**, non su oggi. Aprire il calendario
+  su un mese vuoto perche' non si gioca da marzo vorrebbe dire chiedere a chi
+  guarda di cercarsi da solo dove sono le sue partite. Il tasto **oggi**
+  compare solo quando serve: sul mese corrente non porterebbe da nessuna parte.
+- **Il giorno si apre sotto la griglia**, non in una finestra: e' il dettaglio
+  di una cosa che si sta gia' guardando, ed e' lo stesso gesto del winrate in
+  cima. Toccarlo di nuovo lo richiude.
+- **La corona e' PIENA, non di contorno.** A tredici pixel un tratto da 1,6 su
+  un fondo gia' terracotta si perde — stessa ragione per cui la corona del
+  tavolo si riempie quando e' accesa.
+- **Oggi si segna con un anello sottile, non con un fondo**: il fondo dice
+  gia' un'altra cosa. Era un trattino sotto il numero, e a quella misura si
+  leggeva come un carattere perso li' in mezzo.
+- **Il calendario ha una misura sua** (428 px) e non si allarga con la pagina:
+  a tutta larghezza le celle diventano quadrati da centoventi pixel, e un mese
+  fatto di quadroni si legge vuoto invece che pieno.
+- La settimana comincia di **lunedi'**: `getDay()` parte dalla domenica, quindi
+  lo scarto e' `(getDay() + 6) % 7`.
+
+**E i mesi non sono piu' italiano fisso.** `MESI` era un array in `app.js`, e
+`dataIt()` scrive la data di ogni partita: in inglese diceva «23 agosto 2026».
+Adesso vengono dal dizionario, in una chiave sola separata da virgole —
+`cal.mesi` e `cal.giorni`. Dodici chiavi per una cosa che si legge come un
+elenco unico si tengono in fila a mano, e basta che una sia fuori posto perche'
+il sito dica il mese sbagliato.
+
+### Il cancello tiene `boot()` in attesa
+
+Costato un giro di diagnosi: con la sessione scaduta il sito torna al cancello,
+e `boot()` resta **sospeso su `await gate(...)`** finche' non si sceglie.
+Prima di quel punto non e' agganciato niente — nessun pulsante risponde, e
+sembra che il codice nuovo non funzioni. `bindPartite()` invece gira **prima**
+del ramo ospite, quindi per provare una vista basta passare il cancello come
+ospite: non serve la sessione vera.
+
+Da rimettere a posto dopo: `dado-cancello` in `localStorage` si scrive
+scegliendo, e lasciato su `ospite` il sito la prossima volta non chiede piu'.
+
 ## Stato attuale
 
 **Aggiornato al 2026-08-23 (quinta sessione).** Questa sezione e la prossima bastano a ripartire a

@@ -108,7 +108,9 @@ const state = {
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   soloPreferiti: false,        // mostra solo i giochi segnati
   vista: 'gruppi',             // come si guarda l'elenco: 'gruppi' o 'tutti'
-  vpar: 'gioco',               // come si guardano le partite: 'gioco' o 'data'
+  vpar: 'gioco',               // come si guardano le partite: 'gioco', 'data' o 'calendario'
+  cal: null,                   // il mese aperto nel calendario, {a, m}
+  calGiorno: '',               // il giorno aperto sotto la griglia
   wrAperto: false,             // il winrate gioco per gioco e' aperto?
   presa: null,                 // la scatola che si sta spostando a mano
   zoom: 1,                     // quanto la camera e' arretrata: 1 = normale
@@ -219,6 +221,12 @@ const ICO = {
      Cosa faccia per esteso resta nel `title`. */
   piu:      '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>',
   spunta:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  /* Le due frecce del binario, riusate dal calendario: e' lo stesso
+     gesto -- un passo avanti e uno indietro dentro una fila -- e due
+     disegni diversi per lo stesso gesto sono due gesti, per chi
+     guarda. */
+  indietro: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M14.5 5.5L8 12l6.5 6.5"/></svg>',
+  avanti:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M9.5 5.5L16 12l-6.5 6.5"/></svg>',
   /* L'attesa fra il "+" e la spunta. Aggiungere un gioco dal catalogo
      fa due giri di rete -- la scheda, poi la copertina -- e finora nel
      frattempo il pulsante restava un "+" spento: chi premeva non
@@ -681,7 +689,7 @@ function sincronizzaFari(m){
 
    Quindi si misura quanto e' buio davvero, e sotto una soglia la
    testata torna a essere una superficie piena. E' la regola gia'
-   scritta -- «la testata e' una superficie, non un velo» -- con il
+   scritta -- "la testata e' una superficie, non un velo" -- con il
    fondo che le mancava. */
 function lumDietroTestata(){
   const st = STANZA.corrente();
@@ -5237,6 +5245,7 @@ function azzeraSchermata(){
   });
   state.vista = 'tutti';
   state.vpar = 'gioco';
+  state.cal = null; state.calGiorno = '';   // e il calendario riparte dall'ultima partita
   state.wrAperto = false;
 }
 
@@ -5446,13 +5455,18 @@ function bindProfilo(){
 
 let paCorrente = null;             // la partita in lavorazione
 
-const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
-              'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+/* I mesi vengono dal dizionario e non da un array italiano fisso:
+   `dataIt` scrive la data di ogni partita, e in inglese diceva
+   "23 agosto 2026". Sono in una chiave sola separati da virgole --
+   dodici chiavi per una cosa che si legge come un elenco unico si
+   tengono in fila a mano, e basta che una sia fuori posto perche' il
+   sito dica il mese sbagliato. */
+function mesi(){ return TP('cal.mesi').split(','); }
 
 function dataIt(iso){
   const p = String(iso || '').split('-');
   if (p.length !== 3) return '';
-  return parseInt(p[2], 10) + ' ' + MESI[parseInt(p[1], 10) - 1] + ' ' + p[0];
+  return parseInt(p[2], 10) + ' ' + mesi()[parseInt(p[1], 10) - 1] + ' ' + p[0];
 }
 
 function oggiIso(){
@@ -5560,14 +5574,122 @@ function disegnaVistePartite(){
     b.classList.toggle('on', sua);
     b.setAttribute('aria-selected', sua ? 'true' : 'false');
   });
+  /* Tre linguette adesso, non due: l'indicatore si sposta di una
+     larghezza per posto, e la larghezza gliela da' il CSS. */
+  const ordine = ['gioco', 'data', 'calendario'];
   const ind = q('#par-viste .ind');
-  if (ind) ind.style.transform = 'translateX(' + (state.vpar === 'data' ? 100 : 0) + '%)';
+  if (ind) ind.style.transform =
+    'translateX(' + (Math.max(0, ordine.indexOf(state.vpar)) * 100) + '%)';
 }
 
 function setVistaPartite(v){
-  if (v !== 'gioco' && v !== 'data') return;
+  if (v !== 'gioco' && v !== 'data' && v !== 'calendario') return;
   state.vpar = v;
   disegnaPartite();
+}
+
+/* ===============================================================
+   IL CALENDARIO
+   ===============================================================
+
+   Le altre due viste rispondono a "a cosa abbiamo giocato" e "cosa
+   abbiamo giocato per ultimo". Questa risponde a una domanda che
+   nessun elenco sa dare bene: QUANDO. Un elenco di date si legge una
+   riga per volta; una griglia di giorni si legge tutta insieme, e da
+   li' si vede il ritmo -- i mesi pieni, le settimane vuote, le sere in
+   cui si e' giocato piu' di una partita.
+
+   Il segno su un giorno parla la lingua che il sito parla gia': il
+   fondo tinto vuol dire "qui e' successo qualcosa", la terracotta vuol
+   dire "hai vinto tu", e la corona e' la stessa che si tocca al tavolo
+   per dire chi ha vinto. Niente simboli nuovi da imparare. */
+
+function isoDi(a, m, g){
+  const due = function(n){ return (n < 10 ? '0' : '') + n; };
+  return a + '-' + due(m + 1) + '-' + due(g);
+}
+
+/* Le partite raccolte per giorno. Le vittorie guardano solo le mie:
+   una sera in cui hanno vinto gli altri e' comunque una sera giocata,
+   ma la corona non ce l'ha -- e' lo stesso metro del winrate. */
+function partitePerGiorno(){
+  const per = {};
+  PARTITE.tutte().forEach(function(p){
+    const d = String(p.giocata_il || '');
+    if (d.length !== 10) return;            // senza data non sta da nessuna parte
+    (per[d] || (per[d] = [])).push(p);
+  });
+  return per;
+}
+
+/* Il mese da cui partire: quello dell'ultima partita segnata, se no
+   oggi. Aprire il calendario su un mese vuoto perche' non si gioca da
+   marzo vorrebbe dire chiedere a chi guarda di cercarsi da solo dove
+   sono le sue partite. */
+function meseIniziale(){
+  const d = PARTITE.tutte()
+    .map(function(p){ return String(p.giocata_il || ''); })
+    .filter(function(x){ return x.length === 10; })
+    .sort().pop();
+  const base = d || oggiIso();
+  return { a: parseInt(base.slice(0, 4), 10), m: parseInt(base.slice(5, 7), 10) - 1 };
+}
+
+function calendarioHtml(){
+  if (!state.cal) state.cal = meseIniziale();
+  const a = state.cal.a, m = state.cal.m;
+  const per = partitePerGiorno();
+  const oggi = oggiIso();
+
+  // la settimana comincia di lunedi': `getDay()` parte dalla domenica
+  const vuoti = (new Date(a, m, 1).getDay() + 6) % 7;
+  const quanti = new Date(a, m + 1, 0).getDate();
+
+  let celle = '', nelMese = 0;
+  for (let i = 0; i < vuoti; i++) celle += '<span class="cal-g vuoto"></span>';
+
+  for (let g = 1; g <= quanti; g++){
+    const iso = isoDi(a, m, g);
+    const lista = per[iso] || [];
+    const oggiQui = iso === oggi ? ' oggi' : '';
+    nelMese += lista.length;
+    if (!lista.length){
+      celle += '<span class="cal-g' + oggiQui + '"><b>' + g + '</b></span>';
+      continue;
+    }
+    const vinte = PARTITE.winrate(lista).vinte;
+    const quante = lista.length === 1 ? TP('cal.unaQui') : TP('cal.nQui', {n: lista.length});
+    const titolo = TP('cal.giorno', {g: dataIt(iso), n: quante}) + (vinte ? TP('cal.vinta') : '');
+    let punti = '';
+    for (let k = 0; k < Math.min(3, lista.length); k++) punti += '<i class="cal-punto"></i>';
+    celle += '<button type="button" class="cal-g pieno' + (vinte ? ' vinta' : '') + oggiQui +
+             (state.calGiorno === iso ? ' scelto' : '') + '" data-giorno="' + iso + '"' +
+             ' title="' + esc(titolo) + '" aria-label="' + esc(titolo) + '">' +
+             '<b>' + g + '</b>' +
+             '<span class="cal-seg">' + (vinte ? ICO.corona : punti) + '</span>' +
+             '</button>';
+  }
+
+  const gg = TP('cal.giorni').split(',');
+  const scelte = (state.calGiorno && per[state.calGiorno]) || null;
+  const stessoMese = isoDi(a, m, 1).slice(0, 7) === oggi.slice(0, 7);
+
+  return '<div class="cal">' +
+    '<div class="cal-testa">' +
+      '<button type="button" class="cal-passo" data-cal="-1" aria-label="' + esc(TP('cal.prima')) + '">' +
+        ICO.indietro + '</button>' +
+      '<b>' + esc(mesi()[m]) + ' ' + a + '</b>' +
+      '<button type="button" class="cal-passo" data-cal="1" aria-label="' + esc(TP('cal.dopo')) + '">' +
+        ICO.avanti + '</button>' +
+      // "oggi" compare solo quando serve: su questo mese non porta da nessuna parte
+      (stessoMese ? '' : '<button type="button" class="cal-oggi" data-cal="0">' + T('cal.oggi') + '</button>') +
+    '</div>' +
+    '<div class="cal-gg">' + gg.map(function(x){ return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' +
+    '<div class="cal-griglia">' + celle + '</div>' +
+    (nelMese ? '' : '<p class="cal-vuoto">' + T('cal.nessunaQui') + '</p>') +
+    (scelte ? '<ul class="giocate cal-quel-giorno">' +
+        scelte.map(function(p){ return rigaGiocata(p, true); }).join('') + '</ul>' : '') +
+    '</div>';
 }
 
 /* --- l'anello del winrate ----------------------------------------
@@ -5678,7 +5800,9 @@ function disegnaPartite(){
   disegnaSommaPartite(tutte, gruppi.length);
   disegnaWinratePerGioco();
 
-  if (state.vpar === 'data'){
+  if (state.vpar === 'calendario'){
+    el.innerHTML = calendarioHtml();
+  } else if (state.vpar === 'data'){
     /* In ordine di tempo, la piu' recente in cima: e' la vista di "cosa
        abbiamo giocato l'ultima volta". Qui il titolo del gioco serve su
        ogni riga -- e' l'unica cosa che distingue una partita dall'altra. */
@@ -6508,6 +6632,39 @@ function bindPartite(){
     state.wrAperto = !state.wrAperto;
     b.setAttribute('aria-expanded', state.wrAperto ? 'true' : 'false');
     disegnaWinratePerGioco();
+  });
+
+  /* Il calendario: un mese avanti, uno indietro, "oggi", e un giorno
+     che si apre sotto. L'ascoltatore sta sul contenitore perche' la
+     griglia si rifa' per intero a ogni passo -- attaccarlo ai pulsanti
+     vorrebbe dire rimetterlo ogni volta.
+
+     Sta PRIMA di quello che riapre una partita, e ferma l'evento: una
+     cella e' un pulsante dentro `#pro-partite`, e senza si aprirebbe
+     anche il modulo della partita sotto. */
+  q('#pro-partite').addEventListener('click', function(e){
+    const passo = e.target.closest('button[data-cal]');
+    if (passo){
+      e.stopPropagation();
+      const d = parseInt(passo.getAttribute('data-cal'), 10);
+      if (d === 0) state.cal = { a: parseInt(oggiIso().slice(0,4),10),
+                                 m: parseInt(oggiIso().slice(5,7),10) - 1 };
+      else {
+        const m = state.cal.m + d;
+        state.cal = { a: state.cal.a + Math.floor(m / 12), m: ((m % 12) + 12) % 12 };
+      }
+      state.calGiorno = '';        // cambiando mese il giorno aperto non c'e' piu'
+      disegnaPartite();
+      return;
+    }
+    const g = e.target.closest('button[data-giorno]');
+    if (g){
+      e.stopPropagation();
+      const iso = g.getAttribute('data-giorno');
+      // toccarlo di nuovo lo richiude: e' lo stesso gesto che l'ha aperto
+      state.calGiorno = (state.calGiorno === iso) ? '' : iso;
+      disegnaPartite();
+    }
   });
 
   // riaprire una partita gia' segnata, da tutti e due gli elenchi

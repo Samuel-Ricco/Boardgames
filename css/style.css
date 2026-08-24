@@ -3440,3 +3440,125 @@ body.muro-scuro.sez-collezione:not(.elenco) header{
   background:rgba(234,232,227,.94);
   border-bottom-color:rgba(51,53,43,.08);
 }
+
+/* ===================================================================
+   IL CALENDARIO DELLE PARTITE
+
+   Le altre due viste rispondono a "a cosa" e "quando per ultimo".
+   Questa risponde a QUANDO, ed e' l'unica domanda a cui un elenco non
+   sa rispondere bene: una griglia di giorni si legge tutta insieme, e
+   da li' si vede il ritmo -- i mesi pieni, le settimane vuote, le sere
+   in cui si e' giocato piu' di una partita.
+
+   Non c'e' un linguaggio nuovo da imparare: il fondo tinto vuol dire
+   "qui e' successo qualcosa", la terracotta vuol dire "hai vinto tu",
+   e la corona e' la stessa che si tocca al tavolo.
+   =================================================================== */
+
+/* Tre linguette invece di due. La larghezza dell'indicatore sta qui e
+   non nel JS: e' una misura di layout, e il JS deve solo dire di
+   quanti posti spostarsi. */
+.viste.tre{grid-template-columns:repeat(3,1fr)}
+.viste.tre .ind{width:33.3333%}
+
+/* Il calendario ha una misura sua e non si allarga con la pagina: a
+   tutta larghezza le celle diventano quadrati da centoventi pixel, e un
+   mese fatto di quadroni si legge vuoto invece che pieno. E' un oggetto
+   chiuso, come un foglietto appeso: sta al centro della colonna. */
+.cal{max-width:min(100%, 428px); margin:18px auto 0}
+.cal-testa{
+  display:flex; align-items:center; gap:6px;
+  margin:0 0 12px;
+}
+.cal-testa b{
+  font-family:var(--ff-display); font-weight:400; font-size:19px;
+  letter-spacing:0; color:var(--ink); text-transform:capitalize;
+  margin:0 4px;
+}
+/* Le due frecce sono quelle del binario: stesso gesto, stesso livello
+   "nudo" del corredo comandi -- solo il segno, che si accende sotto il
+   dito. */
+#partite .cal-passo{
+  flex:none; display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; min-height:0; padding:0; cursor:pointer;
+  color:var(--ink-soft); background:none; border:0; border-radius:var(--r-s);
+  transition:background-color .2s var(--ease), color .2s var(--ease), transform .12s var(--ease);
+}
+#partite .cal-passo:hover{background:rgba(200,106,60,.12); color:var(--accent)}
+#partite .cal-passo:active{transform:scale(.92)}
+#partite .cal-passo .ico{width:16px; height:16px}
+/* "oggi" e' l'unica scritta della testata, e sta in fondo: e' una via
+   di ritorno, non un comando che si usa sempre. */
+#partite .cal-oggi{
+  margin-left:auto; padding:6px 11px; min-height:0; cursor:pointer;
+  font-family:var(--ff-text); font-size:12px; font-weight:500; letter-spacing:0;
+  color:var(--accent); background:rgba(200,106,60,.10); border:0; border-radius:999px;
+}
+#partite .cal-oggi:hover{background:rgba(200,106,60,.18)}
+
+.cal-gg{
+  display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
+  margin:0 0 5px;
+}
+.cal-gg span{
+  text-align:center; font-size:10.5px; letter-spacing:.05em;
+  color:var(--ink-soft);
+}
+.cal-griglia{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+
+/* Una cella e' quadrata: una griglia di rettangoli non si legge come
+   un mese. `aspect-ratio` la tiene tale a qualunque larghezza. */
+.cal-g{
+  position:relative; aspect-ratio:1; display:flex;
+  flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  border:0; border-radius:var(--r-s); background:none; padding:0;
+  font-family:var(--ff-text); color:var(--ink-soft);
+}
+.cal-g b{font-size:12.5px; font-weight:500; line-height:1}
+.cal-g.vuoto{visibility:hidden}
+
+/* Il giorno in cui si e' giocato: fondo tinto e numero pieno. E' lo
+   stesso segno della riga di una partita nel modulo del tavolo. */
+#partite button.cal-g{cursor:pointer}
+#partite button.cal-g.pieno{background:rgba(51,53,43,.07); color:var(--ink)}
+#partite button.cal-g.pieno b{font-weight:600}
+#partite button.cal-g.pieno:hover{background:rgba(51,53,43,.13)}
+/* Vinta: terracotta, come tutto quello che nel sito dice "sei tu". */
+#partite button.cal-g.vinta{background:rgba(200,106,60,.14); color:var(--accent)}
+#partite button.cal-g.vinta:hover{background:rgba(200,106,60,.22)}
+#partite button.cal-g.scelto{box-shadow:inset 0 0 0 2px var(--accent)}
+#partite button.cal-g:active{transform:scale(.94)}
+
+/* Oggi si segna con un anello sottile, non con un fondo: il fondo dice
+   gia' un'altra cosa -- che li' si e' giocato -- e due significati sullo
+   stesso segno non si distinguono piu'. Era un trattino sotto il numero,
+   e a questa misura si leggeva come un carattere perso li' in mezzo. */
+.cal-g.oggi{box-shadow:inset 0 0 0 1px rgba(51,53,43,.22)}
+
+/* La corona e' PIENA, non di contorno. A tredici pixel un tratto da
+   1,6 su un fondo gia' terracotta si perde: e' lo stesso motivo per cui
+   la corona del tavolo si riempie quando e' accesa. */
+.cal-seg{display:flex; align-items:center; justify-content:center; gap:2px; height:13px}
+.cal-seg .ico{width:13px; height:13px}
+.cal-seg .ico path{fill:currentColor; stroke-width:1.2}
+/* Un punto per partita, fino a tre: oltre non si contano piu' a colpo
+   d'occhio, e il numero esatto sta nel `title` e nel giorno aperto. */
+.cal-punto{
+  width:4px; height:4px; border-radius:50%;
+  background:currentColor; opacity:.75;
+}
+
+.cal-vuoto{
+  margin:14px 0 0; font-size:12.5px; line-height:1.6; color:var(--ink-soft);
+}
+/* Il giorno scelto si apre SOTTO la griglia, non in una finestra: e' il
+   dettaglio di una cosa che si sta gia' guardando, ed e' lo stesso
+   gesto del winrate in cima. */
+.cal-quel-giorno{margin:14px 0 0; border-top:1px solid var(--line); padding-top:4px}
+
+@media (max-width:420px){
+  .cal-g b{font-size:11.5px}
+  .cal-seg{height:11px}
+  .cal-seg .ico{width:11px; height:11px}
+  .cal-testa b{font-size:17px}
+}
