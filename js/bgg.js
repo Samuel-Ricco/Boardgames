@@ -46,6 +46,20 @@ async function scheda(id){
   return r.json();
 }
 
+/* Le miniature di un blocco di giochi, in una chiamata sola. Se il
+   proxy non c'e' o BGG fa i capricci non e' un guasto: l'elenco resta
+   con le iniziali, che e' quello che ha sempre fatto. */
+async function miniature(ids){
+  const lista = (ids || []).filter(Boolean).slice(0, 40);
+  if (!lista.length) return {};
+  try {
+    const r = await fetch(PROXY + '/thumbs?ids=' + encodeURIComponent(lista.join(',')));
+    if (!r.ok) return {};
+    const o = await r.json();
+    return (o && !o.queued) ? o : {};
+  } catch(e){ return {}; }
+}
+
 /* La copertina arriva dal proxy (che le rimette gli header CORS), viene
    ridisegnata su canvas a larghezza contenuta e salvata come data URL:
    cosi' resta nella libreria anche quando il proxy e' spento, e non
@@ -73,5 +87,6 @@ async function copertina(id){
   }
 }
 
-return { ping: ping, cerca: cerca, scheda: scheda, copertina: copertina, PROXY: PROXY };
+return { ping: ping, cerca: cerca, scheda: scheda,
+  miniature: miniature, copertina: copertina, PROXY: PROXY };
 })();

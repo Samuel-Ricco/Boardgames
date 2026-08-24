@@ -3250,6 +3250,39 @@ peso e la copertina vera. Prima lo stesso clic finiva su Wikidata e tornava con
 un titolo e poco altro. Wikidata resta il ripiego per chi il token non ce l'ha,
 e per quando BGG e' giu'.
 
+### Le miniature del catalogo, che non c'erano mai state
+
+Il dump sa chi esiste ma non ha immagini, quindi sfogliando il catalogo ogni
+riga restava con la sola iniziale. Col token le da' l'API, e la cosa buona e'
+che **`/thing` accetta piu' id in una chiamata**: una pagina di catalogo costa
+**una richiesta**, non ventiquattro.
+
+- **Venti per volta, non di piu'.** Oltre, BGG risponde `Cannot load more than
+  20 items` con un 400 — e il proxy lo girava come 500. Una pagina ne ha
+  ventiquattro, quindi sono due richieste, **in fila e non insieme**: su
+  un'API pubblica il modo piu' rapido di prendersi un limite e' chiedere tutto
+  in parallelo. La divisione la fa il **proxy**, che e' l'unico pezzo che deve
+  sapere come si parla con BGG.
+- **Le righe si disegnano subito con l'iniziale e le immagini si infilano
+  dopo.** Un elenco che aspetta ventiquattro immagini prima di comparire e' un
+  elenco fermo. Quando arrivano si sostituisce solo il riquadro della
+  copertina, senza rifare le righe — la lezione dell'elenco dei gruppi.
+- **`catGiro` vale anche qui**: se intanto e' stata chiesta un'altra pagina o
+  un'altra ricerca, quelle immagini non riguardano piu' quello che c'e' a
+  schermo e si buttano via da sole.
+- **Qui torna solo l'indirizzo, non l'immagine.** La miniatura finisce in un
+  `<img>` e basta, e per quello non servono ne' CORS ne' proxy sui byte —
+  vedi «Le miniature sono un caso diverso dalle copertine». Verificato che il
+  CDN di BGG le serva a un `<img>`: 24 su 24, con e senza referrer.
+- **Senza token non si fa niente e non si dice niente**: resta l'iniziale, che
+  e' un ripiego che regge. Meglio di ventiquattro giri su Wikidata per trovare
+  immagini che nel 13% dei casi sono foto di partite sul tavolo.
+
+Da ricordare in generale: **`loading="lazy"` non carica niente se il pannello
+di anteprima non compone.** Le immagini restano `complete === false` per
+sempre e sembra che siano rotte: per provarle davvero si forza `eager` e si
+guarda `naturalWidth`.
+
 ### Due difetti che il token ha fatto uscire
 
 Erano li' da sempre e non si erano mai visti, perche' senza token quella

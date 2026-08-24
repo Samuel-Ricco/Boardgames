@@ -252,6 +252,10 @@ async function sfoglia(offset, limit){
    entra in libreria -- ed e' quello che fa copertina(). */
 function miniaturaElenco(fileUrl, larghezza){
   if (!fileUrl) return '';
+  /* Da BGG l'indirizzo e' gia' quello buono: si usa com'e'. Il giro qui
+     sotto serve solo alle immagini di Wikimedia, che arrivano come
+     pagina del file e non come immagine. */
+  if (!/wikimedia|wikipedia/.test(String(fileUrl))) return String(fileUrl);
   const nome = decodeURIComponent(String(fileUrl).split('/').pop());
   return 'https://commons.wikimedia.org/wiki/Special:FilePath/' +
          encodeURIComponent(nome) + '?width=' + (larghezza || 240);
@@ -268,6 +272,25 @@ async function cerca(q){
   }
   if (f === 'dump') return DUMP.cerca(q);
   return cercaWikidata(q);
+}
+
+/* LE MINIATURE DI UNA PAGINA DI CATALOGO.
+
+   Il dump sa chi esiste ma non ha immagini, quindi sfogliando le righe
+   restavano con la sola iniziale. Col token le chiede l'API, e ne
+   chiede ventiquattro in una richiesta sola -- una per pagina, non una
+   per riga.
+
+   Senza token non si fa niente e non si dice niente: l'iniziale e' un
+   ripiego che regge, ed e' meglio di ventiquattro giri su Wikidata per
+   trovare immagini che nel 13% dei casi sono foto di partite. */
+async function miniature(voci){
+  if (await fonte() !== 'bgg') return {};
+  const ids = (voci || [])
+    .filter(function(v){ return v && v.bgg && !v.immagine; })
+    .map(function(v){ return String(v.bgg); });
+  if (!ids.length) return {};
+  return BGG.miniature(ids);
 }
 
 /* La scheda completa. Da Wikidata ce l'abbiamo gia' dalla ricerca; da
@@ -407,5 +430,6 @@ async function daFile(file){
 }
 
 return { fonte: fonte, cerca: cerca, dettagli: dettagli, sfoglia: sfoglia,
+  miniature: miniature,
          copertina: copertina, daFile: daFile, miniaturaElenco: miniaturaElenco };
 })();

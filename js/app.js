@@ -3579,6 +3579,7 @@ async function catSfoglia(daCapo){
     catVoci = catVoci.concat(voci);
     disegnaCatalogo(da);
     catNota();
+    riempiMiniature(da, mio);          // partono dietro: l'elenco c'e' gia'
   } catch(e){
     if (mio !== catGiro) return;          // errore di una richiesta superata: non riguarda piu'
     catMsg(T('cat.nonRisponde', {e: esc(e.message)}), 'warn');
@@ -3606,7 +3607,7 @@ async function catCerca(){
     disegnaCatalogo(0);
     if (!catVoci.length){
       catMsg(T('cat.nessunGioco', {q: esc(t)}));
-    } else catNota();
+    } else { catNota(); riempiMiniature(0, mio); }
   } catch(e){
     if (mio !== catGiro) return;
     catMsg(T('cat.ricercaNo', {e: esc(e.message)}), 'warn');
@@ -3636,6 +3637,37 @@ function disegnaCatalogo(da){
   if (da) ul.insertAdjacentHTML('beforeend', html);
   else ul.innerHTML = html;
   q('.cat-fondo').classList.toggle('finito', catFine);
+}
+
+/* LE MINIATURE ARRIVANO DOPO, E SI INFILANO IN POSTO.
+
+   Le righe si disegnano subito con l'iniziale -- un elenco che aspetta
+   ventiquattro immagini prima di comparire e' un elenco fermo -- e le
+   miniature si chiedono in una richiesta sola mentre l'utente gia'
+   scorre. Quando arrivano si sostituisce solo il riquadro della
+   copertina, senza rifare le righe: rifare l'elenco sotto il dito e' la
+   lezione gia' scritta per l'elenco dei gruppi.
+
+   `mio` e' il giro: se nel frattempo e' stata chiesta un'altra pagina o
+   un'altra ricerca, queste immagini non riguardano piu' quello che c'e'
+   a schermo e si buttano via da sole. */
+async function riempiMiniature(da, mio){
+  const fette = catVoci.slice(da);
+  if (!fette.length) return;
+  let mappa = {};
+  try { mappa = await CATALOGO.miniature(fette); } catch(e){ return; }
+  if (mio !== catGiro) return;
+  Object.keys(mappa).forEach(function(bgg){
+    for (let i = da; i < catVoci.length; i++){
+      const v = catVoci[i];
+      if (!v || String(v.bgg) !== String(bgg) || v.immagine) continue;
+      v.immagine = mappa[bgg];
+      const li = q('#cat-list li[data-i="' + i + '"]');
+      const box = li && li.querySelector('.cat-cop');
+      if (box) box.innerHTML = '<img src="' + esc(v.immagine) +
+        '" alt="" loading="lazy" referrerpolicy="no-referrer">';
+    }
+  });
 }
 
 function rigaCatalogo(v, i){
