@@ -1007,6 +1007,129 @@ async function caricaMisure(){
   return true;
 }
 
+/* ===============================================================
+   LE COPERTINE CHE NON SONO COPERTINE
+   ===============================================================
+
+   Prima del token le schede venivano da Wikidata, e Wikidata le
+   copertine non le ha: le sue immagini stanno su Wikimedia Commons,
+   che accetta solo licenze libere, e la grafica di una scatola e'
+   protetta. Quello che arrivava era una FOTO DEL GIOCO ALLESTITO SUL
+   TAVOLO -- su 4.445 giochi ne aveva una il 13%, e quasi nessuna era
+   la scatola.
+
+   E quella foto resta li' per sempre, perche' la copertina si chiede
+   una volta sola: quando il gioco entra sullo scaffale. Adesso il
+   token c'e' e BGG la copertina ce l'ha per tutti, ma non c'era niente
+   che tornasse a chiederla per i giochi gia' in collezione. Dei dati
+   storti restano storti finche' qualcuno non li guarda -- e' la stessa
+   ragione per cui esiste `riparaPosti()`.
+
+   COME SI SA SE UNA COPERTINA E' GIA' QUELLA GIUSTA, senza scaricare
+   niente: si guarda il NOME dell'oggetto nel bucket. Da quando
+   `caricaCopertina` ci scrive il marchio, un indirizzo che finisce per
+   `-p9156909.jpg` dice da solo di essere l'immagine 9156909 di BGG. E
+   il numero con cui confrontarlo arriva dalla MINIATURA, che porta lo
+   stesso `picNNNN` dell'immagine grande: una chiamata sola per tutta
+   la collezione, e zero figure scaricate per quelle che gia' vanno
+   bene.
+
+   Due casi non si toccano, ed e' apposta:
+
+   - `-mano`, il file scelto dall'utente: il modulo di aggiunta dice
+     gia' che quello vince sempre, e sarebbe assurdo che il sito
+     glielo sostituisse da solo al riavvio dopo;
+   - le copertine dentro il repository (`img/root.jpg`), che sono
+     quelle vere e stanno li' perche' il sito funzioni a rete
+     staccata.
+
+   E NON sta dentro il caricamento, che non e' un dettaglio: ogni
+   copertina da riprendere e' un giro su BGG piu' un caricamento nel
+   bucket, cioe' qualche secondo a testa. Dentro la barra sarebbero
+   stati venti secondi di schermata ferma per una riparazione che non
+   ha nessuna fretta. Gira dopo, a scena montata, e quando ha finito
+   rifa' le scatole che ha toccato. */
+const MARCA_MANO = 'mano';
+
+/* Il numero della figura di BGG dentro un indirizzo: miniatura e
+   immagine grande lo portano tutte e due, ed e' lo stesso. */
+function picDi(url){
+  const m = String(url || '').match(/pic(\d+)/);
+  return m ? m[1] : '';
+}
+
+/* Il marchio scritto nel nome dell'oggetto nel bucket. Solo due forme
+   sono un marchio -- `mano` e `p<numero>` -- se no lo slug di
+   `brass-birmingham` si leggerebbe come un marchio "birmingham". */
+function marchioDi(url){
+  const m = String(url || '').match(/-(mano|p\d+)\.jpg(?:\?|$)/);
+  return m ? m[1] : '';
+}
+
+/* Torna gli id dei giochi a cui ha cambiato la copertina. Silenziosa
+   come `caricaMisure`: senza BGG non fa niente e non dice niente. */
+async function riparaCopertine(){
+  // in casa d'altri non si tocca niente, e senza database non c'e'
+  // nessun posto in cui mettere quello che si scarica
+  if (!LIB.eRemota() || LIB.ospitePresso()) return [];
+
+  const candidati = LIB.all().filter(function(g){
+    if (!g.bgg || !g.cover) return false;
+    if (!/^https?:|^data:/i.test(g.cover)) return false;   // quelle del repo
+    return marchioDi(g.cover) !== MARCA_MANO;
+  });
+  if (!candidati.length) return [];
+
+  // quale figura DOVREBBE avere ognuno, quaranta per chiamata
+  const attesa = {};
+  for (let i = 0; i < candidati.length; i += 40){
+    const ids = candidati.slice(i, i + 40).map(function(g){ return String(g.bgg); });
+    let m;
+    try { m = await BGG.miniature(ids); } catch(e){ return []; }
+    Object.keys(m || {}).forEach(function(k){ attesa[k] = picDi(m[k]); });
+  }
+
+  const storti = candidati.filter(function(g){
+    const pic = attesa[String(g.bgg)];
+    return pic && marchioDi(g.cover) !== 'p' + pic;
+  });
+  if (!storti.length) return [];
+
+  /* Una per volta e non tutte insieme: su un'API pubblica il modo piu'
+     rapido di prendersi un limite e' chiedere tutto in parallelo. E
+     una che non risponde non ferma le altre. */
+  const fatti = [];
+  for (let i = 0; i < storti.length; i++){
+    const g = storti[i];
+    let dataUrl = '';
+    try { dataUrl = await BGG.copertina(g.bgg); } catch(e){ continue; }
+    if (!dataUrl) continue;
+    LIB.update(g.id, { cover: dataUrl }, 'p' + attesa[String(g.bgg)]);
+    fatti.push(g.id);
+  }
+  return fatti;
+}
+
+/* Una scatola gia' in scena non si accorge che la sua copertina e'
+   cambiata: `applyLibrary` riusa il mesh che trova e si limita a
+   rimetterlo al suo posto. E ridipingerla non basterebbe -- la faccia
+   prende le proporzioni della SCATOLA, e da che parte sta in piedi lo
+   dice proprio l'immagine -- quindi va rifatta.
+
+   Si buttano via quelle toccate e ci pensa `applyLibrary`. Quella
+   aperta e quella in mano si saltano: sotto c'e' un tween in corso, e
+   portargli via l'oggetto vuol dire lasciarlo a parlare da solo. */
+function rifaiScatole(ids){
+  if (!ids || !ids.length) return;
+  for (let i = boxes.length - 1; i >= 0; i--){
+    const b = boxes[i];
+    if (ids.indexOf(b.userData.id) < 0) continue;
+    if (state.focused === b || (state.presa && state.presa.box === b)) continue;
+    killGroup(b, true);
+    boxes.splice(i, 1);
+  }
+}
+
 function makeGameBox(game){
   const grp = new THREE.Group();
 
@@ -3551,24 +3674,35 @@ async function addManual(){
   const b = q('#m-go'), prima = b.textContent;
   const file = q('#m-file').files[0];
 
+  let marchio = '';
   if (file){
     b.disabled = true; b.textContent = TP('add.preparoCop');
-    try { g.cover = await CATALOGO.daFile(file); }
+    try {
+      g.cover = await CATALOGO.daFile(file);
+      /* Marchiata `mano`: e' la scelta di chi guarda, e da qui in poi
+         `riparaCopertine` la salta -- se no gliela rimpiazzerebbe con
+         quella di BGG al primo riavvio, che e' esattamente il
+         contrario di "il file scelto a mano vince sempre". */
+      marchio = MARCA_MANO;
+    }
     catch(e){ flash(TP('msg.immagineNo', {e: e.message})); }
     b.disabled = false; b.textContent = prima;
   } else if (inAttesa && inAttesa.immagine && inAttesa.title === title){
     b.disabled = true; b.textContent = TP('add.scaricoCop');
-    try { g.cover = await CATALOGO.copertina(inAttesa); }
+    try {
+      g.cover = await CATALOGO.copertina(inAttesa);
+      marchio = picDi(inAttesa.immagine) ? 'p' + picDi(inAttesa.immagine) : '';
+    }
     catch(e){ flash(TP('msg.copertinaNo')); }
     b.disabled = false; b.textContent = prima;
   }
 
   let game;
   if (inModifica){
-    game = LIB.update(inModifica, g);
+    game = LIB.update(inModifica, g, marchio);
     chiudiModifica();
   } else {
-    game = LIB.add(g);
+    game = LIB.add(g, marchio);
     collocaNuovo(game);          // nel mobile che si sta guardando
   }
 
@@ -3892,12 +4026,18 @@ async function mettiInLibreria(v, btn){
       year: g.year || '', players: g.players || '', time: g.time || '',
       score: g.score || '', art: 'generic'
     };
+    let marchio = '';
     if (g.immagine){
       btn.title = TP('cat.scaricoCop');
       // se non arriva non e' un errore: si usa la copertina disegnata
-      try { gioco.cover = await CATALOGO.copertina(g); } catch(err){}
+      try {
+        gioco.cover = await CATALOGO.copertina(g);
+        // da che figura di BGG viene: serve a `riparaCopertine` per
+        // non tornare a chiedere quello che ha gia'
+        marchio = picDi(g.immagine) ? 'p' + picDi(g.immagine) : '';
+      } catch(err){}
     }
-    const messo = LIB.add(gioco);
+    const messo = LIB.add(gioco, marchio);
     collocaNuovo(messo);
     if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare
       await loadCovers(true);
@@ -7307,6 +7447,22 @@ async function boot(){
   // Primo accesso: il nick prima di tutto. La scena intanto ha finito
   // di caricare dietro, cosi' chi lo sceglie trova gia' la libreria.
   if (PROFILO.serveNick()) apriNick(false);
+
+  /* Le copertine che non vengono da BGG. Fuori dal caricamento
+     apposta: vedi il commento lungo di `riparaCopertine`. Non si
+     aspetta -- il sito e' gia' in piedi e usabile -- e quando ha
+     finito rifa' le scatole toccate e lo dice, perche' un'immagine
+     che cambia da sola senza spiegazione e' peggio di una sbagliata. */
+  riparaCopertine().then(function(ids){
+    if (!ids.length) return null;
+    return loadCovers(true)
+      .then(caricaMisure)          // la scatola nuova puo' avere altre misure
+      .then(function(){
+        rifaiScatole(ids);
+        applyLibrary({ animate: true });
+        flash(TP('msg.copertineRiprese', {n: ids.length}));
+      });
+  }).catch(function(e){ if (window.console) console.error('riparaCopertine:', e); });
 
   // Un armadio vuoto non e' un guasto: e' una collezione appena nata, e
   // va detto, se no sembra che il sito non abbia caricato niente.

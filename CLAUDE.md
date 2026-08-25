@@ -942,6 +942,25 @@ chiave `sb-<progetto>-auth-token` di `localStorage` in un'altra chiave, si
 ricarica, si prova, e poi la si rimette. `AUTH.esci()` no — quello invalida il
 refresh token sul server e tocca rifare l'accesso da Google.
 
+## Uscire non basta: l'account lo sceglie chi entra
+
+«Faccio esci e poi accedi con Google e mi rientra con lo stesso account.» Vero,
+e non era un difetto di `esci()`: `signOut()` invalida davvero il refresh token
+sul server, la sessione di Supabase se ne va tutta. **A restare è la sessione di
+Google**, che è di un altro dominio e non la tocca nessuno da qui. Al giro dopo
+Google vede un solo account collegato, decide da sé che è quello, e rimanda
+indietro una sessione senza aver chiesto niente.
+
+`queryParams: { prompt: 'select_account' }` dentro le opzioni di
+`signInWithOAuth`, e la schermata di scelta ricompare ogni volta. Supabase gira
+il parametro al provider senza toccarlo: si verifica **senza fare l'accesso**,
+con `skipBrowserRedirect: true`, che restituisce l'indirizzo invece di
+seguirlo — dentro ci deve essere `&prompt=select_account`.
+
+Non è un passaggio in più: è la domanda che l'uscita ha già implicato. E qui gli
+account sono due per davvero — quello admin e quello di prova — ma il caso è di
+chiunque abbia un indirizzo di casa e uno di lavoro.
+
 ## Cose imparate arredando
 
 - **Un menu contestuale alla volta** (`chiudiPannelli`). Due pannelli aperti
@@ -3356,6 +3375,64 @@ Stiramento residuo: **zero, su tutte**.
 
 **E le misure si chiedono a OGNI aggiunta**, non solo all'avvio: dal catalogo,
 dal modulo «aggiungi un gioco», e al caricamento per quelle che mancano.
+
+## Il nome dell'oggetto dice da dove viene la copertina
+
+«Non utilizzi sempre la giusta immagine per i giochi, in BGG c'è sempre
+l'immagine della copertina.» Vero, e dietro c'erano **due difetti diversi che si
+sommavano**, tutti e due nel percorso dell'oggetto nel bucket — che era
+`<uid>/<slug>.jpg` e non diceva niente su cosa ci fosse dentro.
+
+1. **Una copertina sbagliata non si poteva più correggere.** Le regole dello
+   storage danno insert e delete, non update, quindi `upsert:false` è obbligato:
+   trovando l'oggetto già lì si riusava **quello vecchio**. Si rifaceva il giro,
+   si caricava, e tornava indietro l'indirizzo di prima con dentro la figura di
+   prima.
+2. **Nessuno tornava a chiedere le copertine dei giochi già in collezione.**
+   Prima del token le schede venivano da Wikidata, che le copertine non le ha:
+   le sue immagini stanno su Wikimedia Commons, che accetta solo licenze libere,
+   e la grafica di una scatola è protetta. Quello che arrivava era una **foto del
+   gioco allestito sul tavolo** — e restava lì per sempre, perché la copertina si
+   chiede una volta sola, quando il gioco entra sullo scaffale.
+
+**Adesso il marchio sta nel nome**, e si legge dall'indirizzo: `-p9156909` è
+l'immagine 9156909 di BGG, `-mano` è un file scelto dall'utente. Da qui
+discende tutto il resto:
+
+- una figura diversa è **un percorso diverso**, quindi l'insert non incontra più
+  niente e una correzione arriva davvero a destinazione;
+- la vecchia si cancella **dopo** che la nuova è arrivata: un caricamento fallito
+  non deve lasciare la scatola senza niente addosso;
+- e chi cancella un gioco cancella **l'oggetto che c'è davvero** (`oggettoDi`,
+  che lo ricava dall'indirizzo) e non quello che si aspetta di trovare.
+
+### Come si sa se una copertina è già quella giusta, senza scaricarla
+
+Si guarda il nome dell'oggetto, e il numero con cui confrontarlo arriva dalla
+**miniatura**: `<thumbnail>` porta lo stesso `picNNNN` di `<image>` — verificato
+su nove giochi, sempre uguale. Quindi `riparaCopertine()` costa **una chiamata
+sola per tutta la collezione** e zero figure scaricate per quelle che già vanno
+bene. Misurato al secondo avvio: un `/thumbs` con tutti gli id, **zero** `/cover`
+e **zero** caricamenti nel bucket.
+
+Due casi non si toccano, ed è apposta: `-mano`, perché il modulo di aggiunta
+dice già che il file scelto a mano vince sempre — sostituirglielo al riavvio
+dopo sarebbe l'esatto contrario; e le copertine dentro il repository
+(`img/root.jpg`), che sono quelle vere e stanno lì perché il sito funzioni a
+rete staccata.
+
+**E non gira dentro il caricamento.** Ogni copertina da riprendere è un giro su
+BGG più un caricamento nel bucket, cioè qualche secondo a testa: dentro la barra
+sarebbero stati venti secondi di schermata ferma per una riparazione che non ha
+nessuna fretta. Gira dopo, a scena montata, e alla fine lo dice — un'immagine
+che cambia da sola senza spiegazione è peggio di una sbagliata.
+
+**Una scatola già in scena non si accorge che la copertina è cambiata.**
+`applyLibrary` riusa il mesh che trova e si limita a rimetterlo al suo posto, e
+ridipingerlo non basterebbe: la faccia prende le proporzioni della **scatola**, e
+da che parte sta in piedi lo dice proprio l'immagine. Quindi `rifaiScatole()`
+butta via quelle toccate e lascia che `applyLibrary` le ricostruisca — saltando
+quella aperta e quella in mano, che hanno un tween addosso.
 
 ## "Posizione non salvata": liberare il cubo dove si va, non solo quello da cui si viene
 

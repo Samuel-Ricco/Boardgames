@@ -319,7 +319,7 @@ function makeId(title){
    admin, o perche' non c'e' rete -- la scatola torna indietro e si
    dice perche'. Meglio questo che un'interfaccia che si blocca a ogni
    clic aspettando un giro di rete. */
-function add(g){
+function add(g, marchio){
   if (visitata) return null;         // in casa d'altri si guarda e basta
   const next = all().reduce(function(m, x){ return Math.max(m, x.added || 0); }, 0) + 1;
   const game = Object.assign({
@@ -339,7 +339,7 @@ function add(g){
   salvaLocale();
 
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (c && remota) mandaAlServer(c, game);
+  if (c && remota) mandaAlServer(c, game, marchio);
   return game;
 }
 
@@ -349,12 +349,33 @@ function add(g){
    scaricherebbe dentro il JSON. Va nel bucket `copertine`, e nella
    colonna ci finisce l'indirizzo.
 
-   Niente upsert: le regole dello storage concedono agli admin insert e
-   delete, non update. Se l'oggetto c'e' gia' si riusa quello che c'e'. */
-async function caricaCopertina(c, id, dataUrl){
+   IL NOME DELL'OGGETTO DICE DA DOVE VIENE L'IMMAGINE.
+
+   Il percorso era `<uid>/<slug>.jpg`, e non diceva niente su cosa ci
+   fosse dentro. Sono due difetti, non uno:
+
+   - le regole dello storage danno insert e delete, non update, quindi
+     `upsert:false` e' obbligato -- e trovando l'oggetto gia' li' si
+     riusava QUELLO VECCHIO. Cioe' una copertina sbagliata non si
+     poteva piu' correggere: si rifaceva il giro, si caricava, e
+     tornava indietro l'indirizzo di prima, con dentro la figura di
+     prima;
+   - e non c'era modo di sapere se quell'immagine venisse da BGG o da
+     Wikidata, che prima del token rispondeva con foto del gioco
+     allestito sul tavolo invece che con la copertina della scatola.
+
+   Adesso il marchio sta nel nome, e si legge dall'indirizzo:
+   `-p9156909` e' l'immagine 9156909 di BGG, `-mano` e' un file scelto
+   dall'utente e non si tocca mai (vedi `riparaCopertine` in app.js).
+   Una figura diversa e' un percorso diverso, quindi l'insert non
+   incontra piu' niente; e la vecchia si cancella DOPO che la nuova e'
+   arrivata -- se no un caricamento fallito lascerebbe la scatola
+   senza niente addosso. */
+async function caricaCopertina(c, id, dataUrl, marchio, vecchia){
   // una cartella a testa: con le collezioni separate due persone che
   // aggiungono Root scriverebbero tutte e due su root.jpg
-  const path = (AUTH.stato().id || 'anonimo') + '/' + id + '.jpg';
+  const path = (AUTH.stato().id || 'anonimo') + '/' + id +
+               (marchio ? '-' + marchio : '') + '.jpg';
   const pubblico = function(){
     return c.storage.from('copertine').getPublicUrl(path).data.publicUrl;
   };
@@ -362,10 +383,22 @@ async function caricaCopertina(c, id, dataUrl){
   const r = await c.storage.from('copertine')
     .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
   if (r.error && !/exists/i.test(r.error.message || '')) throw r.error;
+
+  const via = oggettoDi(vecchia);
+  if (via && via !== path) c.storage.from('copertine').remove([via]);
   return pubblico();
 }
 
-async function mandaAlServer(c, game){
+/* Il percorso dentro il bucket, ricavato dall'indirizzo pubblico.
+   Ricostruirlo come `<uid>/<id>.jpg` funzionava finche' il nome era
+   prevedibile: da adesso non lo e' piu', e chi cancella deve
+   cancellare l'oggetto che c'e' davvero, non quello che si aspetta. */
+function oggettoDi(url){
+  const i = String(url || '').indexOf('/copertine/');
+  return i < 0 ? '' : String(url).slice(i + 11).split('?')[0];
+}
+
+async function mandaAlServer(c, game, marchio){
   try {
     const riga = aRiga(game);
 
@@ -376,7 +409,7 @@ async function mandaAlServer(c, game){
 
     if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
       try {
-        riga.copertina = await caricaCopertina(c, game.id, riga.copertina);
+        riga.copertina = await caricaCopertina(c, game.id, riga.copertina, marchio, '');
         game.cover = riga.copertina;          // anche in memoria, per il prossimo giro
       } catch(e){
         // senza copertina il gioco entra lo stesso, con quella disegnata
@@ -398,7 +431,7 @@ async function mandaAlServer(c, game){
    Stessa filosofia dell'aggiunta: la scatola cambia subito, la
    richiesta parte dietro, e se il database rifiuta si torna a com'era.
    `patch` contiene solo i campi toccati. */
-function update(id, patch){
+function update(id, patch, marchio){
   if (visitata) return null;
   const g = get(id);
   if (!g) return null;
@@ -410,11 +443,11 @@ function update(id, patch){
   salvaLocale();
 
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (c && remota) mandaModifica(c, g, prima);
+  if (c && remota) mandaModifica(c, g, prima, marchio);
   return g;
 }
 
-async function mandaModifica(c, g, prima){
+async function mandaModifica(c, g, prima, marchio){
   try {
     const riga = aRiga(g);
     delete riga.id;                     // la chiave non si tocca
@@ -422,7 +455,7 @@ async function mandaModifica(c, g, prima){
 
     if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
       try {
-        riga.copertina = await caricaCopertina(c, g.id, riga.copertina);
+        riga.copertina = await caricaCopertina(c, g.id, riga.copertina, marchio, prima.cover);
         g.cover = riga.copertina;
       } catch(e){
         delete riga.copertina;
@@ -925,9 +958,8 @@ function remove(id){
       }
       // via anche l'immagine, se stava nel bucket: se no resta li' a
       // occupare spazio per un gioco che non c'e' piu'
-      if (out.cover && out.cover.indexOf('/copertine/') >= 0){
-        c.storage.from('copertine').remove([(AUTH.stato().id || 'anonimo') + '/' + out.id + '.jpg']);
-      }
+      const oggetto = oggettoDi(out.cover);
+      if (oggetto) c.storage.from('copertine').remove([oggetto]);
     });
   }
   return out;
