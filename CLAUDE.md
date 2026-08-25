@@ -778,6 +778,54 @@ quello che continua a fare `copertina()`.
 README: un catalogo di migliaia di giochi non si committa, e senza rete non c'è —
 mentre la libreria continua a esserci.
 
+## La wishlist: quello che non hai (ancora)
+
+`js/desideri.js` + tabella `desideri` (migrazione `20260825120000_wishlist`).
+La collezione dice cosa hai, le partite cosa hai giocato. Mancava la terza, che
+di chi scorre un catalogo da centomila titoli è la domanda più frequente: **cosa
+vorrei**. Prima non aveva nessun posto dove finire — o mettevi il gioco sullo
+scaffale, dicendo una cosa falsa, o te lo segnavi altrove.
+
+- **Sta dentro il catalogo, e non è una quinta sezione.** È un modo di guardare
+  lo stesso elenco, come «gruppi» e «tutti i giochi» nella collezione: stesso
+  componente `.viste`, e chi ha imparato a usare quello sa già usare questo. Una
+  voce in più nella barra in basso vorrebbe dire un posto che quasi sempre porta
+  a una lista vuota.
+- **La chiave è l'id BGG**, come per le recensioni pubbliche e per le partite:
+  è l'unico identificativo su cui il mondo si sia messo d'accordo, ed è quel
+  numero a tenere insieme il catalogo — che viene da fuori — e quello che è
+  nostro. Senza id BGG il cuore non compare: non ci sarebbe modo di ritrovare il
+  gioco.
+- **E non è una riga di `giochi`.** Un gioco desiderato non è in collezione:
+  metterlo lì con una bandierina vorrebbe dire che «la mia collezione: 25» conta
+  anche quello che non hai.
+- **Il titolo è una copia**, come `partite.titolo` e per la stessa ragione: senza,
+  aprire la wishlist vorrebbe dire un giro su BGG per riga solo per sapere come
+  si chiamano i giochi che ci stanno dentro. Il resto della scheda no — arriva
+  dalla fonte quando serve. Le **miniature** infatti si chiedono in blocco al
+  disegno, come nel catalogo.
+- **Un gioco che hai già non ha il cuore.** Sulla riga del catalogo compaiono
+  due gesti in ordine di impegno — «lo vorrei» e «ce l'ho» — ma se ce l'hai il
+  primo sparisce: offrire di mettere in lista una cosa che è sullo scaffale non
+  vuol dire niente.
+- **Ottimista come il resto**, e un `23505` sull'insert non è un errore: vuol
+  dire che il desiderio c'era già, cioè lo stato voluto. Come i cuori e le
+  etichette dei gruppi.
+- **Il cuore si aggiorna in posto, l'elenco no.** Nel catalogo si cambia solo
+  `aria-pressed` sul pulsante premuto: rifare le righe staccherebbe dal documento
+  quello che si è appena toccato, ed è un pulsante su cui si tocca più volte di
+  fila scorrendo. Nella wishlist invece la riga se ne va davvero, e allora
+  l'elenco si rifà.
+- **`WISH.carica()` va PRIMA di disegnare il catalogo**, non dopo: `rigaCatalogo`
+  chiede a `c_e()` se quel gioco è desiderato, e quella risposta è sincrona.
+  Letta dopo, le righe uscirebbero tutte col cuore spento.
+- **Resta privata.** Aprirla agli amici sarebbe utile — è la lista dei regali —
+  ma è una riga di policy e una scelta di chi ci abita, come per le partite.
+- Nella vista wishlist **spariscono la ricerca e «altri giochi»**: interrogano
+  BGG e chiedono la pagina dopo, e sopra venti righe già in memoria non vogliono
+  dire niente. Con `display:none`, non con l'opacità — vedi «Nascondere non è
+  disattivare».
+
 ## Le recensioni sono del gioco, non della tua copia
 
 `js/recensioni.js` + tabella `recensioni`. Prima la recensione era una colonna
@@ -3873,7 +3921,7 @@ rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
 faccia** salvati sul profilo, le due funzioni di **richiesta amicizia**
 (codice inesistente, proprio codice, email ignota: nessuna crea righe),
 **giocatori salvati** con il rifiuto del doppione, e una **partita** completa di
-partecipanti, posizioni e vincitore. **Tutte e dodici le migrazioni sono
+partecipanti, posizioni e vincitore. **Dodici migrazioni su tredici sono
 applicate**, `punti_partita` compresa (2026-08-22, dall'SQL editor del pannello:
 qui non c'è la CLI di Supabase).
 Verificato rileggendo il database dall'esterno, non dalla cache del browser.
@@ -3911,6 +3959,13 @@ decimi.
 Cosa manca, in ordine di fastidio. **Riscritta il 2026-08-25**: mezza lista
 di prima era diventata falsa quando e' arrivato il token.
 
+0. **La migrazione `wishlist` non è ancora applicata** (2026-08-25). Il codice
+   c'è tutto e degrada come deve — il catalogo funziona, i cuori si disegnano
+   spenti e il pannello dice «manca la migrazione wishlist» invece di un errore
+   di schema cache — ma finché non si incolla
+   `supabase/migrations/20260825120000_wishlist.sql` nell'SQL editor, un cuore
+   premuto non salva niente. È l'unica cosa che questa macchina non può fare da
+   sola: qui non c'è la CLI di Supabase.
 1. **Le recensioni sono lorem ipsum.** E' l'unica cosa che tiene il sito
    lontano dall'essere finito: si scrivono dal sito con *la tua recensione*, e
    da li' si pubblicano nel catalogo con la casella in fondo al modulo. Sono

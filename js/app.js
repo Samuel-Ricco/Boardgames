@@ -109,6 +109,7 @@ const state = {
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   soloPreferiti: false,        // mostra solo i giochi segnati
   vista: 'gruppi',             // come si guarda l'elenco: 'gruppi' o 'tutti'
+  vcat: 'catalogo',            // nel catalogo: 'catalogo' o 'wishlist'
   vpar: 'gioco',               // come si guardano le partite: 'gioco', 'data' o 'calendario'
   cal: null,                   // il mese aperto nel calendario, {a, m}
   calGiorno: '',               // il giorno aperto sotto la griglia
@@ -217,6 +218,12 @@ const ICO = {
   stella:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"/></svg>',
   dentro:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5v9M8.5 9l3.5 3.5L15.5 9M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
   fuori:    '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.5v-9M8.5 7l3.5-3.5L15.5 7M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
+  /* Un cuore solo, vuoto. Pieno lo fa il CSS su `aria-pressed`, come
+     per la stella: due disegni per due stati vorrebbe dire tenerli
+     uguali a mano per sempre. E' lo stesso tracciato del cuore che sta
+     sotto la recensione di un amico -- lo stesso segno per la stessa
+     cosa, "questo mi piace". */
+  cuore:    '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 20s-7.2-4.4-7.2-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7.2 2.7C19.2 15.6 12 20 12 20z"/></svg>',
   /* Nel catalogo il gesto e' uno solo -- aggiungilo -- e su una riga
      che si scorre una parola in piu' e' rumore: un "+" lo dice meglio.
      Cosa faccia per esteso resta nel `title`. */
@@ -2923,8 +2930,12 @@ function rilingua(){
   }
   if (document.body.classList.contains('elenco')) disegnaMia();
   if (state.sezione === 'catalogo'){
-    disegnaCatalogo(0);
-    catNota();
+    /* Le due viste del catalogo si ridisegnano ognuna la sua: rifare
+       il catalogo mentre si guarda la wishlist vorrebbe dire rifare
+       centinaia di righe che nessuno sta leggendo. */
+    disegnaVisteCatalogo();
+    if (state.vcat === 'wishlist') disegnaWishlist();
+    else { disegnaCatalogo(0); catNota(); }
   }
   if (state.sezione === 'profilo'){
     disegnaProfilo(); disegnaAmici(); disegnaGiocatori();
@@ -3876,7 +3887,11 @@ function setSezione(s){
   q('#catalogo').setAttribute('aria-hidden', s === 'catalogo' ? 'false' : 'true');
   q('#profilo').setAttribute('aria-hidden',  s === 'profilo'  ? 'false' : 'true');
   q('#partite').setAttribute('aria-hidden',  s === 'partite'  ? 'false' : 'true');
-  if (s === 'catalogo' && !catVoci.length && !catCarico) catSfoglia(true);
+  if (s === 'catalogo'){
+    disegnaVisteCatalogo();
+    if (state.vcat === 'wishlist') disegnaWishlist();
+    else if (!catVoci.length && !catCarico) catSfoglia(true);
+  }
   if (s === 'profilo') apriProfilo();
   if (s === 'partite') apriPartite();
 }
@@ -3891,6 +3906,12 @@ async function catSfoglia(daCapo){
 
   const mio = ++catGiro;
   catCarico = true;
+  /* PRIMA di disegnare, non dopo: `rigaCatalogo` chiede a `WISH.c_e()`
+     se quel gioco e' desiderato, e quella risposta e' sincrona. Letta
+     dopo, le righe uscirebbero tutte col cuore spento e bisognerebbe
+     ripassarle a rimetterle a posto. Costa una `select` piccola, e solo
+     la prima volta. */
+  try { await WISH.carica(); } catch(e){}
   if (daCapo){ catVoci = []; catOffset = 0; catFine = false; q('#cat-list').innerHTML = ''; }
   q('#cat-piu').disabled = true;
   catMsg(T(catVoci.length ? 'cat.prendoAltri' : 'cat.apro'));
@@ -3922,6 +3943,7 @@ async function catCerca(){
   const mio = ++catGiro;
   catCarico = true;
   catMsg(T('cat.cerco'));
+  try { await WISH.carica(); } catch(e){}
   q('#cat-list').innerHTML = '';
   try {
     const voci = await CATALOGO.cerca(t);
@@ -4028,9 +4050,15 @@ function rigaCatalogo(v, i){
     '</div>' +
     /* Niente pulsante "scheda": la riga si apre cliccandola, e un
        pulsante che fa quello che fa gia' la riga intera ruba larghezza
-       al titolo -- che e' la cosa che si sta leggendo. Resta il "+",
-       che invece fa un'altra cosa. */
+       al titolo -- che e' la cosa che si sta leggendo. Restano i due
+       gesti che fanno qualcos'altro: il cuore e il "+".
+
+       In quest'ordine perche' e' l'ordine dell'impegno -- "lo vorrei" e
+       poi "ce l'ho" -- e perche' un gioco che si ha gia' non si
+       desidera piu': il cuore sparisce, se no offrirebbe di mettere in
+       lista una cosa che e' gia' sullo scaffale. */
     '<div class="cat-azioni">' +
+      (gia ? '' : cuoreWish(v)) +
       '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') +
         ' title="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '"' +
         ' aria-label="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '">' +
@@ -4038,6 +4066,143 @@ function rigaCatalogo(v, i){
     '</div>' +
     '<div class="cat-rec"></div>' +
   '</li>';
+}
+
+/* ===============================================================
+   LA WISHLIST
+   ===============================================================
+
+   La collezione dice cosa hai, le partite cosa hai giocato. Questa dice
+   cosa vorresti -- che di chi scorre un catalogo da centomila titoli e'
+   la domanda piu' frequente, e finora non aveva nessun posto dove
+   finire: o mettevi il gioco sullo scaffale (dicendo una cosa falsa) o
+   te lo segnavi altrove.
+
+   Sta DENTRO il catalogo e non e' una quinta sezione: e' un modo di
+   guardare lo stesso elenco, come "gruppi" e "tutti i giochi" nella
+   collezione. Una sezione in piu' nella barra vorrebbe dire una voce
+   che quasi sempre porta a una lista vuota.
+
+   Senza id BGG il cuore non c'e': la wishlist ha quel numero per
+   chiave, e senza non ci sarebbe modo di ritrovare il gioco. */
+function cuoreWish(v){
+  if (!v || !v.bgg) return '';
+  const su = WISH.c_e(v.bgg);
+  const che = TP(su ? 'cat.wishTolgo' : 'cat.wishMetto');
+  return '<button type="button" class="desidero dentro-only" data-bgg="' + esc(v.bgg) + '"' +
+    ' aria-pressed="' + (su ? 'true' : 'false') + '"' +
+    ' title="' + esc(che) + '" aria-label="' + esc(che) + '">' + ICO.cuore + '</button>';
+}
+
+function disegnaVisteCatalogo(){
+  qa('#cat-viste button').forEach(function(b){
+    const sua = b.getAttribute('data-vcat') === state.vcat;
+    b.classList.toggle('on', sua);
+    b.setAttribute('aria-selected', sua ? 'true' : 'false');
+  });
+  const ind = q('#cat-viste .ind');
+  if (ind) ind.style.transform =
+    'translateX(' + (state.vcat === 'wishlist' ? 100 : 0) + '%)';
+  document.body.classList.toggle('vcat-wish', state.vcat === 'wishlist');
+  const cat = q('#cat-list'), wl = q('#wish-list');
+  if (cat) cat.hidden = state.vcat === 'wishlist';
+  if (wl)  wl.hidden  = state.vcat !== 'wishlist';
+}
+
+function setVistaCatalogo(v){
+  if (v !== 'catalogo' && v !== 'wishlist') return;
+  state.vcat = v;
+  disegnaVisteCatalogo();
+  if (v === 'wishlist') disegnaWishlist();
+  else catNota();
+}
+
+/* Una riga della wishlist. Stessa forma di quelle del catalogo, perche'
+   sono la stessa cosa vista da un'altra parte -- e i due gesti sono gli
+   stessi: mettilo in collezione, oppure non lo voglio piu'.
+
+   La miniatura NON e' salvata insieme al titolo: si chiede a BGG in
+   blocco quando la lista si disegna, come fa il catalogo. Copiarla
+   vorrebbe dire tenersi in casa un indirizzo che un giorno cambia. */
+function rigaWish(w, i){
+  const spec = w.anno ? '<ul class="cat-spec"><li><b>' + esc(w.anno) + '</b>' +
+                        T('spec.anno') + '</li></ul>' : '';
+  const gia = LIB.all().some(function(g){ return String(g.bgg) === String(w.bgg); });
+  return '<li data-w="' + i + '" data-bgg="' + esc(w.bgg) + '">' +
+    '<div class="cat-cop"><span class="senza">' +
+      esc(String(w.titolo || '?').trim().slice(0, 1).toUpperCase()) + '</span></div>' +
+    '<div class="cat-dati">' +
+      '<h3>' + esc(w.titolo) + '</h3>' + spec +
+    '</div>' +
+    '<div class="cat-azioni">' +
+      '<button type="button" class="desidero dentro-only" data-bgg="' + esc(w.bgg) + '"' +
+        ' aria-pressed="true" title="' + esc(TP('cat.wishTolgo')) + '"' +
+        ' aria-label="' + esc(TP('cat.wishTolgo')) + '">' + ICO.cuore + '</button>' +
+      '<button type="button" class="metti dentro-only"' + (gia ? ' disabled' : '') +
+        ' title="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '"' +
+        ' aria-label="' + esc(TP(gia ? 'cat.ceLHai' : 'cat.inLibreria')) + '">' +
+        (gia ? ICO.spunta : ICO.piu) + '</button>' +
+    '</div>' +
+  '</li>';
+}
+
+let wishVoci = [];
+
+async function disegnaWishlist(){
+  const ul = q('#wish-list');
+  if (!ul) return;
+  try { await WISH.carica(); } catch(e){}
+  if (state.vcat !== 'wishlist') return;      // intanto e' cambiata vista
+
+  const guaio = WISH.problema();
+  wishVoci = WISH.tutti();
+  ul.innerHTML = wishVoci.map(function(w, i){ return rigaWish(w, i); }).join('');
+  catMsg(guaio ? esc(guaio)
+    : (wishVoci.length ? T(wishVoci.length === 1 ? 'cat.wishUno' : 'cat.wishTanti', {n: wishVoci.length})
+                       : T('cat.wishVuota')),
+    guaio ? 'warn' : '');
+  /* Le miniature arrivano dopo, e si infilano nel posto della
+     copertina senza rifare le righe: rifarle staccherebbe il pulsante
+     appena premuto, che e' la lezione dell'elenco dei gruppi. */
+  riempiMiniatureWish(++catGiro);
+}
+
+/* Le copertine della wishlist, in una chiamata sola come nel catalogo.
+   Silenziosa: senza BGG restano le iniziali, che e' un ripiego che
+   regge. */
+async function riempiMiniatureWish(mio){
+  const ids = wishVoci.map(function(w){ return String(w.bgg); }).filter(Boolean);
+  if (!ids.length) return;
+  let m = {};
+  try { m = await BGG.miniature(ids); } catch(e){ return; }
+  if (mio !== catGiro || state.vcat !== 'wishlist') return;
+  wishVoci.forEach(function(w, i){
+    const url = m[String(w.bgg)];
+    if (!url) return;
+    const cop = q('#wish-list li[data-w="' + i + '"] .cat-cop');
+    if (cop) cop.innerHTML = '<img src="' + esc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer">';
+  });
+}
+
+/* Il cuore acceso e spento. Ottimista: si accende subito e torna
+   indietro se il database rifiuta.
+
+   NON si ridisegna l'elenco: si cambia il pulsante in posto. Rifare le
+   righe staccherebbe dal documento quello che si e' appena premuto, ed
+   e' un pulsante su cui si tocca piu' volte di fila scorrendo. In
+   wishlist invece la riga se ne va davvero, e allora si rifa'. */
+async function alternaWish(btn, voce){
+  const acceso = btn.getAttribute('aria-pressed') === 'true';
+  btn.setAttribute('aria-pressed', acceso ? 'false' : 'true');
+  try {
+    const ora = await WISH.alterna(voce);
+    btn.setAttribute('aria-pressed', ora ? 'true' : 'false');
+    btn.title = TP(ora ? 'cat.wishTolgo' : 'cat.wishMetto');
+    if (state.vcat === 'wishlist') disegnaWishlist();
+  } catch(e){
+    btn.setAttribute('aria-pressed', acceso ? 'true' : 'false');
+    flash(TP('msg.wishNo', {e: e.message}));
+  }
 }
 
 /* La recensione si apre DENTRO la riga. Una finestra sopra un elenco
@@ -4130,12 +4295,40 @@ function bindCatalogo(){
   q('#cat-list').addEventListener('click', function(e){
     const li = e.target.closest('li[data-i]');
     if (!li) return;
+    const v = catVoci[parseInt(li.getAttribute('data-i'), 10)];
+    const cuore = e.target.closest('.desidero');
+    if (cuore){ alternaWish(cuore, v); return; }
     const metti = e.target.closest('.metti');
     if (metti){
-      mettiInLibreria(catVoci[parseInt(li.getAttribute('data-i'), 10)], metti);
+      mettiInLibreria(v, metti);
       return;
     }
     apriRiga(li);
+  });
+
+  qa('#cat-viste button').forEach(function(b){
+    b.addEventListener('click', function(){
+      setVistaCatalogo(b.getAttribute('data-vcat'));
+    });
+  });
+
+  /* Un ascoltatore solo anche qui: le righe si rifanno a ogni tocco sul
+     cuore, e attaccarne uno per riga vorrebbe dire rimetterli ogni
+     volta. */
+  q('#wish-list').addEventListener('click', function(e){
+    const li = e.target.closest('li[data-w]');
+    if (!li) return;
+    const w = wishVoci[parseInt(li.getAttribute('data-w'), 10)];
+    if (!w) return;
+    const cuore = e.target.closest('.desidero');
+    if (cuore){ alternaWish(cuore, w); return; }
+    const metti = e.target.closest('.metti');
+    /* Dalla wishlist alla collezione: passa dalla stessa strada del
+       catalogo -- scheda completa, poi copertina -- perche' e' la
+       stessa cosa. Quello che la wishlist ha in casa e' un titolo e un
+       id, quindi si parte da li' e la scheda la da' la fonte. */
+    if (metti) mettiInLibreria({ fonte: 'dump', id: String(w.bgg), bgg: w.bgg,
+                                 title: w.titolo, year: w.anno || '' }, metti);
   });
 }
 

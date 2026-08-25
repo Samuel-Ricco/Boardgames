@@ -346,6 +346,18 @@
   <div class="cat-in">
     <div class="cat-testa">
       <p class="eyebrow" data-i18n="cat.occhiello">il catalogo</p>
+
+      <!-- Due modi di guardare: quello che ESISTE e quello che VORRESTI.
+           Stesso componente delle due viste della collezione e delle tre
+           delle partite -- chi ha imparato a usare quello sa gia' usare
+           questo. Per l'ospite sparisce: senza account non c'e' nessuna
+           wishlist in cui mettere niente. -->
+      <div class="viste" id="cat-viste" role="tablist">
+        <button type="button" data-vcat="catalogo" role="tab" data-i18n="cat.vistaCat">il catalogo</button>
+        <button type="button" data-vcat="wishlist" role="tab" data-i18n="cat.vistaWish">la wishlist</button>
+        <i class="ind" aria-hidden="true"></i>
+      </div>
+
       <div class="cat-cerca">
         <input id="cat-q" type="text" data-i18n-ph="cat.cercaPh" maxlength="60" placeholder="cerca un gioco&hellip;"
                autocomplete="off" spellcheck="false"
@@ -357,6 +369,13 @@
     </div>
 
     <ol id="cat-list" class="righe"></ol>
+
+    <!-- La wishlist e' un elenco suo e non riusa `#cat-list`: le due
+         liste hanno indici diversi -- una punta a `catVoci`, l'altra a
+         quello che c'e' sul database -- e farle condividere un
+         contenitore vorrebbe dire un ascoltatore che ogni volta deve
+         indovinare in che modo si trova. -->
+    <ol id="wish-list" class="righe" hidden></ol>
 
     <div class="cat-fondo">
       <button id="cat-piu" type="button" data-i18n="cat.piu">altri giochi</button>
@@ -830,6 +849,7 @@
 <script src="js/store.js"></script>
 <script src="js/recensioni.js"></script>
 <script src="js/apprezzamenti.js"></script>
+<script src="js/desideri.js"></script>
 <script src="js/profilo.js"></script>
 <script src="js/stanza.js"></script>
 <script src="js/partite.js"></script>
