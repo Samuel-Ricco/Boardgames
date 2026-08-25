@@ -298,9 +298,13 @@ function winrateTotale(){ return winrate(elenco); }
    una partita sola dice meno di 70% su dieci. Fuori i giochi a cui non
    ho mai giocato io: l'elenco risponde a "come vado", e una riga senza
    winrate non risponde. */
-function winratePerGioco(){
+/* `lista` serve alla ricerca nelle partite: con un filtro acceso questo
+   elenco deve parlare di quello che si sta guardando, se no in cima
+   alla schermata ci sono tre numeri filtrati e sotto il dettaglio di
+   tutt'altro. Senza argomento resta quello che era, cioe' tutte. */
+function winratePerGioco(lista){
   const per = {}, ordine = [];
-  elenco.forEach(function(p){
+  (lista || elenco).forEach(function(p){
     const k = p.bgg ? 'b' + p.bgg : 't' + p.titolo;
     if (!per[k]){ per[k] = { titolo: p.titolo, bgg: p.bgg || null, partite: [] }; ordine.push(per[k]); }
     per[k].partite.push(p);

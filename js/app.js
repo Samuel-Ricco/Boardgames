@@ -105,6 +105,7 @@ const state = {
   px: 0, py: 0, tx: 0, ty: 0,
   sezione: 'collezione',       // 'collezione' (la libreria 3D) o 'catalogo'
   q: '',                       // il testo cercato, '' se non si sta cercando
+  qpar: '',                    // il testo cercato FRA LE PARTITE: un'altra domanda
   gruppo: '',                  // l'etichetta con cui si sta filtrando, '' se nessuna
   soloPreferiti: false,        // mostra solo i giochi segnati
   vista: 'gruppi',             // come si guarda l'elenco: 'gruppi' o 'tutti'
@@ -2384,43 +2385,6 @@ function scegliLibreria(btn, id){
   btn.replaceWith(box);
 }
 
-function collocaNuovo(game){
-  const librerie = LIB.librerie();
-  if (!librerie.length || !game) return;
-
-  const occupati = {};
-  LIB.all().forEach(function(g){
-    if (g.id !== game.id && g.libreria && g.posto !== null && g.posto !== undefined){
-      occupati[g.libreria + ':' + g.posto] = true;
-    }
-  });
-
-  const qui = clamp(Math.round(state.scroll), 0, librerie.length - 1);
-  const ordine = [qui];
-  for (let i = 0; i < librerie.length; i++) if (i !== qui) ordine.push(i);
-
-  for (let i = 0; i < ordine.length; i++){
-    const L = librerie[ordine[i]];
-    for (let p = 0; p < PER_LIB; p++){
-      if (occupati[L.id + ':' + p]) continue;
-      LIB.metti(game.id, L.id, p);
-      LIB.mandaPosti([LIB.get(game.id)]);
-      return;
-    }
-  }
-
-  /* Tutti pieni. Prima si usciva di qui in silenzio e il gioco restava
-     senza posto -- oppure, peggio, finiva nella scorta. Si fa un mobile
-     nuovo e ci si mette dentro: e' il gesto che si farebbe in salotto. */
-  LIB.creaLibreria('').then(function(L){
-    LIB.metti(game.id, L.id, 0);
-    LIB.mandaPosti([LIB.get(game.id)]);
-    disegnaLibrerie();
-    applyLibrary({ animate: true });
-    flash(TP('msg.libNuova', {n: L.nome}));
-  }).catch(function(e){ flash(TP('msg.libNonCreata', {e: e.message})); });
-}
-
 function posaScatola(p){
   const prima = state.sort;
   if (!LIB.librerie().length){ flash(TP('msg.nessunaLibreria')); return; }
@@ -3374,22 +3338,11 @@ function bindTools(){
     });
   });
 
-  /* La ricerca aspetta un attimo prima di rifare lo scaffale: a ogni
-     tasto premuto vorrebbe dire ricostruire dodici scatole per lettera. */
-  const inp = q('#cerca');
-  let ct = 0;
-  inp.addEventListener('input', function(){
-    clearTimeout(ct);
-    ct = setTimeout(function(){ setQuery(inp.value); }, 180);
-  });
-  inp.addEventListener('keydown', function(e){
-    e.stopPropagation();                       // se no Esc chiude anche altro
-    if (e.key === 'Escape'){ inp.value = ''; setQuery(''); inp.blur(); }
-    if (e.key === 'Enter'){ clearTimeout(ct); setQuery(inp.value); }
-  });
-  q('#cerca-x').addEventListener('click', function(){
-    inp.value = ''; setQuery(''); inp.focus();
-  });
+  /* Le due caselle della collezione: quella dell'imbuto e quella sopra
+     l'elenco. Stesso comportamento perche' sono la stessa ricerca. */
+  legaCerca(q('#cerca'), q('#cerca-x'));
+  legaCerca(q('#mia-q'), q('#mia-q-x'));
+  legaCercaPartite();
 
   q('#add').addEventListener('click', openAdd);
   q('#add-x').addEventListener('click', closeAdd);
@@ -3434,10 +3387,23 @@ function setSort(mode){
    in evidenza: chi cerca "root" vede una libreria con dentro Root, e
    basta. Si torna alla prima libreria, se no restando fermi sulla terza
    ci si ritrova davanti a un mobile vuoto. */
-function setQuery(v){
+/* LE CASELLE DI RICERCA SONO DUE, LO STATO E' UNO.
+
+   Una sta nell'imbuto e una sopra l'elenco, e chiedono la stessa cosa:
+   quali giochi vedo. Quella che ha scritto non si tocca -- riscriverle
+   dentro il valore gia' ripulito le sposta il cursore e le mangia lo
+   spazio che si sta ancora battendo. */
+function sincronizzaCerca(chi){
+  [q('#cerca'), q('#mia-q')].forEach(function(el){
+    if (el && el !== chi && el.value !== state.q) el.value = state.q;
+  });
+}
+
+function setQuery(v, chi){
   const nuovo = String(v || '').trim();
   if (nuovo === state.q) return;
   state.q = nuovo;
+  sincronizzaCerca(chi);
   document.body.classList.toggle('cerca', !!nuovo);
   state.scrollTo = state.scroll = 0;
   ridisponi();
@@ -3484,6 +3450,57 @@ function updateConta(){
 }
 
 /* --- aggiunta -------------------------------------------------- */
+/* La ricerca aspetta un attimo prima di rifare lo scaffale: a ogni
+   tasto premuto vorrebbe dire ricostruire dodici scatole per lettera.
+   `Escape` non deve uscire da qui: se no chiude anche quello che c'e'
+   sotto. */
+function legaCerca(inp, bottoneX){
+  if (!inp) return;
+  let ct = 0;
+  inp.addEventListener('input', function(){
+    clearTimeout(ct);
+    ct = setTimeout(function(){ setQuery(inp.value, inp); }, 180);
+  });
+  inp.addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Escape'){ inp.value = ''; setQuery('', inp); inp.blur(); }
+    if (e.key === 'Enter'){ clearTimeout(ct); setQuery(inp.value, inp); }
+  });
+  if (bottoneX) bottoneX.addEventListener('click', function(){
+    inp.value = ''; setQuery('', inp); inp.focus();
+  });
+}
+
+/* La ricerca fra le partite e' un'ALTRA ricerca: filtra le partite, non
+   i giochi, e non ha niente a che vedere con quello che c'e' sullo
+   scaffale. Stato suo, classe sua sul body, e nessuna sincronia con le
+   altre due -- che sarebbe la cosa piu' confusa possibile. */
+function legaCercaPartite(){
+  const inp = q('#par-q'), x = q('#par-q-x');
+  if (!inp) return;
+  let ct = 0;
+  inp.addEventListener('input', function(){
+    clearTimeout(ct);
+    ct = setTimeout(function(){ setQueryPartite(inp.value); }, 180);
+  });
+  inp.addEventListener('keydown', function(e){
+    e.stopPropagation();
+    if (e.key === 'Escape'){ inp.value = ''; setQueryPartite(''); inp.blur(); }
+    if (e.key === 'Enter'){ clearTimeout(ct); setQueryPartite(inp.value); }
+  });
+  if (x) x.addEventListener('click', function(){
+    inp.value = ''; setQueryPartite(''); inp.focus();
+  });
+}
+
+function setQueryPartite(v){
+  const nuovo = String(v || '').trim();
+  if (nuovo === state.qpar) return;
+  state.qpar = nuovo;
+  document.body.classList.toggle('cerca-par', !!nuovo);
+  disegnaPartite();
+}
+
 function openAdd(){
   chiudiPannelli('add');
   chiudiModifica();
@@ -3740,12 +3757,12 @@ async function addManual(){
   }
 
   let game;
+  const inModificaEra = !!inModifica;
   if (inModifica){
     game = LIB.update(inModifica, g, marchio);
     chiudiModifica();
   } else {
     game = LIB.add(g, marchio);
-    collocaNuovo(game);          // nel mobile che si sta guardando
   }
 
   /* Il catalogo. Pubblicare vuol dire che quella recensione esce dalla
@@ -3780,8 +3797,8 @@ async function addManual(){
   await caricaMisure();          // quanto e' grande la scatola: si chiede subito
   applyLibrary({ animate: true });
   if (game){
-    goToGame(game.id);
-    flash(TP('msg.salvato', {g: game.title}));
+    if (game.libreria) goToGame(game.id);
+    flash(TP(inModificaEra ? 'msg.salvato' : 'msg.inCollezione', {g: game.title}));
   }
 }
 
@@ -4080,16 +4097,14 @@ async function mettiInLibreria(v, btn){
       } catch(err){}
     }
     const messo = LIB.add(gioco, marchio);
-    collocaNuovo(messo);
     if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare
       await loadCovers(true);
       await caricaMisure();            // e quanto e' grande la sua scatola
       applyLibrary({ animate: true });
-      goToGame(messo.id);
     }
     btn.innerHTML = ICO.spunta;
     btn.title = TP('cat.ceLHai');
-    flash(TP('msg.sulloScaffale', {g: messo.title}));
+    flash(TP('msg.inCollezione', {g: messo.title}));
   } catch(e){
     btn.disabled = false;
     btn.innerHTML = prima;
@@ -5011,6 +5026,27 @@ function stellaRiga(g){
          ' title="' + che + '" aria-label="' + che + '">' + ICO.stella + '</button>';
 }
 
+/* SULLO SCAFFALE, O SOLO IN COLLEZIONE.
+
+   La libreria e' una vetrina e l'elenco e' la collezione: `libreria`
+   nulla vuol dire "ce l'ho ma non e' in mostra". E' una distinzione che
+   il sito fa da sempre, e nell'elenco non si vedeva -- per sapere dove
+   stesse un gioco bisognava aprire il menu della sua riga, uno per uno.
+
+   E' un segno e non un comando: mettere e togliere si fa dal menu, che
+   e' anche l'unico posto in cui si sceglie IN QUALE mobile quando ce
+   n'e' piu' di uno. Il `title` dice il nome del mobile, che e' la cosa
+   che si vorrebbe sapere subito dopo. */
+function scaffaleRiga(g){
+  const L = g.libreria
+    ? LIB.librerie().filter(function(x){ return x.id === g.libreria; })[0]
+    : null;
+  const che = L ? TP('riga.suScaffale', {n: L.nome}) : TP('riga.fuoriScaffale');
+  return '<span class="riga-scaffale' + (L ? ' su' : '') + '"' +
+         ' title="' + esc(che) + '" aria-label="' + esc(che) + '">' +
+         ICO.scaffale + '</span>';
+}
+
 function rigaMia(g){
   const cop = g.cover
     ? '<img src="' + esc(g.cover) + '" alt="" loading="lazy">'
@@ -5025,6 +5061,9 @@ function rigaMia(g){
       '<h3 class="riga-nome">' + esc(g.title) + '</h3>' +
       stellaRiga(g) +
     '</span>' +
+    /* Una colonna sua, non un segno accanto al titolo: la si legge
+       scorrendo, e scorrendo va trovata sempre nello stesso punto. */
+    scaffaleRiga(g) +
     /* Il tasto e le sue azioni stanno nello stesso involucro: la
        finestrella si ancora al PULSANTE, non alla riga -- se no, con le
        informazioni aperte sotto, uscirebbe mezzo schermo piu' in giu'
@@ -6075,10 +6114,10 @@ function chipWr(w){
 /* Il winrate gioco per gioco, sotto la pastiglia che lo apre. Sta qui e
    non in una finestra sopra perche' e' il dettaglio di un numero che si
    sta gia' guardando: si apre sotto, e sotto c'e' ancora l'elenco. */
-function disegnaWinratePerGioco(){
+function disegnaWinratePerGioco(lista){
   const el = q('#par-wr');
   if (!el) return;
-  const righe = PARTITE.winratePerGioco();
+  const righe = PARTITE.winratePerGioco(lista);
   el.hidden = !state.wrAperto || !righe.length;
   if (el.hidden){ el.innerHTML = ''; return; }
   el.innerHTML = '<p class="eyebrow">' + T('par.wrPerGioco') + '</p>' +
@@ -6108,7 +6147,11 @@ function disegnaSommaPartite(tutte, quantiGiochi){
     [tutte.length, T(tutte.length === 1 ? 'par.serata' : 'par.serate')],
     [quantiGiochi, T(quantiGiochi === 1 ? 'par.gioco' : 'par.giochi')]
   ];
-  const w = PARTITE.winrateTotale();
+  /* `winrate(tutte)` e non `winrateTotale()`: con la ricerca accesa
+     questi tre numeri devono parlare delle partite che si stanno
+     guardando. Senza filtro `tutte` E' l'elenco intero, quindi non
+     cambia niente. */
+  const w = PARTITE.winrate(tutte);
   const io = PARTITE.mioNome();
   /* Senza nessuna partita a proprio nome non si mostra uno zero: zero
      per cento vuol dire "ho giocato e non ho mai vinto", ed e' falso.
@@ -6130,10 +6173,35 @@ function disegnaSommaPartite(tutte, quantiGiochi){
   if (muto) state.wrAperto = false;
 }
 
+/* Le partite che si stanno guardando: tutte, o quelle che rispondono
+   alla ricerca.
+
+   Si cerca nel TITOLO e in CHI C'ERA, perche' le due domande che si
+   fanno a un archivio di partite sono "quando abbiamo giocato a questo"
+   e "quando c'era Giulia". Un elenco di date non risponde a nessuna
+   delle due se non scorrendolo tutto.
+
+   Stessa regola della ricerca sulla collezione: testo appiattito --
+   minuscolo, senza segni diacritici -- e tutte le parole scritte devono
+   comparire. Due parole restringono, non allargano. */
+function partiteViste(){
+  const tutte = PARTITE.tutte();
+  const parole = piattoNome(state.qpar).split(/\s+/).filter(Boolean);
+  if (!parole.length) return tutte;
+  return tutte.filter(function(p){
+    const testo = piattoNome(String(p.titolo || '') + ' ' +
+      (p.chi || []).map(function(x){ return x.nome; }).join(' '));
+    return parole.every(function(w){ return testo.indexOf(w) >= 0; });
+  });
+}
+
 function disegnaPartite(){
   const el = q('#pro-partite');
   if (!el) return;
-  const tutte = PARTITE.tutte();
+  /* Il filtro entra QUI e non nelle singole viste: le tre viste sono
+     tre modi di guardare le stesse partite, e una ricerca che valesse
+     solo per una sarebbe una ricerca che sparisce cambiando vista. */
+  const tutte = partiteViste();
 
   const gruppi = [], per = {};
   tutte.forEach(function(p){
@@ -6144,7 +6212,7 @@ function disegnaPartite(){
 
   disegnaVistePartite();
   disegnaSommaPartite(tutte, gruppi.length);
-  disegnaWinratePerGioco();
+  disegnaWinratePerGioco(tutte);
 
   if (state.vpar === 'calendario'){
     el.innerHTML = calendarioHtml();
@@ -6187,7 +6255,12 @@ function disegnaPartite(){
 
   quanti('#conta-partite', tutte.length);
   if (PARTITE.problema()){ proMsg('#par-msg', esc(PARTITE.problema()), true); return; }
-  proMsg('#par-msg', tutte.length ? '' : T('par.nessuna'));
+  /* Vuoto perche' non hai giocato e vuoto perche' non c'e' niente che
+     corrisponda sono due cose diverse, e la seconda va detta con dentro
+     quello che si e' cercato: se no sembra che le partite siano
+     sparite. */
+  proMsg('#par-msg', tutte.length ? ''
+    : (state.qpar ? T('par.nessunaPer', {q: esc(state.qpar)}) : T('par.nessuna')));
 }
 
 /* Il numero accanto al titolo del cassetto: quello che si vuole sapere
@@ -6736,7 +6809,7 @@ async function visitaLibreria(id, nick){
   applicaStanza();
 
   // la ricerca era sulla tua libreria: qui non vuol dire piu' niente
-  state.q = ''; q('#cerca').value = '';
+  state.q = ''; sincronizzaCerca(null);
   document.body.classList.remove('cerca');
   state.scrollTo = state.scroll = 0;
 

@@ -313,6 +313,19 @@
         <button type="button" data-vista="gruppi" role="tab" data-i18n="mia.gruppi">gruppi</button>
         <i class="ind" aria-hidden="true"></i>
       </div>
+      <!-- Cercare stava SOLO nell'imbuto, che e' un pannello da aprire.
+           Sopra un elenco la ricerca e' la prima cosa che si cerca, e
+           deve stare dove si legge. E' la STESSA ricerca -- passa da
+           `setQuery`, quindi vale anche per lo scaffale sotto: due
+           campi, un solo stato, e le stesse parole del dizionario. -->
+      <div class="cercawrap">
+        <input id="mia-q" type="text" data-i18n-ph="vista.cercaPh" maxlength="60" placeholder="cerca un gioco&hellip;"
+               autocomplete="off" spellcheck="false"
+               data-i18n-aria="vista.cercaAria" aria-label="cerca nella collezione">
+        <button id="mia-q-x" type="button" data-i18n-title="vista.pulisciTitolo" title="pulisci la ricerca"
+                data-i18n-aria="vista.pulisciAria" aria-label="pulisci">&times;</button>
+      </div>
+
       <div class="mia-barra">
         <div id="mia-gruppi" class="gruppi filtro"></div>
         <button id="mia-gestisci" type="button" class="dentro-only" data-i18n="mia.gestisci">gestisci gruppi</button>
@@ -495,6 +508,20 @@
         <button type="button" data-vpar="data" role="tab" data-i18n="par.perData">le ultime</button>
         <button type="button" data-vpar="calendario" role="tab" data-i18n="par.perCalendario">calendario</button>
         <i class="ind" aria-hidden="true"></i>
+      </div>
+
+      <!-- Qui si cerca per titolo E per persona: le due domande che si
+           fanno a un archivio di partite sono "quando abbiamo giocato a
+           questo" e "quando c'era Giulia". Vale su tutte e tre le
+           viste, calendario compreso -- e' la stessa domanda, cosa
+           vedo. -->
+      <div class="cercawrap">
+        <input id="par-q" type="text" data-i18n-ph="par.cercaPh" maxlength="60"
+               placeholder="cerca un gioco o una persona&hellip;"
+               autocomplete="off" spellcheck="false"
+               data-i18n-aria="par.cercaAria" aria-label="cerca fra le partite">
+        <button id="par-q-x" type="button" data-i18n-title="vista.pulisciTitolo" title="pulisci la ricerca"
+                data-i18n-aria="vista.pulisciAria" aria-label="pulisci">&times;</button>
       </div>
 
       <div class="mia-barra">

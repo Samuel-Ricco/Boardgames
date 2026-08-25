@@ -247,8 +247,20 @@ che in diciassette mobili non la guarda nessuno.
 - I mobili **esistono anche vuoti**: sono mobili, non contenitori che compaiono
   quando servono. Per questo `libs` parte da `librerie.length + 1` anche negli
   ordinamenti calcolati.
-- Un gioco appena aggiunto va in vetrina, nel mobile che si sta guardando: si è
-  appena scelto di averlo, lo si vuole vedere.
+- **Un gioco appena aggiunto NON va in vetrina.** Per un pezzo ha fatto il
+  contrario — «si è appena scelto di averlo, lo si vuole vedere» — e la regola
+  era difendibile finché la collezione era piccola. Ma metteva sullo scaffale
+  una cosa che *nessuno aveva chiesto di esporre*, e su un mobile pieno arrivava
+  a **creare una libreria da sola** per farcelo stare. Chi aggiunge dieci giochi
+  di fila si ritrovava tre mobili che non aveva costruito.
+  E soprattutto **non funzionava sempre**, che è la cosa peggiore: `LIB.add`
+  chiude con una `sync()`, che rilegge dal server e ricostruisce gli oggetti;
+  il posto lo assegnava la riga dopo, in memoria, e se la rilettura arrivava nel
+  mezzo se lo portava via. Stessa lezione della copertina che spariva e della
+  posizione non salvata — **una rilettura cancella quello che era ancora in
+  volo** — solo che qui il sintomo era «a volte sì e a volte no», che nessuno
+  associa a una race. Adesso il gioco entra in collezione e basta, e sullo
+  scaffale ce lo si mette dall'elenco.
 
 ## Rinominare vuole una conferma
 
@@ -316,6 +328,24 @@ Le aperture sono **due, distinte**:
 
 Sono due domande diverse, «che gioco è» e «cosa ci faccio», e mescolarle voleva
 dire che per leggere due righe di recensione ti trovavi davanti quattro pulsanti.
+
+**E una colonna dice se il gioco è sullo scaffale.** `libreria` nulla vuol dire
+«ce l'ho ma non è in mostra»: una distinzione che il sito fa da sempre e che
+nell'elenco non si vedeva — per sapere dove stesse un gioco bisognava aprire il
+menu della sua riga, uno per uno. Ora c'è la libreria a cubi, terracotta se il
+gioco è esposto e tenue se sta solo in collezione, e il `title` dice in quale
+mobile.
+
+- **È una colonna, non un segno accanto al titolo.** La si legge scorrendo, e
+  scorrendo va trovata sempre nello stesso punto: accanto al nome ballerebbe con
+  la lunghezza del titolo, che è esattamente il contrario di quello che serve.
+  La griglia della riga passa da tre colonne a quattro.
+- **È un segno, non un comando.** Mettere e togliere si fa dal menu, che è anche
+  l'unico posto in cui si sceglie *in quale* mobile quando ce n'è più di uno.
+  Un'icona che si accendesse sotto il dito prometterebbe un gesto che lì non c'è
+  — e con più librerie non saprebbe nemmeno quale scegliere.
+- È la stessa figura del pannello della libreria e di «vai allo scaffale»: due
+  comandi che parlano dello stesso oggetto portano la stessa figura.
 
 **Il preferito non sta in nessuna delle due: è una stellina accanto al nome.**
 Stava in fondo alla riga, in una colonna sua, e lì si leggeva come un terzo
@@ -979,10 +1009,11 @@ chiunque abbia un indirizzo di casa e uno di lavoro.
 - Gli oggetti sul cielo sono **scalati a 0.6**: sopra un mobile, vicino al
   soffitto, non ci si mette una fila di libri alta come quella dentro — e così
   resta posto per la targhetta.
-- **Un gioco nuovo va nel mobile che si sta guardando**, non nel primo cubo
-  libero in assoluto. Prima finiva sempre nella prima libreria, e chi ne creava
-  una seconda non riusciva a metterci niente finché la prima non era piena: la
-  libreria nuova c'era e non serviva a nulla (`collocaNuovo`).
+- ~~Un gioco nuovo va nel mobile che si sta guardando~~ — `collocaNuovo` **non
+  esiste più**: dal 2026-08-25 un gioco aggiunto non va in vetrina da solo (vedi
+  «La libreria è una vetrina»). Resta valido il perché di allora: quando *si*
+  cerca un posto, lo si cerca dal mobile inquadrato e non sempre dal primo, se no
+  la libreria appena creata non serve a niente. È quello che fa `mettiSuScaffale`.
 - **Creare una libreria porta all'ordine manuale.** Negli ordinamenti calcolati i
   cubi si riempiono in sequenza e un mobile in più resta vuoto qualunque cosa si
   faccia: chi ne crea uno sta dicendo «voglio decidere io dove vanno».
@@ -1140,6 +1171,13 @@ un elenco non vuol dire niente.
   l'elenco: aprendo il filtro si buttava via la cosa che si stava filtrando. La
   regola «un pannello alla volta» vale fra pannelli che si contendono l'angolo,
   non fra un pannello e la pagina su cui è appoggiato.
+- **Ma sopra un elenco la ricerca non può stare dentro un pannello da aprire**,
+  ed è il motivo per cui `#mia-q` esiste: la casella è la prima cosa che si cerca
+  guardando una lista, e deve stare dove si legge. Non è una seconda ricerca —
+  passa dallo stesso `setQuery`, quindi vale anche per lo scaffale sotto: **due
+  caselle, un solo stato**. `sincronizzaCerca(chi)` le tiene in pari e **non
+  tocca quella che ha scritto**: riscriverle dentro il valore già ripulito le
+  sposta il cursore e le mangia lo spazio che si sta ancora battendo.
 - `setQuery` e `setSort` chiamano anche `disegnaMia()` quando l'elenco è aperto:
   prima rifacevano solo lo scaffale, che lì sotto non si vede.
 
@@ -1346,6 +1384,23 @@ imparato a usare quello sa già usare questo.
   «game night». In inglese adesso è **play/plays**, che è anche la parola di
   BGG: «game» da solo si scontrerebbe con i giochi — «12 games on 5 games» non
   si legge.
+- **Si cerca per titolo e per persona.** Le due domande che si fanno a un
+  archivio di partite sono «quando abbiamo giocato a questo» e «quando c'era
+  Giulia», e un elenco di date non risponde a nessuna delle due se non
+  scorrendolo tutto. Il filtro entra in `partiteViste()`, cioè **prima** delle
+  tre viste e non dentro una: sono tre modi di guardare le stesse partite, e una
+  ricerca che valesse per una sola sparirebbe cambiando vista.
+- **I tre numeri in cima seguono il filtro**, winrate compreso: cercando un nome
+  si legge come si va *quando c'è quella persona*, che è una domanda vera. Per
+  questo `disegnaSommaPartite` chiama `PARTITE.winrate(tutte)` e non
+  `winrateTotale()`, e `winratePerGioco(lista)` ha preso un argomento — se no in
+  cima ci sarebbero tre numeri filtrati e sotto il dettaglio di tutt'altro.
+- **È uno stato suo** (`state.qpar`, `body.cerca-par`) e non si sincronizza con
+  le altre due caselle: filtra le partite, non i giochi, e legarle sarebbe la
+  cosa più confusa possibile.
+- Vuoto perché non hai giocato e vuoto perché non c'è niente che corrisponda sono
+  due cose diverse: la seconda lo dice, e ci mette dentro quello che si è
+  cercato.
 - Nella vista *le ultime* **non c'è il filo verticale**: le partite sono una fila
   sola, senza un livello di mezzo a cui appartenere, e un rientro che non
   appartiene a niente è solo un rientro.
@@ -1815,7 +1870,8 @@ segnalazione, con lo screenshot di due scatole dentro «nuova libreria».
 
 La risposta è quella che darebbe chiunque: **quando lo scaffale è pieno se ne
 prende un altro.** Vale in tutti e tre i punti in cui un gioco cerca posto:
-`mettiSuScaffale`, `collocaNuovo`, e la riparazione all'avvio.
+`mettiSuScaffale` e la riparazione all'avvio. (Il terzo era `collocaNuovo`, che
+non c'è più: un gioco aggiunto non cerca posto perché non va in vetrina.)
 
 - `cuboLibero(presi)` cerca il primo cubo libero della fila e, se non ce n'è
   nessuno, **crea un mobile**. Contare prima quanti ne servono non basta: fra il
@@ -1878,6 +1934,13 @@ Promise.all([...document.querySelectorAll('script[src]')].map(s => s.getAttribut
 
 `cache:'reload'` va in rete **e aggiorna la cache HTTP**: al ricaricamento
 successivo i `<script>` prendono la versione giusta.
+
+**E vale anche per `index.html`**, che quello snippet non tocca: si ricaricano
+script e fogli di stile, si ricarica la pagina, e il markup è ancora quello di
+prima — con il sintomo peggiore di tutti, cioè un elemento nuovo che «non
+esiste» mentre il file sul disco ce l'ha. Costato un giro. Si sblocca con un
+`fetch('index.html', {cache:'reload'})` prima del reload, oppure andando su un
+indirizzo diverso (`?v=2`), che è più rapido.
 
 ### Tarare un confronto di pixel sul suo rumore di fondo
 

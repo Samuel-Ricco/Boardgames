@@ -142,21 +142,24 @@ body.ready header{opacity:1; transform:none}
    nascondendo marchio e strumenti -- in quello spazio non ci stanno
    tutti e due, e mentre si cerca serve il campo, non il resto. */
 .cercawrap{position:relative; display:flex; align-items:center; margin:14px 0 0}
-#cerca{
+#cerca, #mia-q, #par-q{
   width:100%; text-transform:none; letter-spacing:.04em; font-family:var(--ff-text);
   font-size:13px; color:var(--ink); padding:9px 26px 9px 10px;
   background:none; border:1px solid var(--line);
 }
-#cerca:focus{outline:none; border-color:var(--accent)}
-#cerca::placeholder{
+#cerca:focus, #mia-q:focus, #par-q:focus{outline:none; border-color:var(--accent)}
+#cerca::placeholder, #mia-q::placeholder, #par-q::placeholder{
   color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em; font-size:11px;
 }
-#cerca-x{
+#cerca-x, #mia-q-x, #par-q-x{
   position:absolute; right:5px; display:none; border:0; background:rgba(51,53,43,.06); cursor:pointer;
   color:var(--ink-soft); font-size:16px; line-height:1; padding:1px 4px; border-radius:var(--r-s);
 }
-body.cerca #cerca-x{display:block}
-#cerca-x:hover{color:var(--wood)}
+body.cerca #cerca-x, body.cerca #mia-q-x{display:block}
+/* Le partite hanno una ricerca loro: filtra le partite, non i giochi,
+   quindi ha uno stato suo e una sua classe sul body. */
+body.cerca-par #par-q-x{display:block}
+#cerca-x:hover, #mia-q-x:hover, #par-q-x:hover{color:var(--wood)}
 /* Il contatore e' la porta dell'elenco, e adesso lo dice: "la mia
    collezione: 10". Un numero da solo non si capiva che fosse un
    pulsante, e nemmeno di cosa fosse il numero. */
@@ -270,6 +273,10 @@ body.visita .visita-only{display:inline-flex !important}
 
 /* la barra sopra l'elenco: filtri a sinistra, gestione a destra */
 .mia-barra{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:14px 0 0}
+/* Nell'imbuto la casella e' l'ultima cosa del pannello; qui invece ha
+   una barra sotto, e senza respiro le due si leggono come una riga
+   sola. */
+#mia .cercawrap, #partite .cercawrap{margin-bottom:2px}
 .mia-barra .gruppi{margin:0; flex:1; min-width:0}
 #mia-gestisci{
   flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
@@ -312,8 +319,28 @@ body.visita .visita-only{display:inline-flex !important}
    faccio" -- e mescolarle voleva dire che per leggere due righe di
    recensione ti trovavi davanti quattro pulsanti. */
 .righe.compatta > li{
-  grid-template-columns:52px 1fr auto; align-items:center; gap:14px; padding:11px 0;
+  grid-template-columns:52px 1fr auto auto; align-items:center; gap:14px; padding:11px 0;
 }
+/* SULLO SCAFFALE, O SOLO IN COLLEZIONE.
+
+   `libreria` nulla vuol dire "ce l'ho ma non e' in mostra": una
+   distinzione che il sito fa da sempre e che nell'elenco non si vedeva
+   -- per sapere dove stesse un gioco bisognava aprire il menu della sua
+   riga, una per una.
+
+   E' una COLONNA e non un segno accanto al titolo: la si legge
+   scorrendo, e scorrendo va trovata sempre nello stesso punto. Accanto
+   al nome ballerebbe con la lunghezza del titolo, che e' il contrario
+   di quello che serve.
+
+   Ed e' un SEGNO, non un comando: mettere e togliere si fa dal menu,
+   che e' anche l'unico posto in cui si sceglie IN QUALE mobile quando
+   ce n'e' piu' di uno. Un'icona che si accende sotto il dito
+   prometterebbe un gesto che qui non c'e'. */
+.riga-scaffale{
+  flex:none; display:block; padding:7px; line-height:0; color:rgba(51,53,43,.18);
+}
+.riga-scaffale.su{color:var(--accent)}
 /* Il titolo e la sua stella in una cella sola: la stella e' di quel
    gioco, e in una colonna sua si leggeva come un comando in fila col
    menu. `min-width:0` perche' un titolo lungo deve stringere, non
