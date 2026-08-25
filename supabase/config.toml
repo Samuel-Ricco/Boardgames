@@ -412,3 +412,18 @@ enabled = true
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ------------------------------------------------------------
+# La edge function che parla con BoardGameGeek.
+#
+# `verify_jwt = false` non e' una svista: il sito usa una chiave
+# `sb_publishable_`, che NON e' un JWT, quindi con la verifica accesa
+# non passerebbe nemmeno chi e' entrato. Li' dentro non si legge e non
+# si scrive niente di nessuno: si rilancia un'API pubblica.
+#
+# Sta qui e non nel flag `--no-verify-jwt` della riga di comando perche'
+# cosi' vale per ogni deploy futuro, anche di chi non si ricorda il
+# flag. Il token invece NON sta qui: e' un secret del progetto.
+# ------------------------------------------------------------
+[functions.bgg]
+verify_jwt = false
