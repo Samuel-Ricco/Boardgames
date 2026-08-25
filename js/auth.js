@@ -91,7 +91,27 @@ async function entra(){
   // devono stare fra i Redirect URLs del progetto.
   const r = await c.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: location.origin + location.pathname }
+    options: {
+      redirectTo: location.origin + location.pathname,
+      /* E CHI ENTRA SCEGLIE CON QUALE ACCOUNT.
+
+         Uscendo, la sessione di Supabase se ne va davvero -- signOut
+         invalida anche il refresh token sul server. Quella di GOOGLE
+         pero' resta: al giro dopo Google vede un solo account
+         collegato, decide da se' che e' quello, e rimanda indietro
+         una sessione senza aver chiesto niente. Il risultato e' che
+         "esci" e poi "accedi" riporta dentro esattamente com'era, e
+         non c'e' nessun modo di dire "no, l'altro".
+
+         Qui gli account sono due per davvero -- quello admin e quello
+         di prova -- ma il caso non e' nostro: e' di chiunque abbia un
+         indirizzo di casa e uno di lavoro.
+
+         `prompt=select_account` fa comparire ogni volta la schermata
+         di scelta. Non e' un passaggio in piu': e' la domanda che
+         l'uscita ha gia' implicato. */
+      queryParams: { prompt: 'select_account' }
+    }
   });
   if (r.error) throw r.error;
 }
