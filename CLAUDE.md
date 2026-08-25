@@ -3401,6 +3401,62 @@ eseguire non e' codice che funziona.**
   poi il resto — e solo dentro ogni gruppo decide l'anno. Chi cerca un titolo
   cerca quel titolo, non la sua ultima espansione.
 
+## La edge function: il token sul server, e il sito funziona per tutti
+
+Finche' il token e' stato solo in `.bgg-token`, **tutto quello che ci passa
+funzionava sulla macchina di sviluppo e su GitHub Pages no**: schede, miniature,
+misure delle scatole, copertine vere. Non era un difetto del deploy — su Pages
+il codice c'era tutto, verificato marcatore per marcatore — era che
+`BGG.ping()` da li' risponde `{su:false}` e il sito ripiega in silenzio, come e'
+progettato.
+
+`supabase/functions/bgg/index.ts` e' il **gemello di `tools/bgg-proxy.mjs`**,
+con gli stessi identici endpoint: `/ping`, `/search`, `/game`, `/thumbs`,
+`/misure`, `/cover`. E' scritto perche' il client non debba sapere quale dei
+due sta usando.
+
+- **Si prova prima il locale**, con il suo taglio di quattro decimi, e solo se
+  tace si passa alla funzione. Cosi' chi sviluppa continua ad avere le risposte
+  in pochi millisecondi e non deve fare un deploy per provare una modifica.
+- **La funzione vuole la chiave pubblica** del progetto negli header, come ogni
+  altra chiamata a Supabase. Il proxy locale non vuole niente, e riceverla non
+  gli da' fastidio.
+- **`--no-verify-jwt`, e non e' una svista.** Il sito usa una chiave
+  `sb_publishable_`, che **non e' un JWT**: con la verifica accesa non
+  passerebbe nemmeno chi e' entrato. Non e' un buco — li' dentro non si legge e
+  non si scrive niente di nessuno, si rilancia un'API pubblica. Chi vuole
+  stringere mette `BGG_ORIGINI` con gli indirizzi ammessi, separati da virgola:
+  non e' vera sicurezza (l'header `Origin` lo scrive il browser) ma toglie di
+  mezzo il riuso distratto da un altro sito.
+- **Il codice del parser e' duplicato** fra `tools/bgg-lib.mjs` e la funzione,
+  ed e' una scelta: una edge function che dipende da file fuori dalla sua
+  cartella e' una edge function che un giorno non parte. Se cambia uno deve
+  cambiare l'altro, e sta scritto in tutti e due.
+
+**Provata prima del deploy**, che e' l'unico modo di non scoprire gli errori in
+produzione: `deno check` pulito, e poi la funzione fatta girare in locale con
+`deno run` e il token vero. Tutti e sei gli endpoint hanno risposto —
+`/search` con Arcs primo, `/misure` con 29 x 22,5 x 7, `/cover` con 353 KB di
+PNG e il content-type giusto, e il CORS che rimanda indietro l'`Origin`.
+
+### Come si mette in piedi
+
+Due strade. Il token **non entra nel repo** in nessuna delle due: va nei
+secrets del progetto.
+
+1. **Dal pannello di Supabase**, senza installare niente:
+   *Edge Functions* -> *Deploy a new function* -> nome `bgg`, incollare
+   `supabase/functions/bgg/index.ts`, e **spegnere «Verify JWT»**. Poi
+   *Edge Functions* -> *Secrets* -> `BGG_TOKEN`.
+2. **Dalla CLI**, che non e' installata ma `npx` c'e':
+   `npx supabase login`, `npx supabase link --project-ref stslddkkzqonauavgxuy`,
+   `npx supabase secrets set BGG_TOKEN=...`,
+   `npx supabase functions deploy bgg --no-verify-jwt`.
+
+Fatto il deploy, la prova sta in una riga da console su Pages:
+`BGG.ping()` deve rispondere `{su:true, token:true}`, e `BGG.dove()` deve dire
+l'indirizzo della funzione.
+
 ## Stato attuale
 
 **Aggiornato al 2026-08-23 (quinta sessione).** Questa sezione e la prossima bastano a ripartire a
