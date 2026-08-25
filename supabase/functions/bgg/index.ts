@@ -251,7 +251,22 @@ Deno.serve(async (req: Request) => {
       for (let i = 0; i < ids.length; i += 10) {
         const r = await api('/thing?id=' + ids.slice(i, i + 10).join(',') + '&versions=1');
         if (r.queued) continue;
-        const re = /<item[^>]*type="boardgame"[^>]*id="(\d+)"[^>]*>([\s\S]*?)<\/item>\s*(?=<item[^>]*type="boardgame"|<\/items>)/g;
+        /* UN'ESPANSIONE NON E' `type="boardgame"`.
+
+           E' `boardgameexpansion`, e le accessorie sono
+           `boardgameaccessory`. Chiedendo solo `type="boardgame"` le
+           espansioni sparivano dal ritaglio, quindi non arrivavano mai a
+           `parseMisure` e restavano SENZA MISURE -- e senza misure la
+           scatola cade nel ripiego, cioe' larga quanto una scatola
+           intera. La mini di Deep Regrets e' 8 x 13,5 cm e finiva
+           disegnata 30 x 41.
+
+           Il `(?!version)` e' obbligatorio: anche le EDIZIONI sono
+           `<item>`, annidate dentro `<versions>`, e un `boardgame[a-z]*`
+           le prenderebbe -- spezzando il ritaglio proprio dove serve
+           intero, cioe' attorno alle misure. */
+        const GIOCO = '<item[^>]*type="boardgame(?!version)[a-z]*"';
+        const re = new RegExp(GIOCO + '[^>]*id="(\\d+)"[^>]*>([\\s\\S]*?)<\\/item>\\s*(?=' + GIOCO + '|<\\/items>)', 'g');
         let m;
         while ((m = re.exec(r.xml!))) {
           const mis = parseMisure(m[2]);

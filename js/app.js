@@ -929,12 +929,28 @@ function buildCabinet(){
 
    Un'unita' della scena e' DIECI CENTIMETRI: il cubo interno e' 3.3 e
    una KALLAX ha il vano da 33 cm. Quindi centimetri diviso dieci. */
-const MIS_KEY = 'dado-misure';
+/* Il `-2` non e' un vezzo: e' una cache da buttare una volta.
+
+   Finche' il ritaglio di `/misure` pretendeva `type="boardgame"`, le
+   espansioni non arrivavano mai a `parseMisure` -- ma il danno non si
+   fermava li'. Il taglio di un gioco correva fino al successivo di
+   tipo `boardgame`, quindi un gioco seguito da un'espansione nella
+   stessa richiesta si INGLOBAVA LE EDIZIONI DI QUELLA: Deep Regrets
+   contava sette edizioni invece di cinque, e la "faccia piu' comune"
+   usciva da una popolazione che non era la sua.
+
+   Quei numeri sono in `localStorage` e nessuno li rilegge mai: senza
+   cambiare chiave resterebbero sbagliati per sempre. La vecchia si
+   cancella, se no resta li' a occupare spazio per niente. */
+const MIS_KEY = 'dado-misure-2';
 let MISURE = null;
 
 function misureCache(){
   if (MISURE) return MISURE;
-  try { MISURE = JSON.parse(localStorage.getItem(MIS_KEY) || '{}') || {}; }
+  try {
+    MISURE = JSON.parse(localStorage.getItem(MIS_KEY) || '{}') || {};
+    localStorage.removeItem('dado-misure');
+  }
   catch(e){ MISURE = {}; }
   return MISURE;
 }
@@ -977,16 +993,39 @@ function misureDi(game, asp){
     h = (orizz ? pi : gr) / 10;
   }
 
-  /* Una scatola piu' grande del vano va rimpicciolita, se no esce dal
-     mobile: Gloomhaven e' 40,6 cm e in una KALLAX da 33 davvero non ci
-     sta. Si riduce tenendo le proporzioni -- resta la scatola piu'
-     grande dello scaffale, che e' l'informazione vera. */
-  const max = KAL.cell * .92;
-  const k = Math.min(1, max / Math.max(w, h));
-  w *= k; h *= k;
+  // il limite non lo mette piu' questa funzione: lo mette
+  // `entraNelCubo`, che vale anche per chi le misure non le ha
+  return { w: w, h: h, t: m.spessore > 0 ? m.spessore / 10 : BOX.t };
+}
 
-  const t = m.spessore > 0 ? Math.min(KAL.d * .55, m.spessore / 10 * k) : BOX.t;
-  return { w: w, h: h, t: Math.max(.35, t) };
+/* NIENTE ESCE DAL CUBO, che le misure vere ci siano o no.
+
+   Il limite stava dentro `misureDi`, cioe' **solo sulla strada di chi
+   le misure ce le aveva**. Chi non le aveva finiva nel ripiego --
+   larghezza fissa e altezza dal rapporto della copertina -- e quello
+   non aveva nessun limite: con una copertina alta e stretta usciva una
+   scatola alta piu' del vano che deve contenerla. E' successo con la
+   mini espansione di Deep Regrets: rapporto 0,73, quindi 3,0 x 4,09 in
+   un cubo che di luce interna ne ha 3,3.
+
+   Adesso ci passano tutte e due le strade, e il limite e' uno solo.
+   Gloomhaven, che di suo e' 40,6 cm, continua a rimpicciolirsi
+   tenendo le proporzioni: resta la scatola piu' grande dello
+   scaffale, che e' l'informazione vera.
+
+   E un rapporto assurdo -- o un NaN arrivato da una divisione per
+   zero -- non deve fare una scatola con le coordinate rotte: quelle
+   spariscono dalla scena senza che niente lo dica. */
+function entraNelCubo(w, h, t){
+  if (!(w > 0)) w = BOX.w;
+  if (!(h > 0)) h = BOX.h;
+  if (!(t > 0)) t = BOX.t;
+  const k = Math.min(1, (KAL.cell * .92) / Math.max(w, h));
+  return {
+    w: w * k,
+    h: h * k,
+    t: Math.max(.35, Math.min(KAL.d * .55, t * k))
+  };
 }
 
 /* Le misure che mancano, chieste in una volta sola. Silenziosa: senza
@@ -1146,11 +1185,14 @@ function makeGameBox(game){
     aspect = c.width / c.height;
   }
   /* Le misure vere se ci sono, se no quelle di sempre: larghezza
-     fissa e altezza dal rapporto della copertina. */
+     fissa e altezza dal rapporto della copertina. In tutti e due i
+     casi passano da `entraNelCubo`, che e' l'unico punto in cui si
+     decide che una scatola sta nel suo vano. */
   const mis = misureDi(game, aspect);
-  const W = mis ? mis.w : BOX.w;
-  const H = mis ? mis.h : BOX.w / aspect;
-  const T = mis ? mis.t : BOX.t;
+  const dim = entraNelCubo(mis ? mis.w : BOX.w,
+                           mis ? mis.h : BOX.w / aspect,
+                           mis ? mis.t : BOX.t);
+  const W = dim.w, H = dim.h, T = dim.t;
 
   /* LA COPERTINA SI RITAGLIA, NON SI STIRA.
 

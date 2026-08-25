@@ -3345,6 +3345,49 @@ millisecondi e non blocca niente.
 Misurato: Catan 29,7 x 29,7 x 7,1 · Carcassonne 19 x 27,5 x 6,7 · Pandemic
 22,1 x 30,5 x 4,2 · **Gloomhaven 29,2 x 40,6 x 19,1** · Brass 30 x 30 x 5,1.
 
+### Un'espansione non e' `type="boardgame"`
+
+Segnalato come «ho aggiunto un'espansione ed e' completamente fuori dimensione».
+Erano **due difetti che si sommavano**, e il secondo era invisibile.
+
+Il ritaglio degli item in `/misure` chiedeva `type="boardgame"`. Ma un'espansione
+e' `boardgameexpansion`, e le accessorie sono `boardgameaccessory`: **nessuna
+espansione ha mai avuto le misure**. E il danno non finiva li' — il taglio di un
+gioco correva fino al successivo di tipo `boardgame`, quindi **un gioco seguito
+da un'espansione nella stessa richiesta si inglobava le edizioni di quella**.
+Deep Regrets contava sette edizioni invece di cinque, e la «faccia piu' comune»
+usciva da una popolazione che non era la sua. Verificato su XML sintetico: col
+ritaglio vecchio il primo item si prendeva le edizioni di tutti e tre.
+
+`type="boardgame(?!version)[a-z]*"`, e il `(?!version)` non e' prudenza: anche le
+**edizioni** sono `<item>`, annidate dentro `<versions>`, e un `boardgame[a-z]*`
+le prenderebbe — spezzando il ritaglio esattamente dove serve intero.
+
+La regex sta in **due file** (`tools/bgg-proxy.mjs` e la edge function), che e' la
+duplicazione dichiarata: se cambia una deve cambiare l'altra. E finche' la
+funzione non e' ridistribuita, fuori da questa macchina le espansioni restano
+senza misure — cadono nel ripiego, che pero' adesso ha il suo limite.
+
+### Niente esce dal cubo, misure o non misure
+
+Il limite (`KAL.cell * .92`) stava **dentro `misureDi`**, cioe' solo sulla strada
+di chi le misure ce le aveva. Chi non le aveva finiva nel ripiego — larghezza
+fissa e altezza dal rapporto della copertina — e quello non aveva **nessun
+limite**: con una copertina alta e stretta usciva una scatola piu' alta del vano
+che deve contenerla. La mini espansione di Deep Regrets ha rapporto 0,73, quindi
+3,0 x **4,09** in un cubo che di luce interna ne ha 3,3.
+
+Adesso il limite e' uno solo (`entraNelCubo`) e ci passano tutte e due le
+strade. Con le misure vere quella scatola e' 8 x 13,5 cm; senza, viene 2,23 x
+3,04 — riempie il cubo ma non ne esce. E un rapporto assurdo, o un `NaN` da una
+divisione per zero, non fa piu' una scatola con le coordinate rotte: quelle
+spariscono dalla scena senza che niente lo dica.
+
+**La cache delle misure e' passata a `dado-misure-2`.** I numeri contaminati
+dal ritaglio vecchio stanno in `localStorage` e nessuno li rilegge mai: senza
+cambiare chiave restavano sbagliati per sempre. La vecchia si cancella al primo
+avvio.
+
 ### La copertina non si stira: si ritaglia
 
 Con le misure vere la faccia della scatola ha il rapporto della scatola, e
