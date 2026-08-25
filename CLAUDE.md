@@ -62,7 +62,7 @@ js/apprezzamenti.js   i cuori sotto la recensione di un amico
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori e arredi scelti da chi ci abita
-js/bgg.js             ricerca BGG (passa dal proxy locale)
+js/bgg.js             ricerca BGG: sceglie da se' fra proxy locale e edge function
 js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
 js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
 js/art.js             grafica generata su canvas
@@ -71,8 +71,10 @@ img/                  le copertine vere delle scatole (due: root, scythe)
 fonts/                Poppins, cinque pesi, in locale
 vendor/                three.js r152 e supabase-js, committati
 supabase/migrations/   lo schema del database
+supabase/functions/bgg/ la edge function: il token di BGG sul server
 dati/bgg.txt           l'indice committato: 106.694 giochi in ordine di classifica
 tools/bgg-*.mjs        scarico dati BGG, proxy, e il convertitore dell'indice
+.bgg-token             il token di BGG -- NON COMMITTATO, e' in .gitignore
 ```
 
 **Niente risorse esterne, mai.** three.js, font e copertine sono nel repo: il
@@ -3459,17 +3461,22 @@ l'indirizzo della funzione.
 
 ## Stato attuale
 
-**Aggiornato al 2026-08-23 (quinta sessione).** Questa sezione e la prossima bastano a ripartire a
+**Aggiornato al 2026-08-25.** Questa sezione e la prossima bastano a ripartire a
 freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
 racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
 è fatto* c'è tutto il resto di questo file, che è aggiornato.
 
 Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
-profilo — **due lingue** con 465 chiavi per ramo, e **tutte e dodici le
+profilo — **due lingue** con circa 510 chiavi per ramo, e **tutte e dodici le
 migrazioni applicate**, `punti_partita` compresa.
 
-Le misure, per sapere in che cosa si mette le mani: `index.html` 765 righe,
-`css/style.css` 3.253, `js/app.js` 6.418.
+**E da qui in poi BGG lo serve una edge function**, non piu' solo il proxy
+locale: vedi «La edge function» piu' sopra. E' la differenza fra un sito che
+funziona su questa macchina e uno che funziona anche su GitHub Pages.
+
+Le misure, per sapere in che cosa si mette le mani: `index.html` 815 righe,
+`css/style.css` 3.564, `js/app.js` 7.323, piu' `supabase/functions/bgg/index.ts`
+291.
 
 ### La sessione del 2026-08-23
 
@@ -3573,21 +3580,66 @@ Il conto non e' cambiato: **99 chiamate contro le 98 di partenza, GPU 0,25 ms**
 I dati non sono stati toccati: 25 giochi, una libreria, una partita, e la
 stanza e' tornata com'era (caldo a 0,44, luce 0,14).
 
+### Le sessioni del 2026-08-24 e 25
+
+Nove commit. E' la sessione in cui e' arrivato il **token di BGG**, e con lui
+tutto quello che senza non si poteva fare — piu' la coda per portarlo dove
+serve davvero, cioe' sul server.
+
+| argomento | commit | cosa |
+|---|---|---|
+| il calendario | `eb6053b` | terza vista delle partite: una griglia di giorni, la corona su quelli vinti. E i mesi non sono piu' italiano fisso |
+| il token | `a9e3cd0` | arrivato, messo in `.bgg-token` fuori dal repo; e due difetti che ha fatto uscire (`<ratings >` con lo spazio, la ricerca che metteva il gioco vero in fondo) |
+| il catalogo | `9a78cbe` | il token lo aveva **peggiorato**: un ramo vuoto in `sfoglia()` lo aveva riportato a Wikidata |
+| le miniature | `33c53d9` | venti per volta, che oltre BGG risponde 400 |
+| le copertine | `53270a4` | sparivano dallo scaffale a ogni rilettura: `sync()` buttava via l'immagine decodificata |
+| le misure | `9393034` `bb210cd` | la scatola ha la sua misura vera, la copertina si ritaglia invece di stirarsi |
+| la edge function | `fb21f28` `cc43354` | il token sul server, e il sito funziona anche fuori da questa macchina |
+
+**Le lezioni generali**, quelle che varra' la pena rileggere prima di toccare
+le stesse cose:
+
+- «Il token ha PEGGIORATO il catalogo, per un ramo vuoto» — un ramo vuoto non
+  e' un segnaposto innocuo: prende il posto di quello che verra' e disattiva
+  quello che c'era.
+- «Stop the shelf losing its covers» e «"Posizione non salvata"» — due facce
+  della stessa cosa: **`sync()` ricostruisce gli oggetti e si porta via quello
+  che era ancora in volo.** Se una scrittura ottimista non e' ancora atterrata,
+  una rilettura la cancella.
+- «La copertina non si stira: si ritaglia» — le immagini di BGG non sono
+  scansioni del fronte, quindi non possono dettare la forma della scatola.
+- «Le miniature del catalogo» — `loading="lazy"` non carica niente se il
+  pannello di anteprima non compone, e sembra che le immagini siano rotte.
+- «Il cancello tiene `boot()` in attesa» — con la sessione scaduta non e'
+  agganciato niente, e sembra che il codice nuovo non funzioni.
+
 ### Lo stato dei dati (riletto dal server, non dalla cache)
 
-- Account `admin@smlrcc.it`, nick **Samuel**, codice `HH67 6BY7`. Secondo account
-  di prova **samuel2**, amicizia accettata.
-- **25 giochi**, di cui **12 sullo scaffale** e **13 solo in collezione**. Non è
-  un guasto: la libreria è una vetrina, l'elenco è la collezione.
-- **Una libreria sola**, `Libreria 5` (ordine 4).
-- **Una partita**: `Arcs`, con **Samuel** (vincitore) e `samuel2`. La vecchia
-  partita di prova `pa` non c'è piu'.
-- **Il winrate è 100%** (1 su 1): il nick `Samuel` adesso compare fra chi
-  c'era, quindi il riquadro in cima alle partite conta davvero.
-- La stanza: luce **0,38**, scaffali noce, muro grigio caldo, pavimento sabbia,
-  arredo misto, colore del nome oliva scuro.
-- Le recensioni sono ancora **lorem ipsum** sui giochi vecchi; quelli aggiunti
-  per nome hanno la recensione vuota.
+**I numeri qui sotto invecchiano in fretta: rileggerli, non fidarsene.** Nella
+sessione del 24-25 agosto la collezione dell'account principale e' passata da
+25 a 8 a 11 giochi nel giro di un'ora, perche' l'utente stava lavorando sul
+sito mentre si guardava. Quello che segue e' vero al momento in cui e' scritto
+e serve a orientarsi, non a fare i conti.
+
+**Ci sono due account, ed e' facile scambiarli.**
+
+- `admin@smlrcc.it`, nick **Samuel**, codice `HH67 6BY7`, uid `c33cca27-...`.
+  E' quello **admin** — `body.admin`, e le recensioni del catalogo si
+  pubblicano solo da qui. E' la collezione vera.
+- `samuelricco@gmail.com`, nick **samuel2**, uid `3354ac9c-...`. E' l'account
+  **di prova**, non admin, amicizia accettata con il primo. Ha una collezione
+  sua, quasi vuota, e le librerie si chiamano `PROVA` e `test`.
+
+Se il sito sembra «vuoto» o mancano i comandi da admin, la prima cosa da
+guardare e' `AUTH.stato().email`: quasi sempre e' entrato il secondo.
+
+Al 25 agosto, sull'account di prova: **1 gioco**, 2 librerie, **10 partite**
+(Root, Arcs, Scythe, Ark Nova), stanza con muro salvia e pavimento noce.
+Sull'account admin la collezione oscillava fra 8 e 11 giochi, una libreria
+`Libreria 5`, una partita `Arcs`.
+
+Le recensioni sono ancora **lorem ipsum**: sono opinioni dell'utente sui suoi
+giochi e non si inventano.
 
 ### Due cose lasciate scoperte apposta
 
@@ -3610,6 +3662,24 @@ siano ancora **ASCII**. Si verifica **sul server locale contro il database vero*
 entrando davvero, e i dati di prova si ripuliscono a fine giro. Commit e push a
 ogni passo finito, su **tutti e due i rami**, messaggi in inglese che dicono
 *cosa* e *perche'*.
+
+**Quattro cose sull'ambiente che costano tempo se non si sanno:**
+
+1. **Il proxy BGG va acceso a mano**: `node tools/bgg-proxy.mjs`, porta 8125.
+   Senza, il sito ripiega sulla edge function — che funziona, ma e' un giro di
+   rete invece di una porta accanto. Il token lo legge da `.bgg-token`, che e'
+   in `.gitignore` e **non entra nel repo, mai**.
+2. **La 8124 puo' essere occupata da un'altra sessione di lavoro**, e in quel
+   caso serve *un'altra cartella*: e' successo, e per mezz'ora si e' verificato
+   su codice che non era quello modificato. Il controllo che smaschera il caso
+   e' chiedere al server un file e cercarci dentro la modifica appena fatta.
+3. **`_dado-nuovo/` non e' di questo lavoro.** E' una cartella non tracciata
+   che sta li' dall'inizio: `git add -A` se la porta dentro. Aggiungere i file
+   per nome, o controllare `git status` prima di committare.
+4. **La sessione Supabase scade**, e allora `boot()` resta sospeso su
+   `await gate(...)`: non e' agganciato niente e sembra che il codice nuovo non
+   funzioni. Per provare una vista senza sessione basta passare il cancello
+   come ospite — `bindPartite()` e compagnia girano **prima** del ramo ospite.
 
 ## Stato del backend
 
@@ -3645,68 +3715,72 @@ di nick e faccia, elenco amici e richiesta per codice continuano a funzionare:
 la funzione di ricerca è `security definer` e legge la colonna che il client non
 può leggere.
 
-Cosa manca, in ordine di fastidio:
+E il **2026-08-25** si e' aggiunta la edge function, che e' la prima cosa del
+progetto a girare su Supabase e non solo a parlarci. Provata prima in locale
+con Deno e il token vero, poi in produzione: `/ping` risponde
+`{"ok":true,"token":true}` in mezzo secondo scarso, e su GitHub Pages il
+catalogo mostra ventiquattro miniature su ventiquattro con `fonte: bgg`.
+Quando il progetto e' in pausa -- il piano gratuito lo mette in pausa dopo
+circa una settimana senza traffico -- la prima chiamata puo' metterci qualche
+secondo: per questo il taglio della remota e' sei secondi e non quattro
+decimi.
 
-1. **Le recensioni sono lorem ipsum.** Ora si scrivono dal sito con *modifica*, e
-   da lì si pubblicano nel catalogo con la casella in fondo al modulo.
-2. ~~**Il token BGG non è ancora arrivato.**~~ **Arrivato il 2026-08-24**, e
-   con lui autore, editore, voto, peso e **le copertine vere**. Sta in
-   `.bgg-token`, fuori dal repo. Vedi «Il token di BGG e' arrivato». Quello
-   che segue resta vero solo per chi il token non ce l'ha:
-   `boardgamegeek.com/xmlapi2` risponde **401 a qualunque user-agent** e la
-   pagina `browse` è HTML che le loro condizioni vietano di raschiare — quella
-   strada resta chiusa. Ma il **dump dei ranking** è pubblico e scaricabile
-   senza chiave, e copre le due cose per cui il token serviva di più: cercare
-   fra centomila titoli e sfogliare in classifica. Restano fuori **autore,
-   editore, durata e le copertine vere**: per quelli si passa ancora da
-   Wikidata, che è magra e a volte sbagliata (l'editore è spesso il distributore
-   locale). Per questo un risultato **riempie il modulo** invece di finire
-   dritto sullo scaffale.
-3. ~~**Wikidata non ha le copertine.**~~ Resta vero di Wikidata, ma **non è
-   più un problema**: le copertine arrivano da BGG col token. Il campo file nel
-   modulo resta, per quando si vuole la propria. Il paragrafo sotto spiega
-   perché Wikidata non basta.
+Cosa manca, in ordine di fastidio. **Riscritta il 2026-08-25**: mezza lista
+di prima era diventata falsa quando e' arrivato il token.
 
-   **Wikidata non ha le copertine, e non le avrà mai**: le sue immagini vengono da
-   Wikimedia Commons, che accetta solo licenze libere, e la grafica di una scatola
-   è protetta. Su 4.445 giochi, 597 hanno una qualche immagine (13%) e sono foto
-   di partite sul tavolo. Per le copertine c'è il **campo file** nel modulo, che
-   vince sempre sull'immagine della fonte — la fonte giusta è il press kit
-   dell'editore.
-4. ~~L'ordine del catalogo è quello di Wikidata.~~ **Risolto il 2026-08-22, e
-   senza token**: il dump dei ranking che BGG pubblica ogni giorno è in
-   `dati/bgg.txt`, e il catalogo si sfoglia nella classifica vera — primo Brass:
-   Birmingham. Vedi «L'indice di BGG in casa».
-5. Su telefono la scatola è **90 px di larghezza**: si riconosce la copertina ma
-   non si legge il titolo. È il prezzo delle tre colonne; se dà fastidio,
-   l'alternativa è tornare a due.
-6. **Nel catalogo non ci sono più le miniature.** Il dump non ha immagini e
-   quelle di Wikidata arrivano solo aprendo una scheda. Le righe mostrano rank e
-   media BGG al posto di autore ed editore, che su un elenco in classifica dice
-   di più — ma se le miniature servono, si possono chiedere a Wikidata per gli id
-   visibili, una passata sola.
-7. **Le partite restano private.** Gli amici vedono libreria e recensioni, non le
-   partite: è il cambio di una policy, ed è una scelta dell'utente.
-8. **La scheda di un gioco non si corregge piu' da nessuna parte.** Autore,
-   editore, anno, voto e copertina: `apriModifica()` è intatta ma senza porta,
-   da quando il pulsante «scheda» è uscito dal piede della scheda. Vedi
-   «Il piede della scheda».
-9. **Manca l'indice unico su `(proprietario, nome)`** delle librerie. Il divieto
-   dei nomi doppi vive in `store.js` e regge; l'indice sarebbe la garanzia, e
-   adesso che i doppioni non ci sono piu' la migrazione passerebbe.
+1. **Le recensioni sono lorem ipsum.** E' l'unica cosa che tiene il sito
+   lontano dall'essere finito: si scrivono dal sito con *la tua recensione*, e
+   da li' si pubblicano nel catalogo con la casella in fondo al modulo. Sono
+   opinioni di chi ci gioca, quindi non le puo' scrivere nessun altro.
+2. **La scheda di un gioco non si corregge da nessuna parte.** `apriModifica()`
+   — autore, editore, anno, voto, copertina — e' intatta ma **senza porta**, da
+   quando il pulsante «scheda» e' uscito dal piede della scheda. Col token
+   quei campi si riempiono da soli all'aggiunta, quindi fa meno male di prima;
+   ma per correggere a mano non c'e' strada. Il posto naturale e' il menu a tre
+   punti dell'elenco.
+3. **Manca l'indice unico su `(proprietario, nome)`** delle librerie. Il
+   divieto dei nomi doppi vive in `store.js` e regge; l'indice sarebbe la
+   garanzia, e adesso che i doppioni non ci sono piu' la migrazione passerebbe.
+4. **Le partite restano private.** Gli amici vedono libreria e recensioni, non
+   le partite: e' il cambio di una policy, ed e' una scelta dell'utente.
+5. **Su telefono la scatola e' larga 90 px**: si riconosce la copertina ma non
+   si legge il titolo. E' il prezzo delle tre colonne; se da' fastidio,
+   l'alternativa e' tornare a due.
+6. **Le misure delle scatole stanno in `localStorage`, non sul database.** Sono
+   fatti sul gioco e uguali per tutti, quindi la cache per id BGG e' il posto
+   giusto finche' e' una sola persona a usarlo. Con piu' utenti conviene una
+   tabella condivisa, o che le serva la edge function con la sua cache.
+
+**Quello che NON manca piu'** (era in questa lista fino al 24 agosto, e
+lasciarcelo confonde chi riparte a freddo):
+
+- ~~il token di BGG~~ — arrivato, e adesso sta anche nei secrets del progetto;
+- ~~autore, editore, voto, peso~~ — li da' l'API;
+- ~~le copertine vere~~ — le da' l'API, e Wikidata non le avrebbe mai potute
+  dare (Commons accetta solo licenze libere);
+- ~~le miniature nel catalogo~~ — venti per chiamata;
+- ~~l'ordine del catalogo~~ — classifica vera dal dump;
+- ~~l'edge function~~ — scritta, provata e in produzione.
+
+**Wikidata resta come ripiego** per chi il token non ce l'ha, e vale la pena
+ricordare perche' non basta: le sue immagini vengono da Wikimedia Commons, che
+accetta solo licenze libere, e la grafica di una scatola e' protetta. Su 4.445
+giochi, 597 hanno una qualche immagine (13%) e sono foto di partite sul tavolo.
 
 ### Quello che è stato chiesto e non si può fare qui
 
 - **Le recensioni vere** sono opinioni dell'utente sui suoi giochi: non si
   inventano.
-- **L'edge function per BGG**: adesso il token c'è, quindi si può fare — ma
-  vuole un deploy su Supabase, che non si fa da qui.
+- ~~L'edge function per BGG~~ **fatta il 2026-08-25.** Il deploy lo ha lanciato
+  l'utente (`npx supabase functions deploy bgg`) — da qui non passa, e la CLI
+  non e' installata: c'e' `npx`. Ma la funzione si puo' **provare** in locale
+  prima di consegnarla, ed e' quello che si e' fatto: `deno check` e poi
+  `deno run --allow-net --allow-env` con il token vero, tutti e sei gli
+  endpoint. Scoprire gli errori in produzione non serve a nessuno.
 
 Prossimi passi già discussi, non ancora fatti:
 
-- **Edge function per BGG** al posto del proxy locale: il token starebbe sul
-  server, la ricerca funzionerebbe da qualunque browser senza accendere niente, ed
-  è anche ciò che le condizioni di BGG chiedono.
+- ~~Edge function per BGG~~ **fatta e in produzione dal 2026-08-25.**
 - **App Android/iOS**: la strada è Capacitor, che imbarca questi stessi file. Da
   fare *dopo* i contenuti veri, perché Apple rifiuta le app che sembrano solo un
   sito (linea guida 4.2). Serve anche safe-area (`env(safe-area-inset-*)`, oggi
