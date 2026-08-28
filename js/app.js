@@ -262,7 +262,18 @@ function srnd(n){
 
 function setProg(p, msg){
   const bar = q('#bar'); if (bar) bar.style.width = Math.round(p*100) + '%';
-  if (msg) q('#load-msg').textContent = msg;
+  if (!msg) return;
+  const el = q('#load-msg');
+  if (!el || el.textContent === msg) return;
+  el.textContent = msg;
+  /* RISCRIVERE IL TESTO NON FA RIPARTIRE UN'ANIMAZIONE CSS.
+     La dissolvenza fra un passo e l'altro sta nel foglio di stile, ma
+     tocca a qui farla ripartire: si spegne, si legge una misura per
+     costringere il browser a ricalcolare -- se no fonde le due
+     scritture e non succede niente -- e si riaccende. */
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = '';
 }
 
 /* Quello che e' segnato `__comune` NON si butta via: e' condiviso da

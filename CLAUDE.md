@@ -630,6 +630,36 @@ classi `.righe` del catalogo.
   aperta**: la si sposterebbe sotto i piedi al tween in corso. Se c'è, chiude e
   ridispone dopo, con il seguito passato a `unfocus(poi)`.
 
+## Su desktop la scheda era un francobollo anche lei
+
+`width:min(430px, 40vw)`: sopra i 1075 px di finestra il tetto scattava sempre,
+quindi la scheda restava larga **430 px qualunque monitor ci fosse dietro** —
+meno di un terzo dello schermo, la recensione a quaranta caratteri per riga e
+mezza stanza vuota accanto. Il tetto sale a **600**; sotto, comanda ancora il
+40% della finestra, che e' la misura che tiene separati la scatola aperta —
+`focusPose` la mette a sinistra, e il suo bordo destro arriva al 53% — e il
+pannello. Misurato: a 1440 restano 58 px fra i due, a 1920 ne restano 254.
+
+Il tetto a 600 non e' timidezza: seicento pixel di prosa sono gia' una riga da
+settantacinque caratteri, e piu' larga si legge peggio.
+
+**E verticalmente si centra nella fascia libera.** Prima il bordo di sopra era
+inchiodato a `top:50%` meno mezza altezza fissa, cioe' al 20% dello schermo
+qualunque cosa ci fosse dentro: una recensione di due righe lasciava trecento
+pixel di vuoto sotto e niente sopra. Con `top` e `bottom` messi **tutti e due**,
+`height:max-content` e i margini automatici, la scheda resta alta quanto il suo
+contenuto e sta in mezzo fra la testata e il fondo — corta o lunga che sia.
+
+- **`max-content` e non `auto`**: con top e bottom fissati, un'altezza
+  automatica viene *stirata* per riempire la fascia, e anche una scheda di tre
+  righe diventerebbe alta quanto lo schermo.
+- **`top:104px` e non 96**: la testata non e' alta uguale dappertutto — il
+  marchio va a capo sugli schermi stretti e passa da 56 a 74 px — e appena sopra
+  il salto a 880 la scheda le finiva a ventidue pixel.
+- Il blocco `@media (min-width:881px)` sta **dopo** la regola base di
+  `.pan-scroll`: stesso peso, e a parita' di peso vince chi viene dopo. Messo
+  prima, il `padding` di sotto se lo riprendeva.
+
 ## Il piede della scheda: due righe, e il peso in basso
 
 I sette pulsanti stavano tutti in fila e si equivalevano. Adesso vanno a capo a
@@ -2498,11 +2528,84 @@ Serve una **`animation` e non una `transition`**: questi blocchi passano da
 Era un fondo piatto con un dado in mezzo. Adesso la luce viene da sopra come
 nella stanza che si sta per aprire, cosi' il caricamento e' gia' il sito e non
 una sala d'attesa. Il dado e' d'**avorio** e non bianco carta — un dado da
-tavolo non e' mai bianco — ha il bordo interno smussato che gli da' lo
-spessore, e **i pallini sono scavati**: l'ombra viene da sopra e il riflesso sta
-in basso. Prima era il contrario e sembravano appiccicati sopra. Sotto c'e'
-un'ombra a terra che si stringe e si allarga col rotolare: e' quella che lo fa
-stare in un posto invece che galleggiare.
+tavolo non e' mai bianco — e **i pallini sono scavati**: l'ombra viene da sopra
+e il riflesso sta in basso. Prima era il contrario e sembravano appiccicati
+sopra. Sotto c'e' un'ombra a terra che si stringe e si allarga col rotolare:
+e' quella che lo fa stare in un posto invece che galleggiare.
+
+#### Il dado e' un solido, non sei cartoncini
+
+Erano sei pannelli con l'angolo arrotondato piazzati a 44 px dal centro. Agli
+spigoli non si toccavano: fra una faccia e l'altra restava una fessura che si
+apriva e si chiudeva girando, e da li' si vedeva **l'interno** — una scatola
+vuota, non un dado.
+
+Adesso il solido e' costruito per davvero: **6 facce** (i piani piatti,
+rientrati di 9 px), **12 spigoli** (le fettucce a 45° che riempiono lo smusso,
+larghe 9·√2) e **8 angoli** (i dischetti dove tre spigoli si incontrano — un
+dischetto e non un triangolo, perche' l'angolo di un dado vero e' un pezzo di
+sfera). Tutti i numeri sono figli di due soli, il lato (88 px) e lo smusso
+(9 px): cambiando lo smusso cambia tutto il dado, ma **va rifatto il conto**.
+
+Due dettagli che fanno la differenza: ogni pezzo **sovrappone 1 px** sul vicino
+(se no fra l'uno e l'altro resta un capello di sfondo che si legge come una
+crepa) e ogni pezzo **nasconde la propria faccia di dietro**, cosi' del dado si
+vede solo quello che si vedrebbe di un dado.
+
+**Il markup cambia con il CSS**: alle sei facce si aggiungono dodici `.sp` e
+otto `.ang`. Aggiornare il foglio senza aggiornare `index.html` da' un dado
+senza spigoli — peggio di prima.
+
+#### Non gira: rotola
+
+Una rotazione continua e uniforme non e' un dado che rotola, e' un cubo che
+gira su se stesso. Adesso sono **dodici quarti di giro**, uno per volta: due
+ribaltamenti in avanti e una torsione, quattro volte. Ogni quarto ha tre
+momenti con la sua curva — lo **spigolo** (parte piano fino al punto di
+equilibrio), l'**aria** (accelera: sta cadendo), la **botta** (si ferma di
+colpo e rimbalza, con lo schiacciamento). 8 ribaltamenti (720°) + 4 torsioni
+(360°): a fine giro il dado e' com'era, e l'anello non si vede. Con
+`prefers-reduced-motion` **non si spegne** — e' un'attesa, e ferma non direbbe
+piu' niente — rallenta a 11 s.
+
+**Il pacchetto aveva `translateX(-50%%)` con due segni di percento**, in tutti e
+dodici i keyframe della botta. Due `%` rendono la dichiarazione invalida e il
+browser la butta: proprio nei dodici istanti in cui il dado tocca terra l'ombra
+perdeva il suo `translateX(-50%)` e saltava di mezza larghezza. Corretto
+applicandolo. Vale come promemoria: **un pacchetto esterno si legge prima di
+incollarlo**, e in questo caso c'era anche di peggio — i suoi `style.css` e
+`index.html` completi erano fermi a otto commit prima, e la «strada corta»
+avrebbe cancellato una sessione di lavoro.
+
+#### Il dado cresce con lo schermo
+
+Il dado e' in pixel fissi e quei numeri non si toccano. Quello che si puo' fare
+e' guardarlo da piu' vicino: `--dk` scala l'intera scenetta, ombra compresa
+(1 su telefono, 1.3 sopra 880 px, 1.55 sopra 1400), e con lei il marchio, la
+riga del passo e la barra. Su un monitor da 1440 il dado era un francobollo in
+mezzo a mezzo metro di sfondo, e la prima schermata si leggeva come una pagina
+che non ha finito di caricare.
+
+Il **margine compensa**: `transform` scala quello che si vede ma non l'ingombro
+nel flusso, quindi senza, il dado ingrandito finirebbe addosso al titolo.
+
+Le altre tre cose, tutte piccole:
+
+- **la riga del passo non e' piu' piccola E tenue insieme.** A undici pixel
+  nell'oliva chiaro faceva meno di tre a uno, ed e' l'unica cosa che dica a che
+  punto e' il caricamento. Stessa correzione delle etichette dei riquadri.
+- **la barra ha un lustro che passa, e non e' decorazione.** Fra un passo e
+  l'altro puo' restare ferma per secondi interi — le misure delle scatole e le
+  copertine sono giri di rete veri — e una barra ferma e' indistinguibile da
+  una barra bloccata.
+- **uscendo, la schermata non sparisce: si fa da parte.** Una dissolvenza secca
+  su tutto lo schermo si legge come uno stacco; con un filo di ingrandimento si
+  allontana e lascia vedere la stanza dietro, che e' quello che sta succedendo.
+
+E **riscrivere il testo non fa ripartire un'animazione CSS**: la dissolvenza fra
+un passo e l'altro sta nel foglio, ma la fa ripartire `setProg`, che la spegne,
+legge una misura per costringere il ricalcolo — se no il browser fonde le due
+scritture — e la riaccende.
 
 ### Il meeple è una sagoma sola
 
@@ -3904,7 +4007,10 @@ ogni passo finito, su **tutti e due i rami**, messaggi in inglese che dicono
    caso serve *un'altra cartella*: e' successo, e per mezz'ora si e' verificato
    su codice che non era quello modificato. Il controllo che smaschera il caso
    e' chiedere al server un file e cercarci dentro la modifica appena fatta.
-3. **`_dado-nuovo/` non e' di questo lavoro.** E' una cartella non tracciata
+3. **`_dado-nuovo/` e' il pacchetto del dado nuovo**, applicato il 2026-08-28
+   ma **solo per pezzi**: `dado.css` e `markup.html`. I suoi `style.css` e
+   `index.html` completi sono fermi al commit `eb6053b` e copiarli sopra ai
+   nostri cancellerebbe otto commit. E' una cartella non tracciata
    che sta li' dall'inizio: `git add -A` se la porta dentro. Aggiungere i file
    per nome, o controllare `git status` prima di committare.
 4. **La sessione Supabase scade**, e allora `boot()` resta sospeso su

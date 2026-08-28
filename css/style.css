@@ -1280,6 +1280,44 @@ body.review #panel{
   background:var(--accent); opacity:.85;
 }
 .pan-scroll{overflow:auto; padding:28px clamp(20px,2.4vw,30px); -webkit-overflow-scrolling:touch}
+
+/* SU DESKTOP LA SCHEDA ERA UN FRANCOBOLLO ANCHE LEI.
+
+   Era `min(430px, 40vw)`, e su qualunque monitor sopra i 1075 px il
+   tetto scattava sempre: la scheda restava larga 430 px con dietro
+   millequattrocento pixel di finestra -- meno di un terzo dello
+   schermo, la recensione a quaranta caratteri per riga, e mezza stanza
+   vuota accanto. Il tetto sale a 600; sotto, comanda ancora il 40%
+   della finestra, che e' la misura che tiene separati la scatola
+   aperta (che `focusPose` mette a sinistra) e il pannello.
+
+   E VERTICALMENTE SI CENTRA NELLA FASCIA LIBERA. Prima il bordo di
+   sopra era inchiodato a `top:50%` meno trenta unita' di altezza,
+   cioe' al 20% dello schermo qualunque cosa ci fosse dentro: una
+   recensione di due righe lasciava trecento pixel di vuoto sotto e
+   niente sopra. Con `top` e `bottom` messi tutti e due,
+   `height:max-content` e i margini automatici, la scheda resta alta
+   quanto il suo contenuto e sta in mezzo fra la testata e il fondo --
+   corta o lunga che sia.
+
+   `max-content` e non `auto`: con top e bottom fissati, un'altezza
+   automatica viene STIRATA per riempire la fascia, e anche una scheda
+   di tre righe diventerebbe alta quanto lo schermo. */
+@media (min-width:881px){
+  #panel{
+    width:min(600px,40vw);
+    /* 104 e non 96: la testata non e' alta uguale dappertutto -- il
+       marchio va a capo sugli schermi stretti e passa da 56 a 74 px --
+       e appena sopra il salto a 880 la scheda le finiva a ventidue
+       pixel. */
+    top:104px; bottom:26px; margin-top:0;
+    height:max-content; max-height:calc(100vh - 130px);
+    margin-block:auto;
+  }
+  /* Piu' larga la scheda, piu' aria attorno al testo: se no le righe
+     arrivano da un bordo all'altro con il margine di un telefono. */
+  .pan-scroll{padding:32px clamp(24px,2.6vw,38px)}
+}
 .pan-scroll>*{opacity:0; transform:translateY(12px); transition:opacity .5s ease, transform .5s ease}
 body.review .pan-scroll>*{opacity:1; transform:none}
 body.review .pan-scroll>*:nth-child(1){transition-delay:.30s}
@@ -1620,76 +1658,515 @@ body.visita #p-fuori{display:none !important}
 /* La prima schermata che si vede. Era un fondo piatto con un dado in
    mezzo; adesso la luce viene da sopra come nella stanza che si sta per
    aprire, cosi' il caricamento e' gia' il sito e non una sala d'attesa. */
+/* IL DADO CRESCE CON LO SCHERMO.
+
+   Il dado e' costruito in pixel fissi -- 88 di lato, gli spigoli a
+   55.86 dal centro, gli angoli a 65.82 -- e quei numeri non si toccano:
+   sono figli l'uno dell'altro e rifarli vorrebbe dire rifare il conto.
+   Quello che si puo' fare e' guardarlo da piu' vicino, ed e' `--dk`,
+   che scala l'intera scenetta, ombra compresa.
+
+   Serve davvero: su un monitor da 1440 il dado era un francobollo in
+   mezzo a mezzo metro di sfondo, e la prima schermata del sito si
+   leggeva come una pagina che non ha finito di caricare invece che
+   come l'ingresso di una stanza. Su un telefono resta com'era, che li'
+   di spazio non ce n'e' da regalare.
+
+   Il margine compensa: `transform` scala quello che si vede ma non
+   l'ingombro nel flusso, quindi senza, il dado ingrandito finirebbe
+   addosso al titolo. Meta' di 130 per quanto e' cresciuto. */
 #load{
+  --dk:1;
   position:fixed; inset:0; z-index:9;
   background:
     radial-gradient(120% 78% at 50% 8%, #efe9df 0%, rgba(239,233,223,0) 62%),
     linear-gradient(180deg, #d8d4ce 0%, var(--bg) 46%, #c2beb8 100%);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px;
-  transition:opacity .7s ease, visibility 0s .7s;
+  transition:opacity .7s ease, transform .7s var(--ease), visibility 0s .7s;
 }
-body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
-/* L'ombra a terra sotto il dado: e' quella che lo fa stare in un posto
-   invece che galleggiare. Si stringe e si allarga insieme al rotolare. */
-.stage{perspective:760px; width:130px; height:130px; position:relative}
+@media (min-width:880px){ #load{--dk:1.3; gap:38px} }
+@media (min-width:1400px){ #load{--dk:1.55; gap:44px} }
+
+/* USCENDO, NON SPARISCE: SI FA DA PARTE.
+
+   Era una dissolvenza e basta, e una dissolvenza secca su tutto lo
+   schermo si legge come uno stacco. Con un filo di ingrandimento la
+   schermata si allontana e lascia vedere la stanza che c'e' dietro --
+   che e' esattamente quello che sta succedendo. */
+body.ready #load{
+  opacity:0; visibility:hidden; pointer-events:none;
+  transform:scale(1.06);
+}
+/* IL DADO NON GIRA: ROTOLA.
+   Prima era una rotazione continua e uniforme -- un cubo che ruota su
+   se stesso non e' un dado che rotola: nessuno dei due movimenti che
+   fa un dado vero c'era. Un dado si ribalta di UN QUARTO per volta,
+   scavalcando uno spigolo: parte piano fino al punto di equilibrio,
+   poi la gravita' lo lascia cadere e sbatte sulla faccia dopo.
+
+   Il ciclo e' fatto di dodici quarti di giro: due ribaltamenti in
+   avanti e una torsione su se stesso, quattro volte. La torsione e'
+   quella che gli toglie l'aria del meccanismo -- un dado che rotola
+   sempre nella stessa direzione e' un ingranaggio.
+
+   Ogni quarto ha tre momenti (spigolo, aria, botta) e ognuno ha la
+   sua curva, scritta nel keyframe stesso: senza, il tempo sarebbe lo
+   stesso per il salire e per il cadere, e cadere e' piu' veloce.
+
+   I conti tornano: 8 ribaltamenti (720 gradi) + 4 torsioni (360) e a
+   fine giro il dado e' esattamente come all'inizio, quindi l'anello
+   non si vede. */
+.stage{
+  perspective:760px; width:130px; height:130px; position:relative;
+  transform:scale(var(--dk,1));
+  /* quello che il `transform` non prende in carico: l'ingombro */
+  margin:calc((var(--dk,1) - 1) * 65px) 0;
+}
+/* L'ombra a terra: e' quella che lo fa stare in un posto invece che
+   galleggiare, quindi respira con lo stesso ritmo -- stretta e chiara
+   quando il dado e' per aria, larga e nera nell'istante della botta. */
 .stage::after{
-  content:''; position:absolute; left:50%; bottom:-14px; width:86px; height:15px;
+  content:''; position:absolute; left:50%; bottom:4px; width:88px; height:15px;
   transform:translateX(-50%);
-  background:radial-gradient(closest-side, rgba(60,46,28,.30), rgba(60,46,28,0));
-  animation:ombraDado 3.6s cubic-bezier(.62,.02,.38,1) infinite;
+  background:radial-gradient(closest-side, rgba(60,46,28,.34), rgba(60,46,28,0));
+  animation:ombraDado 4.2s linear infinite;
+  will-change:transform, opacity;
 }
 @keyframes ombraDado{
-  0%,100%{transform:translateX(-50%) scale(1);   opacity:.85}
-  25%    {transform:translateX(-50%) scale(.78); opacity:.55}
-  50%    {transform:translateX(-50%) scale(1.04);opacity:.9}
-  75%    {transform:translateX(-50%) scale(.82); opacity:.6}
+  0%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  4.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  7.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  8.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  13%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  15.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  16.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  21.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.86); opacity:.58
+  }
+  24%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.06); opacity:.95
+  }
+  25%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  29.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  32.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  33.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  38%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  40.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  41.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  46.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.86); opacity:.58
+  }
+  49%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.06); opacity:.95
+  }
+  50%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  54.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  57.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  58.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  63%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  65.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  66.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  71.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.86); opacity:.58
+  }
+  74%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.06); opacity:.95
+  }
+  75%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  79.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  82.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  83.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  88%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.7); opacity:.4
+  }
+  90.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.14); opacity:.95
+  }
+  91.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateX(-50%) scale(1); opacity:.8
+  }
+  96.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateX(-50%) scale(.86); opacity:.58
+  }
+  99%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateX(-50%) scale(1.06); opacity:.95
+  }
+  100%{transform:translateX(-50%) scale(1); opacity:.8}
 }
 .die{
   position:relative; width:88px; height:88px; margin:11px auto;
   transform-style:preserve-3d;
-  animation:tumble 3.6s cubic-bezier(.62,.02,.38,1) infinite;
+  /* il tempo lo comandano i keyframes uno per uno: qui `linear` e'
+     l'assenza di curva, non una curva */
+  animation:rotolaDado 4.2s linear infinite;
+  will-change:transform;
 }
-@keyframes tumble{
-  0%   {transform:rotateX(-24deg) rotateY(18deg)}
-  25%  {transform:rotateX(66deg)  rotateY(108deg)}
-  50%  {transform:rotateX(156deg) rotateY(198deg)}
-  75%  {transform:rotateX(246deg) rotateY(288deg)}
-  100% {transform:rotateX(336deg) rotateY(378deg)}
+@keyframes rotolaDado{
+  0%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(0deg) rotateX(0deg)
+  }
+  4.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(0deg) rotateX(45deg)
+  }
+  7.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(0deg) rotateX(90deg)
+  }
+  8.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(0deg) rotateX(90deg)
+  }
+  13%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(0deg) rotateX(135deg)
+  }
+  15.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(0deg) rotateX(180deg)
+  }
+  16.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(0deg) rotateX(180deg)
+  }
+  21.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-7px) rotateX(-16deg) rotateY(20deg) scale3d(0.99,1.02,0.99) rotateY(45deg) rotateX(180deg)
+  }
+  24%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.04,0.95,1.04) rotateY(90deg) rotateX(180deg)
+  }
+  25%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(90deg) rotateX(180deg)
+  }
+  29.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(90deg) rotateX(225deg)
+  }
+  32.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(90deg) rotateX(270deg)
+  }
+  33.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(90deg) rotateX(270deg)
+  }
+  38%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(90deg) rotateX(315deg)
+  }
+  40.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(90deg) rotateX(360deg)
+  }
+  41.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(90deg) rotateX(360deg)
+  }
+  46.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-7px) rotateX(-16deg) rotateY(20deg) scale3d(0.99,1.02,0.99) rotateY(135deg) rotateX(360deg)
+  }
+  49%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.04,0.95,1.04) rotateY(180deg) rotateX(360deg)
+  }
+  50%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(180deg) rotateX(360deg)
+  }
+  54.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(180deg) rotateX(405deg)
+  }
+  57.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(180deg) rotateX(450deg)
+  }
+  58.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(180deg) rotateX(450deg)
+  }
+  63%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(180deg) rotateX(495deg)
+  }
+  65.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(180deg) rotateX(540deg)
+  }
+  66.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(180deg) rotateX(540deg)
+  }
+  71.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-7px) rotateX(-16deg) rotateY(20deg) scale3d(0.99,1.02,0.99) rotateY(225deg) rotateX(540deg)
+  }
+  74%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.04,0.95,1.04) rotateY(270deg) rotateX(540deg)
+  }
+  75%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(270deg) rotateX(540deg)
+  }
+  79.667%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(270deg) rotateX(585deg)
+  }
+  82.333%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(270deg) rotateX(630deg)
+  }
+  83.333%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(270deg) rotateX(630deg)
+  }
+  88%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-16px) rotateX(-16deg) rotateY(20deg) scale3d(0.975,1.045,0.975) rotateY(270deg) rotateX(675deg)
+  }
+  90.667%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.075,0.9,1.075) rotateY(270deg) rotateX(720deg)
+  }
+  91.667%{
+    animation-timing-function:cubic-bezier(.5,.03,.86,.5);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(270deg) rotateX(720deg)
+  }
+  96.333%{
+    animation-timing-function:cubic-bezier(.24,.58,.36,1);
+    transform:translateY(-7px) rotateX(-16deg) rotateY(20deg) scale3d(0.99,1.02,0.99) rotateY(315deg) rotateX(720deg)
+  }
+  99%{
+    animation-timing-function:cubic-bezier(.18,1.5,.45,1);
+    transform:translateY(0px) rotateX(-16deg) rotateY(20deg) scale3d(1.04,0.95,1.04) rotateY(360deg) rotateX(720deg)
+  }
+  100%{transform:translateY(0px) rotateX(-16deg) rotateY(20deg) rotateY(360deg) rotateX(720deg)}
 }
-/* Avorio, non bianco: un dado da tavolo non e' mai bianco carta. Il
-   bordo interno smussato e' quello che gli da' lo spessore. */
+/* Con `prefers-reduced-motion` non si spegne: e' un'attesa, e ferma
+   non direbbe piu' niente. Rotola solo con molta piu' calma, e senza
+   i rimbalzi che sono la parte che da' fastidio. */
+@media (prefers-reduced-motion:reduce){
+  .die, .stage::after{
+    animation-duration:11s !important;
+    animation-iteration-count:infinite !important;
+  }
+}
+
+/* IL MODELLO: UN CUBO SMUSSATO, NON SEI CARTONCINI.
+
+   Sei facce con l'angolo arrotondato non fanno un dado: agli spigoli
+   non si toccano, e in mezzo resta una fessura che si apre e si chiude
+   mentre il dado gira. Da li' si vedeva l'interno -- era una scatola
+   vuota, non un dado.
+
+   Adesso il solido e' fatto per davvero, come un dado da tavolo:
+     6 facce piatte, rientrate di 9px da ogni bordo;
+    12 spigoli, le fettucce a 45 gradi che riempiono lo smusso;
+     8 angoli, i dischetti dove i tre spigoli si incontrano.
+
+   I conti sono tutti figli di due numeri, il lato (88px) e lo smusso
+   (9px): la faccia e' 70px, la fettuccia e' larga 9px per radice di
+   due (12.73px), e i piani stanno a 55.86px e 65.82px dal centro. Cambiando
+   lo smusso qui sotto cambia tutto il dado, ma va rifatto il conto.
+
+   Ogni pezzo sovrappone 1px sul vicino: senza, fra un pezzo e
+   l'altro resta un capello di sfondo, che a schermo si vede come una
+   crepa. E ognuno nasconde la propria faccia di dietro, cosi' del
+   dado si vede solo quello che si vedrebbe di un dado: l'esterno. */
+
+.f, .sp, .ang{
+  position:absolute; left:50%; top:50%;
+  box-sizing:border-box;      /* i conti sono sul lato, non sul contenuto */
+  backface-visibility:hidden; /* del dado si vede solo l'esterno */
+}
+
+/* --- le sei facce ------------------------------------------------- */
+/* Avorio, non bianco: un dado da tavolo non e' mai bianco carta. */
 .f{
-  position:absolute; inset:0; padding:12px; border-radius:15px;
+  width:70px; height:70px; margin:-35px 0 0 -35px;
+  padding:8px; border-radius:4px;
   display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr);
-  background:linear-gradient(148deg,#fbf7ec 0%,#f0e7d4 46%,#ddceb2 100%);
+  background:linear-gradient(148deg,#fdfaf2 0%,#f3ebda 46%,#e2d4ba 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(96,72,42,.26),
-    inset 0 6px 12px rgba(255,252,244,.85),
-    inset 0 -8px 14px rgba(120,94,58,.20),
-    0 3px 14px rgba(90,70,40,.14);
+    inset 0 5px 11px rgba(255,252,244,.8),
+    inset 0 -7px 13px rgba(120,94,58,.14);
 }
+
 /* I pallini sono SCAVATI: l'ombra viene da sopra e il riflesso sta in
    basso. Prima era il contrario, e sembravano appiccicati sopra. */
 .f i{
-  align-self:center; justify-self:center; width:14px; height:14px; border-radius:50%;
+  align-self:center; justify-self:center; width:12px; height:12px; border-radius:50%;
   background:radial-gradient(circle at 50% 32%, #241a10, #3f3020);
   box-shadow:inset 0 2px 3px rgba(0,0,0,.55), inset 0 -2px 2px rgba(255,240,210,.28),
              0 1px 0 rgba(255,250,240,.55);
 }
+
+/* --- i dodici spigoli --------------------------------------------- */
+/* La striscia chiara nel mezzo e' la cresta dello smusso: e' quella
+   che, quando il dado gira, fa scorrere la luce sul bordo. */
+.sp{
+  background:linear-gradient(180deg,#f1e7d2,#e0d3b6);
+}
+.sp1,.sp2,.sp3,.sp4{           /* questi quattro corrono per il verso lungo */
+  width:13.73px; height:71px; margin:-35.5px 0 0 -6.86px;
+  background:linear-gradient(90deg,#f1e7d2,#e0d3b6);
+}
+.sp5,.sp6,.sp7,.sp8,.sp9,.sp10,.sp11,.sp12{
+  width:71px; height:13.73px; margin:-6.86px 0 0 -35.5px;
+}
+
+/* --- gli otto angoli ---------------------------------------------- */
+/* Un dischetto, non un triangolo: l'angolo di un dado vero e' un pezzo
+   di sfera, e il cerchio passa esattamente per le tre punte che i
+   tre spigoli lasciano scoperte. */
+.ang{
+  width:15.2px; height:15.2px; margin:-7.6px 0 0 -7.6px; border-radius:50%;
+  background:radial-gradient(circle at 42% 38%, #f2e9d5, #e1d4b8);
+}
+
+/* le posizioni: ogni pezzo e' un piano portato a distanza dal centro */
 .f1{transform:translateZ(44px)}
 .f2{transform:rotateY(90deg) translateZ(44px)}
 .f3{transform:rotateY(180deg) translateZ(44px)}
 .f4{transform:rotateY(-90deg) translateZ(44px)}
 .f5{transform:rotateX(90deg) translateZ(44px)}
 .f6{transform:rotateX(-90deg) translateZ(44px)}
+
+.sp1{transform:rotateY(45deg) translateZ(55.86px)}
+.sp2{transform:rotateY(135deg) translateZ(55.86px)}
+.sp3{transform:rotateY(225deg) translateZ(55.86px)}
+.sp4{transform:rotateY(315deg) translateZ(55.86px)}
+.sp5{transform:rotateX(45deg) translateZ(55.86px)}
+.sp6{transform:rotateX(135deg) translateZ(55.86px)}
+.sp7{transform:rotateX(225deg) translateZ(55.86px)}
+.sp8{transform:rotateX(315deg) translateZ(55.86px)}
+.sp9{transform:rotateZ(45deg) rotateY(90deg) translateZ(55.86px)}
+.sp10{transform:rotateZ(135deg) rotateY(90deg) translateZ(55.86px)}
+.sp11{transform:rotateZ(225deg) rotateY(90deg) translateZ(55.86px)}
+.sp12{transform:rotateZ(315deg) rotateY(90deg) translateZ(55.86px)}
+
+.ang1{transform:rotateY(45deg) rotateX(35.26deg) translateZ(65.82px)}
+.ang2{transform:rotateY(135deg) rotateX(35.26deg) translateZ(65.82px)}
+.ang3{transform:rotateY(-135deg) rotateX(35.26deg) translateZ(65.82px)}
+.ang4{transform:rotateY(-45deg) rotateX(35.26deg) translateZ(65.82px)}
+.ang5{transform:rotateY(45deg) rotateX(-35.26deg) translateZ(65.82px)}
+.ang6{transform:rotateY(135deg) rotateX(-35.26deg) translateZ(65.82px)}
+.ang7{transform:rotateY(-135deg) rotateX(-35.26deg) translateZ(65.82px)}
+.ang8{transform:rotateY(-45deg) rotateX(-35.26deg) translateZ(65.82px)}
 .load-txt{text-align:center}
+/* Il marchio cresce con lo schermo come il dado: e' la prima cosa che
+   si legge del sito, e a ventuno pixel su un monitor largo sembrava una
+   didascalia. */
 .load-txt b{display:block; font-family:var(--ff-display); font-weight:400;
-  font-size:21.6px; letter-spacing:0; line-height:1}
+  font-size:calc(21.6px * var(--dk,1)); letter-spacing:0; line-height:1}
 .load-txt b i{color:var(--accent); font-style:normal}
-.load-txt span{display:block; margin-top:10px; font-size:11px; letter-spacing:.07em;
-  text-transform:uppercase; color:var(--ink-soft)}
+/* Un testo piccolo non puo' essere ANCHE tenue: e' la stessa lezione
+   delle etichette dei riquadri. A undici pixel nell'oliva chiaro, su
+   uno sfondo chiaro, questa riga faceva meno di tre a uno -- ed e'
+   l'unica cosa della schermata che dica a che punto e' il caricamento.
+   Cresce con lo schermo come tutto il resto, ed e' piu' scura. */
+.load-txt span{display:block; margin-top:10px; letter-spacing:.07em;
+  font-size:calc(11px * var(--dk,1)); text-transform:uppercase;
+  color:rgba(51,53,43,.72);
+  /* La frase cambia a ogni passo, e senza dissolvenza i passi si
+     sostituiscono di scatto: si legge come uno sfarfallio. Riscrivere
+     il testo NON fa ripartire un'animazione CSS da solo -- la fa
+     ripartire `setProg`, che la spegne e la riaccende. */
+  animation:passoCarica .45s var(--ease) both}
 .bar{
-  width:190px; height:4px; border-radius:999px;
+  position:relative; width:calc(190px * var(--dk,1)); height:4px; border-radius:999px;
   background:rgba(51,53,43,.14); overflow:hidden;
 }
 .bar i{
@@ -1697,6 +2174,58 @@ body.ready #load{opacity:0; visibility:hidden; pointer-events:none}
   background:linear-gradient(90deg,#d98a52,var(--accent));
   box-shadow:0 0 10px rgba(200,106,60,.45);
   transition:width .35s var(--ease);
+}
+/* UN LUSTRO CHE PASSA, E NON E' DECORAZIONE.
+
+   La barra avanza a scatti, e fra un passo e l'altro puo' restare
+   ferma per secondi interi -- le misure delle scatole e le copertine
+   sono giri di rete veri. Una barra ferma e' indistinguibile da una
+   barra bloccata, ed e' l'unica cosa in quella schermata che possa dire
+   "ci sono ancora". Sparisce da sola quando il caricamento e' finito,
+   perche' li' non ha piu' niente da dire. */
+.bar::after{
+  content:''; position:absolute; inset:0; border-radius:999px;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%);
+  transform:translateX(-100%);
+  animation:barLustro 1.9s ease-in-out infinite;
+}
+body.ready .bar::after{animation:none; opacity:0}
+@keyframes barLustro{
+  0%{transform:translateX(-100%)}
+  60%,100%{transform:translateX(100%)}
+}
+@keyframes passoCarica{
+  from{opacity:0; transform:translateY(4px)}
+  to{opacity:1; transform:none}
+}
+
+/* L'INGRESSO, A SCAGLIONI.
+
+   Le cose entrano dal basso una dopo l'altra, come in tutto il resto
+   del sito. Molto corto pero': questa e' la primissima schermata, e un
+   ingresso che si fa aspettare e' tempo tolto al caricamento vero --
+   quello che deve sembrare gia' cominciato.
+
+   Il dado NON entra dal basso: entra solo in dissolvenza, perche' il
+   suo `transform` e' gia' preso dalla scala e da un'animazione che
+   ne aggiungesse un'altra uscirebbe una scala sbagliata. */
+.stage{animation:entraDado .5s ease both}
+.load-txt{animation:entraSu .5s var(--ease) .06s both}
+.bar{animation:entraSu .5s var(--ease) .14s both}
+@keyframes entraDado{ from{opacity:0} to{opacity:1} }
+@keyframes entraSu{
+  from{opacity:0; transform:translateY(10px)}
+  to{opacity:1; transform:none}
+}
+/* Chi ha chiesto meno movimento tiene il dado che rotola -- e' l'attesa,
+   e ferma non direbbe piu' niente -- ma non si prende addosso anche
+   l'ingresso, il lustro e il cambio di passo, che sono cortesie. */
+@media (prefers-reduced-motion:reduce){
+  .stage, .load-txt, .bar, .load-txt span{animation:none}
+  .bar::after{animation:none; opacity:0}
+  #load{transition:opacity .7s ease, visibility 0s .7s}
+  body.ready #load{transform:none}
 }
 .load-txt span{min-height:14px}
 
