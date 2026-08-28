@@ -1487,12 +1487,6 @@ const geoCoperchio = () => comune('cubo2+2+1+1', () => cuboRaggruppato([0,0,1,1,
 const matTinta = (chiave, par) =>
   comune(chiave, () => new THREE.MeshStandardMaterial(par));
 
-// le copertine generiche sono cinque disegni in tutto: cinque texture
-// per tutte le scatole di contorno di tutte le librerie, non una a testa
-const matScatola = i => comune('scat' + i, () => new THREE.MeshStandardMaterial({
-  map: ART.toTex(ART.coverGeneric(i)), roughness: .7
-}));
-
 /* Un dado costava SEI chiamate, una per faccia, perche' aveva sei
    materiali. Le sei facce vanno in un atlante 3x2 e il dado torna a
    essere un oggetto solo: tre coppie di colori, tre texture, tre
@@ -1533,18 +1527,6 @@ const matDado = i => comune('dado' + i, () => {
     map: ART.toTex(atlanteDado(c[0], c[1])), roughness: .42, metalness: .02
   });
 });
-
-function arrScatole(g, seed, x, y){
-  const n = 2 + Math.floor(srnd(seed+1)*2);
-  for (let i = 0; i < n; i++){
-    const m = new THREE.Mesh(geoCubo(), matScatola(Math.floor(srnd(seed+i*3)*5)));
-    m.scale.set(2.5, .52, 2.5);
-    m.position.set(x + (srnd(seed+i)-.5)*.24, y + .26 + i*.52, -.1);
-    m.rotation.y = (srnd(seed+i*2)-.5)*.16;
-    m.castShadow = true; m.receiveShadow = true;
-    g.add(m);
-  }
-}
 
 /* Una fila di libri tutti in piedi, tutti alti uguale e tutti alla
    stessa distanza si legge come un codice a barre. Tre cose la
@@ -1756,31 +1738,18 @@ function arrPiante(g, seed, x, y){
   }
 }
 
-function arrCornici(g, seed, x, y){
-  const n = 1 + Math.floor(srnd(seed)*2);
-  for (let i = 0; i < n; i++){
-    const w = .95 + srnd(seed+i)*.5;
-    const h = w * (1 + srnd(seed+i*3)*.35);
-    /* La tela dipende dal seme e resta una per quadro -- sono diversi
-       apposta. Il bordo invece e' sempre lo stesso legno: erano
-       cinquanta materiali identici, uno per cornice. */
-    const tela  = new THREE.MeshStandardMaterial({ map: ART.toTex(ART.quadro(seed + i*5)), roughness: .72 });
-    const bordo = matTinta('bordoq', { color: 0x6b5540, roughness: .74 });
-    const m = new THREE.Mesh(geoFronte(), [bordo, tela]);
-    m.scale.set(w, h, .08);
-    // appoggiate all'indietro, come si appoggia una cornice a un muro
-    m.position.set(x - .45 + i*.85 + (srnd(seed+i*11)-.5)*.2, y + h/2, -.55 + i*.4);
-    m.rotation.set(-.14, (srnd(seed+i*7)-.5)*.45, 0);
-    m.castShadow = true; m.receiveShadow = true;
-    g.add(m);
-  }
-}
+/* TRE, NON PIU' CINQUE. Le scatole di contorno e le cornici sono state
+   tolte: erano le due che il sito non e' riuscito a far sembrare sue --
+   le copertine finte ripetevano cinque disegni in ogni mobile, e la
+   cornice, con il bordo spesso in profondita' ma largo zero, da davanti
+   era una figurina appoggiata al muro. Con loro se ne vanno le uniche
+   due tinte fuori tavolozza che restavano in scena.
 
-const ARREDI = {
-  giochi: arrScatole, libri: arrLibri, dadi: arrDadi,
-  piante: arrPiante, cornici: arrCornici
-};
-const ARREDI_MISTI = ['giochi', 'libri', 'dadi', 'piante', 'cornici'];
+   Una stanza salvata con `giochi` o `cornici` non si rompe: `normalizza`
+   in js/stanza.js fa cadere su `misto` qualunque valore che non sia
+   nella lista, ed e' il motivo per cui quella lista e' la sola fonte. */
+const ARREDI = { libri: arrLibri, dadi: arrDadi, piante: arrPiante };
+const ARREDI_MISTI = ['libri', 'dadi', 'piante'];
 
 function riempiCubo(g, stile, seed, x, y){
   if (stile === 'niente') return;

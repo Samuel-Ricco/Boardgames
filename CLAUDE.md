@@ -1685,27 +1685,39 @@ colonne che gli amici leggono.
   solo dopo una pausa: un pulsante «salva» dove ogni clic si vede gia' applicato
   e' una domanda a cui l'utente ha gia' risposto.
 
-## I cinque arredi
+## I tre arredi
 
-`arrLibri`, `arrScatole`, `arrDadi`, `arrPiante`, `arrCornici`, piu' `misto` e
-`niente`. Ognuno riceve gruppo, seme ripetibile e il punto `(x, y)` su cui
+`arrLibri`, `arrDadi`, `arrPiante`, piu' `misto` e `niente`. Ognuno riceve gruppo, seme ripetibile e il punto `(x, y)` su cui
 appoggiare — che sia il fondo di un cubo o **il cielo del mobile**: un mobile
 vero ha sempre qualcosa sopra, ed e' anche quello che fa capire dove finisce.
 
 - Le foglie delle piante sono sfere schiacciate, non un modello: a quella
   distanza contano sagoma e colore, e una pianta fatta bene costerebbe piu'
   triangoli di tutto il mobile.
-- I quadri nelle cornici sono astratti apposta (`ART.quadro`): qualunque
-  soggetto riconoscibile, a quattro centimetri sullo schermo, e' una macchia.
 - `niente` non e' un ripiego: chi lascia i vuoti apposta non vuole che glieli
   riempiamo noi.
 
-### Tre dei cinque, rifatti
+### Erano cinque, e due sono state tolte
 
-Libri, piante e dadi. Scatole e cornici sono rimaste come stavano, ed e' una
-scelta di chi ci abita, non una dimenticanza: **il viola sopravvive li'**
-(`#5d3f61` nelle copertine di contorno) ed e' l'unica tinta del sito che non
-sta nella tavolozza.
+Le **scatole di contorno** e le **cornici** non ci sono piu'. Erano le due che
+il sito non e' riuscito a far sembrare sue: le copertine finte ripetevano
+cinque disegni in ogni mobile, e la cornice — con il bordo spesso in
+profondita' ma **largo zero** — da davanti era una figurina appoggiata al muro,
+non un quadro. Con loro se ne vanno le uniche due tinte fuori tavolozza che
+restavano in scena (`#5d3f61` e `#57406a`).
+
+Sono uscite per intero, non nascoste: via `arrScatole` e `arrCornici`, via
+`matScatola`, via `ART.coverGeneric` e `ART.quadro` con i loro export, via le
+quattro chiavi del dizionario. Quello che resta condiviso resta: **`geoFronte`
+non si tocca**, perche' e' anche la geometria delle scatole vere dei giochi.
+
+**Una stanza salvata con `giochi` o `cornici` non si rompe.** `normalizza` in
+`js/stanza.js` fa cadere su `misto` qualunque valore che non sia nella lista
+`ARREDI` — verificato: `cornici -> misto`, `giochi -> misto`, `zzz -> misto`,
+`piante -> piante`. E' il motivo per cui quella lista dev'essere la sola fonte:
+togliere una voce da li' basta, e nessun dato vecchio va migrato.
+
+### I tre che restano, rifatti
 
 **I libri erano un codice a barre.** Tutti in piedi, tutti alti quasi uguale
 (1.9-2.6, cioe' sette millimetri di differenza che da nessuna distanza si

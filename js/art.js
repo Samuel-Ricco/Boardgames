@@ -598,51 +598,6 @@ function coverScythe(){
   return c;
 }
 
-// Copertina astratta per le scatole di contorno, quelle non cliccabili
-function coverGeneric(seed){
-  const S = 256, [c,x] = cnv(S,S);
-  const hues = [[ '#4f5f42','#d8c795' ], [ '#7a4436','#eccb96' ], [ '#3a4a5e','#cfdbe2' ],
-                [ '#5d3f61','#e2c6d8' ], [ '#75602c','#f2e0b0' ]];
-  const p = hues[seed % hues.length];
-
-  x.fillStyle = p[0]; x.fillRect(0,0,S,S);
-
-  // fascia diagonale piu' chiara
-  x.save(); x.translate(S/2,S/2); x.rotate(-.32);
-  x.globalAlpha = .16; x.fillStyle = p[1];
-  x.fillRect(-S, -46, S*2, 40); x.fillRect(-S, 16, S*2, 14);
-  x.restore(); x.globalAlpha = 1;
-
-  // emblema geometrico al centro
-  x.save(); x.translate(S/2, 104);
-  x.strokeStyle = p[1]; x.lineWidth = 5;
-  x.beginPath();
-  for (let i=0;i<6;i++){
-    const a = i/6*6.283 - 1.57, r = 46;
-    i ? x.lineTo(Math.cos(a)*r, Math.sin(a)*r) : x.moveTo(Math.cos(a)*r, Math.sin(a)*r);
-  }
-  x.closePath(); x.stroke();
-  x.fillStyle = p[1]; x.globalAlpha = .5;
-  x.beginPath(); x.moveTo(0,-22); x.lineTo(20,14); x.lineTo(-20,14); x.closePath(); x.fill();
-  x.restore(); x.globalAlpha = 1;
-
-  // blocco del titolo, senza testo: sono scatole di sfondo
-  x.fillStyle = p[1];
-  x.fillRect(40, 186, S-80, 12);
-  x.globalAlpha = .6; x.fillRect(40, 206, (S-80)*.62, 6);
-  x.globalAlpha = .35; x.fillRect(40, 218, (S-80)*.38, 6);
-  x.globalAlpha = 1;
-
-  x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = 3;
-  x.strokeRect(10,10,S-20,S-20);
-  vignette(x, S, S, .4); grain(x, S, S, 10);
-  return c;
-}
-
-/* Copertina di ripiego per i giochi aggiunti dall'admin: quando la
-   vera immagine non c'e' (proxy spento, o gioco scritto a mano) la
-   scatola deve comunque sembrare una scatola, con il suo titolo.
-   Proporzioni da scatola vera, non quadrata. */
 function coverTitolo(game){
   const W = 720, H = 520, [c,x] = cnv(W,H);
   const base = game.wrap || '#4a4632';
@@ -1089,52 +1044,12 @@ function targhetta(nome, tinta){
   return c;
 }
 
-function quadro(seed){
-  const S = 256, cx = cnv(S, S), c = cx[0], x = cx[1];
-  const rnd = function(n){
-    const v = Math.sin((seed + n) * 127.1 + 311.7) * 43758.5453;
-    return v - Math.floor(v);
-  };
-  const FONDI = ['#efe3cb', '#e2d3b6', '#d8ddd6', '#e6d9d0'];
-  const TINTE = ['#c1552c', '#9a6a15', '#3f4f63', '#4d5a48', '#6a3a3a', '#57406a'];
-
-  x.fillStyle = FONDI[Math.floor(rnd(1) * FONDI.length) % FONDI.length];
-  x.fillRect(0, 0, S, S);
-
-  const modo = Math.floor(rnd(2) * 3);
-  for (let i = 0; i < 3 + Math.floor(rnd(3) * 3); i++){
-    x.fillStyle = TINTE[Math.floor(rnd(10 + i) * TINTE.length) % TINTE.length];
-    x.globalAlpha = .55 + rnd(20 + i) * .4;
-    if (modo === 0){                       // colline sovrapposte
-      x.beginPath();
-      x.moveTo(0, S);
-      x.lineTo(0, S * (.4 + rnd(30 + i) * .4));
-      x.quadraticCurveTo(S / 2, S * (.15 + rnd(40 + i) * .5), S, S * (.35 + rnd(50 + i) * .45));
-      x.lineTo(S, S);
-      x.closePath();
-      x.fill();
-    } else if (modo === 1){                // rettangoli
-      const w = S * (.15 + rnd(30 + i) * .4), h = S * (.15 + rnd(40 + i) * .5);
-      x.fillRect(rnd(50 + i) * (S - w), rnd(60 + i) * (S - h), w, h);
-    } else {                               // cerchi
-      x.beginPath();
-      x.arc(S * (.2 + rnd(30 + i) * .6), S * (.2 + rnd(40 + i) * .6),
-            S * (.08 + rnd(50 + i) * .18), 0, Math.PI * 2);
-      x.fill();
-    }
-  }
-  x.globalAlpha = 1;
-  grain(x, S, S, 10);
-  return c;
-}
-
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
   aoCubi: aoCubi, fariCubi: fariCubi, copia: copia,
   parquet: parquet, contatto: contatto,
-  avatar: avatar, quadro: quadro, targhetta: targhetta,
-  coverRoot: coverRoot, coverScythe: coverScythe, coverGeneric: coverGeneric,
-  coverTitolo: coverTitolo,
+  avatar: avatar, targhetta: targhetta,
+  coverRoot: coverRoot, coverScythe: coverScythe, coverTitolo: coverTitolo,
   spine: spine, cardboard: cardboard, inside: inside,
   dieFace: dieFace
 };

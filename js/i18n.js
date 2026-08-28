@@ -638,10 +638,8 @@ it: {
   'tinta.neonGiallo':   'neon giallo',
   'tinta.neonBlu':      'neon blu',
   'arredo.libri':       'libri',
-  'arredo.scatole':     'scatole',
   'arredo.dadi':        'dadi e meeple',
   'arredo.piante':      'piante',
-  'arredo.cornici':     'cornici',
   'arredo.misto':       'un po&rsquo; di tutto',
   'arredo.niente':      'niente',
 
@@ -1203,10 +1201,8 @@ en: {
   'tinta.neonGiallo':   'neon yellow',
   'tinta.neonBlu':      'neon blue',
   'arredo.libri':       'books',
-  'arredo.scatole':     'boxes',
   'arredo.dadi':        'dice and meeples',
   'arredo.piante':      'plants',
-  'arredo.cornici':     'picture frames',
   'arredo.misto':       'a bit of everything',
   'arredo.niente':      'nothing',
 

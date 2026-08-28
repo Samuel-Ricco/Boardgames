@@ -130,10 +130,8 @@ const PAVIMENTI = [
    e chi lascia i buchi apposta non vuole che glieli riempiamo noi. */
 const ARREDI = [
   { v: 'libri',   n: 'arredo.libri' },
-  { v: 'giochi',  n: 'arredo.scatole' },
   { v: 'dadi',    n: 'arredo.dadi' },
   { v: 'piante',  n: 'arredo.piante' },
-  { v: 'cornici', n: 'arredo.cornici' },
   { v: 'misto',   n: 'arredo.misto' },
   { v: 'niente',  n: 'arredo.niente' }
 ];
