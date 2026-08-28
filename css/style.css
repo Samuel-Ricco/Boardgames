@@ -283,6 +283,40 @@ body.vcat-wish #catalogo .cat-fondo{display:none}
 /* Senza account non c'e' nessuna wishlist: la scelta non si pone. */
 body:not(.dentro) #cat-viste{display:none}
 
+/* L'ARREDO DI UNA CELLA.
+
+   Cinque icone e basta, ancorate al cubo che si e' tenuto premuto.
+   Nessuna parola: cinque etichette in fila sopra una scena 3D sono una
+   didascalia che copre il mobile, e quello che fanno sta nel `title`.
+
+   E' una SUPERFICIE, non una tinta: carta piena con la sfocatura
+   dietro e un'ombra, come l'imbuto e il binario. Un fondo tinto al
+   dieci per cento funziona dentro una scheda chiara; sopra la stanza,
+   che e' gia' color crema e che si puo' spegnere fino al buio,
+   sparisce. */
+#cella{
+  position:fixed; z-index:5; display:none;
+  gap:2px; padding:5px;
+  background:var(--card); border-radius:999px; box-shadow:var(--shadow);
+  backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);
+  animation:apreMenu .16s ease-out both;
+}
+body.cella-su #cella{display:flex}
+#cella button{
+  display:flex; align-items:center; justify-content:center;
+  width:38px; height:38px; padding:0; cursor:pointer; line-height:0;
+  color:var(--ink-soft); background:none; border:0; border-radius:999px;
+}
+#cella button:hover{color:var(--ink); background:rgba(51,53,43,.07)}
+/* La scelta e' PIENA e non un contorno acceso: fra cinque icone dello
+   stesso tratto, un contorno di un altro colore si legge come "questa
+   e' diversa", non come "questa e' quella". */
+#cella button[aria-pressed="true"]{color:#f2f1ed; background:var(--accent)}
+/* Il dito vuole quarantaquattro pixel, come ovunque nel sito. */
+@media (pointer:coarse){
+  #cella button{width:44px; height:44px}
+}
+
 /* la barra sopra l'elenco: filtri a sinistra, gestione a destra */
 .mia-barra{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:14px 0 0}
 /* Nell'imbuto la casella e' l'ultima cosa del pannello; qui invece ha

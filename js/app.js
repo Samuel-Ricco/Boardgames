@@ -207,6 +207,13 @@ const ICO = {
   chiudi:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>',
   corona:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8l3.5 3L12 5l4.5 6L20 8l-1.6 9H5.6zM5.6 20h12.8"/></svg>',
   maniglia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 9h12M6 15h12"/></svg>',
+  /* I quattro dell'arredo di una cella. Stesso tratto e stesso
+     riquadro di tutte le altre: una fila di icone che non si somigliano
+     e' una fila che non si legge. */
+  arrLibri: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4.5 20V8.5h3V20zM9 20V6h3v14zM14.8 20.2l-1.4-10.4 3-.4 1.4 10.4zM3.5 20.5h17"/></svg>',
+  arrDadi:  '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="8" width="12" height="12" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="16" r="1.3" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M17 20l3-2.4V10l-3-2.4"/></svg>',
+  arrPiante:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 13.5V9M12 13.5c0-3.2 2-5.6 5-6.3-.4 3.4-2.2 5.6-5 6.3zM12 13.5C12 10.6 10.2 8.4 7.4 7.8c.3 3.1 1.9 5.1 4.6 5.7zM8.2 14h7.6l-.9 6.2H9.1z"/></svg>',
+  arrNiente:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M6.9 17.1L17.1 6.9"/></svg>',
   /* Una libreria a cubi 2x2 con i piedi: e' il soggetto del sito, e
      serve in due posti -- il pannello del mobile e "vai allo
      scaffale". Due comandi che portano allo stesso oggetto portano la
@@ -1798,15 +1805,29 @@ function buildProps(used){
      galleggia, cioe' peggio di prima. */
   const quanteVere = LIB.librerie().length;
 
+  const mobili = LIB.librerie();
+
   for (let l = 0; l < Math.min(state.libs, quanteVere); l++){
     const stile = stileLib(l).arredo;        // ogni mobile il suo
+    const libId = (mobili[l] || {}).id;
     arrediSopra(g, stile, l);
     for (let k = 0; k < PER_LIB; k++){
       const posto = l * PER_LIB + k;
       if (used.has(posto)) continue;
       const seed = posto * 17 + 3;
-      if (srnd(seed) < .34) continue;              // qualche posto resta vuoto
-      riempiCubo(g, stile, seed,
+
+      /* LA CELLA VIENE PRIMA DEL MOBILE.
+
+         Scelta a mano, comanda lei -- compreso il salto qui sotto: un
+         cubo su tre resta vuoto per fare respiro, ma se qualcuno ha
+         detto "qui i libri" quel respiro non lo riguarda. Sarebbe il
+         difetto peggiore possibile per un comando come questo: scegli
+         e a volte non succede niente. */
+      const scelta = STANZA.cella(libId, k);
+      if (scelta === 'niente') continue;
+      if (!scelta && srnd(seed) < .34) continue;   // qualche posto resta vuoto
+
+      riempiCubo(g, scelta || stile, seed,
                  cubX(l, k % COLS),
                  rigaY(Math.floor(k / COLS)) - KAL.cell/2);
     }
@@ -3066,6 +3087,7 @@ function rilingua(){
     sincronizzaPannello();
   }
   if (document.body.classList.contains('elenco')) disegnaMia();
+  if (cellaAperta) disegnaCella();
   if (state.sezione === 'catalogo'){
     /* Le due viste del catalogo si ridisegnano ognuna la sua: rifare
        il catalogo mentre si guarda la wishlist vorrebbe dire rifare
@@ -3119,6 +3141,15 @@ function scrollBy(d){
   snapSoon();
 }
 let mobileMostrato = -1;                  // quale mobile mostra il pannello aperto
+
+/* Scorrendo fra i mobili il cubo si sposta, e un menu che resta fermo
+   parla di un cubo che non e' piu' li' sotto. Segue finche' il suo
+   mobile e' quello inquadrato, e se ne va quando non lo e' piu'. */
+function seguiCella(){
+  if (!cellaAperta) return;
+  if (Math.abs(state.scroll - cellaAperta.l) > .55){ chiudiCella(); return; }
+  ancoraCella();
+}
 
 function updateRail(){
   nomeMobileCorrente();                   // il nome sta nell'imbuto, non qui
@@ -3298,6 +3329,18 @@ function bindInput(){
       const sopra = pick();
       if (sopra && !sopra.userData.busy){
         presaT = setTimeout(function(){ iniziaPresa(sopra); }, PRESA_MS);
+      } else if (!sopra && state.phase === 'browse'){
+        /* Cubo VUOTO tenuto premuto: e' l'unico gesto che questa
+           schermata aveva ancora libero, e da qui si sceglie cosa
+           mettergli dentro. Il cubo si legge sul piano dei cubi, non
+           su quello della presa: e' li' che il dito sta indicando. */
+        const p = puntoSuZ(.2);
+        const slot = p ? slotDa(p.x, p.y) : -1;
+        if (slot >= 0 && !boxes.some(function(b){ return b.userData.cubo === slot; })){
+          presaT = setTimeout(function(){
+            apriCella(Math.floor(slot / PER_LIB), slot % PER_LIB);
+          }, PRESA_MS);
+        }
       }
     }
   });
@@ -4925,6 +4968,7 @@ function bindOrdineLibrerie(){
     disarma();
     const id = b.closest('li').getAttribute('data-id');
     b.disabled = true;
+    STANZA.scordaCelle(id);          // le sue celle non hanno piu' un cubo
     LIB.togliLibreria(id).then(function(){
       state.scrollTo = state.scroll = clamp(state.scroll, 0, maxScroll());
       buildCabinet();
@@ -4989,6 +5033,7 @@ function bindLibrerie(){
   if (meno) armaBottone(meno, 'stanza.meno', 'stanza.menoOk', function(){
     const L = libCorrente();
     if (!L){ flash(TP('msg.quiNienteLib')); return; }
+    STANZA.scordaCelle(L.id);        // le sue celle non hanno piu' un cubo
     LIB.togliLibreria(L.id).then(function(){
       state.scrollTo = state.scroll = clamp(state.scroll, 0, maxScroll());
       buildCabinet();
@@ -5023,7 +5068,14 @@ function salvaStanzaTraPoco(){
   salvaStanzaT = setTimeout(function(){
     STANZA.salva()
       .then(function(){ q('#st-msg').textContent = TP('stanza.salvata'); })
-      .catch(function(e){ q('#st-msg').textContent = TP('stanza.nonSalvata', {e: e.message}); });
+      .catch(function(e){
+        q('#st-msg').textContent = TP('stanza.nonSalvata', {e: e.message});
+        /* Il pannello puo' essere chiuso -- l'arredo di una cella si
+           sceglie senza aprirlo -- e un salvataggio fallito dentro un
+           riquadro che nessuno guarda e' un salvataggio fallito in
+           silenzio. */
+        flash(TP('stanza.nonSalvata', {e: e.message}));
+      });
   }, 700);
 }
 
@@ -5134,6 +5186,131 @@ function disegnaStanza(){
    I due pulsanti sono ESCLUSI dal controllo: se no il loro pointerdown
    chiuderebbe il pannello e il click subito dopo lo riaprirebbe, e il
    toggle non funzionerebbe mai. */
+/* ===============================================================
+   L'ARREDO DI UNA CELLA
+   ===============================================================
+
+   Il mobile ha il suo arredo e vale per tutti e dodici i cubi. Ma uno
+   scaffale vero non e' fatto cosi': in un cubo ci sono i libri, in
+   quello accanto una pianta, e in quello sotto non c'e' niente perche'
+   li' non ci si e' messo niente. Fino a qui l'unico modo di dirlo era
+   cambiare l'arredo di tutto il mobile.
+
+   IL GESTO E' TENERE PREMUTO UN CUBO VUOTO. Non c'e' un pulsante da
+   nessuna parte, ed e' voluto: e' l'unico gesto che questa schermata
+   aveva ancora libero -- tenere premuto una SCATOLA la prende, tenere
+   premuto un cubo vuoto non faceva niente -- e un comando in piu' che
+   galleggia sulla scena sarebbe stato il terzo, dopo l'imbuto e la
+   libreria, in una schermata che ne ha due apposta.
+
+   IL MENU E' CINQUE ICONE E BASTA. Nessuna parola: quello che fanno
+   sta nel `title`, e cinque parole in fila su una scena 3D sono una
+   didascalia che copre il mobile. Si ancora al cubo -- proiettato con
+   la camera, come fa la scheda della recensione -- e sta SOTTO, non
+   sopra: scegliendo si vede subito cosa e' comparso nel cubo, che e'
+   meta' del motivo per cui si sta scegliendo. */
+const VOCI_CELLA = [
+  { v: '',       i: 'scaffale',  t: 'cella.comeLib' },
+  { v: 'libri',  i: 'arrLibri',  t: 'arredo.libri' },
+  { v: 'dadi',   i: 'arrDadi',   t: 'arredo.dadi' },
+  { v: 'piante', i: 'arrPiante', t: 'arredo.piante' },
+  { v: 'niente', i: 'arrNiente', t: 'arredo.niente' }
+];
+
+let cellaAperta = null;          // { l, k, libId } oppure null
+
+/* Dove cade sullo schermo un punto del mondo. `schermoY` c'era gia' ma
+   torna solo la quota: qui serve anche l'ascissa. */
+function schermoXY(x, y, z){
+  _pv.set(x, y, z).project(camera);
+  return { x: (_pv.x * .5 + .5) * window.innerWidth,
+           y: (-_pv.y * .5 + .5) * window.innerHeight };
+}
+
+function disegnaCella(){
+  const el = q('#cella');
+  if (!el || !cellaAperta) return;
+  const ora = STANZA.cella(cellaAperta.libId, cellaAperta.k);
+  el.innerHTML = VOCI_CELLA.map(function(x){
+    const su = (x.v === ora);
+    const che = TP(x.t);
+    return '<button type="button" data-cella="' + x.v + '"' +
+      ' aria-pressed="' + (su ? 'true' : 'false') + '"' +
+      ' title="' + esc(che) + '" aria-label="' + esc(che) + '">' + ICO[x.i] + '</button>';
+  }).join('');
+}
+
+/* Il menu sta sotto il cubo, e se sotto non ci sta va sopra: sulla
+   fila in basso finirebbe dietro il binario, che e' il posto peggiore
+   -- si vede meta' menu e l'altra meta' scorre i mobili. */
+function ancoraCella(){
+  const el = q('#cella');
+  if (!el || !cellaAperta) return;
+  const cx = cubX(cellaAperta.l, cellaAperta.k % COLS);
+  const cy = rigaY(Math.floor(cellaAperta.k / COLS));
+  const sotto = schermoXY(cx, cy - KAL.cell/2, 0);
+  const sopra = schermoXY(cx, cy + KAL.cell/2, 0);
+  const w = el.offsetWidth || 210, h = el.offsetHeight || 46;
+
+  let y = sotto.y + 10;
+  if (y + h > window.innerHeight - 96) y = sopra.y - h - 10;
+  el.style.left = Math.round(clamp(sotto.x - w/2, 10, window.innerWidth - w - 10)) + 'px';
+  el.style.top  = Math.round(clamp(y, 74, window.innerHeight - h - 12)) + 'px';
+}
+
+function apriCella(l, k){
+  const L = LIB.librerie()[l];
+  if (!L) return;                        // il mobile di scorta non si arreda
+  chiudiPannelli('cella');
+  cellaAperta = { l: l, k: k, libId: L.id };
+  const el = q('#cella');
+  disegnaCella();
+  el.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('cella-su');
+  ancoraCella();                          // dopo il disegno: serve la misura vera
+}
+
+function chiudiCella(){
+  if (!cellaAperta) return;
+  cellaAperta = null;
+  document.body.classList.remove('cella-su');
+  const el = q('#cella');
+  if (el) el.setAttribute('aria-hidden', 'true');
+}
+
+/* Gli arredi da soli, senza rimettere in fila le scatole: il `used` si
+   rilegge dalle scatole che ci sono, che e' sempre la verita' del
+   momento. */
+function rifaiArredi(){
+  if (!cabGroup) return;
+  const used = new Set();
+  boxes.forEach(function(b){
+    if (b.userData.cubo !== undefined && b.userData.cubo >= 0) used.add(b.userData.cubo);
+  });
+  buildProps(state.q ? null : used);
+}
+
+function scegliCella(v){
+  if (!cellaAperta) return;
+  STANZA.setCella(cellaAperta.libId, cellaAperta.k, v);
+  salvaStanzaTraPoco();
+  rifaiArredi();
+  disegnaCella();          // la scelta si sposta, il menu resta aperto
+}
+
+function bindCella(){
+  const el = q('#cella');
+  if (!el) return;
+  el.addEventListener('click', function(e){
+    const b = e.target.closest('button[data-cella]');
+    if (!b) return;
+    scegliCella(b.getAttribute('data-cella'));
+  });
+  /* Il menu sta sulla scena: senza questo, premerci sopra fa partire
+     il trascinamento dei mobili sotto. */
+  el.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
+}
+
 function bindClicFuori(){
   document.addEventListener('pointerdown', function(e){
     const t = e.target;
@@ -5143,6 +5320,7 @@ function bindClicFuori(){
         !t.closest('#vista') && !t.closest('#vista-apri')) chiudiVista();
     if (b.classList.contains('arreda') &&
         !t.closest('#stanza') && !t.closest('#stanza-apri')) chiudiArreda();
+    if (cellaAperta && !t.closest('#cella')) chiudiCella();
   }, true);
 }
 
@@ -5165,6 +5343,7 @@ function chiudiPannelli(tranne){
   if (tranne !== 'partita') chiudiPartita();
   if (tranne !== 'add')     closeAdd();
   if (tranne !== 'gruppi')  chiudiGestioneGruppi();
+  if (tranne !== 'cella')   chiudiCella();
 }
 
 /* --- l'imbuto: cosa vedi sullo scaffale ---------------------------
@@ -7534,6 +7713,7 @@ function frame(now){
     camBase.set(camXFor(state.scroll), VISTA_Y, state.distShelf * state.zoom);
     if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)){
       updateRail();
+      seguiCella();          // il menu della cella e' ancorato a un cubo che si muove
       allineaComandi();      // la camera si e' spostata: la proiezione e' un'altra
       rifaiOmbre();          // la luce di finestra segue camBase: l'ombra si sposta
       sporcaMirino();        // sotto il puntatore adesso c'e' un'altra scatola
@@ -7865,7 +8045,7 @@ async function boot(){
   const mancati = [];
   [['input', bindInput], ['strumenti', bindTools], ['vista', bindVista],
    ['binario', bindRail], ['cuore', bindCuore], ['gruppi', bindPiedeGruppi],
-   ['stanza', bindStanza], ['clic fuori', bindClicFuori],
+   ['stanza', bindStanza], ['cella', bindCella], ['clic fuori', bindClicFuori],
    ['librerie', bindLibrerie], ['etichette', bindGruppi]
   ].forEach(function(x){
     try { x[1](); }

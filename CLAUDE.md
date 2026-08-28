@@ -1774,6 +1774,64 @@ Le mesh in piu' passano tutte da `comune()`: il labbro del vaso e' **una**
 geometria per tutte le piante di tutte le librerie, il feltro e il vassoio sono
 il cubo unitario che c'era gia'.
 
+### L'arredo di una cella
+
+Il mobile ha il suo arredo e vale per tutti e dodici i cubi. Ma uno scaffale
+vero non e' fatto cosi': in un cubo ci sono i libri, in quello accanto una
+pianta, e in quello sotto non c'e' niente perche' li' non ci si e' messo
+niente. Fino a qui l'unico modo di dirlo era cambiare l'arredo di tutto il
+mobile.
+
+**Il gesto e' tenere premuto un cubo vuoto**, e non c'e' nessun pulsante da
+nessuna parte. E' voluto due volte: era l'unico gesto che quella schermata
+avesse ancora libero — tenere premuto una **scatola** la prende, tenere premuto
+un cubo vuoto non faceva niente — e un comando in piu' che galleggia sulla
+scena sarebbe stato il terzo, dopo l'imbuto e la libreria, in una schermata che
+ne ha due apposta.
+
+Il menu **si eredita tutte le guardie** da `puoiSpostare()`, che gia' copre i
+quattro casi in cui non si deve poter fare: senza accesso, mentre si cerca, in
+casa di un amico, e fuori dalla fase `browse`. Non ce n'e' una nuova da
+scrivere, ed e' il motivo per cui il gesto sta li' dentro e non accanto.
+
+**Cinque icone e basta, nessuna parola.** Cinque etichette in fila sopra una
+scena 3D sono una didascalia che copre il mobile: quello che fanno sta nel
+`title`. E' una **superficie** e non una tinta — carta piena, sfocatura dietro,
+ombra — come l'imbuto e il binario, perche' la stanza sotto si puo' spegnere
+fino al buio. La scelta corrente e' **piena** e non un contorno acceso: fra
+cinque icone dello stesso tratto un contorno di un altro colore si legge come
+«questa e' diversa», non come «questa e' quella».
+
+**Sta sotto il cubo, non sopra**: scegliendo si vede subito cosa e' comparso
+dentro, che e' meta' del motivo per cui si sta scegliendo. Sull'ultima fila
+finirebbe dietro il binario, e allora va sopra.
+
+- **Il dato sta in `profili.stanza`**, che e' un jsonb: nessuna migrazione. E'
+  l'unico motivo, e vale la pena saperlo — concettualmente una cella e' del
+  mobile, come il legno, e se un giorno diventa una colonna sua questo e' il
+  posto da svuotare.
+- **La chiave e' `<id della libreria>:<posto>`, non `<indice>:<posto>`.** Le
+  librerie si riordinano trascinandole, e un indice porterebbe l'arredo di una
+  cella addosso a un altro mobile.
+- **«Come la libreria» e' l'ASSENZA della chiave**, non un valore che si
+  chiama cosi'. Scegliendolo la chiave si cancella: cosi' un mobile che cambia
+  arredo si porta dietro tutti i cubi che nessuno ha toccato.
+- **La cella batte anche il salto.** In `buildProps` un cubo su tre resta vuoto
+  per fare respiro (`srnd(seed) < .34`); se qualcuno ha scelto, quel respiro
+  non lo riguarda. Sarebbe il difetto peggiore per un comando come questo:
+  scegli, e a volte non succede niente.
+- **Le celle si ripuliscono a ogni lettura.** Arrivano dal database, e una
+  chiave storta o un valore che non esiste piu' — `cornici`, per dirne uno che
+  c'era fino a ieri — non deve poter mandare in scena un arredo che non c'e'.
+  Verificato: su sette chiavi sporche ne passano due, e cadono il posto 12, il
+  `cornici`, il `misto` (che su una cella sola non vuol dire niente) e le due
+  chiavi malformate.
+- **Una libreria cancellata si porta via le sue celle** (`scordaCelle`): se no
+  restano orfane dentro il jsonb per sempre.
+- **Un salvataggio fallito adesso si vede.** Andava solo in `#st-msg`, dentro
+  il pannello della libreria — che qui e' chiuso, perche' la cella si arreda
+  senza aprirlo. Va anche nel flash.
+
 ### Provare gli arredi senza backend
 
 Le librerie sono righe sul database, quindi senza backend `LIB.librerie()` e'

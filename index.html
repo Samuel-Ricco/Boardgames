@@ -610,6 +610,15 @@
   </div>
 </div>
 
+<!-- L'ARREDO DI UNA CELLA.
+
+     Tenendo premuto un cubo vuoto esce questa fila di icone, ancorata
+     al cubo. Vuota nel markup apposta: il contenuto lo scrive il JS,
+     che e' anche l'unico a sapere quale delle cinque e' quella scelta
+     adesso. -->
+<div id="cella" aria-hidden="true" role="group"
+     data-i18n-aria="cella.aria" aria-label="cosa metti in questo cubo"></div>
+
 <!-- caricamento: un dado che rotola finche' la scena non e' pronta -->
 <div id="load">
   <div class="stage">

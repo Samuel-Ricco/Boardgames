@@ -34,7 +34,23 @@ const DEFAULT = {
   muro: '#cfccc8',
   pavimento: '#c7af98',
   arredo: 'misto',
-  nome: '#33352b'
+  nome: '#33352b',
+  /* L'ARREDO DELLA SINGOLA CELLA.
+
+     `arredo` vale per tutto il mobile; qui c'e' quello che si e'
+     scelto per un cubo solo, e solo per quelli scelti davvero -- una
+     chiave assente vuol dire "come dice la libreria", che e' il caso
+     normale e non va scritto da nessuna parte.
+
+     La chiave e' `<id della libreria>:<posto>` e NON `<indice>:<posto>`:
+     le librerie si riordinano trascinandole, e un indice porterebbe
+     l'arredo di una cella addosso a un altro mobile.
+
+     Sta nella stanza e non su `librerie` perche' la stanza e' un jsonb
+     e quindi non chiede una migrazione. E' l'unico motivo, e vale la
+     pena saperlo: se un giorno le celle diventano una colonna loro,
+     questo posto e' quello da svuotare. */
+  celle: {}
 };
 
 /* I legni tirati verso l'oliva. Un mobile scuro contro una parete
@@ -143,7 +159,13 @@ const ARREDI = [
 const LUCE_MIN = 0.08;
 const LUCE_MAX = 1.60;
 
-let ora = Object.assign({}, DEFAULT);
+/* Quello che una cella puo' essere: i tre arredi, piu' il vuoto
+   voluto. Non c'e' `misto` -- una cella sola non ha niente da
+   mescolare -- e non c'e' "come la libreria", che si dice togliendo
+   la chiave invece di scrivercene una. */
+const CELLE = ['libri', 'dadi', 'piante', 'niente'];
+
+let ora = Object.assign({}, DEFAULT, { celle: {} });
 let miei = true;              // stiamo guardando la propria stanza?
 
 function normalizza(s){
@@ -163,7 +185,59 @@ function normalizza(s){
   o.arredo    = dentro(ARREDI,    o.arredo,    DEFAULT.arredo);
   o.nome      = dentro(NOMI,      o.nome,      DEFAULT.nome);
   o.fariTinta = dentro(FARI,      o.fariTinta, DEFAULT.fariTinta);
+
+  /* Le celle si ripuliscono a ogni lettura: e' roba che arriva dal
+     database, e una chiave storta o un valore che non esiste piu' --
+     `cornici`, per dirne uno che c'era fino a ieri -- non deve poter
+     mandare in scena un arredo che non c'e'.
+
+     Il tetto e' generoso ma c'e': quattordici mobili pieni di celle
+     scelte a mano sono gia' piu' di quanto chiunque ne scelga, e una
+     mappa senza fondo dentro un jsonb condiviso e' un modo lento di
+     farsi male. */
+  const dentroCelle = {};
+  const sorgente = (o.celle && typeof o.celle === 'object') ? o.celle : {};
+  let quante = 0;
+  Object.keys(sorgente).forEach(function(k){
+    if (quante >= 168) return;
+    if (!/^[0-9a-f-]{6,40}:(?:[0-9]|10|11)$/i.test(k)) return;
+    const v = sorgente[k];
+    if (CELLE.indexOf(v) < 0) return;
+    dentroCelle[k] = v;
+    quante++;
+  });
+  o.celle = dentroCelle;
   return o;
+}
+
+function chiaveCella(libId, posto){
+  return String(libId || '') + ':' + posto;
+}
+
+/* Cosa si e' scelto per quel cubo, o '' se non si e' scelto niente. */
+function cella(libId, posto){
+  return (ora.celle && ora.celle[chiaveCella(libId, posto)]) || '';
+}
+
+/* Un valore vuoto toglie la chiave: "come la libreria" e' l'assenza di
+   una scelta, non una scelta che si chiama cosi'. */
+function setCella(libId, posto, v){
+  if (!ora.celle) ora.celle = {};
+  const k = chiaveCella(libId, posto);
+  if (v && CELLE.indexOf(v) >= 0) ora.celle[k] = v;
+  else delete ora.celle[k];
+  return ora.celle;
+}
+
+/* Una libreria cancellata lascia le sue celle orfane dentro il jsonb:
+   non fanno danno -- nessuno le legge piu' -- ma nemmeno restano li'
+   per sempre. */
+function scordaCelle(libId){
+  if (!ora.celle) return;
+  const p = String(libId) + ':';
+  Object.keys(ora.celle).forEach(function(k){
+    if (k.indexOf(p) === 0) delete ora.celle[k];
+  });
 }
 
 function corrente(){ return ora; }
@@ -214,6 +288,7 @@ function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, AR
 
 return {
   DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI,
+  CELLE: CELLE, cella: cella, setCella: setCella, scordaCelle: scordaCelle,
   FARI: FARI,
   LUCE_MIN: LUCE_MIN, LUCE_MAX: LUCE_MAX,
   corrente: corrente, miaStanza: miaStanza, normalizza: normalizza,
