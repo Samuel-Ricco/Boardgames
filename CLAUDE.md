@@ -1700,6 +1700,79 @@ vero ha sempre qualcosa sopra, ed e' anche quello che fa capire dove finisce.
 - `niente` non e' un ripiego: chi lascia i vuoti apposta non vuole che glieli
   riempiamo noi.
 
+### Tre dei cinque, rifatti
+
+Libri, piante e dadi. Scatole e cornici sono rimaste come stavano, ed e' una
+scelta di chi ci abita, non una dimenticanza: **il viola sopravvive li'**
+(`#5d3f61` nelle copertine di contorno) ed e' l'unica tinta del sito che non
+sta nella tavolozza.
+
+**I libri erano un codice a barre.** Tutti in piedi, tutti alti quasi uguale
+(1.9-2.6, cioe' sette millimetri di differenza che da nessuna distanza si
+vedono), tutti a passo fisso, e un'inclinazione casuale di &plusmn;0.06 rad —
+che e' «dritto». Adesso tre cose, e sono tre:
+
+- **il vuoto**: la fila parte da un bordo e si ferma prima dell'altro. Il lato
+  lo sceglie il seme — fisso, il buco dalla stessa parte in tutti i cubi
+  diventa un motivo invece di un caso — e la larghezza si taglia su quello che
+  avanza davvero, se no con cinque libri la fila usciva dal cubo;
+- **l'appoggio**: l'ultimo in piedi cade sul vicino di 0.22 rad, e il centro si
+  sposta perche' il **piede** resti sul ripiano. Ruotando attorno al centro
+  l'angolo basso affonda nel legno, ed e' la cosa che si nota per prima;
+- **i coricati**: due volumi sdraiati sopra la parte piu' bassa della fila. E'
+  il gesto che distingue una libreria di casa da uno scaffale di negozio.
+
+**Una foglia si piega.** Erano segmenti singoli inclinati verso l'esterno, e
+piu' erano lunghi piu' puntavano in alto: otto antenne attorno a un vaso, che
+da lontano sono un riccio. Adesso ogni foglia e' **due segmenti**, il secondo
+appeso alla punta del primo dentro un gruppo — cosi' la piega e' una rotazione
+sola e non un conto di seni — e ne bastano **cinque** dove prima ne servivano
+otto, con meno mesh. Due delle cinque ricadono sotto il bordo. Il vaso ha preso
+un **labbro**: un tronco di cono nudo e' un secchio.
+
+**Il vaso non e' piu' terracotta.** Era `#b2643f`, cioe' l'accento (`#c86a3c`)
+mancato di un soffio: due terracotta a un passo l'uno dall'altro nella stessa
+schermata si leggono come un errore di stampa. Corpo `#b8916f`, labbro `#c7af98`
+— il labbro piu' chiaro del corpo, come su un vaso vero che prende la luce
+sulla bocca — e l'accento resta a quello che si tocca. **Vale anche per i
+dorsi dei libri**: la terracotta li' e' `#b0552f` e non l'accento.
+
+**I dadi erano sei oggetti alla stessa quota.** Tre dadi, un d20 e due meeple
+sparsi su mezzo cubo: sei cose piccole tutte appoggiate al ripiano non si
+distinguono piu' l'una dall'altra, diventano grana. Restano **quattro** — due
+dadi, il d20, un meeple — e stanno su **due quote**, che e' tutta la differenza
+fra una posa e un mucchio.
+
+Due cose imparate provandolo in scena, tutte e due contro il disegno di
+partenza:
+
+- **il vassoio di legno non si vedeva.** Legno su rovere: spariva, e con lui la
+  seconda quota, che era l'unico motivo per cui c'era. Adesso e' un **vassoio
+  da dadi col feltro** — cornice `#6b4a33`, fondo `#3f4a3c` — che si legge al
+  primo colpo d'occhio ed e' anche l'oggetto giusto per un sito di giochi;
+- **il d20 non puo' essere avorio.** L'oro metallico di prima (`metalness .7`)
+  dentro un cubo in ombra usciva come una macchia e perdeva la forma, che e'
+  l'unica cosa che lo fa leggere come un d20 — ma l'avorio, provato, diventava
+  un batuffolo pallido accanto a due dadi d'avorio su un ripiano chiaro. E' il
+  **blu della terza coppia** (`#3f4f63`): l'unica tinta che lo stacca dal legno
+  **e** dai dadi, e con le facce piatte ogni sfaccettatura prende una luce
+  diversa.
+
+Le mesh in piu' passano tutte da `comune()`: il labbro del vaso e' **una**
+geometria per tutte le piante di tutte le librerie, il feltro e il vassoio sono
+il cubo unitario che c'era gia'.
+
+### Provare gli arredi senza backend
+
+Le librerie sono righe sul database, quindi senza backend `LIB.librerie()` e'
+vuota e in scena si vede solo il **mobile fantasma**, che gli arredi non li ha
+per scelta. Per guardarseli si fa una copia del sito in una cartella di
+passaggio con `js/config.js` svuotato — `AUTH.attivo()` diventa falso, il
+cancello non manda su Google e la scena si costruisce con i due giochi di
+`js/data.js` — piu' due righe: una libreria finta in `caricaLibrerie` e uno
+`stile` forzato in `riempiCubo`, per vedere un arredo alla volta invece che
+sperare che il misto lo peschi.
+
 ## Aggiungere una colonna a `profili` e' un'operazione in tre punti
 
 Costata due volte nella stessa sessione, e la seconda con la lezione gia' scritta:

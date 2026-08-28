@@ -1305,7 +1305,15 @@ function makeGameBox(game){
    un canvas da 128x384 disegnato e caricato sulla scheda per ogni
    singolo libro, a ogni ricostruzione del contorno. */
 function thinSpine(seed){
-  const cols = ['#7b4a2e','#4d5a48','#6a3a3a','#3f4a5c','#6d5a2e','#57406a'];
+  /* LE TINTE VENGONO DALLA TAVOLOZZA DEL SITO, non da fuori. Fra le
+     sei di prima c'erano un viola (#57406a) e un bordeaux (#6a3a3a)
+     che nel resto del sito non esistono da nessuna parte: in un cubo
+     di rovere non si posavano, bucavano.
+
+     La terracotta e' #b0552f e NON l'accento (#c86a3c): quello e'
+     riservato a quello che si tocca, e un dorso di libro non si tocca.
+     Stessa famiglia, un gradino piu' in la'. */
+  const cols = ['#6b4a33','#4d5a48','#8e6a4b','#b0552f','#747760','#3f4a5c'];
   const i = Math.floor(srnd(seed)*cols.length) % cols.length;
   return comune('dorso' + i, function(){
     const S = 128, cx = ART.cnv(S, S*3), c = cx[0], x = cx[1];
@@ -1431,6 +1439,9 @@ const geoFoglia = () => comune('foglia', () => new THREE.SphereGeometry(.17, 7, 
 // il vaso e' alto 1 e viene scalato: la rastremazione resta quella
 const geoVaso   = () => comune('vaso',   () => new THREE.CylinderGeometry(.38, .28, 1, 14));
 const geoD20    = () => comune('d20',    () => new THREE.IcosahedronGeometry(.62, 0));
+// il labbro del vaso: un cilindro solo per tutte le piante di tutte
+// le librerie, come il vaso a cui sta sopra
+const geoBordoVaso = () => comune('vasoBordo', () => new THREE.CylinderGeometry(.42, .40, 1, 14));
 
 /* --- un cubo con le facce raggruppate per materiale --------------
 
@@ -1535,66 +1546,212 @@ function arrScatole(g, seed, x, y){
   }
 }
 
+/* Una fila di libri tutti in piedi, tutti alti uguale e tutti alla
+   stessa distanza si legge come un codice a barre. Tre cose la
+   rimettono in una libreria di casa, e sono tre cose sole:
+
+   IL VUOTO. La fila parte da un bordo e si ferma PRIMA dell'altro. Il
+   lato lo sceglie il seme: fisso, il buco dalla stessa parte in tutti
+   i cubi diventa un motivo invece di un caso. La larghezza si taglia
+   su quello che avanza davvero, se no con cinque libri la fila usciva
+   dal cubo.
+
+   L'APPOGGIO. L'inclinazione di prima era +/-0.06 rad, cioe' dritto.
+   L'ultimo in piedi cade contro il vicino di 0.22, e il centro si
+   sposta perche' il PIEDE resti sul ripiano invece di affondarci
+   dentro: ruotando attorno al centro l'angolo basso scende sotto il
+   legno, ed e' la cosa che si nota per prima.
+
+   I CORICATI. Due volumi sdraiati sopra la parte piu' bassa della
+   fila. E' il gesto che distingue una libreria di casa da uno
+   scaffale di negozio, e costa due mesh sulla geometria che c'e'
+   gia'. */
 function arrLibri(g, seed, x, y){
   const n = 4 + Math.floor(srnd(seed+2)*2);
+  const PASSO = .52, LARGO = 1.55;      // meta' della luce del cubo, meno un filo
+  const fila = (n - 1) * PASSO + .54;
+  const vuoto = Math.min(.5 + srnd(seed+31)*.4, Math.max(0, LARGO*2 - fila));
+  const aDx = srnd(seed+37) < .5;       // da che parte resta il vuoto
+  const parte = -LARGO + (aDx ? 0 : vuoto);
+
+  let basso = 9, xBasso = 0;
   for (let i = 0; i < n; i++){
-    const w = .38 + srnd(seed+i*7)*.16, h = 1.9 + srnd(seed+i*11)*.7;
+    const w = .38 + srnd(seed+i*7)*.16;
+    // 1.6-2.8: prima era 1.9-2.6, e sette millimetri di differenza
+    // non si vedono da nessuna distanza
+    const h = 1.6 + srnd(seed+i*11)*1.2;
+    const px = x + parte + i*PASSO;
     const m = new THREE.Mesh(geoCubo(), thinSpine(seed+i));
     m.scale.set(w, h, 2.5);
-    m.position.set(x - 1.15 + i*.56, y + h/2, -.1);
-    m.rotation.y = (srnd(seed+i)-.5)*.06;
+
+    if (i === n - 1){
+      const a = .22 * (aDx ? 1 : -1);
+      m.rotation.z = -a;
+      m.position.set(px + Math.sin(a)*h/2,
+                     y + Math.cos(a)*h/2 + Math.abs(Math.sin(a))*w/2, -.1);
+    } else {
+      m.rotation.y = (srnd(seed+i)-.5)*.06;
+      m.position.set(px, y + h/2, -.1);
+      if (h < basso){ basso = h; xBasso = px; }
+    }
     m.castShadow = true; m.receiveShadow = true;
     g.add(m);
   }
+
+  if (basso < 9){
+    // dove ci stanno: sopra il piu' basso, ma dentro il cubo
+    const cx = Math.min(xBasso + .2, x + LARGO - .55);
+    for (let k = 0; k < 2; k++){
+      const l = new THREE.Mesh(geoCubo(), thinSpine(seed + 50 + k));
+      l.scale.set(1.02, .14, 2.3);
+      l.position.set(cx + k*.06, y + basso + .07 + k*.14, -.1);
+      l.rotation.y = (srnd(seed+k*17)-.5)*.10;
+      l.castShadow = true; l.receiveShadow = true;
+      g.add(l);
+    }
+  }
 }
 
+/* DA SEI OGGETTI A QUATTRO, e su due quote invece che su una.
+
+   Erano tre dadi, un d20 e due meeple, tutti appoggiati al ripiano
+   alla stessa altezza e sparsi su mezzo cubo. Sei cose piccole alla
+   stessa quota non si distinguono piu' l'una dall'altra: diventano
+   grana. Restano due dadi, il d20 e un meeple.
+
+   E i due dadi stanno su un VASSOIO. Non e' un vezzo: e' la seconda
+   quota, ed e' tutta la differenza fra una posa e un mucchio. Costa
+   due mesh sulla geometria del cubo, che c'e' gia'. */
 function arrDadi(g, seed, x, y){
-  for (let i = 0; i < 3; i++){
-    const s = .58;
-    const d = new THREE.Mesh(geoDado(), matDado(i));
-    d.scale.setScalar(s);
-    d.position.set(x - .75 + i*.62, y + s/2, .2 + (i%2)*.4);
-    d.rotation.y = srnd(seed+i*13) * Math.PI;
-    d.castShadow = true; d.receiveShadow = true;
-    g.add(d);
-  }
+  /* IL FELTRO E' QUELLO CHE FA IL VASSOIO. Il primo tentativo era una
+     tavola di legno con un labbro davanti, e su un ripiano di rovere
+     non si vedeva: legno su legno, spariva -- e con lui la seconda
+     quota, che era tutto il punto. Con il feltro scuro dentro una
+     cornice di legno si legge al primo colpo d'occhio, ed e' anche
+     l'oggetto giusto: un vassoio da dadi ce l'ha chi gioca. */
+  const vass = new THREE.Mesh(geoCubo(), matTinta('vassoio', { color: 0x6b4a33, roughness: .8 }));
+  vass.scale.set(1.75, .12, 1.25);
+  vass.position.set(x - .62, y + .06, .1);
+  vass.castShadow = true; vass.receiveShadow = true;
+  g.add(vass);
+  const feltro = new THREE.Mesh(geoCubo(), matTinta('feltro', { color: 0x3f4a3c, roughness: .95 }));
+  feltro.scale.set(1.5, .03, 1.0);
+  feltro.position.set(x - .62, y + .125, .1);
+  feltro.receiveShadow = true;
+  g.add(feltro);
+
+  const s = .58;
+  const d1 = new THREE.Mesh(geoDado(), matDado(0));
+  d1.scale.setScalar(s);
+  d1.position.set(x - 1.05, y + .14 + s/2, .05);
+  d1.rotation.y = srnd(seed+13) * Math.PI;
+  d1.castShadow = true; d1.receiveShadow = true;
+  g.add(d1);
+
+  /* UNO E' APPENA CADUTO: si posa storto invece che allineato al
+     primo. Due dadi paralleli sono una vetrina, due dadi di cui uno
+     storto sono un tavolo su cui si e' giocato. */
+  const d2 = new THREE.Mesh(geoDado(), matDado(1));
+  d2.scale.setScalar(s);
+  d2.position.set(x - .24, y + .14 + s/2 + .05, .22);
+  d2.rotation.set(.26, srnd(seed+21) * Math.PI, .26);
+  d2.castShadow = true; d2.receiveShadow = true;
+  g.add(d2);
+
+  /* IL D20 NON E' PIU' ORO METALLICO. `metalness .7` su un solido a
+     facce piatte, dentro un cubo quasi sempre in ombra, non esce come
+     oro: esce come una macchia, e a perdersi e' la FORMA -- che e'
+     l'unica cosa che lo fa leggere come un d20.
+
+     Ma nemmeno avorio: provato, e su un ripiano chiaro con due dadi
+     d'avorio accanto diventava un batuffolo pallido in mezzo ad altri
+     batuffoli pallidi. Il blu della terza coppia di dadi e' l'unica
+     tinta che lo stacca dal legno E dai dadi, e con le facce piatte
+     ogni sfaccettatura prende una luce diversa: la forma si conta. */
   const d20 = new THREE.Mesh(geoD20(), matTinta('d20mat',
-    { color: 0xb98a3a, roughness: .38, metalness: .7, flatShading: true }));
-  d20.position.set(x + .95, y + .52, .35);
+    { color: 0x3f4f63, roughness: .45, metalness: 0, flatShading: true }));
+  d20.position.set(x + .55, y + .52, .3);
   d20.rotation.set(.4, srnd(seed+4)*3, .2);
   d20.castShadow = true; d20.receiveShadow = true;
   g.add(d20);
-  const m1 = makeMeeple(0xd8552c, .42), m2 = makeMeeple(0xe8c05f, .36);
-  m1.position.set(x + .15, y + .45, .55);
-  m2.position.set(x + .55, y + .40, .8); m2.rotation.y = -.5;
-  g.add(m1, m2);
+
+  const me = makeMeeple(0x4d5a48, .44);
+  me.position.set(x + 1.18, y + .47, .62);
+  me.rotation.y = -.4;
+  g.add(me);
 }
 
 /* Le foglie sono sfere schiacciate e non un modello vero: a questa
    distanza contano la sagoma e il colore, e una pianta fatta bene
-   costerebbe piu' triangoli di tutto il resto del mobile. */
+   costerebbe piu' triangoli di tutto il resto del mobile.
+
+   Ma UNA FOGLIA SI PIEGA. Prima era un segmento solo inclinato verso
+   l'esterno, e piu' era lunga piu' puntava in alto: otto antenne
+   attorno a un vaso, che da lontano sono un riccio. Adesso sono due
+   segmenti, il secondo appeso alla punta del primo e ruotato in giu'.
+
+   E con la piega ne bastano CINQUE dove prima ne servivano otto --
+   con meno mesh, non con piu'. Due delle cinque scendono sotto il
+   bordo del vaso: e' quello che fa leggere una pianta appoggiata su
+   un ripiano invece di un cespuglio che ci cresce dentro. */
+function fogliaPiegata(mat, lung, piega){
+  const base = new THREE.Group();
+  const la = lung*.55, lb = lung*.5;    // geoFoglia e' alta .34: si scala su quella
+  const a = new THREE.Mesh(geoFoglia(), mat);
+  a.scale.set(.55, la/.34, .4);
+  a.position.y = la/2;
+  a.castShadow = true;
+  base.add(a);
+  /* Il secondo segmento sta in un gruppo appeso alla PUNTA del primo:
+     cosi' la piega e' una rotazione sola e non un conto di seni. */
+  const p = new THREE.Group();
+  p.position.y = la;
+  p.rotation.z = piega;
+  const b = new THREE.Mesh(geoFoglia(), mat);
+  b.scale.set(.44, lb/.34, .34);
+  b.position.y = lb/2;
+  b.castShadow = true;
+  p.add(b);
+  base.add(p);
+  return base;
+}
+
 function arrPiante(g, seed, x, y){
   const h = .5 + srnd(seed)*.22;
-  const vaso = new THREE.Mesh(geoVaso(), matTinta('vasomat', { color: 0xb2643f, roughness: .88 }));
+  /* Il cotto del vaso era #b2643f, cioe' l'accento (#c86a3c) mancato
+     di un soffio: due terracotta a un passo l'uno dall'altro nella
+     stessa schermata si leggono come un errore di stampa, non come
+     una scelta. Il vaso prende la sabbia della tavolozza e lascia
+     l'accento a quello che si tocca. */
+  const vaso = new THREE.Mesh(geoVaso(), matTinta('vasomat', { color: 0xb8916f, roughness: .88 }));
   vaso.scale.y = h;
   vaso.position.set(x, y + h/2, .05);
   vaso.castShadow = true; vaso.receiveShadow = true;
   g.add(vaso);
 
+  /* IL LABBRO. Un tronco di cono nudo e' un secchio; con l'anello
+     sulla bocca diventa un vaso, e costa un cilindro condiviso. */
+  const bordo = new THREE.Mesh(geoBordoVaso(), matTinta('vasobordo', { color: 0xc7af98, roughness: .86 }));
+  bordo.scale.y = .09;
+  bordo.position.set(x, y + h - .03, .05);
+  bordo.castShadow = true; bordo.receiveShadow = true;
+  g.add(bordo);
+
   // i verdi sono due: due materiali per tutte le foglie di tutte le piante
   const verde = srnd(seed+9) < .5
-    ? matTinta('foglia0', { color: 0x4f7a4a, roughness: .76 })
+    ? matTinta('foglia0', { color: 0x4d5a48, roughness: .76 })
     : matTinta('foglia1', { color: 0x5f8a52, roughness: .76 });
-  const n = 6 + Math.floor(srnd(seed+1)*4);
+  const n = 5;
   for (let i = 0; i < n; i++){
-    const lung = .55 + srnd(seed + i*3)*.75;
-    const f = new THREE.Mesh(geoFoglia(), verde);
-    f.scale.set(.55, lung/.34, .4);
-    const ang = (i / n) * Math.PI * 2 + srnd(seed+i)*.7;
-    const fuori = .25 + srnd(seed+i*2)*.5;
-    f.position.set(x + Math.cos(ang)*fuori*.7, y + h + lung*.42, .05 + Math.sin(ang)*fuori*.5);
-    f.rotation.set(Math.sin(ang)*fuori, 0, -Math.cos(ang)*fuori);
-    f.castShadow = true;
+    const lung = 1.0 + srnd(seed + i*3)*.7;
+    const cade = i >= n - 2;            // le ultime due ricadono
+    const piega = (cade ? 1.15 + srnd(seed+i*5)*.45 : .5 + srnd(seed+i*5)*.4)
+                * (i % 2 ? 1 : -1);
+    const f = fogliaPiegata(verde, lung, piega);
+    const ang = (i / n) * Math.PI * 2 + srnd(seed+i)*.5;
+    f.position.set(x + Math.cos(ang)*.20, y + h - .04, .05 + Math.sin(ang)*.16);
+    f.rotation.y = ang;
+    f.rotation.z = Math.cos(ang)*.30;
     g.add(f);
   }
 }
