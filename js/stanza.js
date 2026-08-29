@@ -165,6 +165,18 @@ const LUCE_MAX = 1.60;
    la chiave invece di scrivercene una. */
 const CELLE = ['libri', 'dadi', 'piante', 'niente'];
 
+/* Una cella non tiene solo COSA c'e' dentro, ma anche QUALE dei suoi:
+   le piante sono due specie, i libri e i dadi cambiano con il seme.
+   Si scrive tutto in un valore solo -- `piante~1` -- perche' le celle
+   vivono dentro il jsonb della stanza e una chiave in piu' per cella
+   vorrebbe dire raddoppiare quella mappa per un numero da una cifra.
+
+   Il separatore e' `~` e non `:`, che e' gia' quello fra libreria e
+   posto: due significati sullo stesso segno sono un modo sicuro di
+   sbagliare uno `split` fra sei mesi. */
+const VAR_MAX = 8;
+const VAL_CELLA = /^(libri|dadi|piante|niente)(?:~([0-7]))?$/;
+
 let ora = Object.assign({}, DEFAULT, { celle: {} });
 let miei = true;              // stiamo guardando la propria stanza?
 
@@ -205,7 +217,7 @@ function normalizza(s){
        qualcosa sopra, e adesso si sceglie anche quello. */
     if (!/^[0-9a-f-]{6,40}:(?:[0-9]|10|11|s[0-2])$/i.test(k)) return;
     const v = sorgente[k];
-    if (CELLE.indexOf(v) < 0) return;
+    if (typeof v !== 'string' || !VAL_CELLA.test(v)) return;
     dentroCelle[k] = v;
     quante++;
   });
@@ -217,17 +229,30 @@ function chiaveCella(libId, posto){
   return String(libId || '') + ':' + posto;
 }
 
-/* Cosa si e' scelto per quel cubo, o '' se non si e' scelto niente. */
+/* Cosa si e' scelto per quel cubo, o '' se non si e' scelto niente.
+   Torna lo STILE e basta: tutti i posti che chiedono "cosa c'e' qui"
+   continuano a leggere quello che leggevano prima, e chi ha bisogno di
+   sapere quale dei suoi chiama `variante()`. */
 function cella(libId, posto){
-  return (ora.celle && ora.celle[chiaveCella(libId, posto)]) || '';
+  const v = (ora.celle && ora.celle[chiaveCella(libId, posto)]) || '';
+  const m = VAL_CELLA.exec(v);
+  return m ? m[1] : '';
+}
+
+/* Quale variante di quello stile: 0 se non si e' mai girato. */
+function variante(libId, posto){
+  const v = (ora.celle && ora.celle[chiaveCella(libId, posto)]) || '';
+  const m = VAL_CELLA.exec(v);
+  return m && m[2] ? (parseInt(m[2], 10) || 0) : 0;
 }
 
 /* Un valore vuoto toglie la chiave: "come la libreria" e' l'assenza di
    una scelta, non una scelta che si chiama cosi'. */
-function setCella(libId, posto, v){
+function setCella(libId, posto, v, vr){
   if (!ora.celle) ora.celle = {};
   const k = chiaveCella(libId, posto);
-  if (v && CELLE.indexOf(v) >= 0) ora.celle[k] = v;
+  const n = Math.max(0, Math.min(VAR_MAX - 1, parseInt(vr, 10) || 0));
+  if (v && CELLE.indexOf(v) >= 0) ora.celle[k] = v + (n ? '~' + n : '');
   else delete ora.celle[k];
   return ora.celle;
 }
@@ -291,7 +316,8 @@ function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, AR
 
 return {
   DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI,
-  CELLE: CELLE, cella: cella, setCella: setCella, scordaCelle: scordaCelle,
+  CELLE: CELLE, cella: cella, variante: variante,
+  setCella: setCella, scordaCelle: scordaCelle,
   FARI: FARI,
   LUCE_MIN: LUCE_MIN, LUCE_MAX: LUCE_MAX,
   corrente: corrente, miaStanza: miaStanza, normalizza: normalizza,

@@ -899,6 +899,9 @@ function buildCabinet(){
       targa.position.set(ox, state.yTarga || (KAL.topY + SOPRA - .62), -KAL.d/2 + .02);
       targa.userData.targa = true;      // `allineaComandi` la sposta e la scala
       targa.userData.aspetto = c.width / c.height;
+      targa.userData.lib = l;           // di quale mobile e': serve a sfumarla
+      targa.userData.opBase = fantasma ? .45 : 1;
+      targa.userData.fantasma = fantasma;
       g.add(targa);
 
       /* Entra invece di comparire. SOLO l'opacita': la quota e la scala
@@ -906,10 +909,11 @@ function buildCabinet(){
          due pezzi di codice scrivono la stessa proprieta' nello stesso
          fotogramma. Era l'unica cosa della scena a spuntare di colpo a
          ogni ricostruzione del mobile. */
-      const opFine = fantasma ? .45 : 1;
+      targa.userData.entrata = 0;
       targa.material.opacity = 0;
       tween(.42, function(p){
-        targa.material.opacity = opFine * easeOut(p);
+        targa.userData.entrata = easeOut(p);
+        opacitaTarga(targa);
       }, null, .08 + l * .05);          // una dopo l'altra, come le righe di un elenco
     }
   }
@@ -917,6 +921,7 @@ function buildCabinet(){
   stanzaLarga(state.libs);
   cabGroup = g;
   scene.add(g);
+  sfumaTarghe();          // gia' dal primo fotogramma, non al primo scorrimento
 
   /* LA TARGA APPENA FATTA VA SUBITO SCALATA.
 
@@ -1803,21 +1808,42 @@ function pSanseInVaso(g, seed, x, y){
    lettera scritta nella ricerca. */
 const PIANTE = [pTonda, pSanseInVaso];
 
-function arrPiante(g, seed, x, y){
-  const quale = Math.floor(srnd(seed + 41) * PIANTE.length) % PIANTE.length;
+/* La specie la sceglie il seme finche' nessuno ha scelto a mano. Con
+   una variante scelta invece comanda quella, ed e' il punto: girare
+   fra le varianti di `piante` deve cambiare PIANTA, non rimescolare
+   due volte la stessa. */
+function arrPiante(g, seed, x, y, vr){
+  const quale = (vr === undefined || vr === null)
+    ? Math.floor(srnd(seed + 41) * PIANTE.length) % PIANTE.length
+    : ((vr % PIANTE.length) + PIANTE.length) % PIANTE.length;
   PIANTE[quale](g, seed, x, y);
 }
 
 const ARREDI = { libri: arrLibri, dadi: arrDadi, piante: arrPiante };
 const ARREDI_MISTI = ['libri', 'dadi', 'piante'];
 
-function riempiCubo(g, stile, seed, x, y){
+/* QUANTE VARIANTI HA OGNI ARREDO.
+
+   Le piante sono due specie, quindi due e non una di piu': girare
+   oltre vorrebbe dire ripassare dalla prima senza che si veda perche'.
+   Libri e dadi non hanno un insieme discreto -- cambia tutto con il
+   seme -- e quattro giri sono abbastanza da vederli diversi senza
+   trasformare un menu in una slot machine. */
+const VARIANTI = { libri: 4, dadi: 4, piante: PIANTE.length, niente: 1 };
+function quanteVarianti(stile){ return VARIANTI[stile] || 1; }
+
+/* Dove non c'e' un insieme da scorrere, la variante sposta il seme: un
+   primo, cosi' due varianti vicine non cadono su disposizioni simili. */
+function riempiCubo(g, stile, seed, x, y, vr){
   if (stile === 'niente') return;
+  const n = parseInt(vr, 10) || 0;
   const quale = (stile === 'misto')
     ? ARREDI_MISTI[Math.floor(srnd(seed + 91) * ARREDI_MISTI.length) % ARREDI_MISTI.length]
     : stile;
   const fn = ARREDI[quale];
-  if (fn) fn(g, seed, x, y);
+  if (!fn) return;
+  if (quale === 'piante') fn(g, seed + n * 977, x, y, vr === undefined ? undefined : n);
+  else fn(g, seed + n * 977, x, y);
 }
 
 /* Sopra il mobile. Un mobile vero ha sempre qualcosa sopra, ed e'
@@ -1843,7 +1869,8 @@ function arrediSopra(g, stile, l, libId){
     // costruito nell'origine e poi messo al suo posto: cosi' la scala
     // rimpicciolisce l'oggetto e non lo trascina verso il centro
     const sopra = new THREE.Group();
-    riempiCubo(sopra, scelta || stile, seed, 0, 0);
+    riempiCubo(sopra, scelta || stile, seed, 0, 0,
+               scelta ? STANZA.variante(libId, 's' + i) : undefined);
     sopra.scale.setScalar(.6);
     sopra.position.set(cubX(l, i), KAL.topY, 0);
     g.add(sopra);
@@ -1890,7 +1917,8 @@ function buildProps(used){
 
       riempiCubo(g, scelta || stile, seed,
                  cubX(l, k % COLS),
-                 rigaY(Math.floor(k / COLS)) - KAL.cell/2);
+                 rigaY(Math.floor(k / COLS)) - KAL.cell/2,
+                 scelta ? STANZA.variante(libId, k) : undefined);
     }
   }
 
@@ -2205,6 +2233,54 @@ function mondoY(sy, z, x){
   const a = schermoY(0, z, x), b = schermoY(1, z, x);
   if (Math.abs(b - a) < 1e-6) return 0;
   return (sy - a) / (b - a);
+}
+
+/* L'OPACITA' DI UNA TARGA LA SCRIVONO IN TRE.
+
+   L'ingresso (che la fa comparire), la sfumatura con la distanza (qui
+   sotto) e il fatto che il mobile di scorta e' un fantasma. Prima
+   scriveva ognuno per conto suo su `material.opacity`, e l'ultimo che
+   passava vinceva. Adesso ognuno tiene il SUO fattore e il prodotto lo
+   fa questa. */
+function opacitaTarga(o){
+  const u = o.userData;
+  o.material.opacity = (u.opBase === undefined ? 1 : u.opBase)
+                     * (u.entrata === undefined ? 1 : u.entrata)
+                     * (u.sfuma   === undefined ? 1 : u.sfuma);
+}
+
+/* IL NOME CHE CONTA E' QUELLO DEL MOBILE CHE STAI GUARDANDO.
+
+   Gli altri sono in arrivo o in uscita, e finche' erano pieni come il
+   suo facevano due danni: dicevano tre volte "sei qui" senza che
+   nessuno dei tre fosse vero, e -- questo si vedeva -- finivano SOTTO
+   l'imbuto e la libreria, che sono fissi ai due angoli. Misurato:
+   l'imbuto cadeva esattamente sul nome del mobile accanto a 900, a
+   1024 e a 1180 di larghezza, con il nome tagliato a meta' da un
+   pulsante bianco.
+
+   Non e' un caso di quelle misure: il mobile accanto entra da destra a
+   ogni larghezza, e prima o poi il suo centro passa sotto l'angolo. Un
+   pannello fisso e una scritta che scorre non si spartiscono lo stesso
+   pixel -- e a decidere chi vince e' a chi serve quella scritta.
+
+   A meta' scorrimento sono accesi tutti e due a meta': e' il passaggio
+   di consegne, ed e' esattamente quello che sta succedendo. */
+function sfumaTarghe(){
+  if (!cabGroup) return;
+  cabGroup.traverse(function(o){
+    if (!o.userData || !o.userData.targa) return;
+    const d = Math.abs((o.userData.lib || 0) - state.scroll);
+    /* Il fantasma e' l'eccezione, e per una ragione precisa: la sua
+       scritta non dice "sei qui", dice COS'E' quel mobile trasparente
+       in fondo alla fila. Sfumata come le altre sparirebbe, e in fondo
+       resterebbe un mobile muto e senza nome -- che e' esattamente il
+       difetto per cui quella targhetta era stata messa. Sfuma anche
+       lei, ma non sotto la soglia in cui non si legge piu'. */
+    const min = o.userData.fantasma ? .55 : .12;
+    o.userData.sfuma = clamp(1.15 - d * 1.15, min, 1);
+    opacitaTarga(o);
+  });
 }
 
 function allineaComandi(){
@@ -5319,9 +5395,18 @@ function disegnaCella(){
   el.innerHTML = VOCI_CELLA.map(function(x){
     const su = (x.v === ora);
     const che = TP(x.t);
+    /* Il suggerimento sta nel `title` e da nessun'altra parte. Cinque
+       icone in fila su una scena in tre dimensioni sono gia' il
+       massimo che quell'angolo regge: dei puntini sotto quella scelta
+       direbbero la stessa cosa occupando spazio che non c'e'. Quello
+       che si vede e' il giro dell'icona quando la variante cambia --
+       che e' una risposta al gesto, non una didascalia. */
+    const gira = su && quanteVarianti(x.v) > 1;
+    const sep = ' ' + String.fromCharCode(183) + ' ';
+    const t = che + (gira ? sep + TP('cella.ancora') : '');
     return '<button type="button" data-cella="' + x.v + '"' +
       ' aria-pressed="' + (su ? 'true' : 'false') + '"' +
-      ' title="' + esc(che) + '" aria-label="' + esc(che) + '">' + ICO[x.i] + '</button>';
+      ' title="' + esc(t) + '" aria-label="' + esc(t) + '">' + ICO[x.i] + '</button>';
   }).join('');
 }
 
@@ -5386,12 +5471,43 @@ function rifaiArredi(){
   buildProps(state.q ? null : used);
 }
 
-function scegliCella(v){
+/* TOCCARE QUELLO GIA' SCELTO GIRA LA VARIANTE.
+
+   Un arredo non e' una cosa sola: le piante sono due specie, i libri e
+   i dadi cambiano disposizione e colori col seme. Prima quel seme era
+   il posto del cubo, cioe' una cosa su cui chi arreda non ha nessuna
+   voce -- si sceglieva "piante" e usciva quella che usciva.
+
+   Il gesto e' lo stesso di prima, e non c'e' nessun comando in piu':
+   il primo tocco sceglie lo stile, quelli dopo girano fra i suoi. E'
+   la stessa idea del contatore in testata -- un pulsante che, quando
+   sei gia' li', fa la cosa successiva invece di ripetere quella
+   fatta. */
+function scegliCella(v, btn){
   if (!cellaAperta) return;
-  STANZA.setCella(cellaAperta.libId, cellaAperta.k, v);
+  const ora = STANZA.cella(cellaAperta.libId, cellaAperta.k);
+  const quante = quanteVarianti(v);
+  const giro = (v && v === ora && quante > 1);
+  const vr = giro ? (STANZA.variante(cellaAperta.libId, cellaAperta.k) + 1) % quante : 0;
+
+  STANZA.setCella(cellaAperta.libId, cellaAperta.k, v, vr);
   salvaStanzaTraPoco();
   rifaiArredi();
   disegnaCella();          // la scelta si sposta, il menu resta aperto
+
+  /* `disegnaCella` ha appena rifatto i pulsanti, quindi quello che era
+     stato premuto non e' piu' nel documento: l'animazione va messa su
+     quello nuovo, cercandolo per valore. E' la stessa trappola degli
+     elenchi che si ridisegnano sotto il dito, qui pero' il menu e'
+     cinque bottoni e rifarlo costa niente. */
+  if (giro){
+    const nuovo = q('#cella button[data-cella="' + v + '"]');
+    if (nuovo){
+      nuovo.classList.remove('gira');
+      void nuovo.offsetWidth;         // se no l'animazione non riparte
+      nuovo.classList.add('gira');
+    }
+  }
 }
 
 function bindCella(){
@@ -5400,7 +5516,7 @@ function bindCella(){
   el.addEventListener('click', function(e){
     const b = e.target.closest('button[data-cella]');
     if (!b) return;
-    scegliCella(b.getAttribute('data-cella'));
+    scegliCella(b.getAttribute('data-cella'), b);
   });
   /* Il menu sta sulla scena: senza questo, premerci sopra fa partire
      il trascinamento dei mobili sotto. */
@@ -7819,6 +7935,7 @@ function frame(now){
       updateRail();
       seguiCella();          // il menu della cella e' ancorato a un cubo che si muove
       allineaComandi();      // la camera si e' spostata: la proiezione e' un'altra
+      sfumaTarghe();         // il nome che conta e' quello del mobile inquadrato
       rifaiOmbre();          // la luce di finestra segue camBase: l'ombra si sposta
       sporcaMirino();        // sotto il puntatore adesso c'e' un'altra scatola
     }

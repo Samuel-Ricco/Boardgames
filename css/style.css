@@ -316,6 +316,16 @@ body.cella-su #cella{display:flex}
 @media (pointer:coarse){
   #cella button{width:44px; height:44px}
 }
+/* Toccando di nuovo quello gia' scelto, l'arredo cambia variante:
+   l'icona fa mezzo giro. Non e' decorazione -- fra due varianti dello
+   stesso arredo la differenza dentro al cubo puo' essere piccola, e
+   senza una risposta al gesto sembrerebbe che il tocco sia andato
+   perso. */
+#cella button.gira .ico{animation:cellaGira .34s var(--ease) both}
+@keyframes cellaGira{
+  from{transform:rotate(-180deg) scale(.82)}
+  to{transform:none}
+}
 
 /* la barra sopra l'elenco: filtri a sinistra, gestione a destra */
 .mia-barra{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:14px 0 0}
@@ -1731,6 +1741,16 @@ body.visita #p-fuori{display:none !important}
 @media (min-width:880px){ #load{--dk:1.3; gap:38px} }
 @media (min-width:1400px){ #load{--dk:1.55; gap:44px} }
 
+/* Il marchio di BGG sotto la barra. Cresce con `--dk` come tutto il
+   resto della schermata, ma resta piu' STRETTO della barra: e' un
+   credito, non il terzo protagonista dopo il dado e il nome del sito.
+   Piena opacita' lo stesso -- un'attribuzione sbiadita e' peggio di
+   nessuna attribuzione. */
+.load-bgg{
+  display:block; width:calc(104px * var(--dk,1)); height:auto;
+  margin-top:calc(-8px * var(--dk,1));
+}
+
 /* USCENDO, NON SPARISCE: SI FA DA PARTE.
 
    Era una dissolvenza e basta, e una dissolvenza secca su tutto lo
@@ -2257,6 +2277,7 @@ body.ready .bar::after{animation:none; opacity:0}
 .stage{animation:entraDado .5s ease both}
 .load-txt{animation:entraSu .5s var(--ease) .06s both}
 .bar{animation:entraSu .5s var(--ease) .14s both}
+.load-bgg{animation:entraSu .5s var(--ease) .22s both}
 @keyframes entraDado{ from{opacity:0} to{opacity:1} }
 @keyframes entraSu{
   from{opacity:0; transform:translateY(10px)}
@@ -2934,6 +2955,49 @@ body.sez-collezione:not(.elenco) header{
 
 /* --- il marchio, piu' grande --------------------------------------- */
 .brand b{font-size:clamp(21px,2.8vw,27px); font-weight:600; letter-spacing:-.02em}
+
+/* ====================================================================
+   LA FASCIA DEL TABLET
+
+   Sopra gli 880 la testata riprende le sezioni, chi sei e l'uscita.
+   Ma fra 881 e 1150 in quella riga ci sono SEI cose -- marchio, frase,
+   quattro sezioni, contatore, nome, esci -- e non ci stanno: andavano
+   a capo il marchio ("il dado e' / trap") e il contatore ("la mia /
+   collezione: 14"), e la testata passava da 62 pixel a 87, a 900px
+   perfino a 102.
+
+   Quei quaranta pixel non li perde la testata: li perde la FASCIA
+   LIBERA sopra il mobile, che e' quella che tiene il nome della
+   libreria e i due comandi che galleggiano. Misurata: 91 px a 1440,
+   73 a 1280, 47 a 1024 e VENTI a 900x700 -- dove il nome finiva
+   addosso alla testata e l'imbuto cadeva sopra il nome del mobile
+   accanto.
+
+   Quello che se ne va e' la frase sotto il marchio: e' l'unica cosa
+   della riga che non porta da nessuna parte, e restituisce tutto lo
+   spazio che serve. Torna sopra i 1150, dove ci sta.
+   ==================================================================== */
+
+/* Il marchio non va a capo MAI. Sono tre parole e un nome: spezzarle
+   non le fa stare meglio da nessuna parte, e sotto gli 880 questa
+   regola c'era gia'. */
+.brand b{white-space:nowrap}
+
+@media (min-width:881px) and (max-width:1150px){
+  .brand span{display:none}
+  /* Il contatore e' una frase sola e va letta su una riga: a capo
+     diventa due righe di testo piccolo dentro una pastiglia, cioe' la
+     cosa piu' alta della testata. */
+  #conta{white-space:nowrap}
+  /* E tutto il resto si stringe di un filo, invece che stringersi da
+     solo andando a capo. */
+  header{gap:10px; padding-left:20px; padding-right:20px}
+  .brand b{font-size:21px}
+  #sezioni{gap:4px}
+  #sezioni button{padding:8px 11px; font-size:12.5px}
+  .tool{font-size:12px; padding:8px 11px}
+  .tools{gap:6px}
+}
 
 /* --- imbuto e stanza: quadrati davvero -----------------------------
    Avevano un'imbottitura uguale sui quattro lati, che pero' con

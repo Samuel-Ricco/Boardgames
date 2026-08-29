@@ -837,6 +837,14 @@ schermate e' a un tocco, perche' il catalogo sta nelle due navigazioni.
   tutto il resto: niente risorse esterne, mai. L'unica cosa che esce e' il
   link.
 
+**E lo stesso marchio sta anche sotto la barra del caricamento.** E' la prima
+schermata del sito e la vede chiunque, prima ancora di scegliere chi e'. Li'
+pero' e' **un'immagine e basta, senza link**: un'attesa non e' il posto per un
+collegamento che porta via, e quello che si puo' toccare sta in fondo al
+catalogo. Cresce con `--dk` come tutto il resto della schermata ma resta piu'
+**stretto della barra** (104 px contro 190, per `--dk`): e' un credito, non il
+terzo protagonista dopo il dado e il nome del sito.
+
 ## La wishlist: quello che non hai (ancora)
 
 `js/desideri.js` + tabella `desideri` (migrazione `20260825120000_wishlist`).
@@ -1926,6 +1934,49 @@ finirebbe dietro il binario, e allora va sopra.
   il pannello della libreria — che qui e' chiuso, perche' la cella si arreda
   senza aprirlo. Va anche nel flash.
 
+### Toccare di nuovo quello gia' scelto gira la variante
+
+Un arredo non e' una cosa sola: le piante sono **due specie**, i libri e i dadi
+cambiano disposizione e colori con il seme. Ma quel seme e' il posto del cubo —
+cioe' l'unica cosa su cui chi arreda non ha nessuna voce: si sceglieva «piante»
+e usciva quella che usciva.
+
+Adesso il primo tocco sceglie lo stile e quelli dopo **girano fra i suoi**. Il
+gesto e' lo stesso di prima e non c'e' nessun comando in piu': e' la stessa idea
+del contatore in testata — un pulsante che, quando sei gia' li', fa la cosa
+successiva invece di ripetere quella fatta.
+
+- **Quante varianti**: piante 2 (le due specie, e girare oltre vorrebbe dire
+  ripassare dalla prima senza che si veda perche'), libri 4, dadi 4. Dove non
+  c'e' un insieme discreto da scorrere la variante **sposta il seme** di un
+  primo (977), cosi' due varianti vicine non cadono su disposizioni simili.
+- **Per le piante la variante sceglie la specie**, non un altro seme: girare fra
+  le varianti di `piante` deve cambiare *pianta*. `arrPiante` accetta la
+  variante e, se c'e', comanda quella; senza, decide il seme come sempre.
+- **Si scrive in un valore solo**, `piante~1`, e non in una chiave in piu': le
+  celle vivono dentro il jsonb della stanza, e raddoppiare quella mappa per un
+  numero da una cifra non ha senso. Il separatore e' `~` e **non `:`**, che e'
+  gia' quello fra libreria e posto: due significati sullo stesso segno sono un
+  modo sicuro di sbagliare uno `split` fra sei mesi.
+- `STANZA.cella()` continua a tornare **lo stile e basta**, cosi' tutti i posti
+  che chiedono «cosa c'e' qui» leggono quello che leggevano prima; chi ha
+  bisogno di sapere quale dei suoi chiama `STANZA.variante()`.
+- **Il suggerimento sta nel `title` e da nessun'altra parte** (`cella.ancora`).
+  Cinque icone in fila sopra una scena in tre dimensioni sono gia' il massimo
+  che quell'angolo regge: dei puntini sotto quella scelta direbbero la stessa
+  cosa occupando spazio che non c'e'. Quello che si vede e' **il giro
+  dell'icona** quando la variante cambia — fra due varianti dello stesso arredo
+  la differenza dentro al cubo puo' essere piccola, e senza una risposta al
+  gesto sembrerebbe che il tocco sia andato perso.
+- L'animazione va messa **sul pulsante nuovo**: `disegnaCella()` ha appena
+  rifatto i cinque bottoni, quindi quello premuto non e' piu' nel documento. E'
+  la trappola degli elenchi che si ridisegnano sotto il dito — qui pero' il menu
+  e' cinque bottoni e rifarlo costa niente.
+- **Il separatore si costruisce con `String.fromCharCode(183)`.** I `.js` del
+  sito sono ASCII, e una sequenza di escape scritta a mano dentro uno script di
+  sostituzione e' gia' scivolata una volta: il punto mediano e' finito nel file
+  come carattere vero.
+
 ### Provare gli arredi senza backend
 
 Le librerie sono righe sul database, quindi senza backend `LIB.librerie()` e'
@@ -2386,6 +2437,89 @@ e' quello che si fa indietreggiando di un passo per guardare uno scaffale.
 
 Misurato dopo: su un telefono **42 px sopra e 42 sotto** i pulsanti in alto,
 **29 e 29** attorno al binario; su un monitor 57/57 e 62/61.
+
+## La fascia del tablet: la testata mangiava la stanza sopra il mobile
+
+Segnalato come «la vista tablet e' completamente rotta», ed era vero — ma la
+causa non stava dove si vedeva il danno.
+
+Sopra gli 880 px la testata riprende le sezioni, chi sei e l'uscita. Fra **881 e
+1150** in quella riga ci sono *sei* cose — marchio, frase, quattro sezioni,
+contatore, nome, esci — e non ci stanno: andavano a capo il marchio («il dado e'
+/ trap») e il contatore («la mia / collezione: 14»), e la testata passava da 62
+pixel a 87, a 900x700 perfino a **102**.
+
+Quei quaranta pixel non li perde la testata: li perde la **fascia libera sopra
+il mobile**, che e' quella che tiene il nome della libreria e i due comandi che
+galleggiano — perche' `allineaComandi` mette la guida a meta' fra il bordo
+basso della testata e la cima del mobile. Misurata:
+
+| finestra | testata | fascia sopra il mobile |
+|---|---|---|
+| 1440 x 900 | 66 | 91 |
+| 1280 x 800 | 66 | 73 |
+| **1024 x 768** | **87** | **47** |
+| **900 x 700** | **102** | **20** |
+| 768 x 1024 | 62 | 104 |
+
+A 900x700 la fascia era **venti pixel**: il nome della libreria finiva contro la
+testata e l'imbuto cadeva sopra il nome del mobile accanto.
+
+**Quello che se ne va e' la frase sotto il marchio.** E' l'unica cosa di quella
+riga che non porta da nessuna parte, e restituisce tutto lo spazio che serve;
+torna sopra i 1150, dove ci sta. Con lei: il marchio **non va a capo mai** (sono
+tre parole e un nome, spezzarle non le fa stare meglio da nessuna parte — sotto
+gli 880 la regola c'era gia'), il contatore e' `nowrap`, e sezioni e strumenti
+si stringono di un filo invece di stringersi da soli andando a capo.
+
+Dopo: testata **62** e fascia **70** a 1024x768, testata 62 e fascia 60 a
+900x700. Verificato che a 1440 la frase ci sia ancora e che il telefono non si
+sia mosso.
+
+**La lezione, che vale oltre questo caso:** una testata che va a capo non e' un
+difetto della testata. Su questa scena e' l'unico numero da cui dipende dove
+stanno tutti i comandi che galleggiano, e quaranta pixel in piu' li' sono
+quaranta pixel in meno per il nome del mobile.
+
+### Il nome che conta e' quello del mobile che stai guardando
+
+Sistemata la testata restava l'altro scontro, e non era una questione di
+misure: **l'imbuto cadeva esattamente sul nome del mobile accanto** a 900, a
+1024 e a 1180 di larghezza — un pulsante bianco in mezzo alla parola. Non e' un
+caso di quelle tre larghezze: il mobile accanto entra da destra a ogni
+larghezza, e prima o poi il suo centro passa sotto l'angolo dove l'imbuto sta
+fisso.
+
+Un pannello fisso e una scritta che scorre non si spartiscono lo stesso pixel, e
+a decidere chi vince e' **a chi serve quella scritta**: il nome dice «sei qui»,
+e gli altri mobili sono in arrivo o in uscita. Quindi la targa **sfuma con la
+distanza** da `state.scroll` — a meta' scorrimento sono accesi tutti e due a
+meta', che e' il passaggio di consegne e cioe' esattamente quello che sta
+succedendo.
+
+- **Il fantasma e' l'eccezione**, e per una ragione precisa: la sua scritta non
+  dice «sei qui», dice **cos'e'** quel mobile trasparente in fondo alla fila.
+  Sfumata come le altre sparirebbe, e in fondo resterebbe un mobile muto e senza
+  nome — che e' esattamente il difetto per cui quella targhetta era stata messa.
+  Sfuma anche lei, ma la soglia non scende sotto `.55` (contro `.12` delle
+  altre), cioe' 0.25 di opacita' finale sulla sua base di 0.45.
+- **Tre cose scrivono la stessa opacita'** — l'ingresso, la sfumatura e il fatto
+  che il fantasma e' un fantasma — e prima scriveva ognuno per conto suo su
+  `material.opacity`: vinceva l'ultimo che passava. Adesso ognuno tiene il
+  **suo** fattore in `userData` (`entrata`, `sfuma`, `opBase`) e il prodotto lo
+  fa `opacitaTarga()`. E' la stessa regola di «due pezzi di codice non scrivono
+  la stessa proprieta' nello stesso fotogramma», risolta col prodotto invece che
+  con l'ordine.
+- Si sfuma **dove si scorre**: `sfumaTarghe()` sta accanto ad `allineaComandi()`
+  nel ramo del ciclo che gira solo quando la camera si e' mossa davvero, e una
+  volta in fondo a `buildCabinet` — se no il primo fotogramma dopo una
+  ricostruzione avrebbe tutte le targhe piene.
+
+**E attenzione misurando**: nel pannello di anteprima i tween non avanzano
+finche' non arriva un fotogramma, quindi `entrata` resta a 0 e la targa risulta
+**invisibile** anche quando il codice e' giusto. Costato un giro di diagnosi
+sbagliata: si forza un fotogramma (uno screenshot basta) **prima** di leggere
+l'opacita'.
 
 ### La camera va messa al suo posto PRIMA di misurare
 
