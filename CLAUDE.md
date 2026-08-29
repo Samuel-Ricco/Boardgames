@@ -1309,6 +1309,39 @@ mettono**: uno stato che non si vede e non si ricorda è uno stato che non si
 trova più. L'elenco riparte sempre da **tutti i giochi**, che è anche la prima
 delle due voci.
 
+## Le navigazioni sono DUE, e una regola che ne nomina una sola è mezza regola
+
+Trovati tutti e due provando l'app, dove la barra in basso è l'unica
+navigazione che esiste — ma sono difetti del sito, e si vedevano su
+qualunque telefono.
+
+- **Un ospite arrivava agli scaffali.** `body.ospite ... {display:none}`
+  nominava solo `#sezioni`, cioè la testata: sotto gli 880 px la voce
+  restava in `#tabbar`, e toccandola si finiva su una scena che per
+  l'ospite **non viene nemmeno costruita**. La regola che dice «questa
+  voce qui non c'è» va scritta per tutte e due le navigazioni, sempre.
+- **La pastiglia stava sulle voci sbagliate.** Il blocco in fondo al
+  foglio dava il fondo tinto a `#sezioni button, #tabbar button` — cioè
+  a tutte — e `.on` glielo toglieva: le tre sezioni dove **non** sei
+  avevano la pastiglia, e quella dove sei era testo nudo. La regola
+  giusta era già scritta trecento righe più su, sul blocco di `#tabbar`,
+  ed è quella in fondo a coprirla: **stesso peso, e a parità di peso
+  vince chi viene dopo.**
+- E lo stesso blocco, con il suo `border:0`, cancellava la **riga sotto
+  la voce attiva** della testata — quella che il commento di `#sezioni`
+  descrive come il suo segno distintivo, apposta per non aggiungere un
+  riquadro a una barra già piena. Non si è mai vista.
+
+La lezione generale: **un blocco di normalizzazione messo in fondo al
+foglio riscrive anche quello che era già giusto.** Quando si aggiunge una
+regola larga lì sotto, va controllato cosa copre — e le proprie note sono
+il posto dove leggere che cosa quel componente doveva fare.
+
+E si verifica **misurando**, non a occhio: `getComputedStyle` su ogni
+voce, con e senza la classe, dice quale ha il fondo e quale no. A
+guardarla, una pastiglia grigia sotto una voce sembra semplicemente una
+pastiglia.
+
 ## Nascondere non è disattivare
 
 Il binario delle librerie era invisibile fuori dalla libreria — `opacity:0` — ma
