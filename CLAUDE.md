@@ -1719,6 +1719,25 @@ togliere una voce da li' basta, e nessun dato vecchio va migrato.
 
 ### I tre che restano, rifatti
 
+**Il dorso e' un libro, non una barra colorata.** Le altezze e l'inclinazione
+erano gia' a posto; a leggersi male era il disegno del dorso. Le due bande
+chiare stavano al **60% e all'80% di ogni dorso**, quindi la fila aveva due
+righe che la attraversavano tutta — ed era quello, piu' del colore, a farla
+sembrare un codice a barre. Adesso: due **nervature** scure vicino alla testa e
+al piede (e' li' che un dorso vero ha i nervi della cucitura, ed e' la cosa che
+a trenta pixel fa leggere «libro»), un **riquadro** di titolo con dentro due
+segni invece di due trattini, e quel riquadro sta a **un'altezza diversa per
+ognuna delle sei tinte**, cosi' due libri vicini non si allineano mai.
+
+**Un libro coricato mostra la CARTA.** I due volumi sdraiati sopra la fila
+avevano la texture del dorso su tutte e sei le facce, cioe' un mattone colorato
+proprio dove ci sarebbe il taglio delle pagine. Adesso hanno un materiale crema
+con le righe verticali sottili — uno solo, condiviso da tutti.
+
+**E la profondita' varia** (2.0-2.6 invece di 2.5 fisso): il fronte della fila
+era un muro dritto, e guardando uno scaffale vero di sbieco il bordo irregolare
+e' la prima cosa che si vede.
+
 **I libri erano un codice a barre.** Tutti in piedi, tutti alti quasi uguale
 (1.9-2.6, cioe' sette millimetri di differenza che da nessuna distanza si
 vedono), tutti a passo fisso, e un'inclinazione casuale di &plusmn;0.06 rad —
@@ -1734,20 +1753,61 @@ che e' «dritto». Adesso tre cose, e sono tre:
 - **i coricati**: due volumi sdraiati sopra la parte piu' bassa della fila. E'
   il gesto che distingue una libreria di casa da uno scaffale di negozio.
 
-**Una foglia si piega.** Erano segmenti singoli inclinati verso l'esterno, e
-piu' erano lunghi piu' puntavano in alto: otto antenne attorno a un vaso, che
-da lontano sono un riccio. Adesso ogni foglia e' **due segmenti**, il secondo
-appeso alla punta del primo dentro un gruppo — cosi' la piega e' una rotazione
-sola e non un conto di seni — e ne bastano **cinque** dove prima ne servivano
-otto, con meno mesh. Due delle cinque ricadono sotto il bordo. Il vaso ha preso
-un **labbro**: un tronco di cono nudo e' un secchio.
+### Le piante sono tre, non una ripetuta
 
-**Il vaso non e' piu' terracotta.** Era `#b2643f`, cioe' l'accento (`#c86a3c`)
-mancato di un soffio: due terracotta a un passo l'uno dall'altro nella stessa
-schermata si leggono come un errore di stampa. Corpo `#b8916f`, labbro `#c7af98`
-— il labbro piu' chiaro del corpo, come su un vaso vero che prende la luce
-sulla bocca — e l'accento resta a quello che si tocca. **Vale anche per i
-dorsi dei libri**: la terracotta li' e' `#b0552f` e non l'accento.
+Era una pianta sola con le foglie di lunghezza diversa: dodici cubi con dodici
+volte lo stesso ciuffo. Adesso sono **tre specie con tre sagome diverse**, e
+quale tocchi a un cubo lo decide il suo seme — quindi non cambia a ogni lettera
+scritta nella ricerca, e due mobili accanto non si somigliano.
+
+- **Peperomia**, sagoma *tonda*: sei foglie ovali su steli corti. E' la piu'
+  sparsa delle tre, e serve: fra un potos che fa cupola e una sansevieria che
+  fa colonna, una pianta che lascia vedere l'aria fra le foglie e' quella che
+  rompe la fila.
+- **Potos**, sagoma *ricadente*: foglie a cuore, e due che scendono sotto il
+  bordo del vaso. E' la foglia a due segmenti che c'era gia' — il secondo
+  appeso alla punta del primo dentro un gruppo, cosi' la piega e' una rotazione
+  sola e non un conto di seni.
+- **Sansevieria**, sagoma *verticale*: sei lame rigide a ventaglio. E' l'unica
+  che riempie il cubo in altezza, e su un mobile di quattro file serve: senza,
+  le piante restano tutte raccolte sul fondo del vano.
+
+**La variegatura non e' una texture.** A questa distanza basta una seconda
+forma piu' piccola in chiaro appena davanti alla prima: il cuore della
+peperomia, la marezzatura del potos, il filo sul bordo della lama. Zero canvas,
+zero texture da caricare. Ma va tenuta **piccola**: a meta' della larghezza
+usciva un bollo bianco su ogni foglia, e sei bolli bianchi in un cubo si
+leggono come un guasto.
+
+**Il vaso e' un uovo, ed e' uno solo per tutte e tre.** Nella foto di
+riferimento sono tre piante diverse in tre vasi identici: e' il vaso a tenerle
+insieme. Un profilo di sette punti su una `LatheGeometry` fa la pancia e la
+rastremazione senza labbro — il labbro era il ripiego di quando il vaso era un
+cilindro — e resta **una geometria** per tutte le piante di tutte le librerie.
+
+**E il colore si sceglie per come ARRIVA a schermo.** Il cotto di prima
+(`#b2643f`) era l'accento mancato di un soffio, e due terracotta a un passo
+l'uno dall'altro si leggono come un errore di stampa. La salvia della tavolozza
+(`--sage #a6a89c`) sembrava la risposta, ma sotto questa luce e con il tone
+mapping ACES sopra usciva **bianca**: un vaso di gesso. La tinta buona e'
+`#7f8878`, cioe' la salvia scurita quanto basta perche' a schermo sia salvia.
+**Vale anche per i dorsi dei libri**: la terracotta li' e' `#b0552f` e non
+l'accento.
+
+### `comune()` e' UNA cache per geometrie e materiali
+
+Costata mezz'ora e una scena che non si costruiva. Lo stelo della peperomia ha
+una geometria (`comune('stelo', ...)`) e un materiale, e il materiale era
+`matTinta('stelo', ...)`: **la stessa chiave**. Il materiale arrivava per primo,
+la geometria se lo ritrovava restituito al suo posto, e three.js moriva dentro
+`updateMorphTargets` con `Object.keys(undefined)` — un errore che del nome
+`stelo` non fa parola.
+
+La regola: `comune()` non ha due scomparti, ne ha uno. Le chiavi dei materiali
+non possono coincidere con quelle delle geometrie, e il modo di accorgersene e'
+contarle — `comune\(\s*'([^']+)'` piu' `matTinta\(\s*'([^']+)'`, e cercare i
+doppioni. Attenzione ai falsi positivi: `matTinta('foglia' + i)` e
+`comune('foglia')` sembrano uguali a una regex e non lo sono.
 
 **I dadi erano sei oggetti alla stessa quota.** Tre dadi, un d20 e due meeple
 sparsi su mezzo cubo: sei cose piccole tutte appoggiate al ripiano non si
@@ -1773,6 +1833,18 @@ partenza:
 Le mesh in piu' passano tutte da `comune()`: il labbro del vaso e' **una**
 geometria per tutte le piante di tutte le librerie, il feltro e il vassoio sono
 il cubo unitario che c'era gia'.
+
+### Gli arredi sono usciti dal pannello della libreria
+
+Da quando si tiene premuto un cubo vuoto e si sceglie cosa metterci dentro, una
+tendina che decide l'arredo di **tutti e dodici i vani insieme** e' il comando
+grosso accanto a quello preciso — e i due si contraddicono a vicenda. La riga
+«arredi» non c'e' piu' nel pannello.
+
+`librerie.arredo` **resta sul database** e resta quello che una cella eredita
+dicendo «come la libreria»: si legge, non si scrive piu' da li'. E `STANZA.ARREDI`
+resta perche' `normalizza` ci valida sopra i valori salvati — e' la lista, non
+il menu.
 
 ### L'arredo di una cella
 
