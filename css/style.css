@@ -556,9 +556,15 @@ body.dentro .dentro-only{display:inline-flex !important}
 }
 #sezioni button:hover{color:var(--ink)}
 #sezioni button.on{color:var(--ink); border-bottom-color:var(--accent)}
-/* un ospite non ha nessuna libreria: la voce che porta a una libreria
-   vuota sarebbe una promessa che il sito non puo' mantenere */
-body.ospite #sezioni [data-sez="collezione"]{display:none}
+/* Un ospite non ha nessuna libreria: la voce che porta a una libreria
+   vuota sarebbe una promessa che il sito non puo' mantenere.
+
+   E le navigazioni sono DUE. Nominata solo quella della testata, sotto
+   gli 880 px la voce restava -- cioe' proprio dove la barra in basso e'
+   l'unica che c'e', e nell'app sempre: si toccava «libreria» e si
+   finiva su una scena che per l'ospite non viene nemmeno costruita. */
+body.ospite #sezioni [data-sez="collezione"],
+body.ospite #tabbar  [data-sez="collezione"]{display:none !important}
 
 /* La testata e' la stessa in tutte le schermate, contatore compreso:
    "la mia collezione: N" e' vero anche mentre guardi il catalogo, ed e'
@@ -2532,14 +2538,30 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 body.elenco #conta{background:var(--accent); color:#fff}
 
 /* --- la navigazione ------------------------------------------------ */
+/* LA PASTIGLIA DICE QUAL E' QUELLA SCELTA -- e qui diceva il contrario.
+
+   Il fondo tinto stava sulla regola di base, cioe' su tutte, e `.on` lo
+   toglieva: le tre voci dove NON sei avevano la pastiglia e quella dove
+   sei era testo nudo. La regola giusta era gia' scritta trecento righe
+   piu' su, sul blocco di `#tabbar`, ed e' questa a coprirla -- stesso
+   peso, e a parita' di peso vince chi viene dopo. */
 #sezioni button, #tabbar button{
   font-family:var(--ff); font-weight:500; letter-spacing:0;
-  text-transform:none; font-size:14px; border:0; background:rgba(51,53,43,.06);
+  text-transform:none; font-size:14px; border:0; background:none;
   color:var(--ink-soft); cursor:pointer; border-radius:var(--r-s);
   padding:8px 12px; transition:color .2s var(--ease), background-color .2s var(--ease);
 }
 #sezioni button:hover, #tabbar button:hover{color:var(--ink); background:rgba(51,53,43,.06)}
-#sezioni button.on, #tabbar button.on{color:var(--accent); font-weight:600; background:none}
+#sezioni button.on, #tabbar button.on{color:var(--accent); font-weight:600}
+/* La pastiglia e' della barra in basso e basta: nella testata il segno
+   e' la riga sotto la voce, apposta per non aggiungere un riquadro a
+   una barra che e' gia' piena. */
+#tabbar button.on{background:rgba(200,106,60,.12)}
+/* E la riga sotto va rimessa qui, perche' il `border:0` di questo blocco
+   la cancellava: era scritta trecento righe piu' su e non si e' mai
+   vista. Trasparente su tutte, se no la voce scelta salta di due pixel. */
+#sezioni button{border-bottom:2px solid transparent}
+#sezioni button.on{border-bottom-color:var(--accent)}
 #sezioni button.on::after{display:none}
 
 /* --- superfici: raggi generosi, ombre morbide, nessun filo duro ---- */
