@@ -353,7 +353,9 @@ condizioni dicono anche che:
 - mettere il token nel JavaScript della pagina lo espone a chiunque;
 - le richieste vanno a `boardgamegeek.com`, **senza `www`**, altrimenti il token
   non viene letto;
-- un sito pubblico deve mostrare il logo **"Powered by BGG"** con link a BGG;
+- un sito pubblico deve mostrare il logo **"Powered by BGG"** con link a BGG —
+  sta in fondo al catalogo, che e' la schermata fatta dei loro dati e l'unica
+  che vede anche chi entra senza account;
 - se il sito ha pubblicità o vende qualcosa serve una licenza commerciale, se no
   ne basta una non commerciale, di norma gratuita.
 
@@ -442,6 +444,11 @@ Il credito compare sotto al titolo in ogni recensione. Se un editore chiede di
 toglierla, basta cancellare il campo `cover` dalla sua voce: la scatola torna a
 usare la copertina disegnata e non si rompe niente.
 
+Dati, schede, miniature e misure delle scatole vengono da
+**[BoardGameGeek](https://boardgamegeek.com)**, e il loro marchio *Powered by
+BGG* (`img/logoBGG.webp`) è in fondo al catalogo, com'è giusto e come chiedono
+le condizioni della loro API.
+
 Il font è Poppins, licenza SIL Open Font. three.js è MIT.
 
 ## Rimasto da fare
@@ -453,7 +460,6 @@ Il font è Poppins, licenza SIL Open Font. three.js è MIT.
   il pulsante «scheda» è uscito dal piede della recensione. Col token quei campi
   si riempiono da soli all'aggiunta, quindi fa meno male di prima; il posto
   naturale è il menu a tre punti dell'elenco;
-- il logo **"Powered by BGG"** nel piede, obbligatorio quando si usa l'API;
 - manca l'**indice unico su `(proprietario, nome)`** delle librerie: il divieto
   dei nomi doppi vive in `store.js` e regge, ma la garanzia sarebbe quella;
 - le **partite restano private**: gli amici vedono libreria e recensioni, non le

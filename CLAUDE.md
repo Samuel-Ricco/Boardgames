@@ -808,6 +808,35 @@ quello che continua a fare `copertina()`.
 README: un catalogo di migliaia di giochi non si committa, e senza rete non c'è —
 mentre la libreria continua a esserci.
 
+### Il credito a BGG sta in fondo al catalogo
+
+Le condizioni della XML API lo chiedono a chiunque la usi su un sito pubblico,
+quindi non era una scelta *se* metterlo — solo *dove*. Il sito non ha un piede:
+e' un'applicazione a tutto schermo, e la testata tiene apposta solo quello che
+vale ovunque.
+
+Il catalogo e' il posto onesto. E' la schermata **fatta** dei dati di BGG —
+l'ordine viene dal loro indice, le schede, le miniature e le misure delle
+scatole dalla loro API — ed e' anche **l'unica che vede un ospite**, quindi il
+credito lo legge chiunque passi di qui, con account o senza. Dalle altre
+schermate e' a un tocco, perche' il catalogo sta nelle due navigazioni.
+
+- **Sta FUORI da `.cat-fondo`**, come fratello subito dopo. Quel contenitore
+  sparisce in due casi — nella vista wishlist (`body.vcat-wish`) e quando la
+  lista e' finita (`.finito`, che pero' nasconde solo il bottone) — e **un
+  credito non puo' sparire**. Verificato in tutti e due gli stati.
+- **Il marchio non si traduce e non cambia colore**: e' di qualcun altro, e
+  vale la regola dei nomi delle lingue. Quello che si traduce e' il `title`
+  (`cat.bgg`), che dice cosa arriva da li'.
+- **Piena opacita'.** Un'attribuzione sbiadita e' peggio di nessuna
+  attribuzione, ed e' anche la lezione gia' scritta per le etichette dei
+  riquadri: una cosa piccola non puo' anche essere tenue.
+- Il riquadro attorno al link e' **solo bersaglio per il dito** (160x59, 164x65
+  sul tocco): il logo ha gia' i suoi colori e non vuole niente sotto.
+- Il file e' **committato** (`img/logoBGG.webp`, 900x264 con trasparenza) come
+  tutto il resto: niente risorse esterne, mai. L'unica cosa che esce e' il
+  link.
+
 ## La wishlist: quello che non hai (ancora)
 
 `js/desideri.js` + tabella `desideri` (migrazione `20260825120000_wishlist`).

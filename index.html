@@ -379,6 +379,26 @@
     <div class="cat-fondo">
       <button id="cat-piu" type="button" data-i18n="cat.piu">altri giochi</button>
     </div>
+
+    <!-- IL CREDITO A BOARDGAMEGEEK.
+
+         Le condizioni della XML API lo chiedono a chiunque la usi su un
+         sito pubblico, e questo e' anche il posto onesto: il catalogo
+         E' BoardGameGeek -- l'ordine viene dal loro indice, le schede,
+         le miniature e le misure delle scatole dalla loro API. Ed e'
+         l'unica schermata che vede un ospite, quindi il credito lo
+         legge chiunque passi di qui, con account o senza.
+
+         Sta FUORI da `.cat-fondo` apposta: quella sparisce nella vista
+         wishlist e quando la lista e' finita, e un credito non puo'
+         sparire. Il marchio non si traduce e non cambia colore: e' di
+         qualcun altro. Quello che si traduce e' il `title`. -->
+    <p class="bgg-credito">
+      <a href="https://boardgamegeek.com" target="_blank" rel="noopener noreferrer"
+         data-i18n-title="cat.bgg" title="dati e immagini da BoardGameGeek">
+        <img src="img/logoBGG.webp" width="900" height="264" alt="Powered by BGG">
+      </a>
+    </p>
   </div>
 </section>
 

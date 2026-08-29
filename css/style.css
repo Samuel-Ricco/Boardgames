@@ -725,6 +725,16 @@ body.sez-catalogo #catalogo{display:block}
 #cat-piu:disabled{cursor:default; opacity:.5}
 .cat-fondo.finito #cat-piu{display:none}
 
+/* Il credito a BGG. Piena opacita' e misura leggibile: un'attribuzione
+   sbiadita e' peggio di nessuna attribuzione, ed e' la stessa lezione
+   delle etichette dei riquadri -- una cosa piccola non puo' anche
+   essere tenue. Il riquadro attorno al link e' solo bersaglio per il
+   dito: il logo ha gia' i suoi colori e non vuole nient'altro sotto. */
+.bgg-credito{margin:36px 0 0; text-align:center}
+.bgg-credito a{display:inline-block; padding:10px 14px; border-radius:var(--r-s)}
+.bgg-credito img{display:block; width:132px; height:auto}
+@media (pointer:coarse){ .bgg-credito a{padding:13px 16px} }
+
 /* --- le sezioni in basso, su schermo stretto --------------------
    Dove arriva il pollice, e non in una testata gia' piena di
    strumenti. Niente icone inventate: il sito non ha un linguaggio di
