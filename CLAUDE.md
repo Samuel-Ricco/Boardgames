@@ -1772,12 +1772,35 @@ scritta nella ricerca, e due mobili accanto non si somigliano.
   che riempie il cubo in altezza, e su un mobile di quattro file serve: senza,
   le piante restano tutte raccolte sul fondo del vano.
 
-**La variegatura non e' una texture.** A questa distanza basta una seconda
-forma piu' piccola in chiaro appena davanti alla prima: il cuore della
-peperomia, la marezzatura del potos, il filo sul bordo della lama. Zero canvas,
-zero texture da caricare. Ma va tenuta **piccola**: a meta' della larghezza
-usciva un bollo bianco su ogni foglia, e sei bolli bianchi in un cubo si
-leggono come un guasto.
+**A questa distanza conta la SAGOMA, e una sfera schiacciata non ha la sagoma
+di una foglia: ha quella di un fagiolo.** Il primo tentativo era fatto cosi' —
+ellissoidi orientati attorno al vaso — e da novanta pixel usciva un riccio, non
+una pianta. Segnalato in questi termini: «le piante sono tremende».
+
+Adesso ogni foglia e' un **contorno vero**: una `Shape` con la punta e la
+rastremazione, estrusa di tre millimetri con un filo di smusso. Lo smusso non
+e' un vezzo: senza, un piano piatto sotto una luce diffusa e' una tinta unita e
+si legge come carta ritagliata; con, il bordo prende una luce diversa dalla
+faccia e la foglia diventa una cosa che ha uno spessore.
+
+Tre contorni, **tre geometrie in tutto**: la spada della sansevieria, il cuore
+del potos, il cucchiaio della peperomia. La misura la fa `scale`, come per
+tutto il resto del contorno.
+
+**E il pivot sta alla BASE della foglia**, non al centro: la `Shape` va da y=0 a
+y=1 e non si centra, cosi' inclinare una foglia la fa ruotare attorno al
+picciolo invece che attorno alla pancia — che e' la differenza fra una pianta e
+un mazzo di cose che galleggiano.
+
+**La variegatura non e' una texture.** Basta una seconda foglia della stessa
+forma: piu' piccola davanti dove e' una macchia (peperomia, potos), piu' grande
+DIETRO dove e' un bordo (sansevieria) — cosi' del chiaro resta solo il
+contorno. Una fascia chiara davanti la faceva sembrare dipinta a strisce. E va
+tenuta piccola: a meta' della larghezza usciva un bollo su ogni foglia, e sei
+bolli in un cubo si leggono come un guasto.
+
+**Dentro il vaso c'e' la terra.** Una sfera schiacciata scura sotto le foglie:
+senza, dalla bocca del vaso si vedeva il fondo.
 
 **Il vaso e' un uovo, ed e' uno solo per tutte e tre.** Nella foto di
 riferimento sono tre piante diverse in tre vasi identici: e' il vaso a tenerle
@@ -1793,6 +1816,24 @@ mapping ACES sopra usciva **bianca**: un vaso di gesso. La tinta buona e'
 `#7f8878`, cioe' la salvia scurita quanto basta perche' a schermo sia salvia.
 **Vale anche per i dorsi dei libri**: la terracotta li' e' `#b0552f` e non
 l'accento.
+
+### Anche sopra il mobile
+
+Un mobile vero ha sempre qualcosa sopra, ed e' anche quello che fa capire dove
+finisce. Adesso quei tre posti — uno per colonna — si scelgono uno per uno con
+lo **stesso gesto e lo stesso menu** dei cubi: le chiavi sono `s0`, `s1`, `s2`
+nello stesso archivio delle celle, con lo stesso «assente vuol dire come la
+libreria».
+
+`sopraDa(x, y)` e' il gemello di `slotDa` per la fascia che sta sopra la cima:
+stessi conti, altra fascia, alta `ALT_SOPRA` (1.7) perche' li' gli oggetti sono
+scalati a .6 e il piu' alto arriva a poco piu' di un'unita' e mezza.
+
+**Il menu li' va SOPRA, non sotto** — sotto finirebbe appoggiato al mobile,
+cioe' addosso a quello di cui sta parlando. Ma se sopra non ci sta (e sugli
+schermi normali non ci sta quasi mai, perche' quella fascia e' schiacciata
+contro la testata) torna sotto: meglio coperto il primo ripiano che mezzo menu
+sotto la barra del titolo.
 
 ### `comune()` e' UNA cache per geometrie e materiali
 

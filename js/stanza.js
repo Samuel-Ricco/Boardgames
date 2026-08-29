@@ -200,7 +200,10 @@ function normalizza(s){
   let quante = 0;
   Object.keys(sorgente).forEach(function(k){
     if (quante >= 168) return;
-    if (!/^[0-9a-f-]{6,40}:(?:[0-9]|10|11)$/i.test(k)) return;
+    /* I dodici cubi sono 0..11; `s0`, `s1`, `s2` sono i tre posti
+       SOPRA il mobile, uno per colonna. Un mobile vero ha sempre
+       qualcosa sopra, e adesso si sceglie anche quello. */
+    if (!/^[0-9a-f-]{6,40}:(?:[0-9]|10|11|s[0-2])$/i.test(k)) return;
     const v = sorgente[k];
     if (CELLE.indexOf(v) < 0) return;
     dentroCelle[k] = v;

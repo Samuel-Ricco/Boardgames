@@ -1490,6 +1490,7 @@ function comune(chiave, fai){
 }
 
 const geoCubo   = () => comune('cubo',   () => new THREE.BoxGeometry(1, 1, 1));
+// la sfera schiacciata: adesso serve solo alla terra dentro il vaso
 const geoFoglia = () => comune('foglia', () => new THREE.SphereGeometry(.17, 7, 5));
 const geoD20    = () => comune('d20',    () => new THREE.IcosahedronGeometry(.62, 0));
 /* IL VASO E' UN UOVO, non un tronco di cono col labbro.
@@ -1517,7 +1518,6 @@ const geoVasoUovo = () => comune('vasoUovo', function(){
    non una geometria in piu'. La lama della sansevieria invece e' un
    box, perche' una lama e' piatta e dritta e una sfera non lo diventa
    per quanto la si schiacci. */
-const geoLama = () => comune('lama', () => new THREE.BoxGeometry(1, 1, 1));
 // lo stelo della peperomia: un cilindro sottile, alto 1 e scalato
 const geoStelo = () => comune('stelo', () => new THREE.CylinderGeometry(.022, .028, 1, 6));
 
@@ -1749,174 +1749,204 @@ function arrDadi(g, seed, x, y){
    LE TRE PIANTE
    ===============================================================
 
-   Prima era una pianta sola con le foglie di lunghezza diversa:
-   dodici cubi con dodici volte lo stesso ciuffo. Adesso sono tre
-   specie con tre SAGOME diverse -- tonda, ricadente, verticale -- e
-   quale tocchi a un cubo lo decide il suo seme, cioe' non cambia a
-   ogni ricerca e due mobili accanto non si somigliano.
+   A questa distanza conta la SAGOMA, e una sfera schiacciata non ha la
+   sagoma di una foglia: ha quella di un fagiolo. Il primo tentativo
+   era fatto cosi' -- ellissoidi orientati attorno al vaso -- e da
+   novanta pixel usciva un riccio, non una pianta.
 
-   Le foglie restano sfere schiacciate e box: a questa distanza contano
-   la sagoma e il colore, e una pianta fatta bene costerebbe piu'
-   triangoli di tutto il resto del mobile. Quello che si aggiunge e' la
-   VARIEGATURA, che nella foto e' la prima cosa che si vede in tutte e
-   tre -- ed e' una seconda forma piu' piccola in chiaro, appena
-   davanti alla prima: zero canvas, zero texture da caricare. */
-const VERDI = [0x3f5d38, 0x4a6b41];
-const CHIARO = 0xcbd08a;
+   Adesso ogni foglia e' un CONTORNO VERO: una `Shape` con la punta e
+   la rastremazione, estrusa di tre millimetri con un filo di smusso.
+   Lo smusso non e' un vezzo: senza, un piano piatto sotto una luce
+   diffusa e' una tinta unita e si legge come carta ritagliata; con,
+   il bordo prende una luce diversa dalla faccia e la foglia diventa
+   una cosa che ha uno spessore.
+
+   Tre contorni, tre geometrie in tutto: la spada della sansevieria, il
+   cuore del potos, il cucchiaio della peperomia. La misura la fa
+   `scale`, come per tutto il resto del contorno.
+
+   E il PIVOT E' ALLA BASE della foglia, non al centro: la `Shape` va
+   da y=0 a y=1 e non si centra, cosi' inclinare una foglia la fa
+   ruotare attorno al picciolo invece che attorno alla pancia -- che e'
+   la differenza fra una pianta e un mazzo di cose che galleggiano. */
+
+function estrusa(chiave, fai){
+  return comune(chiave, function(){
+    return new THREE.ExtrudeGeometry(fai(), {
+      depth: .03, bevelEnabled: true, bevelSize: .018, bevelThickness: .014,
+      bevelSegments: 1, curveSegments: 6
+    });
+  });
+}
+
+// la spada: stretta, dritta, con la punta. E' quasi tutta lunghezza.
+const geoSpada = () => estrusa('fSpada', function(){
+  const p = new THREE.Shape();
+  p.moveTo(0, 0);
+  p.bezierCurveTo(.19, .10, .21, .55, .09, .90);
+  p.bezierCurveTo(.05, .97, .02, .99, 0, 1);
+  p.bezierCurveTo(-.02, .99, -.05, .97, -.09, .90);
+  p.bezierCurveTo(-.21, .55, -.19, .10, 0, 0);
+  return p;
+});
+
+// il cuore: larga in basso, punta in cima. E' la foglia del potos.
+const geoCuore = () => estrusa('fCuore', function(){
+  const p = new THREE.Shape();
+  p.moveTo(0, 0);
+  p.bezierCurveTo(.34, .04, .50, .30, .40, .62);
+  p.bezierCurveTo(.32, .86, .14, .97, 0, 1);
+  p.bezierCurveTo(-.14, .97, -.32, .86, -.40, .62);
+  p.bezierCurveTo(-.50, .30, -.34, .04, 0, 0);
+  return p;
+});
+
+// il cucchiaio: quasi tonda, appena appuntita. E' la peperomia.
+const geoCucchiaio = () => estrusa('fCucchiaio', function(){
+  const p = new THREE.Shape();
+  p.moveTo(0, 0);
+  p.bezierCurveTo(.40, .06, .48, .50, .30, .84);
+  p.bezierCurveTo(.20, .96, .08, 1, 0, 1);
+  p.bezierCurveTo(-.08, 1, -.20, .96, -.30, .84);
+  p.bezierCurveTo(-.48, .50, -.40, .06, 0, 0);
+  return p;
+});
+
+/* I verdi sono SCURITI rispetto alla tavolozza, per la stessa ragione
+   del vaso: la stanza e' illuminata forte e con il tone mapping sopra
+   un verde medio arriva a schermo slavato. Questi sono i verdi della
+   foto una volta accesa la luce. */
+const VERDI = [0x2f4a2b, 0x3a5a34];
+const CHIARO = 0xa8b566;
 
 function verdeDi(seed){
-  return matTinta('foglia' + (srnd(seed) < .5 ? 0 : 1),
-                  { color: VERDI[srnd(seed) < .5 ? 0 : 1], roughness: .76 });
+  const k = srnd(seed) < .5 ? 0 : 1;
+  return matTinta('foglia' + k, { color: VERDI[k], roughness: .72, side: THREE.DoubleSide });
 }
-const matChiaro = () => matTinta('fogliaChiara', { color: CHIARO, roughness: .74 });
+const matChiaro = () => matTinta('fogliaChiara',
+  { color: CHIARO, roughness: .70, side: THREE.DoubleSide });
 
 /* Il vaso: uno solo per tutte e tre, ed e' quello a tenerle insieme --
-   nella foto sono tre piante diverse in tre vasi identici. Salvia, che
-   e' gia' nella tavolozza del sito: il cotto di prima era l'accento
-   mancato di un soffio, e due terracotta a un passo l'uno dall'altro
-   nella stessa schermata si leggono come un errore di stampa. */
+   nella foto sono tre piante diverse in tre vasi identici. */
 function vaso(g, x, y, h){
-  /* Salvia SCURITA. `--sage` (#a6a89c) e' la tinta giusta sulla carta,
-     ma la stanza e' illuminata forte e con il tone mapping ACES sopra
-     usciva bianca: un vaso di gesso, non di ceramica. Si sceglie la
-     tinta per come ARRIVA a schermo, non per com'e' nel foglio di
-     stile -- e a schermo questa e' la salvia della foto. */
   const v = new THREE.Mesh(geoVasoUovo(), matTinta('vasomat', { color: 0x7f8878, roughness: .85 }));
   v.scale.set(1, h, 1);
   v.position.set(x, y, .05);
   v.castShadow = true; v.receiveShadow = true;
   g.add(v);
+  // la terra: senza, dalla bocca del vaso si vede il fondo
+  const t = new THREE.Mesh(geoFoglia(), matTinta('terra', { color: 0x2e2620, roughness: .96 }));
+  t.scale.set(1.9, .5, 1.9);
+  t.position.set(x, y + h - .06, .05);
+  g.add(t);
 }
 
-/* Una foglia che si piega: due segmenti, il secondo appeso alla punta
-   del primo dentro un gruppo, cosi' la piega e' una rotazione sola e
-   non un conto di seni. La usa il potos, che e' quello che ricade. */
-function fogliaPiegata(mat, chiaro, lung, piega){
-  const base = new THREE.Group();
-  const la = lung*.55, lb = lung*.5;
-  const a = new THREE.Mesh(geoFoglia(), mat);
-  a.scale.set(.62, la/.34, .42);
-  a.position.y = la/2;
-  a.castShadow = true;
-  base.add(a);
-  if (chiaro){
-    const c = new THREE.Mesh(geoFoglia(), matChiaro());
-    c.scale.set(.30, la/.34*.5, .22);
-    c.position.set(0, la*.55, .09);
-    base.add(c);
-  }
-  const p = new THREE.Group();
-  p.position.y = la;
-  p.rotation.z = piega;
-  const b = new THREE.Mesh(geoFoglia(), mat);
-  b.scale.set(.5, lb/.34, .36);
-  b.position.y = lb/2;
-  b.castShadow = true;
-  p.add(b);
-  base.add(p);
-  return base;
+/* Una foglia: mesh sola, pivot alla base, con la variegatura come
+   seconda foglia appena piu' piccola davanti (o appena piu' grande
+   dietro, se quello che serve e' un bordo). */
+function foglia(g, geo, mat, x, y, z, lung, largo, giro, apre, chino){
+  const f = new THREE.Mesh(geo, mat);
+  f.scale.set(largo, lung, largo);
+  f.position.set(x, y, z);
+  f.rotation.set(chino, giro, apre);
+  f.castShadow = true;
+  g.add(f);
+  return f;
 }
 
-/* PEPEROMIA: sagoma tonda. Foglie ovali su steli corti, ognuna col
-   cuore chiaro. E' la piu' sparsa delle tre, e serve: fra un potos che
-   fa cupola e una sansevieria che fa colonna, una pianta che lascia
-   vedere l'aria fra le foglie e' quello che rompe la fila. */
-function pPeperomia(g, seed, x, y, h){
-  /* `steloMat` e non `stelo`: `comune()` e' UNA cache sola per
-     geometrie e materiali, e la geometria dello stelo si chiama gia'
-     cosi'. Con la stessa chiave il materiale arrivava prima, e la
-     mesh si ritrovava un MeshStandardMaterial al posto della
-     geometria -- `Object.keys(undefined)` dentro three.js, e la scena
-     non si costruiva piu'. */
-  const stelo = matTinta('steloMat', { color: 0x5c7a4e, roughness: .8 });
+/* SANSEVIERIA: lame rigide a ventaglio, con il filo chiaro sul bordo.
+   Il bordo e' una lama IDENTICA appena piu' grande dietro: cosi' del
+   chiaro resta solo il contorno, che e' quello che si vede in una
+   sansevieria vera. Una fascia chiara davanti invece la faceva
+   sembrare dipinta a strisce. */
+function pSanse(g, seed, x, y, h){
   const verde = verdeDi(seed + 9);
-  const n = 6;
+  const n = 7;
   for (let i = 0; i < n; i++){
-    const ang = (i / n) * Math.PI * 2 + srnd(seed + i) * .8;
-    const alt = .26 + srnd(seed + i*3) * .42;
-    const fuori = .20 + srnd(seed + i*5) * .24;
-    const fx = x + Math.cos(ang) * fuori, fz = .05 + Math.sin(ang) * fuori * .7;
-    const fy = y + h + alt;
+    const lung = 1.5 + srnd(seed + i*3) * 1.0;
+    const largo = .8 + srnd(seed + i*7) * .3;
+    const apre = (i - (n-1)/2) * .13 + (srnd(seed + i) - .5) * .10;
+    const giro = (srnd(seed + i*5) - .5) * 1.1;
+    const px = x + (i - (n-1)/2) * .07;
+    const pz = .05 + (srnd(seed + i*11) - .5) * .22;
+    const py = y + h - .10;
+    foglia(g, geoSpada(), matChiaro(), px, py, pz - .012, lung * 1.02, largo * 1.14, giro, -apre, 0);
+    foglia(g, geoSpada(), verde,       px, py, pz,        lung,       largo,        giro, -apre, 0);
+  }
+}
+
+/* POTOS: cupola di foglie a cuore, e due che ricadono sotto il bordo
+   del vaso. E' quello che fa leggere una pianta appoggiata su un
+   ripiano invece di un cespuglio che ci cresce dentro. */
+function pPotos(g, seed, x, y, h){
+  const verde = verdeDi(seed + 9);
+  const stelo = matTinta('steloMat', { color: 0x4f6b45, roughness: .8 });
+  const n = 7;
+  for (let i = 0; i < n; i++){
+    const cade = i >= n - 2;
+    const lung = (cade ? .95 : .8) + srnd(seed + i*3) * .35;
+    const giro = (i / n) * Math.PI * 2 + srnd(seed + i) * .6;
+    const apre = cade ? (2.0 + srnd(seed + i*5) * .5) * (i % 2 ? 1 : -1)
+                      : (.5 + srnd(seed + i*5) * .7) * (i % 2 ? 1 : -1);
+    const fuori = cade ? .34 : .12 + srnd(seed + i*7) * .16;
+    const px = x + Math.cos(giro) * fuori;
+    const pz = .05 + Math.sin(giro) * fuori * .7;
+    const py = y + h - (cade ? .16 : .04);
+
+    // il picciolo: corto, ma senza le foglie galleggiano
+    const st = new THREE.Mesh(geoStelo(), stelo);
+    const sl = cade ? .18 : .26;
+    st.scale.set(1, sl, 1);
+    st.position.set((x + px)/2, py + sl*.35, (.05 + pz)/2);
+    st.rotation.z = -apre * .5;
+    g.add(st);
+
+    const f = foglia(g, geoCuore(), verde, px, py, pz, lung, lung * .9, giro, apre, -.25);
+    // la marezzatura: una foglia piu' piccola appena davanti
+    if (srnd(seed + i*13) < .7){
+      const c = new THREE.Mesh(geoCuore(), matChiaro());
+      c.scale.set(lung * .9 * .42, lung * .5, lung * .9 * .42);
+      c.position.set(px, py, pz);
+      c.rotation.copy(f.rotation);
+      c.translateOnAxis(new THREE.Vector3(0, 0, 1), .026);
+      c.translateOnAxis(new THREE.Vector3(0, 1, 0), lung * .26);
+      g.add(c);
+    }
+  }
+}
+
+/* PEPEROMIA: foglie a cucchiaio su piccioli, ognuna col cuore chiaro.
+   E' la piu' sparsa delle tre, e serve: fra un potos che fa cupola e
+   una sansevieria che fa colonna, una pianta che lascia vedere l'aria
+   fra le foglie e' quella che rompe la fila. */
+function pPeperomia(g, seed, x, y, h){
+  const verde = verdeDi(seed + 9);
+  const stelo = matTinta('steloMat', { color: 0x4f6b45, roughness: .8 });
+  const n = 7;
+  for (let i = 0; i < n; i++){
+    const giro = (i / n) * Math.PI * 2 + srnd(seed + i) * .7;
+    const alt = .18 + srnd(seed + i*3) * .40;
+    const fuori = .10 + srnd(seed + i*5) * .22;
+    const lung = .62 + srnd(seed + i*7) * .26;
+    const apre = (.35 + srnd(seed + i*11) * .5) * (Math.cos(giro) < 0 ? -1 : 1);
+    const px = x + Math.cos(giro) * fuori;
+    const pz = .05 + Math.sin(giro) * fuori * .7;
+    const py = y + h - .06;
 
     const st = new THREE.Mesh(geoStelo(), stelo);
     st.scale.set(1, alt, 1);
-    st.position.set((x + fx)/2, y + h + alt/2, (.05 + fz)/2);
-    st.rotation.z = Math.atan2(fx - x, alt) * -1;
+    st.position.set((x + px)/2, py + alt/2, (.05 + pz)/2);
+    st.rotation.z = Math.atan2(px - x, alt) * -1;
     g.add(st);
 
-    const f = new THREE.Mesh(geoFoglia(), verde);
-    const r = .42 + srnd(seed + i*7) * .16;
-    f.scale.set(r/.17, r/.17*.78, .34);
-    f.position.set(fx, fy, fz);
-    f.rotation.set(-.35, ang, 0);
-    f.castShadow = true;
-    g.add(f);
-
-    /* Il cuore chiaro e' una MACCHIA, non mezza foglia: a meta' della
-       larghezza usciva un bollo bianco su ogni foglia, e sei bolli
-       bianchi in un cubo si leggono come un guasto. */
-    const c = new THREE.Mesh(geoFoglia(), matChiaro());
-    c.scale.set(r/.17*.34, r/.17*.26, .16);
-    c.position.set(fx, fy, fz + .09);
-    c.rotation.set(-.35, ang, 0);
+    const f = foglia(g, geoCucchiaio(), verde, px, py + alt, pz, lung, lung * .92, giro, apre, -.3);
+    const c = new THREE.Mesh(geoCucchiaio(), matChiaro());
+    c.scale.set(lung * .92 * .40, lung * .44, lung * .92 * .40);
+    c.position.set(px, py + alt, pz);
+    c.rotation.copy(f.rotation);
+    c.translateOnAxis(new THREE.Vector3(0, 0, 1), .026);
+    c.translateOnAxis(new THREE.Vector3(0, 1, 0), lung * .30);
     g.add(c);
-  }
-}
-
-/* POTOS: sagoma ricadente. Fa cupola e DUE foglie scendono sotto il
-   bordo del vaso -- e' quello che fa leggere una pianta appoggiata su
-   un ripiano invece di un cespuglio che ci cresce dentro. */
-function pPotos(g, seed, x, y, h){
-  const verde = verdeDi(seed + 9);
-  const n = 5;
-  for (let i = 0; i < n; i++){
-    const lung = 1.0 + srnd(seed + i*3) * .7;
-    const cade = i >= n - 2;
-    const piega = (cade ? 1.25 + srnd(seed + i*5) * .5 : .55 + srnd(seed + i*5) * .4)
-                * (i % 2 ? 1 : -1);
-    const f = fogliaPiegata(verde, srnd(seed + i*11) < .7, lung, piega);
-    const ang = (i / n) * Math.PI * 2 + srnd(seed + i) * .5;
-    f.position.set(x + Math.cos(ang) * .20, y + h - .04, .05 + Math.sin(ang) * .16);
-    f.rotation.y = ang;
-    f.rotation.z = Math.cos(ang) * .30;
-    g.add(f);
-  }
-}
-
-/* SANSEVIERIA: sagoma verticale. Sei lame rigide a ventaglio, bordo
-   chiaro. E' l'unica delle tre che riempie il cubo in altezza, e su
-   uno scaffale di quattro file serve: senza, le piante restano tutte
-   raccolte sul fondo del vano. */
-function pSanse(g, seed, x, y, h){
-  const verde = verdeDi(seed + 9);
-  const n = 6;
-  for (let i = 0; i < n; i++){
-    const alt = 1.3 + srnd(seed + i*3) * .9;
-    const largo = .17 + srnd(seed + i*7) * .07;
-    const ang = (i - (n-1)/2) * .17 + (srnd(seed + i) - .5) * .12;
-    const scarto = (i - (n-1)/2) * .11;
-
-    const l = new THREE.Mesh(geoLama(), verde);
-    l.scale.set(largo, alt, .075);
-    l.position.set(x + scarto, y + h + alt/2 - .06, .05 + (srnd(seed + i*5) - .5) * .18);
-    l.rotation.z = -ang;
-    l.castShadow = true; l.receiveShadow = true;
-    g.add(l);
-
-    // il bordo chiaro: una lama appena piu' stretta e appena davanti
-    const b = new THREE.Mesh(geoLama(), matChiaro());
-    b.scale.set(largo * 1.10, alt * .97, .03);
-    b.position.copy(l.position);
-    b.position.z += .055;
-    b.rotation.z = -ang;
-    g.add(b);
-    const d = new THREE.Mesh(geoLama(), verde);
-    // la lama scura davanti copre quasi tutto: del chiaro resta il filo
-    d.scale.set(largo * .88, alt * .95, .02);
-    d.position.copy(b.position);
-    d.position.z += .02;
-    d.rotation.z = -ang;
-    g.add(d);
   }
 }
 
@@ -1951,15 +1981,23 @@ function riempiCubo(g, stile, seed, x, y){
    sta nei cubi: sopra un mobile, vicino al soffitto, non ci si mette
    una fila di libri alta come quella dentro. Ed e' anche cio' che
    lascia posto alla targhetta col nome, che sta appena sopra. */
-function arrediSopra(g, stile, l){
-  if (stile === 'niente') return;
+/* SOPRA IL MOBILE ci sono tre posti, uno per colonna, e adesso si
+   scelgono uno per uno come i cubi. Le chiavi sono `s0`, `s1`, `s2`:
+   e' lo stesso archivio delle celle, con lo stesso "assente vuol dire
+   come la libreria". */
+function arrediSopra(g, stile, l, libId){
   for (let i = 0; i < COLS; i++){
     const seed = 700 + l * 31 + i * 7;
-    if (srnd(seed) < .34) continue;
+    const scelta = STANZA.cella(libId, 's' + i);
+    if (scelta === 'niente') continue;
+    if (!scelta){
+      if (stile === 'niente') continue;
+      if (srnd(seed) < .34) continue;
+    }
     // costruito nell'origine e poi messo al suo posto: cosi' la scala
     // rimpicciolisce l'oggetto e non lo trascina verso il centro
     const sopra = new THREE.Group();
-    riempiCubo(sopra, stile, seed, 0, 0);
+    riempiCubo(sopra, scelta || stile, seed, 0, 0);
     sopra.scale.setScalar(.6);
     sopra.position.set(cubX(l, i), KAL.topY, 0);
     g.add(sopra);
@@ -1987,7 +2025,7 @@ function buildProps(used){
   for (let l = 0; l < Math.min(state.libs, quanteVere); l++){
     const stile = stileLib(l).arredo;        // ogni mobile il suo
     const libId = (mobili[l] || {}).id;
-    arrediSopra(g, stile, l);
+    arrediSopra(g, stile, l, libId);
     for (let k = 0; k < PER_LIB; k++){
       const posto = l * PER_LIB + k;
       if (used.has(posto)) continue;
@@ -2472,6 +2510,23 @@ function slotDa(x, y){
   const r = Math.floor((KAL.topY - KAL.t - y) / KAL.passo);
   if (c < 0 || c >= COLS || r < 0 || r >= RIGHE) return -1;
   return l * PER_LIB + r * COLS + c;
+}
+
+/* Quanto e' alta la fascia sopra il mobile in cui si arreda: gli
+   oggetti li' sono scalati a .6, quindi il piu' alto arriva a circa un
+   'unita' e mezza. */
+const ALT_SOPRA = 1.7;
+
+/* Il punto e' SOPRA il mobile, e su quale colonna? Torna l'indice, o
+   -1. E' il gemello di `slotDa` per la fascia che sta sopra la cima:
+   stessi conti, altra fascia. */
+function sopraDa(x, y){
+  if (y < KAL.topY || y > KAL.topY + ALT_SOPRA) return -1;
+  const l = Math.round(x / PASSO_LIB);
+  if (l < 0 || l >= state.libs) return -1;
+  const c = Math.floor((x - libX(l) + LIB_W/2 - KAL.t) / KAL.passo);
+  if (c < 0 || c >= COLS) return -1;
+  return l * COLS + c;
 }
 
 /* Dove punta il dito su un piano verticale a quota z. Ne servono due
@@ -3517,6 +3572,14 @@ function bindInput(){
           presaT = setTimeout(function(){
             apriCella(Math.floor(slot / PER_LIB), slot % PER_LIB);
           }, PRESA_MS);
+        } else if (slot < 0){
+          // e sopra il mobile, che e' l'altro posto che si arreda
+          const su = p ? sopraDa(p.x, p.y) : -1;
+          if (su >= 0){
+            presaT = setTimeout(function(){
+              apriCella(Math.floor(su / COLS), 's' + (su % COLS));
+            }, PRESA_MS);
+          }
         }
       }
     }
@@ -5422,14 +5485,25 @@ function disegnaCella(){
 function ancoraCella(){
   const el = q('#cella');
   if (!el || !cellaAperta) return;
-  const cx = cubX(cellaAperta.l, cellaAperta.k % COLS);
-  const cy = rigaY(Math.floor(cellaAperta.k / COLS));
-  const sotto = schermoXY(cx, cy - KAL.cell/2, 0);
-  const sopra = schermoXY(cx, cy + KAL.cell/2, 0);
+  /* Due fasce: i dodici cubi e i tre posti sopra la cima. Cambiano il
+     centro e i due bordi, il resto del conto e' lo stesso. */
+  const suCima = typeof cellaAperta.k === 'string';
+  const col = suCima ? +cellaAperta.k.slice(1) : cellaAperta.k % COLS;
+  const cx = cubX(cellaAperta.l, col);
+  const basso = suCima ? KAL.topY : rigaY(Math.floor(cellaAperta.k / COLS)) - KAL.cell/2;
+  const alto  = suCima ? KAL.topY + ALT_SOPRA
+                       : rigaY(Math.floor(cellaAperta.k / COLS)) + KAL.cell/2;
+  const sotto = schermoXY(cx, basso, 0);
+  const sopra = schermoXY(cx, alto, 0);
   const w = el.offsetWidth || 210, h = el.offsetHeight || 46;
 
-  let y = sotto.y + 10;
-  if (y + h > window.innerHeight - 96) y = sopra.y - h - 10;
+  /* Sopra la cima il menu va SOPRA: sotto finirebbe appoggiato al
+     mobile, cioe' addosso a quello di cui sta parlando. Nei cubi
+     invece va sotto, perche' scegliendo si deve vedere cosa e'
+     comparso dentro. */
+  let y = suCima ? sopra.y - h - 10 : sotto.y + 10;
+  if (suCima && y < 74) y = sotto.y + 10;
+  if (!suCima && y + h > window.innerHeight - 96) y = sopra.y - h - 10;
   el.style.left = Math.round(clamp(sotto.x - w/2, 10, window.innerWidth - w - 10)) + 'px';
   el.style.top  = Math.round(clamp(y, 74, window.innerHeight - h - 12)) + 'px';
 }
