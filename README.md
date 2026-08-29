@@ -39,6 +39,7 @@ js/desideri.js        la wishlist: i giochi che non hai ancora
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori, arredi della stanza e dei singoli cubi
+js/suoni.js           i suoni della scena, sintetizzati -- nessun file audio
 js/bgg.js             BGG: sceglie da sé fra proxy locale e edge function
 js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
 js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
@@ -59,6 +60,10 @@ tools/bgg-proxy.mjs   proxy locale, la strada di chi sviluppa
 **Il sito non carica una sola risorsa esterna.** three.js, supabase-js, i font e
 le copertine stanno nel repo: staccata la rete, la libreria si apre lo stesso,
 con l'ultima copia salvata. È una scelta, non una svista.
+
+Vale anche per i **suoni**: non c'è nessun file audio, e non ce ne sarà nessuno.
+Come il legno e il cartone sono disegnati su canvas, il tonfo della scatola è
+sintetizzato con Web Audio — un rumore filtrato e due sinusoidi per volta.
 
 L'eccezione è il **catalogo**, e non poteva essere altrimenti: le miniature dei
 centomila titoli arrivano da BoardGameGeek. Un catalogo così non si committa, e
@@ -188,9 +193,9 @@ tua.
 
 ## Arredare la stanza, e i cubi
 
-Dal pulsante in basso a sinistra: due cursori — la **luce** della stanza e i
-**faretti** sotto i ripiani, con la loro tinta — e tre tavolozze per scaffali,
-muro e pavimento, più il colore del nome scritto sulla parete.
+Dal pulsante in basso a sinistra: tre cursori — la **luce** della stanza, i
+**faretti** sotto i ripiani con la loro tinta, e il **suono** — e tre tavolozze
+per scaffali, muro e pavimento, più il colore del nome scritto sulla parete.
 
 Il pannello sta in un angolo e non copre la scena: si sceglie e si vede subito.
 Si salva da solo. E la stanza segue il profilo, non il browser: la ritrovi da un
@@ -202,6 +207,14 @@ fretta della luce riflessa, e l'esposizione compensa solo un poco — come fa
 l'occhio, che si abitua ma non del tutto. I faretti invece **non seguono la
 stanza**: si spegne il lampadario e la libreria resta accesa da dentro, come in
 salotto.
+
+**A suonare è la scena, non l'interfaccia.** La scatola che esce dallo scaffale,
+il coperchio che si alza, quella che si prende in mano e quella che si posa in un
+cubo, il mobile su cui ci si ferma scorrendo: sei suoni, e sono i sei momenti in
+cui si tocca qualcosa di fisico. L'elenco, il catalogo e i pannelli restano
+muti — un sito che fa clic a ogni tocco stanca in un minuto. Si parte al 60%,
+«spento» è semplicemente zero, e la scelta resta su questo dispositivo: la luce
+è della stanza e un amico la vede com'è da te, ma il volume è di chi ascolta.
 
 **Gli arredi dei cubi vuoti si scelgono uno per uno**, e non c'è nessun pulsante:
 si **tiene premuto un cubo vuoto** e esce una fila di cinque icone — come la

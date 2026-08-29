@@ -2476,6 +2476,7 @@ function iniziaPresa(box){
   if (da < 0) return;
 
   state.presa = { box: box, l: l, da: da, mira: da, mirBox: box };
+  SUONI.gioca('presa');
   state.dragging = false;
   state.hover = null;
   box.userData.busy = true;                 // updateBoxes non ci mette piu' mano
@@ -2777,7 +2778,9 @@ function finiscePresa(annulla, subito){
   // il cubo di partenza e' quello, non l'indice nella lista
   const partenza = p.box.userData.cubo;
   const posabile = !annulla && p.mira >= 0 && p.mira !== partenza;
-  if (posabile){ posaScatola(p); return; }
+  /* Solo quando ci va davvero: annullare e' un non-gesto, e dargli lo
+     stesso tonfo direbbe che qualcosa e' andato a posto. */
+  if (posabile){ SUONI.gioca('posa'); posaScatola(p); return; }
 
   const u = p.box.userData;
   if (subito){
@@ -2853,6 +2856,7 @@ function focusOn(box){
   document.body.classList.remove('browse');
 
   accendiFocus(true);
+  SUONI.gioca('esce');            // cartone che striscia sul ripiano
   const u = box.userData;
   u.busy = true;
   const p0 = box.position.clone();
@@ -2898,6 +2902,7 @@ function reposeFocused(){
 function openLid(){
   const box = state.focused;
   if (!box) return;
+  SUONI.gioca('coperchio');
   const lid = box.userData.lid;
   const z0 = (box.userData.t || BOX.t)/2 - (box.userData.lidT || BOX.lid)/2;
 
@@ -2924,6 +2929,7 @@ function unfocus(poi){
   const box = state.focused;
   state.phase = 'closing';
   hidePanel();
+  SUONI.gioca('chiude');
   anims.length = 0;   // se no l'uscita e il rientro si contendono la posizione
 
   const lid = box.userData.lid;
@@ -5315,6 +5321,10 @@ function disegnaStanza(){
   q('#st-luce-n').textContent = Math.round(cur.luce * 100) + '%';
   q('#st-faretti').value = cur.faretti;
   q('#st-faretti-n').textContent = Math.round(cur.faretti * 100) + '%';
+  /* Il volume non viene da `STANZA`: e' di chi ascolta, non della
+     stanza, e vive in localStorage. */
+  q('#st-suono').value = SUONI.volume();
+  q('#st-suono-n').textContent = Math.round(SUONI.volume() * 100) + '%';
   q('#st-quale').textContent = L ? L.nome : TP('stanza.nessunMobile');
 
   const gruppo = function(sel, lista, valore, testo){
@@ -5642,6 +5652,17 @@ function bindStanza(){
     q('#st-faretti-n').textContent = Math.round(STANZA.corrente().faretti * 100) + '%';
     applicaLuce();
     salvaStanzaTraPoco();
+  });
+
+  /* Il volume non chiama ne' `applicaLuce` ne' `applicaStanza` e non
+     passa da `salvaStanzaTraPoco`: non c'e' niente da ridipingere e
+     niente da mandare al server -- se lo scrive da se' in
+     localStorage. E un colpo di legno mentre si trascina il cursore
+     dice quanto forte molto meglio di un numero. */
+  q('#st-suono').addEventListener('input', function(){
+    SUONI.setVolume(parseFloat(q('#st-suono').value));
+    q('#st-suono-n').textContent = Math.round(SUONI.volume() * 100) + '%';
+    SUONI.gioca('posa');
   });
 
   /* La tinta dei faretti passa da `applicaLuce` e non da
@@ -7931,7 +7952,12 @@ function frame(now){
     const before = Math.round(state.scroll);
     state.scroll += (state.scrollTo - state.scroll) * Math.min(1, dt * 7);
     camBase.set(camXFor(state.scroll), VISTA_Y, state.distShelf * state.zoom);
-    if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== Math.round(state.scroll)){
+    const dopo = Math.round(state.scroll);
+    /* Il momento in cui si passa da un mobile all'altro, non quello in
+       cui ci si accosta: e' quello che si legge come "adesso sei di
+       la'". Un gesto vale un mobile solo, quindi suona una volta. */
+    if (before !== dopo) SUONI.gioca('mobile');
+    if (Math.abs(state.scrollTo - state.scroll) > .0005 || before !== dopo){
       updateRail();
       seguiCella();          // il menu della cella e' ancorato a un cubo che si muove
       allineaComandi();      // la camera si e' spostata: la proiezione e' un'altra

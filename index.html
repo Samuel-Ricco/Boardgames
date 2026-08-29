@@ -146,6 +146,23 @@
            data-i18n-aria="stanza.farettiAria" aria-label="faretti della libreria">
     <b id="st-faretti-n">40%</b>
   </p>
+  <!-- IL SUONO, terzo cursore accanto alla luce e ai faretti. Ha la
+       stessa forma perche' e' la stessa domanda -- com'e' questo
+       posto -- e "spento" e' semplicemente zero, senza un
+       interruttore in piu' a dire la stessa cosa.
+
+       Il valore pero' NON sta nel jsonb della stanza come gli altri
+       due: quelli sono della stanza e un amico che viene a guardare
+       la tua libreria li vede come li hai messi tu, mentre il volume
+       e' di chi ascolta. Sta in `localStorage`, come la scelta al
+       cancello. -->
+  <p class="st-riga luce">
+    <span data-i18n="stanza.suono">suono</span>
+    <input id="st-suono" type="range" min="0" max="1" step="0.02" value="0.6"
+           data-i18n-aria="stanza.suonoAria" aria-label="volume dei suoni">
+    <b id="st-suono-n">60%</b>
+  </p>
+
   <!-- Il colore dei faretti sta attaccato al loro cursore e non giu'
        con muro e pavimento: quanto sono accesi e di che colore sono
        la stessa domanda, e separarle vorrebbe dire cercare in due
@@ -890,6 +907,7 @@
 <script src="js/desideri.js"></script>
 <script src="js/profilo.js"></script>
 <script src="js/stanza.js"></script>
+<script src="js/suoni.js"></script>
 <script src="js/partite.js"></script>
 <script src="js/bgg.js"></script>
 <script src="js/bggdump.js"></script>

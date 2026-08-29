@@ -2021,6 +2021,85 @@ cancello non manda su Google e la scena si costruisce con i due giochi di
 `stile` forzato in `riempiCubo`, per vedere un arredo alla volta invece che
 sperare che il misto lo peschi.
 
+## Il suono si sintetizza, non si scarica
+
+`js/suoni.js`. Vale quello che vale per le superfici: legno, cartone, parquet e
+facce dei dadi sono **disegnati** da codice su canvas, e i suoni allo stesso
+modo — **nessun file audio nel repo**, e non ce ne sara' nessuno. Un rumore
+filtrato e due sinusoidi per volta, con Web Audio.
+
+Non e' solo coerenza. Una manciata di `.mp3` anche corti pesa piu' di tutto il
+resto del sito messo insieme, e a rete staccata la libreria deve continuare a
+funzionare — compreso il tonfo della scatola che torna sullo scaffale.
+
+**Suona la scena, non l'interfaccia.** Sei suoni, e sono i sei momenti in cui si
+tocca qualcosa di fisico: `esce` (la scatola striscia fuori dal ripiano),
+`coperchio`, `chiude`, `presa`, `posa`, `mobile`. L'elenco, il catalogo, il
+profilo e i pannelli restano muti: un sito che fa clic a ogni tocco stanca in un
+minuto, e quello che qui vale la pena sentire e' il legno, non i bottoni.
+
+- **Due mattoni, non sei suoni scritti a mano.** `colpo()` e' un colpo di legno —
+  una scheggia di rumore passabanda, che e' il *contatto*, piu' una sinusoide
+  bassa che si spegne subito, che e' il *corpo*. Con il solo rumore esce un
+  fruscio; con la sola sinusoide, un tamburo. `strofina()` e' cartone che scorre:
+  rumore dentro un passabanda che scende, con l'attacco **lento** — il contrario
+  del colpo, dove tutto succede nel primo millisecondo. I sei suoni sono
+  combinazioni di quei due.
+- **Un secondo di rumore bianco, costruito una volta e riusato da tutti**: e'
+  l'equivalente audio di `comune()` per geometrie e materiali.
+- **Il contesto nasce al primo suono chiesto**, non al caricamento: chi apre il
+  sito per guardare la propria libreria e non tocca niente non ha motivo di
+  avere una scheda audio accesa. E il browser lo tiene **sospeso** finche' non
+  c'e' un gesto vero — il che va benissimo: il primo gesto e' la scelta al
+  cancello, quindi nessuno si ritrova un sito che parla da solo appena aperto.
+- **`exponentialRampToValueAtTime` non arriva mai a zero**: si scende a `.0001` e
+  poi si ferma il nodo. Una rampa esponenziale a zero non e' un errore che si
+  vede, e' un errore che *lancia*.
+- **Due volte lo stesso suono a 45 ms di distanza e' un raddoppio**, e si sente
+  come un difetto invece che come due cose. C'e' una soglia.
+
+### Il volume non sta nel jsonb della stanza
+
+Sarebbe stato comodo, accanto a luce e faretti, ed e' sbagliato: quelli sono
+**della stanza** — un amico che viene a guardare la tua libreria la vede
+illuminata com'e' da te — mentre il volume e' **di chi ascolta**. Ereditare
+quello di un altro entrando in casa sua sarebbe la cosa piu' sbagliata
+possibile. Sta in `localStorage` (`dado-suono`), come la scelta al cancello.
+
+Nel pannello pero' e' il **terzo cursore accanto agli altri due**, con la stessa
+forma: e' la stessa domanda — com'e' questo posto — e **«spento» e' semplicemente
+zero**, senza un interruttore in piu' a dire la stessa cosa. E come per i faretti
+e per i punti di una partita, **zero e' un valore vero**: `parseFloat(v) ||
+DEFAULT` trasformerebbe «muto» in «non scelto» e il suono tornerebbe da solo al
+ricaricamento.
+
+### Si misura l'uscita, non si dice «adesso suona»
+
+Un suono che non si sente non lo dice nessuno, quindi il livello va **misurato**.
+Si intercetta `AudioNode.prototype.connect` **prima che parta il primo suono** —
+finche' nessuno ha suonato il contesto non esiste ancora — e si infila un
+`AnalyserNode` fra il master e `destination`. Da li' si legge il picco vero.
+
+Misurato al 60% di volume: `posa` -14,9 dBFS (il piu' pieno, ed e' giusto: e'
+l'unico che conferma che una cosa e' andata dove volevi), `chiude` -18,1,
+`esce` -19,5, `presa` -21,8, `mobile` -23,9 (succede spesso, quindi sta sotto),
+`coperchio` -24,9. **A volume zero il picco e' esattamente 0**: il muto e' muto
+davvero, non «molto piano».
+
+La prima stesura stava dieci dB piu' in basso — il piu' forte a -20 — cioe'
+tecnicamente funzionante e praticamente inudibile. Le forze si alzano **nella
+tabella dei suoni e non sul master**, se no si perde l'equilibrio fra i sei.
+
+**Attenzione misurando durante un'animazione**: il campionamento gira su
+`requestAnimationFrame`, e mentre la scena scorre i fotogrammi nel pannello di
+anteprima arrivano a singhiozzo — un suono da 120 ms puo' essere mancato del
+tutto e leggersi come silenzio. `mobile` e' uscito 0,002 durante lo scorrimento
+e 0,064 chiesto da fermo: era la sonda, non il suono.
+
+**E per sbloccare il contesto serve un gesto VERO.** Un `dispatchEvent`
+sintetico non conta come user activation: nelle prove il clic va dato con
+l'automazione del browser, non simulato da console.
+
 ## Aggiungere una colonna a `profili` e' un'operazione in tre punti
 
 Costata due volte nella stessa sessione, e la seconda con la lezione gia' scritta:
