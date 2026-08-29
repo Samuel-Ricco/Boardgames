@@ -208,13 +208,24 @@ l'occhio, che si abitua ma non del tutto. I faretti invece **non seguono la
 stanza**: si spegne il lampadario e la libreria resta accesa da dentro, come in
 salotto.
 
-**A suonare è la scena, non l'interfaccia.** La scatola che esce dallo scaffale,
-il coperchio che si alza, quella che si prende in mano e quella che si posa in un
-cubo, il mobile su cui ci si ferma scorrendo: sei suoni, e sono i sei momenti in
-cui si tocca qualcosa di fisico. L'elenco, il catalogo e i pannelli restano
-muti — un sito che fa clic a ogni tocco stanca in un minuto. Si parte al 60%,
-«spento» è semplicemente zero, e la scelta resta su questo dispositivo: la luce
-è della stanza e un amico la vede com'è da te, ma il volume è di chi ascolta.
+**Suona tutto, ma non tutto allo stesso modo.** Quindici suoni divisi in due
+famiglie. La **scena** ne ha sei, e sono i sei momenti in cui si tocca qualcosa di
+fisico: la scatola che esce dallo scaffale, il coperchio che si alza, quella che
+torna a posto, quella che si prende in mano, quella che si posa in un cubo, il
+mobile su cui ci si ferma scorrendo. L'**interfaccia** ne ha nove, e stanno tutti
+più in basso — un tocco succede cento volte più spesso di una scatola che si
+apre: il tocco, l'interruttore che si accende e quello che si spegne (l'altezza
+sale o scende, ed è quella a dire il verso), qualcosa che si apre e qualcosa che
+si chiude, l'azione andata a buon fine, il comando che si arma, quello che ha
+distrutto, e la nota di quando il sito ha qualcosa da dire.
+
+Sono fatti tutti degli stessi tre mattoni — un colpo di legno, uno strofinio di
+cartone, una nota morbida — perché anche un pulsante, qui dentro, è carta e
+legno e non un suono di sistema operativo.
+
+Si parte al 60%, «spento» è semplicemente zero, e la scelta resta su questo
+dispositivo: la luce è della stanza e un amico la vede com'è da te, ma il volume
+è di chi ascolta.
 
 **Gli arredi dei cubi vuoti si scelgono uno per uno**, e non c'è nessun pulsante:
 si **tiene premuto un cubo vuoto** e esce una fila di cinque icone — come la

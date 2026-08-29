@@ -3283,6 +3283,9 @@ function flash(msg){
   }
   el.textContent = msg;
   el.classList.add('on');
+  /* Il sito ha qualcosa da dire, e quasi sempre e' un problema: una
+     nota sola, che serve a far alzare gli occhi. */
+  SUONI.gioca('nota');
   clearTimeout(flashT);
   flashT = setTimeout(function(){ el.classList.remove('on'); }, 2600);
 }
@@ -5518,6 +5521,88 @@ function scegliCella(v, btn){
       nuovo.classList.add('gira');
     }
   }
+}
+
+/* ===============================================================
+   IL SUONO DELL'INTERFACCIA
+
+   UN SOLO ASCOLTATORE, non un aggancio per pulsante. E' la stessa
+   regola del catalogo: le righe si rifanno di continuo e attaccarne
+   uno per riga vorrebbe dire rimetterli tutti ogni volta -- qui il
+   sito intero si ridisegna a pezzi, e mezzo interfaccia resterebbe
+   muta senza che nessuno se ne accorga.
+
+   Si ascolta in CATTURA, e non e' un dettaglio: al momento del clic lo
+   stato non e' ancora cambiato, e proprio per questo si sa cosa sta per
+   succedere. Una stella con `aria-pressed="true"` che viene premuta si
+   sta SPEGNENDO; un `.distruttivo` senza `armed` si sta armando, con
+   `armed` sta per distruggere davvero. Ascoltando dopo, si leggerebbe
+   il risultato e si sentirebbe sempre lo stesso suono.
+
+   La scena e' esclusa: ha i suoi sei suoni, e il clic che apre una
+   scatola non deve anche fare "tic".
+
+   L'ordine dei casi conta -- il primo che risponde vince -- se no un
+   pulsante che e' insieme `primario` e `[aria-pressed]` suonerebbe due
+   volte con due voci diverse. */
+function suonoDi(b){
+  /* Il chiudi della scheda non suona: un attimo dopo parla la scatola
+     che torna sullo scaffale, e due suoni per un gesto solo si
+     sentono come un difetto. */
+  if (b.id === 'close') return null;
+
+  if (b.classList.contains('distruttivo') || b.classList.contains('esci'))
+    return b.classList.contains('armed') ? 'via' : 'avviso';
+
+  /* ATTENZIONE, I DUE INTERRUTTORI SI LEGGONO AL CONTRARIO.
+
+     Una casella di spunta la ribalta il BROWSER, e lo fa PRIMA di
+     mandare l'evento: in cattura `checked` e' gia' il valore nuovo.
+     `aria-pressed` invece lo scrive il JS del sito in un ascoltatore
+     che viene dopo il nostro, quindi li' si legge ancora il valore
+     VECCHIO e va invertito.
+
+     Costato un suono al rovescio, e si vede solo provandolo: le due
+     righe sembrano la stessa cosa e non lo sono. */
+  if (b.tagName === 'INPUT' && b.type === 'checkbox')
+    return b.checked ? 'acceso' : 'spento';
+
+  const ap = b.getAttribute('aria-pressed');
+  if (ap !== null) return ap === 'true' ? 'spento' : 'acceso';
+
+  if (b.tagName === 'SUMMARY'){
+    const d = b.closest('details');
+    return (d && d.open) ? 'serra' : 'apre';
+  }
+
+  /* I due comandi che galleggiano e il contatore sono interruttori:
+     dicono "apre" o "chiude" a seconda di dove sono adesso. */
+  const cl = document.body.classList;
+  if (b.id === 'vista-apri')  return cl.contains('vista')  ? 'serra' : 'apre';
+  if (b.id === 'stanza-apri') return cl.contains('arreda') ? 'serra' : 'apre';
+  if (b.id === 'conta')       return cl.contains('elenco') ? 'serra' : 'apre';
+
+  if (b.hasAttribute('data-sez') || b.hasAttribute('data-vcat')
+      || b.hasAttribute('data-vista') || b.getAttribute('role') === 'tab') return 'apre';
+
+  if (b.classList.contains('chiudi') || /(^|-)x$/.test(b.id || '')
+      || b.getAttribute('data-i18n-aria') === 'pan.chiudi') return 'serra';
+
+  if (b.classList.contains('primario')) return 'conferma';
+
+  return 'tocco';
+}
+
+function bindSuoni(){
+  document.addEventListener('click', function(e){
+    const t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest('#scene')) return;            // la scena ha i suoi sei
+    const b = t.closest('button, summary, a[href], input[type="checkbox"], [role="tab"]');
+    if (!b || b.disabled) return;
+    const s = suonoDi(b);
+    if (s) SUONI.gioca(s);
+  }, true);
 }
 
 function bindCella(){
@@ -8293,7 +8378,7 @@ async function boot(){
   [['input', bindInput], ['strumenti', bindTools], ['vista', bindVista],
    ['binario', bindRail], ['cuore', bindCuore], ['gruppi', bindPiedeGruppi],
    ['stanza', bindStanza], ['cella', bindCella], ['clic fuori', bindClicFuori],
-   ['librerie', bindLibrerie], ['etichette', bindGruppi]
+   ['librerie', bindLibrerie], ['etichette', bindGruppi], ['suoni', bindSuoni]
   ].forEach(function(x){
     try { x[1](); }
     catch(e){ mancati.push(x[0]); if (window.console) console.error('aggancio "' + x[0] + '" fallito:', e); }

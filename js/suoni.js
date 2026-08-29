@@ -150,8 +150,36 @@ function strofina(c, t, f0, f1, forza, durata){
   s.start(t); s.stop(t + durata + .02);
 }
 
-/* I SUONI. Sono sei, e sono i sei momenti in cui in questa scena si
-   tocca qualcosa di fisico. */
+/* LA NOTA. Il terzo mattone, e serve solo all'interfaccia: un
+   interruttore che si accende non e' un oggetto che tocca un altro
+   oggetto, e' un cambio di stato -- e quello che lo dice e' l'ALTEZZA,
+   che sale accendendo e scende spegnendo.
+
+   Passa da un passabasso e da un triangolo, non da un'onda quadra: qui
+   dentro non ci sono suoni di sistema operativo, ci sono legno e
+   carta, e una nota deve essere morbida abbastanza da starci accanto. */
+function tono(c, t, f0, f1, forza, durata){
+  const o = c.createOscillator();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(f1, t + durata * .8);
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 2400;
+  const g = c.createGain();
+  busta(g, t, forza, .006, durata);
+  o.connect(lp); lp.connect(g); g.connect(master);
+  o.start(t); o.stop(t + durata + .02);
+}
+
+/* I SUONI.
+
+   I primi sei sono la SCENA: i sei momenti in cui si tocca qualcosa di
+   fisico. Gli altri sono l'INTERFACCIA, e stanno tutti piu' in basso --
+   un tocco succede cento volte piu' spesso di una scatola che si apre,
+   e quello che si sente spesso va tenuto sotto o diventa l'unica cosa
+   che si sente. Sono fatti degli stessi mattoni: anche un pulsante, qui
+   dentro, e' carta e legno. */
 const VOCI = {
   /* La scatola esce dallo scaffale: cartone che striscia sul ripiano,
      e all'inizio il distacco. */
@@ -190,6 +218,57 @@ const VOCI = {
      la cosa che si sente di piu'. */
   mobile: function(c, t){
     colpo(c, t, 95, .10, .12);
+  },
+
+  /* --- l'interfaccia ------------------------------------------- */
+
+  /* Il tocco: un'unghia sul cartoncino. E' il suono piu' frequente del
+     sito, quindi e' anche il piu' basso -- sotto perfino a `mobile`. */
+  tocco: function(c, t){
+    colpo(c, t, 430, .045, .028);
+  },
+  /* Un interruttore che si accende. Il tocco piu' una nota che SALE:
+     l'altezza e' quello che dice il verso, e senza si sentirebbero due
+     accensioni identiche per acceso e spento. */
+  acceso: function(c, t){
+    colpo(c, t, 520, .04, .025);
+    tono(c, t + .008, 620, 940, .05, .10);
+  },
+  /* E che si spegne: la stessa cosa al contrario, un filo sotto --
+     spegnere e' il gesto che toglie, non quello che aggiunge. */
+  spento: function(c, t){
+    colpo(c, t, 380, .04, .025);
+    tono(c, t + .008, 700, 440, .04, .11);
+  },
+  /* Qualcosa che si apre: carta che scorre, corta. */
+  apre: function(c, t){
+    strofina(c, t, 1100, 2000, .075, .13);
+  },
+  /* E che si chiude: al contrario, e alla fine si posa. */
+  serra: function(c, t){
+    strofina(c, t, 1900, 900, .07, .12);
+    colpo(c, t + .10, 240, .05, .04);
+  },
+  /* Andata: due colpetti che salgono. Non e' una fanfara -- e' il
+     rumore di una cosa che si incastra dove doveva. */
+  conferma: function(c, t){
+    colpo(c, t, 380, .07, .05);
+    colpo(c, t + .075, 560, .06, .06);
+    tono(c, t + .075, 700, 1050, .045, .13);
+  },
+  /* Un comando che distrugge si e' armato: sordo e basso, che e' come
+     suona "attento". Nessuna nota: non c'e' niente da festeggiare. */
+  avviso: function(c, t){
+    colpo(c, t, 150, .10, .16);
+  },
+  /* E ha distrutto. Piu' basso ancora, e finisce li'. */
+  via: function(c, t){
+    colpo(c, t, 82, .13, .20);
+  },
+  /* Il sito ha qualcosa da dire (il flash). Una nota sola, morbida:
+     serve a far alzare gli occhi, non a spaventare. */
+  nota: function(c, t){
+    tono(c, t, 780, 660, .05, .16);
   }
 };
 

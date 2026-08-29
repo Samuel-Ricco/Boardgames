@@ -2032,11 +2032,19 @@ Non e' solo coerenza. Una manciata di `.mp3` anche corti pesa piu' di tutto il
 resto del sito messo insieme, e a rete staccata la libreria deve continuare a
 funzionare — compreso il tonfo della scatola che torna sullo scaffale.
 
-**Suona la scena, non l'interfaccia.** Sei suoni, e sono i sei momenti in cui si
-tocca qualcosa di fisico: `esce` (la scatola striscia fuori dal ripiano),
-`coperchio`, `chiude`, `presa`, `posa`, `mobile`. L'elenco, il catalogo, il
-profilo e i pannelli restano muti: un sito che fa clic a ogni tocco stanca in un
-minuto, e quello che qui vale la pena sentire e' il legno, non i bottoni.
+**Due famiglie, quindici suoni.** La SCENA ne ha sei, e sono i sei momenti in
+cui si tocca qualcosa di fisico: `esce` (la scatola striscia fuori dal ripiano),
+`coperchio`, `chiude`, `presa`, `posa`, `mobile`. L'INTERFACCIA ne ha nove --
+`tocco`, `acceso`, `spento`, `apre`, `serra`, `conferma`, `avviso`, `via`,
+`nota` -- e stanno **tutti piu' in basso**: un tocco succede cento volte piu'
+spesso di una scatola che si apre, e quello che si sente spesso va tenuto sotto o
+diventa l'unica cosa che si sente.
+
+Vale la pena scrivere che all'inizio l'interfaccia era muta **apposta** -- un
+sito che fa clic a ogni tocco stanca in un minuto -- e che il suono su tutto e'
+stato chiesto dopo. La risposta non e' stata un clic solo riusato ovunque: e' un
+vocabolario, fatto degli stessi mattoni, dove ogni suono dice **cosa** e'
+successo e non **che** e' successo qualcosa.
 
 - **Due mattoni, non sei suoni scritti a mano.** `colpo()` e' un colpo di legno —
   una scheggia di rumore passabanda, che e' il *contatto*, piu' una sinusoide
@@ -2057,6 +2065,59 @@ minuto, e quello che qui vale la pena sentire e' il legno, non i bottoni.
   vede, e' un errore che *lancia*.
 - **Due volte lo stesso suono a 45 ms di distanza e' un raddoppio**, e si sente
   come un difetto invece che come due cose. C'e' una soglia.
+
+### Un ascoltatore solo, e in CATTURA
+
+I suoni dell'interfaccia non hanno un aggancio per pulsante: ce n'e' **uno solo**,
+delegato sul documento, che guarda il bersaglio con `closest()` e decide. E' la
+stessa regola del catalogo -- le righe si rifanno di continuo e attaccarne uno
+per riga vorrebbe dire rimetterli tutti ogni volta -- ma qui e' piu' forte
+ancora: il sito si ridisegna a pezzi dappertutto, e con gli agganci singoli mezza
+interfaccia resterebbe muta senza che nessuno se ne accorga.
+
+**Si ascolta in cattura, e non e' un dettaglio.** Al momento del clic lo stato non
+e' ancora cambiato, ed e' proprio per questo che si sa *cosa sta per succedere*:
+una stella con `aria-pressed="true"` che viene premuta si sta **spegnendo**; un
+`.distruttivo` senza `armed` si sta **armando**, con `armed` sta per distruggere
+davvero. Ascoltando in risalita si leggerebbe il risultato e uscirebbe sempre lo
+stesso suono.
+
+- **L'ordine dei casi conta**, e il primo che risponde vince: un pulsante che e'
+  insieme `primario` e `[aria-pressed]` suonerebbe due volte con due voci
+  diverse.
+- **La scena e' esclusa** (`t.closest('#scene')`): ha i suoi sei suoni, e il clic
+  che apre una scatola non deve anche fare «tic». Verificato: sul cartone escono
+  `esce` + `coperchio` e nient'altro.
+- **`#close` non suona**, per la stessa ragione al contrario: un attimo dopo
+  parla la scatola che torna sullo scaffale, e due suoni per un gesto solo si
+  sentono come un difetto. Verificato: dal pannello esce solo `chiude`.
+- I due comandi che galleggiano e il contatore sono **interruttori**: dicono
+  `apre` o `serra` a seconda di dove sono **adesso**, letto dalle classi del body
+  prima che cambino.
+
+### I due interruttori si leggono AL CONTRARIO
+
+Costato un suono al rovescio, trovato solo provandolo, e le due righe sembrano la
+stessa cosa:
+
+- **una casella di spunta la ribalta il BROWSER**, e lo fa *prima* di mandare
+  l'evento (fa parte delle pre-click activation steps). In cattura `checked` e'
+  gia' il valore **nuovo**: se e' `true`, si e' appena accesa.
+- **`aria-pressed` lo scrive il JS del sito**, in un ascoltatore che gira dopo il
+  nostro. Li' si legge ancora il valore **vecchio**, e va invertito.
+
+Vale per qualunque stato futuro si voglia leggere in cattura: **chi lo cambia
+decide quando lo si vede.** Se lo cambia il browser e' gia' fatto, se lo cambia
+il nostro codice non ancora.
+
+### Il flash parla, e basta lui
+
+`flash()` non ha un tipo -- prende solo il messaggio -- quindi non si puo'
+distinguere l'errore dall'informazione senza toccare decine di chiamate. E non
+serve: in questo sito il flash e' quasi sempre un problema (posizione non
+salvata, migrazione che manca, aggancio fallito), e **una nota sola** che fa
+alzare gli occhi copre tutti i casi. Il suono sta dentro `flash()`, quindi ogni
+messaggio futuro ce l'ha senza che nessuno se ne ricordi.
 
 ### Il volume non sta nel jsonb della stanza
 
@@ -2085,6 +2146,11 @@ l'unico che conferma che una cosa e' andata dove volevi), `chiude` -18,1,
 `esce` -19,5, `presa` -21,8, `mobile` -23,9 (succede spesso, quindi sta sotto),
 `coperchio` -24,9. **A volume zero il picco e' esattamente 0**: il muto e' muto
 davvero, non «molto piano».
+
+E l'interfaccia, che deve stare sotto: `via` -22,2 dBFS, `avviso` -24,1,
+`conferma` -25,6, `tocco` e `serra` -30,1, `acceso` e `nota` -30,8, `spento`
+-31,4, `apre` -33,0. I due piu' forti sono quelli che dicono «attento» e «e'
+andato via», ed e' giusto che siano loro.
 
 La prima stesura stava dieci dB piu' in basso — il piu' forte a -20 — cioe'
 tecnicamente funzionante e praticamente inudibile. Le forze si alzano **nella
