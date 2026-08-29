@@ -2119,6 +2119,26 @@ salvata, migrazione che manca, aggancio fallito), e **una nota sola** che fa
 alzare gli occhi copre tutti i casi. Il suono sta dentro `flash()`, quindi ogni
 messaggio futuro ce l'ha senza che nessuno se ne ricordi.
 
+### L'interruttore sta nel profilo, il volume nel pannello
+
+Sono due comandi sullo stesso stato, e non e' una svista. Nel pannello
+della libreria c'e' il **cursore**, accanto a luce e faretti, perche' li' e' la
+stessa domanda -- com'e' questo posto. Nel profilo c'e' l'**interruttore**, che
+e' la domanda che ci si fa da fermi: lo voglio o no. Restano d'accordo perche'
+leggono tutti e due `volume()` quando si aprono, e «spento» e' zero per
+entrambi.
+
+- **Spegnendo si riparte da dove si era**: `prima` tiene l'ultimo volume
+  udibile, se no riaccendere vorrebbe dire ritrovarsi al valore di fabbrica
+  ogni volta.
+- **Riaccendendo il suono va SUONATO a mano.** L'ascoltatore in cattura e'
+  gia' passato con il volume ancora a zero, quindi senza una chiamata esplicita
+  l'unico gesto del sito che non si sente sarebbe proprio quello che riaccende
+  il suono.
+- L'interruttore **se lo monta `suoni.js`**, come il selettore della lingua se
+  lo monta `i18n.js`: se un giorno `app.js` non si aggancia -- ed e' successo --
+  il suono deve restare spegnibile lo stesso.
+
 ### Il volume non sta nel jsonb della stanza
 
 Sarebbe stato comodo, accanto a luce e faretti, ed e' sbagliato: quelli sono
@@ -2165,6 +2185,80 @@ e 0,064 chiesto da fermo: era la sonda, non il suono.
 **E per sbloccare il contesto serve un gesto VERO.** Un `dispatchEvent`
 sintetico non conta come user activation: nelle prove il clic va dato con
 l'automazione del browser, non simulato da console.
+
+## Le tavolozze: sei tinte restano sei, cambia quali
+
+`js/tema.js`. Il sito ha sempre avuto **sei tinte e basta**, e quella disciplina
+non cambia: una tavolozza e' un ricambio completo -- fondo, scheda, inchiostro,
+le due tinte quiete, il legno e l'accento -- e **tutto il resto si deriva**,
+come `--ink` si derivava gia' dall'oliva.
+
+Quattro: **la stanza** (quella di sempre), **vaporwave**, **bosco**, **carta e
+china**. Si scelgono da una tendina in fondo al profilo.
+
+- **Derivare invece di elencare.** I fili, le ombre, il velo della testata e il
+  fondo delle schermate piatte sono l'inchiostro e la carta a percentuali
+  diverse. Se una tavolozza dovesse dichiararli a mano, prima o poi uno
+  resterebbe indietro e si vedrebbe un'ombra verde su un fondo lilla.
+- **I TRIPLI sono la meta' del lavoro.** Mezzo foglio di stile scriveva
+  `rgba(51,53,43, X)` -- l'inchiostro a decine di opacita' diverse -- e
+  `rgba(207,204,200, X)` per il fondo: **135 occorrenze**, tutte cieche a
+  qualunque tavolozza. Adesso sono `rgba(var(--ink-rgb), X)`, e i tre tripli li
+  scrive `tema.js`.
+- **Il rosso non cambia.** Non e' decorazione, e' un segnale, e un rosso
+  «coordinato» con la tavolozza smette di dire quello che deve dire.
+- **La stanza non cambia.** Legno, muro, pavimento e faretti sono scelte di chi
+  ci abita, stanno sul suo profilo, e un amico che viene a trovarlo le vede
+  com'erano. La tavolozza veste il sito, non arreda casa d'altri.
+- **Sta nel `<head>`**, non in fondo al body con gli altri: le variabili vanno
+  scritte PRIMA che la pagina si dipinga, se no si vede il sito partire di un
+  colore e cambiare un attimo dopo.
+- **`SFONDO` non puo' piu' essere un numero scritto in `app.js`.** La regola
+  «--bg deve restare uguale a SFONDO» resta, ma adesso si CHIEDE
+  (`sfondoOra()`): scritto a mano, cambiando tavolozza il mondo dietro
+  resterebbe grigio caldo mentre il resto e' diventato lilla.
+- **Il vaporwave e' quello pastello, non quello notturno.** Il sito e' fatto di
+  superfici chiare, e rovesciarlo vorrebbe dire riscrivere ogni regola che da'
+  per scontata la carta sotto il testo. Lilla, magenta e ciano dicono
+  «vaporwave» senza chiedere di rifare il foglio.
+
+### Il contrasto si misura, e la tavolozza di partenza e' la piu' debole
+
+Misurato su tutte e quattro, con il conto vero del rapporto di contrasto:
+
+| | stanza | vaporwave | bosco | china |
+|---|---|---|---|---|
+| inchiostro su scheda | 11,0 | 13,6 | 12,8 | 14,3 |
+| inchiostro su fondo | 7,8 | 9,9 | 9,6 | 10,3 |
+| secondario su scheda | **4,1** | 5,7 | 5,6 | 5,4 |
+| scheda su accento | **3,3** | 4,8 | 5,7 | 5,2 |
+| scheda su legno | **4,3** | 5,5 | 6,1 | 6,6 |
+
+Le tre nuove passano 4,5 dappertutto. **Quella di partenza no**, ed e' un fatto
+che vale la pena avere scritto: il bianco su terracotta a 3,3 e' gia' noto (sta
+nelle note piu' sopra, «bianco su terracotta a dodici pixel non si legge») e il
+secondario sul fondo sta a 2,9. Non e' stata toccata -- e' l'identita' del sito
+e cambiarla non era quello che era stato chiesto -- ma chi un giorno vorra'
+sistemarla adesso sa di quanto.
+
+### Un fondo opaco in fondo al foglio batteva tre regole giuste
+
+Il catalogo non si tingeva, e per mezz'ora e' sembrato che `rgba(var(--bg-rgb),
+.975)` non funzionasse. Non era quello: **tre rule con quel fondo erano codice
+morto da sempre**, perche' in fondo al foglio c'era
+`#mia, #catalogo, #profilo, #partite{background:#e7e5e0}` -- opaco, scritto a
+mano, e vincente perche' viene dopo.
+
+E' la lezione gia' scritta («un blocco di normalizzazione messo in fondo al
+foglio riscrive anche quello che era gia' giusto»), ripresentata. Adesso quel
+fondo e' `var(--fondo)`, che `tema.js` calcola come **un terzo di strada dalla
+carta verso la stanza** -- la frazione non e' scelta a occhio, e' quella che
+ridA' esattamente la tinta che c'era scritta a mano.
+
+**E si trova misurando, non guardando.** `getComputedStyle` diceva
+`rgb(231,229,224)` -- opaco, e uguale per tutte e quattro le tavolozze. Era
+l'assenza di alpha il vero indizio: una dichiarazione con `rgba(...)` non puo'
+uscire opaca, quindi a vincere era per forza un'altra regola.
 
 ## Aggiungere una colonna a `profili` e' un'operazione in tre punti
 

@@ -45,6 +45,26 @@
   --sand:#c7af98;        /* sabbia */
   --wood:#8e6a4b;        /* marrone: il legno */
   --accent:#c86a3c;      /* terracotta: tutto quello che si tocca */
+  /* Le derivate. Le riscrive `js/tema.js` a ogni tavolozza, ma qui
+     hanno il loro valore di riserva: senza JS il sito resta quello di
+     sempre invece di perdere fili, ombre e velo della testata. */
+  /* I TRIPLI. Mezzo foglio scrive l'inchiostro e la carta a decine di
+     opacita' diverse -- fili, fondi appena accennati, testo secondario
+     -- e scritti a mano quei numeri non seguirebbero nessuna
+     tavolozza: si vedrebbe un filo verde oliva su un fondo lilla.
+     Cosi' invece basta `rgba(var(--ink-rgb), .06)`. */
+  /* Il fondo delle quattro schermate piatte: sta fra la carta e la
+     stanza, che e' il colore di una pagina che si legge. Era una tinta
+     opaca scritta a mano in fondo al foglio, quindi non seguiva
+     nessuna tavolozza. */
+  --fondo:#e7e5e0;
+  --ink-rgb:51,53,43;
+  --card-rgb:242,241,237;
+  --bg-rgb:207,204,200;
+  --accent-su:#b85c31;   /* l'accento premuto */
+  --velo:rgba(234,232,227,.82);        /* la testata: carta velata */
+  --velo-lieve:rgba(234,232,227,.55);  /* sulla scena, dove non scorre niente */
+  --velo-pieno:rgba(234,232,227,.94);  /* con la stanza in penombra */
   --line:rgba(51,53,43,.14);
   --shadow:0 18px 44px rgba(51,53,43,.14);
   --ombra-lieve:0 1px 2px rgba(51,53,43,.08), 0 4px 12px rgba(51,53,43,.06);
@@ -90,7 +110,7 @@ canvas{display:block}
    suggerimenti dal fondo, ma tagliavano la stanza in orizzontale e si
    vedevano come due bande slavate. */
 #vig{position:fixed; inset:0; z-index:1; pointer-events:none;
-  background:radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(51,53,43,.26) 100%)}
+  background:radial-gradient(ellipse 88% 80% at 50% 46%, transparent 46%, rgba(var(--ink-rgb),.26) 100%)}
 
 /* --- interfaccia --------------------------------------------- */
 /* z-index 4 e non 3: l'elenco della collezione e' salito a 3 per
@@ -129,7 +149,7 @@ body.ready header{opacity:1; transform:none}
 .tool{
   font-family:var(--ff-text); font-size:13px; font-weight:500;
   letter-spacing:0; text-transform:none;
-  color:var(--ink-soft); background:rgba(242,241,237,.88); cursor:pointer;
+  color:var(--ink-soft); background:rgba(var(--card-rgb),.88); cursor:pointer;
   border:0; padding:8px 11px;
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); border-radius:var(--r-s);
 }
@@ -152,7 +172,7 @@ body.ready header{opacity:1; transform:none}
   color:var(--ink-soft); text-transform:uppercase; letter-spacing:.07em; font-size:11px;
 }
 #cerca-x, #mia-q-x, #par-q-x{
-  position:absolute; right:5px; display:none; border:0; background:rgba(51,53,43,.06); cursor:pointer;
+  position:absolute; right:5px; display:none; border:0; background:rgba(var(--ink-rgb),.06); cursor:pointer;
   color:var(--ink-soft); font-size:16px; line-height:1; padding:1px 4px; border-radius:var(--r-s);
 }
 body.cerca #cerca-x, body.cerca #mia-q-x{display:block}
@@ -179,10 +199,10 @@ body.cerca-par #par-q-x{display:block}
 .gruppi button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:rgba(51,53,43,.06); border:0; padding:6px 9px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; padding:6px 9px; border-radius:var(--r-s);
 }
 .gruppi button:hover{color:var(--ink); border-color:var(--accent)}
-.gruppi button.on{color:#f2f1ed; background:var(--wood); border-color:var(--wood)}
+.gruppi button.on{color:var(--card); background:var(--wood); border-color:var(--wood)}
 .gruppi button.nuovo{color:var(--accent); border-style:dashed}
 .gruppi.filtro{margin:14px 0 0}
 .gruppi.filtro button.on{background:var(--accent); border-color:var(--accent)}
@@ -191,10 +211,10 @@ body.cerca-par #par-q-x{display:block}
 /* --- preferiti ---------------------------------------------------- */
 #p-pref{
   font-family:var(--ff-text); font-size:15px; line-height:1; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:6px 9px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:6px 9px; border-radius:var(--r-s);
 }
 #p-pref:hover{color:var(--accent); border-color:var(--accent)}
-#p-pref[aria-pressed="true"]{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
+#p-pref[aria-pressed="true"]{color:var(--card); background:var(--accent); border-color:var(--accent)}
 body.visita #p-pref{display:none !important}
 
 /* IN CASA DI UN AMICO IL SITO E' UNA LIBRERIA E BASTA.
@@ -222,12 +242,12 @@ body.visita .visita-only{display:inline-flex !important}
 #p-cuore[aria-pressed="true"] .cuore::before{font-size:15px}
 #p-cuore-n{font-family:var(--ff-display); font-size:10.1px; letter-spacing:0}
 .cat-azioni .pref{font-size:14px; line-height:1; padding:6px 9px}
-.cat-azioni .pref.on{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
+.cat-azioni .pref.on{color:var(--card); background:var(--accent); border-color:var(--accent)}
 
 /* dove sta un gioco, e come si sceglie dove metterlo */
 .cat-dove{
   margin:7px 0 0; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
-  color:rgba(51,53,43,.45);
+  color:rgba(var(--ink-rgb),.45);
 }
 .cat-dove b{color:var(--accent); font-weight:500}
 .cat-dati h3 .stella{color:var(--accent); font-style:normal; font-size:15px; vertical-align:2px}
@@ -236,7 +256,7 @@ body.visita .visita-only{display:inline-flex !important}
 .scegli-lib{display:flex; flex-wrap:wrap; gap:5px; max-width:190px}
 .scegli-lib button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:#f2f1ed;
+  text-transform:none; cursor:pointer; color:var(--card);
   background:var(--accent); border:0; padding:6px 8px; border-radius:var(--r-s);
 }
 .scegli-lib button:hover{background:var(--ink); border-color:var(--ink)}
@@ -257,7 +277,7 @@ body.visita .visita-only{display:inline-flex !important}
 .viste button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:rgba(51,53,43,.06); border:0; padding:11px 6px 12px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; padding:11px 6px 12px; border-radius:var(--r-s);
 }
 .viste button:hover{color:var(--ink)}
 .viste button.on{color:var(--ink)}
@@ -307,11 +327,11 @@ body.cella-su #cella{display:flex}
   width:38px; height:38px; padding:0; cursor:pointer; line-height:0;
   color:var(--ink-soft); background:none; border:0; border-radius:999px;
 }
-#cella button:hover{color:var(--ink); background:rgba(51,53,43,.07)}
+#cella button:hover{color:var(--ink); background:rgba(var(--ink-rgb),.07)}
 /* La scelta e' PIENA e non un contorno acceso: fra cinque icone dello
    stesso tratto, un contorno di un altro colore si legge come "questa
    e' diversa", non come "questa e' quella". */
-#cella button[aria-pressed="true"]{color:#f2f1ed; background:var(--accent)}
+#cella button[aria-pressed="true"]{color:var(--card); background:var(--accent)}
 /* Il dito vuole quarantaquattro pixel, come ovunque nel sito. */
 @media (pointer:coarse){
   #cella button{width:44px; height:44px}
@@ -358,10 +378,10 @@ body.cella-su #cella{display:flex}
 .gru-elenco button{
   flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:6px 9px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:6px 9px; border-radius:var(--r-s);
 }
 .gru-elenco button:hover{color:var(--ink); border-color:var(--accent)}
-.gru-elenco button.on{color:#f2f1ed; background:var(--wood); border-color:var(--wood)}
+.gru-elenco button.on{color:var(--card); background:var(--wood); border-color:var(--wood)}
 .pro-gente button.quali{color:var(--accent); border-color:rgba(200,106,60,.45)}
 
 /* --- righe compatte -----------------------------------------------
@@ -394,7 +414,7 @@ body.cella-su #cella{display:flex}
    ce n'e' piu' di uno. Un'icona che si accende sotto il dito
    prometterebbe un gesto che qui non c'e'. */
 .riga-scaffale{
-  flex:none; display:block; padding:7px; line-height:0; color:rgba(51,53,43,.18);
+  flex:none; display:block; padding:7px; line-height:0; color:rgba(var(--ink-rgb),.18);
 }
 .riga-scaffale.su{color:var(--accent)}
 /* Il titolo e la sua stella in una cella sola: la stella e' di quel
@@ -415,17 +435,17 @@ body.cella-su #cella{display:flex}
    tocca. Il vuoto tiene la colonna in casa di un amico. */
 .riga-stella{
   flex:none; cursor:pointer; padding:7px; line-height:0;
-  color:rgba(51,53,43,.28); background:none; border:0; border-radius:var(--r-s);
+  color:rgba(var(--ink-rgb),.28); background:none; border:0; border-radius:var(--r-s);
 }
 .riga-stella:hover{color:var(--accent); background:rgba(200,106,60,.10)}
 .riga-stella[aria-pressed="true"]{color:var(--accent)}
 .riga-stella-vuota{display:block; width:0}
 .riga-menu{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:7px 10px;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; border-radius:var(--r-s);
 }
 .riga-menu:hover{color:var(--ink); border-color:var(--accent)}
-.riga-menu[aria-expanded="true"]{color:#f2f1ed; background:var(--ink); border-color:var(--ink)}
+.riga-menu[aria-expanded="true"]{color:var(--card); background:var(--ink); border-color:var(--ink)}
 
 .riga-info{grid-column:1 / -1}
 .riga-info[hidden], .riga-azioni[hidden]{display:none}
@@ -462,7 +482,7 @@ body.cella-su #cella{display:flex}
   font-family:var(--ff-display); font-size:24.5px; line-height:.9; color:var(--ink); margin:12px 0 8px;
 }
 .riga-info .voto i{font-style:normal; font-size:14px; color:var(--ink-soft)}
-.riga-info p{font-size:14px; color:rgba(51,53,43,.88); margin:0 0 10px; max-width:62ch}
+.riga-info p{font-size:14px; color:rgba(var(--ink-rgb),.88); margin:0 0 10px; max-width:62ch}
 .riga-info .vuoto{color:var(--ink-soft); font-size:13px}
 
 /* --- cartelle nell'elenco: ogni gruppo e' una tendina -------------- */
@@ -471,7 +491,7 @@ body.cella-su #cella{display:flex}
 .cartella-tit{
   width:100%; display:flex; align-items:baseline; gap:10px; cursor:pointer;
   font-family:var(--ff-display); font-weight:400; font-size:15.8px; letter-spacing:0;
-  color:var(--ink); text-align:left; background:rgba(51,53,43,.06); border:0;
+  color:var(--ink); text-align:left; background:rgba(var(--ink-rgb),.06); border:0;
   padding:8px 0; border-bottom:2px solid var(--accent); border-radius:var(--r-s);
 }
 .cartella-tit:hover{color:var(--accent)}
@@ -490,7 +510,7 @@ body.cella-su #cella{display:flex}
 /* --- di che mobile stiamo parlando -------------------------------- */
 .st-quale{
   margin:2px 0 12px; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
-  color:rgba(51,53,43,.45);
+  color:rgba(var(--ink-rgb),.45);
 }
 .st-quale b{color:var(--accent); font-weight:500}
 .st-quale.sotto{margin:-2px 0 10px}
@@ -511,7 +531,7 @@ body.admin #m-pub-riga{display:flex !important; align-items:flex-start; gap:10px
   font-size:12.5px; line-height:1.5; color:var(--ink-soft)}
 #m-pub-riga input{width:16px; height:16px; margin-top:2px; accent-color:var(--accent); flex:none}
 #m-pub-riga b{color:var(--ink); font-weight:500}
-#m-pub-riga small{display:block; margin-top:2px; font-size:11px; color:rgba(51,53,43,.5)}
+#m-pub-riga small{display:block; margin-top:2px; font-size:11px; color:rgba(var(--ink-rgb),.5)}
 /* mentre si tiene in mano una scatola non si va da nessuna parte:
    il suggerimento a fondo pagina parla di un gesto che non e' quello */
 /* il chip dice chi sei e basta: entrati non e' piu' un pulsante */
@@ -529,7 +549,7 @@ body.admin #mode.chip:disabled:hover{color:#fff; border-color:var(--wood)}
 #sortmenu{display:flex; flex-direction:column; border:1px solid var(--line); margin:8px 0 0}
 #sortmenu button{
   font-family:var(--ff-text); font-size:12px; text-align:left; cursor:pointer;
-  background:rgba(51,53,43,.06); border:0; border-bottom:1px solid rgba(51,53,43,.10);
+  background:rgba(var(--ink-rgb),.06); border:0; border-bottom:1px solid rgba(var(--ink-rgb),.10);
   color:var(--ink-soft); padding:11px 14px; border-radius:var(--r-s);
 }
 #sortmenu button:last-child{border-bottom:0}
@@ -551,7 +571,7 @@ body.dentro .dentro-only{display:inline-flex !important}
 #sezioni button{
   font-family:var(--ff-text); font-size:13px; font-weight:500;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:9px 10px 7px;
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:9px 10px 7px;
   border-bottom:2px solid transparent; border-radius:var(--r-s);
 }
 #sezioni button:hover{color:var(--ink)}
@@ -586,14 +606,14 @@ body.sez-catalogo #vista-apri, body.sez-profilo #vista-apri{opacity:0 !important
 #mia{
   position:fixed; inset:0; z-index:3; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(207,204,200,.975);
+  background:rgba(var(--bg-rgb),.975);
 }
 body.elenco #mia{display:block}
 #mia-msg{margin:12px 0 0; font-size:12.5px; line-height:1.6; color:var(--ink-soft)}
 #mia-msg b{color:var(--ink); font-weight:500}
 /* il contatore e' un pulsante: mentre l'elenco e' aperto, e' acceso */
-body.elenco #conta{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
-body.elenco #conta b, body.elenco #conta span{color:#f2f1ed}
+body.elenco #conta{background:var(--accent); color:var(--card); border-color:var(--accent)}
+body.elenco #conta b, body.elenco #conta span{color:var(--card)}
 #conta{cursor:pointer; border-radius:var(--r-s);
 }
 /* con l'elenco davanti, scaffale e imbuto non servono */
@@ -613,7 +633,7 @@ body.elenco #vista .dentro-only{display:none !important}
 #catalogo{
   position:fixed; inset:0; z-index:2; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(207,204,200,.975);
+  background:rgba(var(--bg-rgb),.975);
 }
 body.sez-catalogo #catalogo{display:block}
 .cat-in{max-width:900px; margin:0 auto; padding:96px clamp(16px,4vw,40px) 80px}
@@ -626,7 +646,7 @@ body.sez-catalogo #catalogo{display:block}
 #cat-q:focus{outline:none; border-color:var(--accent)}
 .cat-cerca button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:#f2f1ed; background:var(--accent);
+  text-transform:none; cursor:pointer; color:var(--card); background:var(--accent);
   border:0; padding:0 16px; border-radius:var(--r-s);
 }
 .cat-cerca button:hover{background:var(--ink); border-color:var(--ink)}
@@ -672,12 +692,12 @@ body.sez-catalogo #catalogo{display:block}
   display:inline-block; margin-left:9px; vertical-align:3px;
   font-family:var(--ff-text); font-style:normal; font-size:9px; font-weight:700;
   letter-spacing:.07em; text-transform:uppercase;
-  color:#f2f1ed; background:var(--wood); padding:3px 6px;
+  color:var(--card); background:var(--wood); padding:3px 6px;
 }
 .cat-chi{margin:6px 0 0; font-size:13px; color:var(--ink-soft)}
 .cat-chi b{color:var(--ink); font-weight:500}
 .cat-spec{list-style:none; display:flex; flex-wrap:wrap; gap:14px; margin:9px 0 0; padding:0}
-.cat-spec li{font-size:11.5px; letter-spacing:.03em; text-transform:none; color:rgba(51,53,43,.74)}
+.cat-spec li{font-size:11.5px; letter-spacing:.03em; text-transform:none; color:rgba(var(--ink-rgb),.74)}
 .cat-spec b{
   font-family:var(--ff-display); font-size:10.8px; letter-spacing:0;
   color:var(--ink); margin-right:5px;
@@ -691,7 +711,7 @@ body.sez-catalogo #catalogo{display:block}
    tocca. E' la stessa forma della stellina del preferito, che e'
    l'altro interruttore da un tocco su una riga che si scorre. */
 .cat-azioni{display:flex; flex-direction:column; gap:7px; align-items:stretch}
-.cat-azioni .desidero{color:rgba(51,53,43,.30); background:none}
+.cat-azioni .desidero{color:rgba(var(--ink-rgb),.30); background:none}
 .cat-azioni .desidero:hover{color:var(--accent); background:rgba(200,106,60,.10)}
 .cat-azioni .desidero[aria-pressed="true"]{color:var(--accent)}
 .cat-azioni button{
@@ -723,7 +743,7 @@ body.sez-catalogo #catalogo{display:block}
 .cat-rec{grid-column:1 / -1; margin:4px 0 0; padding:16px 0 2px;
   border-top:1px dashed var(--line); display:none}
 .righe > li.aperta .cat-rec{display:block}
-.cat-rec p{margin:0 0 12px; font-size:15px; color:rgba(51,53,43,.88); max-width:64ch}
+.cat-rec p{margin:0 0 12px; font-size:15px; color:rgba(var(--ink-rgb),.88); max-width:64ch}
 .cat-rec .voto{
   font-family:var(--ff-display); font-size:28.8px; line-height:.9; color:var(--ink);
   margin:0 0 10px;
@@ -783,7 +803,7 @@ body.sez-catalogo #catalogo{display:block}
 #profilo{
   position:fixed; inset:0; z-index:2; display:none;
   overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
-  background:rgba(207,204,200,.975);
+  background:rgba(var(--bg-rgb),.975);
 }
 body.sez-profilo #profilo{display:block}
 /* Stessa cassa delle altre due sezioni: da bordo a bordo, sopra la
@@ -813,7 +833,7 @@ body.sez-partite #partite{display:block}
 #pro-cambia, .pro-lin{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:rgba(51,53,43,.06); border:0; border-bottom:1px solid var(--line); padding:3px 0; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; border-bottom:1px solid var(--line); padding:3px 0; border-radius:var(--r-s);
 }
 #pro-cambia:hover, .pro-lin:hover{color:var(--accent); border-color:var(--accent)}
 .pro-fondo{display:flex; flex-wrap:wrap; gap:18px; margin:0}
@@ -836,7 +856,7 @@ body.sez-partite #partite{display:block}
   background:var(--card); border:0; padding:7px 11px; border-radius:var(--r-s);
 }
 #pro-copia:hover{color:var(--ink); border-color:var(--accent)}
-.pro-nota{margin:9px 0 14px; font-size:11.5px; line-height:1.6; color:rgba(51,53,43,.5); max-width:44ch}
+.pro-nota{margin:9px 0 14px; font-size:11.5px; line-height:1.6; color:rgba(var(--ink-rgb),.5); max-width:44ch}
 
 /* il laboratorio della faccia */
 #pro-faccia-lab{
@@ -860,7 +880,7 @@ body.sez-partite #partite{display:block}
 .pro-lab-fondo{display:flex; gap:10px; margin:18px 0 0}
 #lab-salva, #ami-go, #nick-ok{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:#f2f1ed;
+  text-transform:none; cursor:pointer; color:var(--card);
   background:var(--accent); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 #lab-salva:hover, #ami-go:hover, #nick-ok:hover{background:var(--ink); border-color:var(--ink)}
@@ -880,7 +900,7 @@ body.sez-partite #partite{display:block}
   width:100%; display:flex; align-items:center; gap:12px; cursor:pointer;
   font-family:var(--ff-display); font-weight:400; font-size:18.7px;
   letter-spacing:0; color:var(--ink); text-align:left;
-  background:rgba(51,53,43,.06); border:0; padding:20px 0; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; padding:20px 0; border-radius:var(--r-s);
 }
 .pro-tit:hover{color:var(--accent)}
 .pro-tit .quanti{
@@ -948,7 +968,7 @@ body.sez-partite #partite{display:block}
 .gio-gioco{
   width:100%; display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px;
   margin:0; padding:10px 0; cursor:pointer; text-align:left;
-  background:rgba(51,53,43,.06); border:0; border-bottom:1px solid var(--line); border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; border-bottom:1px solid var(--line); border-radius:var(--r-s);
 }
 .gio-gioco:hover b{color:var(--accent)}
 .gio-gioco::after{
@@ -985,7 +1005,7 @@ body.sez-partite #partite{display:block}
 .mia-nota b{color:var(--ink); font-weight:500}
 #mia-salva{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:#f2f1ed;
+  text-transform:none; cursor:pointer; color:var(--card);
   background:var(--accent); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 #mia-salva:hover{background:var(--ink); border-color:var(--ink)}
@@ -1016,11 +1036,11 @@ body.sez-partite #partite{display:block}
   color:var(--ink-soft); background:var(--card); border:0; padding:7px 9px; border-radius:var(--r-s);
 }
 .pa-chi button:hover{color:var(--ink); border-color:var(--accent)}
-.pa-chi button.vince.on{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
+.pa-chi button.vince.on{background:var(--accent); color:var(--card); border-color:var(--accent)}
 .pa-chi button.via:hover{color:var(--wood); border-color:var(--wood)}
 .pa-foot #pa-salva{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:#f2f1ed;
+  text-transform:none; cursor:pointer; color:var(--card);
   background:var(--accent); border:0; padding:11px 18px; border-radius:var(--r-s);
 }
 .pa-foot #pa-salva:hover{background:var(--ink); border-color:var(--ink)}
@@ -1035,7 +1055,7 @@ body.sez-partite #partite{display:block}
 #p-segna{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:9px 12px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:9px 12px; border-radius:var(--r-s);
 }
 #p-segna:hover{color:var(--accent); border-color:var(--accent)}
 
@@ -1136,7 +1156,7 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
 #vista .eyebrow{margin:0 0 4px}
 #vista-x{
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:4px 6px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:4px 6px; border-radius:var(--r-s);
 }
 #vista-x:hover{color:var(--wood)}
 .vista-tit{
@@ -1146,7 +1166,7 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
 .vista-riga{
   display:block; width:100%; text-align:left; cursor:pointer; margin:8px 0 0;
   font-family:var(--ff-display); font-size:11.5px; letter-spacing:0; color:var(--ink);
-  background:rgba(51,53,43,.06); border:0; padding:9px 11px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; padding:9px 11px; border-radius:var(--r-s);
 }
 .vista-riga:hover{color:var(--accent); border-color:var(--accent)}
 
@@ -1157,7 +1177,7 @@ body.vista #vista{opacity:1; visibility:visible; transform:none; transition-dela
   text-transform:none; cursor:pointer; color:var(--accent);
   background:none; border:1px dashed var(--accent); padding:6px 10px; border-radius:var(--r-s);
 }
-.aggiungi:hover{background:var(--accent); color:#f2f1ed; border-style:solid}
+.aggiungi:hover{background:var(--accent); color:var(--card); border-style:solid}
 
 #stanza-apri{
   position:fixed; z-index:5; left:clamp(12px,2.4vw,28px); bottom:24px;
@@ -1195,7 +1215,7 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
 #stanza .eyebrow{margin:0 0 14px}
 #stanza-x{
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:4px 6px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:4px 6px; border-radius:var(--r-s);
 }
 #stanza-x:hover{color:var(--wood)}
 .st-riga{display:flex; align-items:center; gap:12px; margin:0 0 11px}
@@ -1219,11 +1239,11 @@ body.arreda #stanza{opacity:1; visibility:visible; transform:none; transition-de
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   margin:16px 0 0; padding-top:12px; border-top:1px solid var(--line);
 }
-#st-msg{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(51,53,43,.45)}
+#st-msg{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(var(--ink-rgb),.45)}
 #st-reset{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
   text-transform:none; cursor:pointer; color:var(--ink-soft);
-  background:rgba(51,53,43,.06); border:0; padding:7px 10px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; padding:7px 10px; border-radius:var(--r-s);
 }
 #st-reset:hover{color:var(--wood); border-color:var(--wood)}
 
@@ -1257,14 +1277,14 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
 #mobili .eyebrow{margin:0 0 12px}
 #mobili-x{
   position:absolute; top:6px; right:8px; cursor:pointer; font-size:17px; line-height:1;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:4px 6px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:4px 6px; border-radius:var(--r-s);
 }
 #mobili-x:hover{color:var(--wood)}
 #mobili-lista{list-style:none; margin:0; padding:0}
 #mobili-lista li{display:flex; align-items:center; gap:8px; margin:0 0 8px}
 #mobili-lista input{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:13px; color:var(--ink);
-  background:rgba(51,53,43,.05); border:0; padding:8px 10px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05); border:0; padding:8px 10px; border-radius:var(--r-s);
 }
 #mobili-lista input:focus{outline:none; border-color:var(--accent)}
 #mobili-lista .quanti{
@@ -1273,17 +1293,17 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
 }
 #mobili-lista button{
   flex:none; cursor:pointer; font-size:15px; line-height:1; padding:5px 8px;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; border-radius:var(--r-s);
 }
 #mobili-lista button:hover{color:var(--wood); border-color:var(--wood)}
 #mobili-lista button.ok{color:var(--accent); border-color:rgba(200,106,60,.45); font-size:13px}
-#mobili-lista button.ok:hover{color:#f2f1ed; background:var(--accent); border-color:var(--accent)}
+#mobili-lista button.ok:hover{color:var(--card); background:var(--accent); border-color:var(--accent)}
 #mobili-lista button.ok:disabled{opacity:.3; cursor:default}
 #mobili-lista button.ok:disabled:hover{color:var(--ink-soft); background:none; border-color:var(--line)}
-#mobili-msg{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(51,53,43,.45)}
+#mobili-msg{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(var(--ink-rgb),.45)}
 #mobili-piu{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; color:#f2f1ed;
+  text-transform:none; cursor:pointer; color:var(--card);
   background:var(--accent); border:0; padding:8px 12px; border-radius:var(--r-s);
 }
 #mobili-piu:hover{background:var(--ink); border-color:var(--ink)}
@@ -1292,7 +1312,7 @@ body.mobili #mobili{opacity:1; visibility:visible; transform:translate(-50%,0); 
    sfondo trasparente -- la riga sottile resta quella. */
 .rail-bar{
   flex:1 1 auto; min-width:88px; max-width:min(260px,42vw);
-  height:4px; border-radius:999px; background:rgba(51,53,43,.14); position:relative;
+  height:4px; border-radius:999px; background:rgba(var(--ink-rgb),.14); position:relative;
   pointer-events:auto; cursor:pointer; touch-action:none;
   border-top:12px solid transparent; border-bottom:12px solid transparent;
   background-clip:padding-box;
@@ -1395,7 +1415,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .byline{margin:10px 0 20px; font-size:13px; color:var(--ink-soft)}
 .byline b{color:var(--ink); font-weight:500}
 .credit{display:inline-block; margin-top:4px; font-size:11px;
-  letter-spacing:.04em; color:rgba(51,53,43,.48)}
+  letter-spacing:.04em; color:rgba(var(--ink-rgb),.48)}
 
 .specs{list-style:none; margin:0 0 20px; padding:0; gap:1px;
   display:grid; grid-template-columns:repeat(4,1fr);
@@ -1405,12 +1425,12 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
    sotto la soglia per un testo cosi' piccolo -- e infatti "giocatori" e
    "minuti" non si leggevano. Adesso sono piu' grandi, piu' scure e meno
    spaziate: restano etichette, ma si leggono. */
-.specs li{background:rgba(51,53,43,.05); padding:10px 6px; text-align:center}
+.specs li{background:rgba(var(--ink-rgb),.05); padding:10px 6px; text-align:center}
 .specs b{display:block; font-family:var(--ff-display); font-size:15.1px; letter-spacing:0;
   color:var(--accent); line-height:1.2}
 .specs span{
   display:block; margin-top:2px; font-size:10.5px; letter-spacing:.03em;
-  text-transform:none; color:rgba(51,53,43,.74);
+  text-transform:none; color:rgba(var(--ink-rgb),.74);
 }
 
 .score{display:flex; align-items:baseline; gap:10px; margin:0 0 20px; padding-bottom:20px;
@@ -1426,7 +1446,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
    giravano attorno a una lettera grande di un altro colore. Su un testo
    di poche righe si mangiava mezzo capoverso. Una recensione e' un testo
    da leggere, non un frontespizio. */
-.body p{margin:0 0 14px; font-size:15px; color:rgba(51,53,43,.88)}
+.body p{margin:0 0 14px; font-size:15px; color:rgba(var(--ink-rgb),.88)}
 .body p:first-child{margin-top:2px}
 .tags{display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0}
 .tags span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);
@@ -1438,7 +1458,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 
 #close{
   position:absolute; z-index:2; top:-1px; right:-1px;
-  background:var(--accent); color:#f2f1ed; border:0; cursor:pointer;
+  background:var(--accent); color:var(--card); border:0; cursor:pointer;
   font-family:var(--ff-text); font-weight:700; font-size:13px;
   letter-spacing:0; text-transform:none; padding:9px 13px; border-radius:var(--r-s);
 }
@@ -1509,7 +1529,7 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
 .pan-foot{
   flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:8px;
   margin:0; padding:12px clamp(20px,2.4vw,30px);
-  border-top:1px solid var(--line); background:rgba(242,241,237,.7);
+  border-top:1px solid var(--line); background:rgba(var(--card-rgb),.7);
   opacity:0; transition:opacity .4s ease .5s;
 }
 body.review .pan-foot{opacity:1}
@@ -1523,7 +1543,7 @@ body.review .pan-foot{opacity:1}
 #del{margin-left:auto}
 #p-mia{
   font-family:var(--ff-text); font-weight:700; text-transform:none;
-  cursor:pointer; color:#f2f1ed; background:var(--accent); border:0; border-radius:var(--r-s);
+  cursor:pointer; color:var(--card); background:var(--accent); border:0; border-radius:var(--r-s);
 }
 #p-mia:hover{background:var(--ink); border-color:var(--ink)}
 body.visita #p-mia{display:none !important}
@@ -1532,7 +1552,7 @@ body.visita #p-mia{display:none !important}
 #p-fuori{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0; padding:9px 10px; border-radius:var(--r-s);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0; padding:9px 10px; border-radius:var(--r-s);
 }
 #p-fuori:hover{color:var(--ink); border-color:var(--accent)}
 body.visita #p-fuori{display:none !important}
@@ -1546,10 +1566,10 @@ body.visita #p-fuori{display:none !important}
 #edit{
   font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
-  color:var(--accent); background:rgba(51,53,43,.06); border:0;
+  color:var(--accent); background:rgba(var(--ink-rgb),.06); border:0;
   padding:7px 11px; align-items:center; gap:6px; border-radius:var(--r-s);
 }
-#edit:hover{background:var(--accent); color:#f2f1ed; border-color:var(--accent)}
+#edit:hover{background:var(--accent); color:var(--card); border-color:var(--accent)}
 /* armato: il secondo clic esegue davvero */
 #del.armed, .add-foot button.armed{background:var(--wood); color:#fff; border-color:var(--wood)}
 #del.armed{animation:pulse 1s steps(2) infinite}
@@ -1575,7 +1595,7 @@ body.visita #p-fuori{display:none !important}
 @media (max-width:560px){ .gate-pick{grid-template-columns:1fr} }
 .gate-pick button{
   font-family:var(--ff-text); text-align:left; cursor:pointer;
-  background:rgba(242,241,237,.6); border:0;
+  background:rgba(var(--card-rgb),.6); border:0;
   padding:20px 18px; color:var(--ink-soft);
   transition:border-color .2s ease, background .2s ease, transform .2s ease; border-radius:var(--r-s);
 }
@@ -1598,7 +1618,7 @@ body.visita #p-fuori{display:none !important}
 .gate-pick button.last .ultima{display:block}
 .gate-pick button span{font-size:13px; line-height:1.5}
 .gate-note{margin:28px 0 0; font-size:11px; line-height:1.7;
-  color:rgba(51,53,43,.44)}
+  color:rgba(var(--ink-rgb),.44)}
 
 /* --- admin: cerca e aggiungi ----------------------------------- */
 #addlayer{
@@ -1617,7 +1637,7 @@ body.visita #p-fuori{display:none !important}
 /* un titolo lungo senza spazi non deve allargare la scheda */
 .add-card, .add-msg, #add-res button{overflow-wrap:anywhere}
 #add-x{
-  position:absolute; top:-1px; right:-1px; background:var(--accent); color:#f2f1ed;
+  position:absolute; top:-1px; right:-1px; background:var(--accent); color:var(--card);
   border:0; cursor:pointer; font-family:var(--ff-text); font-weight:700;
   font-size:13px; letter-spacing:0; text-transform:none; padding:9px 13px; border-radius:var(--r-s);
 }
@@ -1626,12 +1646,12 @@ body.visita #p-fuori{display:none !important}
 .add-search{display:flex; gap:8px}
 .add-search input{
   flex:1; min-width:0; font-family:var(--ff-text); font-size:15px; color:var(--ink);
-  background:rgba(51,53,43,.04); border:0; padding:11px 13px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.04); border:0; padding:11px 13px; border-radius:var(--r-s);
 }
 .add-search input:focus{outline:none; border-color:var(--accent)}
 .add-search button, .add-form button{
   font-family:var(--ff-text); font-size:13px; font-weight:700; letter-spacing:0;
-  text-transform:none; cursor:pointer; background:var(--accent); color:#f2f1ed;
+  text-transform:none; cursor:pointer; background:var(--accent); color:var(--card);
   border:0; padding:11px 16px; border-radius:var(--r-s);
 }
 .add-search button:hover, .add-form button:hover{background:var(--ink)}
@@ -1639,14 +1659,14 @@ body.visita #p-fuori{display:none !important}
 .add-msg:empty{margin:0}
 .add-msg.warn{color:var(--wood)}
 .add-msg code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px;
-  background:rgba(51,53,43,.07); padding:2px 5px; color:var(--ink)}
+  background:rgba(var(--ink-rgb),.07); padding:2px 5px; color:var(--ink)}
 
 #add-res{list-style:none; margin:14px 0 0; padding:0; max-height:38vh; overflow:auto}
-#add-res li{border-bottom:1px solid rgba(51,53,43,.12)}
+#add-res li{border-bottom:1px solid rgba(var(--ink-rgb),.12)}
 #add-res button{
   width:100%; display:flex; align-items:baseline; justify-content:space-between; gap:12px;
   font-family:var(--ff-text); text-align:left; cursor:pointer;
-  background:rgba(51,53,43,.06); border:0; color:var(--ink-soft); padding:11px 4px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; color:var(--ink-soft); padding:11px 4px; border-radius:var(--r-s);
 }
 #add-res button:hover{background:rgba(200,106,60,.08); color:var(--ink)}
 #add-res button b{font-weight:500; font-size:15px; color:var(--ink)}
@@ -1671,7 +1691,7 @@ body.visita #p-fuori{display:none !important}
 .add-form input{
   min-width:0; width:100%;
   font-family:var(--ff-text); font-size:14px; color:var(--ink);
-  background:rgba(51,53,43,.04); border:0; padding:8px 10px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.04); border:0; padding:8px 10px; border-radius:var(--r-s);
 }
 .add-form input:focus{outline:none; border-color:var(--accent)}
 .add-form button{grid-column:1/-1; margin-top:6px}
@@ -1679,10 +1699,10 @@ body.visita #p-fuori{display:none !important}
 .add-form textarea{
   min-width:0; width:100%; resize:vertical; min-height:120px;
   font-family:var(--ff-text); font-size:14px; line-height:1.6; color:var(--ink);
-  background:rgba(51,53,43,.04); border:0; padding:10px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.04); border:0; padding:10px; border-radius:var(--r-s);
 }
 .add-form textarea:focus{outline:none; border-color:var(--accent)}
-.add-form textarea::placeholder{color:rgba(51,53,43,.34)}
+.add-form textarea::placeholder{color:rgba(var(--ink-rgb),.34)}
 .add-form input[type=file]{
   padding:7px 9px; font-size:12px; cursor:pointer; color:var(--ink-soft); border-radius:var(--r-s);
 }
@@ -1692,15 +1712,15 @@ body.visita #p-fuori{display:none !important}
   background:rgba(200,106,60,.12); color:var(--accent);
   border:0; padding:6px 10px; border-radius:var(--r-s);
 }
-.add-form input[type=file]::file-selector-button:hover{background:var(--accent); color:#f2f1ed}
+.add-form input[type=file]::file-selector-button:hover{background:var(--accent); color:var(--card)}
 #m-file-nota{font-size:10px; letter-spacing:0; text-transform:none; line-height:1.5;
-  color:rgba(51,53,43,.46)}
+  color:rgba(var(--ink-rgb),.46)}
 .add-foot{margin:18px 0 0; padding-top:14px; border-top:1px solid var(--line);
-  font-size:11px; color:rgba(51,53,43,.5); display:flex; flex-wrap:wrap;
+  font-size:11px; color:rgba(var(--ink-rgb),.5); display:flex; flex-wrap:wrap;
   align-items:center; gap:10px}
 .add-foot button{
   font-family:var(--ff-text); font-size:11px; letter-spacing:.1em; cursor:pointer;
-  background:rgba(51,53,43,.06); border:0; color:var(--ink-soft); padding:6px 10px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; color:var(--ink-soft); padding:6px 10px; border-radius:var(--r-s);
 }
 .add-foot button:hover{border-color:var(--accent); color:var(--accent)}
 
@@ -2229,7 +2249,7 @@ body.ready #load{
    Cresce con lo schermo come tutto il resto, ed e' piu' scura. */
 .load-txt span{display:block; margin-top:10px; letter-spacing:.07em;
   font-size:calc(11px * var(--dk,1)); text-transform:uppercase;
-  color:rgba(51,53,43,.72);
+  color:rgba(var(--ink-rgb),.72);
   /* La frase cambia a ogni passo, e senza dissolvenza i passi si
      sostituiscono di scatto: si legge come uno sfarfallio. Riscrivere
      il testo NON fa ripartire un'animazione CSS da solo -- la fa
@@ -2237,7 +2257,7 @@ body.ready #load{
   animation:passoCarica .45s var(--ease) both}
 .bar{
   position:relative; width:calc(190px * var(--dk,1)); height:4px; border-radius:999px;
-  background:rgba(51,53,43,.14); overflow:hidden;
+  background:rgba(var(--ink-rgb),.14); overflow:hidden;
 }
 .bar i{
   display:block; height:100%; width:0; border-radius:999px;
@@ -2478,7 +2498,7 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
   padding:11px 18px; font-size:14px; border:0;
   box-shadow:var(--ombra-lieve);
 }
-.aggiungi:hover, #p-mia:hover, #vis-torna:hover{background:#b85c31; color:#fff}
+.aggiungi:hover, #p-mia:hover, #vis-torna:hover{background:var(--accent-su); color:#fff}
 
 /* --- livello 2: tinto --------------------------------------------- */
 .tool, #conta, .riga-menu, .gruppi button, .vista-riga, #stanza-apri,
@@ -2494,10 +2514,10 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 /* quello che e' spento sta in grigio, non in terracotta: il colore
    dell'accento vuol dire "questo fa qualcosa adesso" */
 .gruppi button, #mia-gestisci, .riga-menu{
-  background:rgba(51,53,43,.06); color:var(--ink-soft);
+  background:rgba(var(--ink-rgb),.06); color:var(--ink-soft);
 }
 .gruppi button:hover, #mia-gestisci:hover, .riga-menu:hover{
-  background:rgba(51,53,43,.11); color:var(--ink);
+  background:rgba(var(--ink-rgb),.11); color:var(--ink);
 }
 
 /* IL CHIUDI E' PIENO, NON TINTO. Era finito nel livello "tinto" insieme
@@ -2507,11 +2527,11 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
    la cosa che si cerca per prima quando si vuole uscire. Sta all'angolo
    e deve essere una superficie piena, come tutto quello che galleggia. */
 #close{
-  background:var(--accent); color:#f2f1ed; font-weight:600;
+  background:var(--accent); color:var(--card); font-weight:600;
   padding:9px 13px; font-size:12px; letter-spacing:.02em;
   box-shadow:var(--ombra-lieve);
 }
-#close:hover{background:var(--ink); color:#f2f1ed}
+#close:hover{background:var(--ink); color:var(--card)}
 .gruppi button.on, .gruppi.filtro button.on{
   background:var(--accent); color:#fff; border:0;
 }
@@ -2522,7 +2542,7 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
   background:none; color:var(--ink); text-align:left;
   padding:11px 13px; font-size:14px; border-radius:8px;
 }
-#sortmenu button:hover, .riga-azioni button:hover{background:rgba(51,53,43,.07)}
+#sortmenu button:hover, .riga-azioni button:hover{background:rgba(var(--ink-rgb),.07)}
 #sortmenu button.on{color:var(--accent); font-weight:600}
 #sortmenu button.on::after{content:''}
 
@@ -2551,7 +2571,7 @@ body.elenco #conta{background:var(--accent); color:#fff}
   color:var(--ink-soft); cursor:pointer; border-radius:var(--r-s);
   padding:8px 12px; transition:color .2s var(--ease), background-color .2s var(--ease);
 }
-#sezioni button:hover, #tabbar button:hover{color:var(--ink); background:rgba(51,53,43,.06)}
+#sezioni button:hover, #tabbar button:hover{color:var(--ink); background:rgba(var(--ink-rgb),.06)}
 #sezioni button.on, #tabbar button.on{color:var(--accent); font-weight:600}
 /* La pastiglia e' della barra in basso e basta: nella testata il segno
    e' la riga sotto la voce, apposta per non aggiungere un riquadro a
@@ -2577,12 +2597,12 @@ body.elenco #conta{background:var(--accent); color:#fff}
 #cerca, #cat-q, #add-q, .add-card input, .add-card textarea, #mobili-lista input,
 #nick-in, #pa-note{
   font-family:var(--ff); font-size:14px; color:var(--ink);
-  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05); border:0; border-radius:var(--r-s);
   padding:12px 14px; transition:background-color .2s var(--ease), box-shadow .2s var(--ease);
 }
 #cerca:focus, #cat-q:focus, #add-q:focus, .add-card input:focus,
 .add-card textarea:focus, #mobili-lista input:focus, #nick-in:focus, #pa-note:focus{
-  outline:none; background:rgba(51,53,43,.03);
+  outline:none; background:rgba(var(--ink-rgb),.03);
   box-shadow:0 0 0 2px var(--accent);
 }
 #cerca::placeholder, #cat-q::placeholder{
@@ -2638,14 +2658,14 @@ button .ico + *{margin-left:2px}
    leggera, sfocatura dietro -- e non tinte di colore. E' anche il modo
    in cui si distinguono da quelli che stanno DENTRO a un pannello. */
 #stanza-apri, #vista-apri, #conta{
-  background:rgba(242,241,237,.86); color:var(--ink);
+  background:rgba(var(--card-rgb),.86); color:var(--ink);
   backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
   box-shadow:var(--ombra-lieve);
 }
 #stanza-apri:hover, #vista-apri:hover{background:#f2f1ed; color:var(--accent)}
 body.vista #vista-apri, body.arreda #stanza-apri{background:var(--accent); color:#fff}
 #conta{
-  color:var(--ink); background:rgba(242,241,237,.96);
+  color:var(--ink); background:rgba(var(--card-rgb),.96);
   backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
   box-shadow:var(--ombra-lieve);
 }
@@ -2668,9 +2688,9 @@ body.elenco #conta b{color:#fff}
    a 999px era la forma delle pastigliette -- i gruppi, i nomi al tavolo
    -- e questa non e' una pastiglietta, e' una superficie. */
 #rail{
-  background:rgba(242,241,237,.96);
+  background:rgba(var(--card-rgb),.96);
   backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  box-shadow:var(--ombra-lieve), inset 0 0 0 1px rgba(51,53,43,.07);
+  box-shadow:var(--ombra-lieve), inset 0 0 0 1px rgba(var(--ink-rgb),.07);
   border-radius:var(--r-m);
 }
 
@@ -2691,11 +2711,11 @@ body.elenco #conta b{color:#fff}
 .rail-passo:disabled{opacity:.26; cursor:default; pointer-events:none}
 @media (pointer:coarse){ .rail-passo{width:26px; height:26px} }
 #rail-txt{color:var(--ink); opacity:.85}
-.rail-bar{background:rgba(51,53,43,.22)}
+.rail-bar{background:rgba(var(--ink-rgb),.22)}
 
 /* Il cartello di quando sei in casa di un altro, con la stessa mano */
 #visita{
-  background:rgba(242,241,237,.9); border:0; border-radius:999px;
+  background:rgba(var(--card-rgb),.9); border:0; border-radius:999px;
   backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
   box-shadow:var(--ombra-lieve);
 }
@@ -2772,7 +2792,7 @@ body.elenco #conta b{color:#fff}
    dietro. Adesso la pastiglia c'e' sempre, come la targa del mobile e
    come tutto quello che galleggia sulla scena. */
 #rail-txt{color:var(--ink); opacity:.72; font-size:11.5px}
-.rail-bar{background:rgba(51,53,43,.20)}
+.rail-bar{background:rgba(var(--ink-rgb),.20)}
 
 /* L'anello arancione era il fuoco del campo di ricerca, che il pannello
    prendeva DA SOLO all'apertura: un contorno acceso senza che nessuno
@@ -2790,8 +2810,8 @@ body.elenco #conta b{color:#fff}
 
 /* La lista degli ordinamenti era un riquadro squadrato dentro un
    pannello stondato. */
-#sortmenu{border:0; border-radius:var(--r-m); overflow:hidden; background:rgba(51,53,43,.04)}
-#sortmenu button{border-radius:0; border-bottom:1px solid rgba(51,53,43,.07)}
+#sortmenu{border:0; border-radius:var(--r-m); overflow:hidden; background:rgba(var(--ink-rgb),.04)}
+#sortmenu button{border-radius:0; border-bottom:1px solid rgba(var(--ink-rgb),.07)}
 #sortmenu button:last-child{border-bottom:0}
 
 /* --- i pannelli: arredi, mobili, gruppi, partita ------------------- */
@@ -2806,12 +2826,12 @@ body.elenco #conta b{color:#fff}
 /* Il fondo dell'elenco era la stanza a piena tinta: sotto al testo
    diventava una lastra grigia. Va verso la carta, che e' il colore di
    una pagina che si legge. */
-#mia, #catalogo, #profilo, #partite{background:#e7e5e0}
+#mia, #catalogo, #profilo, #partite{background:var(--fondo)}
 
 /* La finestrella delle azioni era trasparente: si leggeva attraverso e
    non si capiva dove finisse, e prendere una voce era un tiro a segno. */
 .riga-azioni{
-  background:var(--card); box-shadow:0 10px 34px rgba(51,53,43,.20);
+  background:var(--card); box-shadow:0 10px 34px rgba(var(--ink-rgb),.20);
   border:0; border-radius:var(--r-m);
 }
 
@@ -2837,12 +2857,12 @@ body.elenco #conta b{color:#fff}
   padding:12px 20px; font-size:14px; border:0; border-radius:var(--r-s);
   box-shadow:var(--ombra-lieve);
 }
-.primario:hover{background:#b85c31; color:#fff}
+.primario:hover{background:var(--accent-su); color:#fff}
 .secondario{
-  background:rgba(51,53,43,.07); color:var(--ink); font-weight:500;
+  background:rgba(var(--ink-rgb),.07); color:var(--ink); font-weight:500;
   padding:12px 20px; font-size:14px; border:0; border-radius:var(--r-s);
 }
-.secondario:hover{background:rgba(51,53,43,.12); color:var(--ink)}
+.secondario:hover{background:rgba(var(--ink-rgb),.12); color:var(--ink)}
 .distruttivo{
   background:rgba(190,60,40,.10); color:#a8341f; font-weight:500;
   padding:12px 18px; font-size:14px; border:0; border-radius:var(--r-s);
@@ -2869,10 +2889,10 @@ body.elenco #conta b{color:#fff}
   .cat-azioni button{font-size:12px; padding:8px 10px}
 }
 .cat-azioni button{
-  font-weight:500; background:rgba(51,53,43,.06); color:var(--ink); border:0;
+  font-weight:500; background:rgba(var(--ink-rgb),.06); color:var(--ink); border:0;
   border-radius:var(--r-s);
 }
-.cat-azioni button:hover{background:rgba(51,53,43,.11)}
+.cat-azioni button:hover{background:rgba(var(--ink-rgb),.11)}
 .cat-azioni .apri{background:rgba(200,106,60,.12); color:var(--accent)}
 .cat-azioni .apri:hover{background:rgba(200,106,60,.20)}
 .cat-azioni .pref.on{background:var(--accent); color:#fff}
@@ -2885,7 +2905,7 @@ body.elenco #conta b{color:#fff}
 #partitalayer input:not([type=range]), #partitalayer textarea,
 #gruppilayer input, #recelayer input, #recelayer textarea{
   font-family:var(--ff); font-size:14px; color:var(--ink);
-  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05); border:0; border-radius:var(--r-s);
   padding:12px 14px;
 }
 #profilo button, #partitalayer button, #gruppilayer button, #recelayer button{
@@ -2896,15 +2916,15 @@ body.elenco #conta b{color:#fff}
 #partitalayer button:not(.primario):not(.secondario):not(.distruttivo),
 #gruppilayer button:not(.primario):not(.secondario):not(.distruttivo),
 #recelayer button:not(.primario):not(.secondario):not(.distruttivo){
-  background:rgba(51,53,43,.06); color:var(--ink); padding:10px 14px; font-size:14px;
+  background:rgba(var(--ink-rgb),.06); color:var(--ink); padding:10px 14px; font-size:14px;
 }
 #profilo button:not(.primario):hover, #partitalayer button:not(.primario):hover,
 #gruppilayer button:not(.primario):hover, #recelayer button:not(.primario):hover{
-  background:rgba(51,53,43,.11);
+  background:rgba(var(--ink-rgb),.11);
 }
 /* il codice amico e' un dato da copiare, non un comando */
 .pro-cod b, #pro-codice{
-  background:rgba(51,53,43,.06); border:0; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.06); border:0; border-radius:var(--r-s);
   padding:12px 16px; letter-spacing:.14em; font-weight:600;
 }
 
@@ -2920,9 +2940,9 @@ body.elenco #conta b{color:#fff}
    lo stesso peso e arriva dopo, quindi vince -- senza `!important`, che
    qui vorrebbe dire rinunciare a poter fare eccezioni piu' avanti. */
 button.primario{background:var(--accent); color:#fff; font-weight:600; padding:12px 20px}
-button.primario:hover{background:#b85c31; color:#fff}
-button.secondario{background:rgba(51,53,43,.07); color:var(--ink); padding:12px 20px}
-button.secondario:hover{background:rgba(51,53,43,.13); color:var(--ink)}
+button.primario:hover{background:var(--accent-su); color:#fff}
+button.secondario{background:rgba(var(--ink-rgb),.07); color:var(--ink); padding:12px 20px}
+button.secondario:hover{background:rgba(var(--ink-rgb),.13); color:var(--ink)}
 button.distruttivo{background:rgba(190,60,40,.10); color:#a8341f; padding:12px 18px}
 button.distruttivo:hover{background:rgba(190,60,40,.18); color:#8e2b19}
 button.distruttivo.armed{background:#a8341f; color:#fff}
@@ -2963,16 +2983,84 @@ button.distruttivo.armed{background:#a8341f; color:#fff}
    carta velata con la sfocatura dietro, come qualunque testata che
    resta ferma mentre il contenuto scorre. */
 header{
-  background:rgba(234,232,227,.82);
+  background:var(--velo);
   backdrop-filter:blur(16px) saturate(1.2);
   -webkit-backdrop-filter:blur(16px) saturate(1.2);
-  border-bottom:1px solid rgba(51,53,43,.08);
+  border-bottom:1px solid rgba(var(--ink-rgb),.08);
   padding-top:12px; padding-bottom:12px;
 }
 /* sulla scena la testata puo' restare piu' leggera: li' dietro non
    scorre niente, e coprire la stanza sarebbe un peccato */
 body.sez-collezione:not(.elenco) header{
-  background:rgba(234,232,227,.55); border-bottom-color:transparent;
+  background:var(--velo-lieve); border-bottom-color:transparent;
+}
+
+/* ====================================================================
+   LA TENDINA DELLE TAVOLOZZE
+
+   Sta nel profilo, sopra la lingua, e ha la stessa forma delle righe
+   che le stanno accanto -- etichetta a sinistra, comando a destra --
+   perche' e' la stessa cosa: una preferenza che vale per tutto il sito.
+
+   Quello che si sceglie sono COLORI, quindi ogni voce li porta addosso:
+   otto quadretti in fila, che e' la tavolozza intera. Il nome serve a
+   nominarla dopo, non a sceglierla.
+   ==================================================================== */
+.tavolozze{margin:14px 0 0}
+.tavolozze > summary{
+  display:flex; align-items:center; gap:10px; cursor:pointer;
+  list-style:none; padding:8px 12px; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05);
+}
+.tavolozze > summary::-webkit-details-marker{display:none}
+.tavolozze > summary:hover{background:rgba(var(--ink-rgb),.09)}
+.tavolozze > summary b{
+  font-family:var(--ff-text); font-size:13px; font-weight:600; color:var(--ink);
+}
+/* Il chevron: gira aprendo, come le altre tendine del sito. */
+.tavolozze > summary::after{
+  content:''; margin-left:auto; width:8px; height:8px; flex:none;
+  border-right:1.6px solid var(--ink-soft); border-bottom:1.6px solid var(--ink-soft);
+  transform:rotate(45deg) translate(-2px,-2px); transition:transform .18s var(--ease);
+}
+.tavolozze[open] > summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
+
+/* La striscia di tinte: nel riassunto dice qual e' quella scelta, nelle
+   voci dice come sono fatte le altre. */
+.tav-mostra{display:flex; gap:2px; flex:none}
+.tav-mostra i{width:9px; height:16px; border-radius:2px; display:block}
+
+#pro-tema-lista{
+  display:flex; flex-direction:column; gap:6px; margin:8px 0 0; padding:0 2px;
+  animation:apreSotto .22s var(--ease) both;
+}
+/* PESANO DUE ID, e non e' un vezzo: dentro il profilo c'e' gia'
+   `#profilo button:not(.primario):not(.secondario):not(.distruttivo)`,
+   che vale un id, TRE classi e un elemento -- ogni `:not()` conta come
+   la cosa che contiene. Con un id solo la voce scelta restava col
+   fondo grigio del profilo e un contorno terracotta, invece del pieno.
+   E' la stessa lezione della pastiglia della lingua, pagata due volte. */
+#profilo #pro-tema-lista button{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  font-family:var(--ff-text); font-size:13px; font-weight:500; color:var(--ink-soft);
+  padding:8px 12px; border-radius:var(--r-s); cursor:pointer;
+  background:rgba(var(--ink-rgb),.05); border:1px solid transparent;
+}
+#profilo #pro-tema-lista button:hover{color:var(--ink); background:rgba(var(--ink-rgb),.10)}
+/* Quella scelta e' PIENA, come la pastiglia della barra in basso e come
+   l'icona scelta nel menu di una cella: fra voci dello stesso peso, un
+   contorno di un altro colore si legge come "questa e' diversa", non
+   come "questa e' quella". */
+#profilo #pro-tema-lista button[aria-pressed="true"]{
+  color:var(--card); background:var(--accent); border-color:var(--accent);
+}
+#profilo #pro-tema-lista button[aria-pressed="true"] .tav-mostra i{
+  box-shadow:0 0 0 1px rgba(255,255,255,.45);
+}
+#pro-tema-lista .tav-nome{flex:1; min-width:0}
+@media (pointer:coarse){
+  .tavolozze > summary{padding:11px 12px}
+  #profilo #pro-tema-lista button{padding:11px 12px}
 }
 
 /* --- il marchio, piu' grande --------------------------------------- */
@@ -3038,7 +3126,7 @@ body.sez-collezione:not(.elenco) header{
 /* --- il binario: piu' su e piu' leggibile -------------------------- */
 #rail{bottom:38px}
 #rail-txt{color:var(--ink); opacity:1; font-weight:600; font-size:11px}
-.rail-bar{background:rgba(51,53,43,.28)}
+.rail-bar{background:rgba(var(--ink-rgb),.28)}
 .rail-bar i{background:var(--accent)}
 @media (max-width:879px){
   #rail{bottom:calc(74px + env(safe-area-inset-bottom))}
@@ -3066,7 +3154,7 @@ body.vista-tutti #mia-gruppi, body.vista-tutti #mia-gestisci{display:none !impor
 .pro-faccia{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:10px}
 #pro-avatar{
   width:104px; height:104px; border-radius:50%; overflow:hidden;
-  display:block; background:rgba(51,53,43,.06);
+  display:block; background:rgba(var(--ink-rgb),.06);
 }
 #pro-cambia{font-size:12px; padding:8px 12px}
 .pro-chi{flex:1 1 auto; min-width:0}
@@ -3156,7 +3244,7 @@ body.arreda #stanza{transform:none}
 .pastiglie.tinte button, #st-scaffali button, #st-muro button,
 #st-pavimento button, #st-nome-tinta button, #st-fari-tinta button{
   width:30px; height:30px; border-radius:50%; padding:0; border:0;
-  box-shadow:inset 0 0 0 1px rgba(51,53,43,.14);
+  box-shadow:inset 0 0 0 1px rgba(var(--ink-rgb),.14);
 }
 .pastiglie.tinte button.on, #st-scaffali button.on,
 #st-muro button.on, #st-pavimento button.on{
@@ -3168,9 +3256,9 @@ body.arreda #stanza{transform:none}
   width:auto; height:auto; border-radius:999px; padding:8px 14px;
   font-family:var(--ff); font-size:13px; font-weight:500;
   letter-spacing:0; text-transform:none; line-height:1.2;
-  color:var(--ink-soft); background:rgba(51,53,43,.06);
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06);
 }
-.pastiglie.testo button:hover{background:rgba(51,53,43,.11); color:var(--ink)}
+.pastiglie.testo button:hover{background:rgba(var(--ink-rgb),.11); color:var(--ink)}
 .pastiglie.testo button.on{
   outline:none; background:var(--accent); color:#fff; font-weight:600;
 }
@@ -3242,8 +3330,8 @@ body.arreda #stanza{transform:none}
    scorciatoia usata piu' sotto il clip tornava a `border-box` e il
    grigio riempiva anche i bordi: una traccia alta ventotto pixel.
    Qui si usa `background-color`, che non tocca il resto. */
-.rail-bar{background:none; background-color:rgba(51,53,43,.28); background-clip:padding-box}
-.rail-bar:hover{background-color:rgba(51,53,43,.34)}
+.rail-bar{background:none; background-color:rgba(var(--ink-rgb),.28); background-clip:padding-box}
+.rail-bar:hover{background-color:rgba(var(--ink-rgb),.34)}
 
 /* il numero non va a capo: appeso fuori dal flusso, la larghezza
    disponibile e' quella che e' e "1 / 3" si spezzava in tre righe */
@@ -3271,9 +3359,9 @@ body.arreda #stanza{transform:none}
 }
 .rail-bar::before{
   content:''; position:absolute; left:0; right:0; top:50%; height:3px;
-  margin-top:-1.5px; border-radius:999px; background:rgba(51,53,43,.26);
+  margin-top:-1.5px; border-radius:999px; background:rgba(var(--ink-rgb),.26);
 }
-.rail-bar:hover::before{background:rgba(51,53,43,.34)}
+.rail-bar:hover::before{background:rgba(var(--ink-rgb),.34)}
 #rail-thumb{
   position:absolute; top:50%; margin-top:-1.5px; height:3px;
   border-radius:999px; background:var(--accent);
@@ -3304,14 +3392,14 @@ body.arreda #stanza{transform:none}
 .st-nome{display:flex; gap:9px; align-items:center; margin:18px 0 0}
 #st-rinomina{
   flex:1 1 auto; min-width:0; font-family:var(--ff); font-size:15px; font-weight:600;
-  color:var(--ink); background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  color:var(--ink); background:rgba(var(--ink-rgb),.05); border:0; border-radius:var(--r-s);
   padding:11px 13px;
 }
 #st-rinomina:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
 /* spento sul mobile di scorta: il segnaposto dice perche' */
 #st-rinomina:disabled{opacity:.55; cursor:default}
 #st-rinomina-ok{flex:0 0 auto; padding:11px 15px; font-size:13px}
-#st-rinomina-ok:disabled{opacity:.4; cursor:default; background:rgba(51,53,43,.07); color:var(--ink-soft)}
+#st-rinomina-ok:disabled{opacity:.4; cursor:default; background:rgba(var(--ink-rgb),.07); color:var(--ink-soft)}
 
 /* --- le tendine ---------------------------------------------------- */
 .st-tendina{margin:14px 0 0; border-top:1px solid var(--line)}
@@ -3335,12 +3423,12 @@ body.arreda #stanza{transform:none}
 #st-lista{list-style:none; margin:10px 0 0; padding:0}
 #st-lista li{
   display:flex; align-items:center; gap:10px; padding:9px 10px; margin:0 0 6px;
-  background:rgba(51,53,43,.05); border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05); border-radius:var(--r-s);
   touch-action:none;
 }
 #st-lista li.qui{background:rgba(200,106,60,.12)}
 #st-lista li.in-mano{
-  background:var(--card); box-shadow:0 8px 24px rgba(51,53,43,.20);
+  background:var(--card); box-shadow:0 8px 24px rgba(var(--ink-rgb),.20);
   position:relative; z-index:2;
 }
 #st-lista .nome{
@@ -3356,7 +3444,7 @@ body.arreda #stanza{transform:none}
   background:none; color:var(--ink-soft); cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center;
 }
-#st-lista button:hover{background:rgba(51,53,43,.09); color:var(--ink)}
+#st-lista button:hover{background:rgba(var(--ink-rgb),.09); color:var(--ink)}
 #st-lista button[data-fa="via"]:hover{background:rgba(190,60,40,.14); color:#a8341f}
 /* la maniglia si tiene premuta: il cursore lo dice */
 #st-lista .presa{cursor:grab}
@@ -3399,9 +3487,9 @@ body.arreda #stanza{transform:none}
 #profilo button.primario, #stanza button.primario{
   background:var(--accent); color:#fff; font-weight:600;
 }
-#profilo button.primario:hover, #stanza button.primario:hover{background:#b85c31; color:#fff}
+#profilo button.primario:hover, #stanza button.primario:hover{background:var(--accent-su); color:#fff}
 #profilo button.distruttivo, #stanza button.distruttivo{background:rgba(190,60,40,.10); color:#a8341f}
-#profilo button.secondario, #stanza button.secondario{background:rgba(51,53,43,.07); color:var(--ink)}
+#profilo button.secondario, #stanza button.secondario{background:rgba(var(--ink-rgb),.07); color:var(--ink)}
 
 /* Il codice e il suo copia su una riga sola: sommati stavano 352 px in
    una riga da 343 e il pulsante andava a capo. L'etichetta si stringe e
@@ -3463,13 +3551,13 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 /* livello 2: il gioco */
 .gio-gruppo{
   margin:0 0 8px; padding-left:14px;
-  border-left:2px solid rgba(51,53,43,.12);
+  border-left:2px solid rgba(var(--ink-rgb),.12);
 }
 .gio-gruppo:last-child{margin-bottom:0}
 .gio-gioco{
   border-bottom:0; border-radius:var(--r-s);
   padding:11px 13px; gap:4px 10px;
-  background:rgba(51,53,43,.055);
+  background:rgba(var(--ink-rgb),.055);
 }
 .gio-gioco b{
   font-family:var(--ff); font-weight:600; font-size:14px; letter-spacing:0;
@@ -3488,10 +3576,10 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 /* livello 3: la singola partita */
 .gio-gruppo .giocate{
   margin:6px 0 0 10px; padding-left:14px;
-  border-left:2px solid rgba(51,53,43,.08);
+  border-left:2px solid rgba(var(--ink-rgb),.08);
 }
 .gio-gruppo .giocate li{
-  padding:9px 0; border-bottom:1px solid rgba(51,53,43,.07);
+  padding:9px 0; border-bottom:1px solid rgba(var(--ink-rgb),.07);
 }
 .gio-gruppo .giocate li:last-child{border-bottom:0}
 .gio-gruppo .gio-testa b{font-size:13px; font-weight:500}
@@ -3507,7 +3595,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    e la riga sotto dice da dove viene ognuno. */
 .pa-sugg{
   list-style:none; margin:-4px 0 0; padding:6px; position:relative; z-index:3;
-  background:var(--card); border-radius:var(--r-m); box-shadow:0 10px 34px rgba(51,53,43,.18);
+  background:var(--card); border-radius:var(--r-m); box-shadow:0 10px 34px rgba(var(--ink-rgb),.18);
   max-height:220px; overflow:auto;
 }
 .pa-sugg[hidden]{display:none}
@@ -3516,7 +3604,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   background:none; border:0; border-radius:8px; cursor:pointer; padding:10px 12px;
   font-family:var(--ff);
 }
-.pa-sugg button:hover{background:rgba(51,53,43,.07)}
+.pa-sugg button:hover{background:rgba(var(--ink-rgb),.07)}
 .pa-sugg b{font-size:14px; font-weight:500; color:var(--ink)}
 .pa-sugg span{margin-left:auto; font-size:11px; color:var(--ink-soft); flex:none}
 
@@ -3526,7 +3614,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    scrive qui e' un nome, e se non risulta a nessuno vale lo stesso. */
 #pa-chi-q{
   width:100%; font-family:var(--ff); font-size:14px; color:var(--ink);
-  background:rgba(51,53,43,.05); border:0; border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05); border:0; border-radius:var(--r-s);
   padding:11px 12px; margin:0 0 4px;
 }
 #pa-chi-q:focus-visible{outline:none; box-shadow:0 0 0 2px var(--accent)}
@@ -3540,7 +3628,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .pa-chi{list-style:none; margin:14px 0 0; padding:0}
 .pa-chi li{
   display:flex; align-items:center; gap:10px; padding:9px 11px; margin:0 0 7px;
-  background:rgba(51,53,43,.05); border-radius:var(--r-s);
+  background:rgba(var(--ink-rgb),.05); border-radius:var(--r-s);
 }
 .pa-chi li.vince{background:rgba(200,106,60,.12)}
 /* Il nome e la sua corona stanno insieme: la corona e' di quel nome,
@@ -3600,15 +3688,15 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 
 .cartella{
   margin:0 0 8px; padding-left:14px;
-  border-left:2px solid rgba(51,53,43,.12);
+  border-left:2px solid rgba(var(--ink-rgb),.12);
 }
 .cartella:first-child{margin-top:12px}
 .cartella-tit{
   border-bottom:0; border-radius:var(--r-s);
-  background:rgba(51,53,43,.055); padding:11px 13px;
+  background:rgba(var(--ink-rgb),.055); padding:11px 13px;
   font-size:14px; font-weight:600;
 }
-.cartella-tit:hover{background:rgba(51,53,43,.10); color:var(--accent)}
+.cartella-tit:hover{background:rgba(var(--ink-rgb),.10); color:var(--accent)}
 .cartella-tit span{font-size:12px}
 .cartella-tit::after{
   content:''; margin-left:auto; width:7px; height:7px; flex:none;
@@ -3619,9 +3707,9 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .cartella-tit[aria-expanded="true"]::after{transform:rotate(-135deg) translate(-2px,-2px)}
 .cartella .righe{
   margin:6px 0 0 10px; padding-left:14px;
-  border-left:2px solid rgba(51,53,43,.08);
+  border-left:2px solid rgba(var(--ink-rgb),.08);
 }
-.cartella .righe > li{border-top:0; border-bottom:1px solid rgba(51,53,43,.07)}
+.cartella .righe > li{border-top:0; border-bottom:1px solid rgba(var(--ink-rgb),.07)}
 .cartella .righe > li:last-child{border-bottom:0}
 .cartella .riga-nome{font-size:15px}
 
@@ -3638,7 +3726,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    ce li ha gia' dentro, e la partita finirebbe rientrata quattro volte. */
 #blocco-amici, #blocco-giocatori{
   padding:0 0 24px 14px;
-  border-left:2px solid rgba(51,53,43,.12);
+  border-left:2px solid rgba(var(--ink-rgb),.12);
 }
 /* I tre elenchi degli amici -- chi ti ha chiesto, chi lo e', chi non ha
    ancora risposto -- sono tre gruppi con tre etichette diverse, e uno
@@ -3684,10 +3772,10 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 }
 .lingua button{
   font-family:var(--ff); font-size:13px; font-weight:500; cursor:pointer;
-  color:var(--ink-soft); background:rgba(51,53,43,.06); border:0;
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06); border:0;
   border-radius:var(--r-s); padding:9px 14px;
 }
-.lingua button:hover{color:var(--ink); background:rgba(51,53,43,.11)}
+.lingua button:hover{color:var(--ink); background:rgba(var(--ink-rgb),.11)}
 /* scelta: il pieno, come le voci degli arredi -- non un anello, che qui
    girerebbe attorno a una pastiglia di testo e leggerebbe come un'ellisse */
 /* La selezione va scritta con lo STESSO peso della regola che deve
@@ -3706,14 +3794,14 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .lingua button.on:hover,
 #profilo .lingua button.on:not(.primario):hover,
 #gate .lingua button.on:not(.primario):hover{
-  background:#b85c31; color:#fff;
+  background:var(--accent-su); color:#fff;
 }
 
 /* Nel cancello sta sotto la nota, staccata da un filo: e' un comando,
    e tutto quello che c'e' sopra non lo e'. */
 #gate-lingua{
   justify-content:center; margin-top:22px; padding-top:20px;
-  border-top:1px solid rgba(51,53,43,.14);
+  border-top:1px solid rgba(var(--ink-rgb),.14);
 }
 
 /* In fondo al profilo, e sotto di lei l'uscita: ultima cosa della
@@ -3800,7 +3888,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   background:var(--card); border-radius:var(--r-m);
   padding:2px 14px;
 }
-.par-tutte > li{padding:12px 0; border-bottom:1px solid rgba(51,53,43,.07); cursor:pointer}
+.par-tutte > li{padding:12px 0; border-bottom:1px solid rgba(var(--ink-rgb),.07); cursor:pointer}
 .par-tutte > li:last-child{border-bottom:0}
 .par-tutte > li:hover .gio-testa b{color:var(--accent)}
 .par-tutte .gio-testa b{font-size:14px; font-weight:600}
@@ -3834,7 +3922,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   transform:rotate(-90deg);
 }
 .wr-anello circle{fill:none; stroke-width:2.6}
-.wr-vuoto{stroke:rgba(51,53,43,.13)}
+.wr-vuoto{stroke:rgba(var(--ink-rgb),.13)}
 /* Capo PIATTO e non tondo: a zero per cento un capo tondo disegna
    comunque un puntino, e un puntino si legge come "un pochino" -- che
    e' esattamente la cosa che non e' vera. */
@@ -3909,7 +3997,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 .wr-lista li{
   display:grid; grid-template-columns:auto 1fr auto;
   align-items:center; column-gap:12px;
-  padding:9px 0; border-bottom:1px solid rgba(51,53,43,.07);
+  padding:9px 0; border-bottom:1px solid rgba(var(--ink-rgb),.07);
 }
 .wr-lista li:last-child{border-bottom:0}
 .wr-lista .wr-anello{grid-row:1 / span 2; width:26px; height:26px}
@@ -3945,7 +4033,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    =================================================================== */
 #visita{
   gap:10px; max-width:calc(100vw - 24px);
-  background:rgba(242,241,237,.92); backdrop-filter:blur(10px);
+  background:rgba(var(--card-rgb),.92); backdrop-filter:blur(10px);
   border:0; border-radius:999px; padding:6px 6px 6px 17px;
 }
 #visita span{
@@ -4008,14 +4096,14 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   width:34px; height:34px; min-height:0; padding:0; margin:0;
   display:inline-flex; align-items:center; justify-content:center; gap:0;
   border:0; border-radius:999px; cursor:pointer;
-  background:var(--accent); color:#f2f1ed;
+  background:var(--accent); color:var(--card);
   box-shadow:var(--ombra-lieve);
   font-size:0; letter-spacing:0;
   transition:background-color .2s var(--ease), color .2s var(--ease),
              transform .12s var(--ease);
 }
 #close .ico, #add-x .ico, #mia-x .ico{width:16px; height:16px; stroke-width:2}
-#close:hover, #add-x:hover, #mia-x:hover{background:var(--ink); color:#f2f1ed}
+#close:hover, #add-x:hover, #mia-x:hover{background:var(--ink); color:var(--card)}
 #close:active, #add-x:active, #mia-x:active{transform:scale(.9)}
 @media (pointer:coarse){
   #close, #add-x, #mia-x{width:40px; height:40px}
@@ -4060,7 +4148,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    =================================================================== */
 .calc{
   margin:12px 0 0; padding:12px;
-  background:rgba(51,53,43,.05); border-radius:var(--r-m);
+  background:rgba(var(--ink-rgb),.05); border-radius:var(--r-m);
 }
 .calc-testa{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -4109,11 +4197,11 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 #partitalayer #calc .calc-tasti button:hover{background:#fff; color:var(--accent)}
 #partitalayer #calc .calc-tasti button:active{transform:scale(.94)}
 #partitalayer #calc .calc-tasti button.fun{
-  background:rgba(51,53,43,.09); color:var(--ink-soft); font-size:16px;
+  background:rgba(var(--ink-rgb),.09); color:var(--ink-soft); font-size:16px;
 }
 #partitalayer #calc .calc-tasti button.fun:hover{color:var(--accent)}
-#partitalayer #calc .calc-tasti button.ok{background:var(--accent); color:#f2f1ed}
-#partitalayer #calc .calc-tasti button.ok:hover{background:var(--ink); color:#f2f1ed}
+#partitalayer #calc .calc-tasti button.ok{background:var(--accent); color:var(--card)}
+#partitalayer #calc .calc-tasti button.ok:hover{background:var(--ink); color:var(--card)}
 #partitalayer #calc .calc-tasti .ico{width:18px; height:18px}
 #partitalayer #calc .calc-testa button{
   flex:none; width:28px; height:28px; min-height:0; padding:0;
@@ -4121,7 +4209,7 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   border:0; border-radius:999px; cursor:pointer;
   background:none; color:var(--ink-soft);
 }
-#partitalayer #calc .calc-testa button:hover{background:rgba(51,53,43,.08); color:var(--ink)}
+#partitalayer #calc .calc-testa button:hover{background:rgba(var(--ink-rgb),.08); color:var(--ink)}
 #partitalayer #calc .calc-testa .ico{width:14px; height:14px}
 
 /* Il pulsante sulla riga: sta accanto al campo dei punti, non in mezzo
@@ -4147,8 +4235,8 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
    sezioni: e' l'eccezione della libreria a essere ammorbidita, non la
    regola. */
 body.muro-scuro.sez-collezione:not(.elenco) header{
-  background:rgba(234,232,227,.94);
-  border-bottom-color:rgba(51,53,43,.08);
+  background:var(--velo-pieno);
+  border-bottom-color:rgba(var(--ink-rgb),.08);
 }
 
 /* ===================================================================
@@ -4230,9 +4318,9 @@ body.muro-scuro.sez-collezione:not(.elenco) header{
 /* Il giorno in cui si e' giocato: fondo tinto e numero pieno. E' lo
    stesso segno della riga di una partita nel modulo del tavolo. */
 #partite button.cal-g{cursor:pointer}
-#partite button.cal-g.pieno{background:rgba(51,53,43,.07); color:var(--ink)}
+#partite button.cal-g.pieno{background:rgba(var(--ink-rgb),.07); color:var(--ink)}
 #partite button.cal-g.pieno b{font-weight:600}
-#partite button.cal-g.pieno:hover{background:rgba(51,53,43,.13)}
+#partite button.cal-g.pieno:hover{background:rgba(var(--ink-rgb),.13)}
 /* Vinta: terracotta, come tutto quello che nel sito dice "sei tu". */
 #partite button.cal-g.vinta{background:rgba(200,106,60,.14); color:var(--accent)}
 #partite button.cal-g.vinta:hover{background:rgba(200,106,60,.22)}
@@ -4243,7 +4331,7 @@ body.muro-scuro.sez-collezione:not(.elenco) header{
    gia' un'altra cosa -- che li' si e' giocato -- e due significati sullo
    stesso segno non si distinguono piu'. Era un trattino sotto il numero,
    e a questa misura si leggeva come un carattere perso li' in mezzo. */
-.cal-g.oggi{box-shadow:inset 0 0 0 1px rgba(51,53,43,.22)}
+.cal-g.oggi{box-shadow:inset 0 0 0 1px rgba(var(--ink-rgb),.22)}
 
 /* La corona e' PIENA, non di contorno. A tredici pixel un tratto da
    1,6 su un fondo gia' terracotta si perde: e' lo stesso motivo per cui

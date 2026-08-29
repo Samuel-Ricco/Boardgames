@@ -217,6 +217,17 @@ it: {
   'pro.giocatoreAgg':   'aggiungi',
   'pro.partite':        'Partite',
   'pro.parNuova':       'segna una partita',
+  'pro.suono':          'suono',
+  'pro.suonoOn':        'acceso',
+  'pro.suonoOff':       'spento',
+  'pro.tavolozza':      'tavolozza',
+  'pro.tavolozzaAria':  'scegli la tavolozza',
+  /* I nomi delle tavolozze si traducono, ma `vaporwave` no: e' un nome
+     proprio, come "Italiano" e "English" nel selettore della lingua. */
+  'tema.stanza':        'la stanza',
+  'tema.vaporwave':     'vaporwave',
+  'tema.bosco':         'bosco',
+  'tema.china':         'carta e china',
   'pro.lingua':         'lingua',
 
   /* --- il nick al primo accesso --- */
@@ -813,6 +824,15 @@ en: {
   'pro.giocatoreAgg':   'add',
   'pro.partite':        'Plays',
   'pro.parNuova':       'log a play',
+  'pro.suono':          'sound',
+  'pro.suonoOn':        'on',
+  'pro.suonoOff':       'off',
+  'pro.tavolozza':      'palette',
+  'pro.tavolozzaAria':  'pick a palette',
+  'tema.stanza':        'the room',
+  'tema.vaporwave':     'vaporwave',
+  'tema.bosco':         'woodland',
+  'tema.china':         'paper and ink',
   'pro.lingua':         'language',
 
   'nick.occhiello':     'one more thing',

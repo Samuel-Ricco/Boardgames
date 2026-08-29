@@ -514,14 +514,27 @@ function slab(w, h, d, mat, x, y, z){
    ombre nette da nessuna parte, e cercare il faretto d'atmosfera qui
    farebbe solo sporcare i cubi di macchie. */
 /* Deve restare uguale a --bg nel CSS: e' la stessa tinta a tenere
-   insieme il caricamento, il cancello e il mondo dietro. */
-const SFONDO = 0xcfccc8;
+   insieme il caricamento, il cancello e il mondo dietro. Da quando le
+   tavolozze si cambiano, quel "restare uguale" non puo' piu' essere un
+   numero scritto qui: si CHIEDE, se no cambiando tavolozza il mondo
+   dietro resterebbe grigio caldo mentre il resto e' diventato lilla.
+
+   Conta solo nei primi fotogrammi: subito dopo `applicaLuce()` mette lo
+   sfondo del colore del MURO, che e' del profilo e non della
+   tavolozza. */
+const SFONDO_DEF = 0xcfccc8;
+function sfondoOra(){
+  if (typeof TEMA === 'undefined') return SFONDO_DEF;
+  try { return new THREE.Color(TEMA.tinte().bg).getHex(); }
+  catch (e) { return SFONDO_DEF; }
+}
 
 function buildRoom(){
   scene = new THREE.Scene();
   // il valore vero lo mette applicaLuce(): qui basta non partire da nero
-  scene.background = new THREE.Color(SFONDO);
-  scene.fog = new THREE.Fog(SFONDO, 40, 120);
+  const sf = sfondoOra();
+  scene.background = new THREE.Color(sf);
+  scene.fog = new THREE.Fog(sf, 40, 120);
 
   /* Pavimento e parete sono larghi 1 e vengono stirati da stanzaLarga()
      fino a coprire tutta la fila di librerie. La quota invece e' fissa:

@@ -39,7 +39,8 @@ js/desideri.js        la wishlist: i giochi che non hai ancora
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori, arredi della stanza e dei singoli cubi
-js/suoni.js           i suoni della scena, sintetizzati -- nessun file audio
+js/suoni.js           i quindici suoni, sintetizzati -- nessun file audio
+js/tema.js            le quattro tavolozze del sito
 js/bgg.js             BGG: sceglie da sé fra proxy locale e edge function
 js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
 js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
@@ -225,7 +226,27 @@ legno e non un suono di sistema operativo.
 
 Si parte al 60%, «spento» è semplicemente zero, e la scelta resta su questo
 dispositivo: la luce è della stanza e un amico la vede com'è da te, ma il volume
-è di chi ascolta.
+è di chi ascolta. Il **cursore** sta nel pannello della libreria, accanto a luce
+e faretti; l'**interruttore** sta in fondo al profilo, che è dove ci si chiede
+«lo voglio o no» invece di «quanto forte».
+
+## Le tavolozze
+
+Il sito ha sempre avuto **sei tinte e basta**. Quella disciplina non cambia:
+cambia quali sono le sei. In fondo al profilo c'è una tendina con quattro
+tavolozze — **la stanza** (quella di sempre: grigio caldo, oliva, terracotta),
+**vaporwave** (lilla, magenta e ciano), **bosco** (verdi profondi) e **carta e
+china** (grigi freddi e un blu da penna) — e ognuna porta addosso le sue otto
+tinte in fila: si sceglie guardando, non leggendo.
+
+Una tavolozza è un ricambio completo di quelle otto, e **tutto il resto si
+deriva**: i fili, le ombre, il velo della testata e il fondo delle schermate
+piatte sono l'inchiostro e la carta a percentuali diverse.
+
+Due cose non cambiano mai. Il **rosso** di quello che distrugge, che non è
+decorazione ma un segnale. E la **stanza**: legno, muro, pavimento e faretti
+sono scelte di chi ci abita, stanno sul suo profilo, e un amico che viene a
+trovarlo le vede com'erano. La tavolozza veste il sito, non arreda casa d'altri.
 
 **Gli arredi dei cubi vuoti si scelgono uno per uno**, e non c'è nessun pulsante:
 si **tiene premuto un cubo vuoto** e esce una fila di cinque icone — come la

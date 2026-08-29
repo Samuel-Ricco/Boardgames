@@ -13,12 +13,20 @@
    deve continuare a funzionare -- compreso il tonfo della scatola che
    torna sullo scaffale.
 
-   COSA SUONA, E COSA NO. Suona la SCENA: la scatola che esce, il
-   coperchio che si alza, quella che si prende in mano e quella che si
-   posa in un cubo, il mobile su cui ci si ferma scorrendo. Non suona
-   l'interfaccia -- l'elenco, il catalogo, il profilo, i pannelli. Un
-   sito che fa clic a ogni tocco stanca in un minuto, e quello che qui
-   vale la pena sentire e' il legno, non i bottoni.
+   DUE FAMIGLIE. La SCENA ha sei suoni -- la scatola che esce, il
+   coperchio che si alza, quella che torna a posto, quella che si
+   prende in mano, quella che si posa in un cubo, il mobile su cui ci
+   si ferma scorrendo -- e sono i sei momenti in cui si tocca qualcosa
+   di fisico. L'INTERFACCIA ne ha nove, e stanno tutti piu' in basso:
+   un tocco succede cento volte piu' spesso di una scatola che si apre,
+   e quello che si sente spesso va tenuto sotto o diventa l'unica cosa
+   che si sente.
+
+   All'inizio l'interfaccia era muta apposta -- un sito che fa clic a
+   ogni tocco stanca in un minuto -- e il suono su tutto e' stato
+   chiesto dopo. La risposta non e' un clic solo riusato ovunque: e' un
+   vocabolario, fatto degli stessi mattoni, dove ogni suono dice COSA
+   e' successo e non CHE e' successo qualcosa.
 
    TUTTO PARTE DA UN GESTO. Il browser tiene l'AudioContext sospeso
    finche' non c'e' un'interazione vera, e va benissimo cosi': il
@@ -314,5 +322,51 @@ function sblocca(){
 }
 sblocca();
 
-return { gioca: gioca, volume: volume, setVolume: setVolume };
+/* L'INTERRUTTORE NEL PROFILO.
+
+   Il volume vero sta nel pannello della libreria, accanto a luce e
+   faretti, perche' li' e' la stessa domanda -- com'e' questo posto.
+   Nel profilo invece sta la domanda che ci si fa da fermi: lo voglio o
+   no. Sono due comandi sullo stesso stato, e restano d'accordo perche'
+   leggono tutti e due `volume()` quando si aprono.
+
+   Spegnendo si riparte da dove si era: `prima` tiene l'ultimo volume
+   udibile, se no riaccendere vorrebbe dire ritrovarsi al valore di
+   fabbrica ogni volta. */
+let prima = vol || VOL_DEF;
+
+function disegnaInterruttore(){
+  const b = document.getElementById('pro-suono');
+  if (!b) return;
+  const su = vol > 0;
+  b.setAttribute('aria-pressed', su ? 'true' : 'false');
+  b.textContent = (typeof T === 'function') ? T(su ? 'pro.suonoOn' : 'pro.suonoOff')
+                                           : (su ? 'acceso' : 'spento');
+}
+
+function montaInterruttore(){
+  const b = document.getElementById('pro-suono');
+  if (!b) return;
+  disegnaInterruttore();
+  b.addEventListener('click', function(){
+    if (vol > 0){ prima = vol; setVolume(0); }
+    else {
+      setVolume(prima || VOL_DEF);
+      /* Riaccendendo il suono va SUONATO: il clic e' gia' passato con
+         il volume ancora a zero, quindi senza questo l'unico gesto del
+         sito che non si sente sarebbe proprio quello che riaccende il
+         suono. */
+      gioca('acceso');
+    }
+    disegnaInterruttore();
+  });
+  if (typeof I18N !== 'undefined' && I18N.suCambio) I18N.suCambio(disegnaInterruttore);
+}
+
+if (document.readyState === 'loading')
+  document.addEventListener('DOMContentLoaded', montaInterruttore);
+else montaInterruttore();
+
+return { gioca: gioca, volume: volume, setVolume: setVolume,
+         rinfresca: disegnaInterruttore };
 })();
