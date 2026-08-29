@@ -1717,105 +1717,57 @@ non si tocca**, perche' e' anche la geometria delle scatole vere dei giochi.
 `piante -> piante`. E' il motivo per cui quella lista dev'essere la sola fonte:
 togliere una voce da li' basta, e nessun dato vecchio va migrato.
 
-### I tre che restano, rifatti
+### I libri sono tornati com'erano
 
-**Il dorso e' un libro, non una barra colorata.** Le altezze e l'inclinazione
-erano gia' a posto; a leggersi male era il disegno del dorso. Le due bande
-chiare stavano al **60% e all'80% di ogni dorso**, quindi la fila aveva due
-righe che la attraversavano tutta — ed era quello, piu' del colore, a farla
-sembrare un codice a barre. Adesso: due **nervature** scure vicino alla testa e
-al piede (e' li' che un dorso vero ha i nervi della cucitura, ed e' la cosa che
-a trenta pixel fa leggere «libro»), un **riquadro** di titolo con dentro due
-segni invece di due trattini, e quel riquadro sta a **un'altezza diversa per
-ognuna delle sei tinte**, cosi' due libri vicini non si allineano mai.
+Erano stati rifatti due volte — prima la posa (vuoto laterale, un libro
+appoggiato al vicino, due volumi coricati), poi il disegno del dorso (nervature,
+riquadro del titolo, carta sui coricati, profondita' variabile) — e poi
+**richiesti indietro come stavano**. Adesso sono di nuovo una fila dritta a
+passo fisso, con il dorso a tinta piatta e le due bande chiare.
 
-**Un libro coricato mostra la CARTA.** I due volumi sdraiati sopra la fila
-avevano la texture del dorso su tutte e sei le facce, cioe' un mattone colorato
-proprio dove ci sarebbe il taglio delle pagine. Adesso hanno un materiale crema
-con le righe verticali sottili — uno solo, condiviso da tutti.
+Vale la pena sapere che le due cose erano separate, perche' **una delle due non
+e' tornata indietro**: le sei tinte restano quelle della tavolozza del sito.
+Il viola (`#57406a`) e il bordeaux (`#6a3a3a`) erano usciti perche' nel sito
+non esistono da nessun'altra parte, e quello era un problema di colore, non di
+disegno.
 
-**E la profondita' varia** (2.0-2.6 invece di 2.5 fisso): il fronte della fila
-era un muro dritto, e guardando uno scaffale vero di sbieco il bordo irregolare
-e' la prima cosa che si vede.
+### Le piante sono due: quella di sempre e la sansevieria
 
-**I libri erano un codice a barre.** Tutti in piedi, tutti alti quasi uguale
-(1.9-2.6, cioe' sette millimetri di differenza che da nessuna distanza si
-vedono), tutti a passo fisso, e un'inclinazione casuale di &plusmn;0.06 rad —
-che e' «dritto». Adesso tre cose, e sono tre:
+Anche qui si e' andati e tornati. La pianta originale — vaso di cotto e foglie
+a raggiera, sfere schiacciate attorno alla bocca — e' stata sostituita prima da
+una a foglie piegate, poi da tre specie a ellissoidi, poi da tre specie a
+contorni veri. Di tutto il giro **restano in due**: quella di sempre, richiesta
+indietro, e la **sansevieria**, che e' l'unica che si e' voluto tenere.
 
-- **il vuoto**: la fila parte da un bordo e si ferma prima dell'altro. Il lato
-  lo sceglie il seme — fisso, il buco dalla stessa parte in tutti i cubi
-  diventa un motivo invece di un caso — e la larghezza si taglia su quello che
-  avanza davvero, se no con cinque libri la fila usciva dal cubo;
-- **l'appoggio**: l'ultimo in piedi cade sul vicino di 0.22 rad, e il centro si
-  sposta perche' il **piede** resti sul ripiano. Ruotando attorno al centro
-  l'angolo basso affonda nel legno, ed e' la cosa che si nota per prima;
-- **i coricati**: due volumi sdraiati sopra la parte piu' bassa della fila. E'
-  il gesto che distingue una libreria di casa da uno scaffale di negozio.
+Quale tocchi a un cubo lo decide il seme del cubo, come per tutto il resto.
 
-### Le piante sono tre, non una ripetuta
+**I due vasi sono diversi apposta.** Quella di sempre ha il suo cono di cotto,
+la sansevieria il vaso a uovo in salvia con la terra dentro: sono due piante
+diverse, e in casa i vasi non sono mai tutti uguali. Ma le due chiavi della
+cache **devono essere diverse** (`vasoCotto` e `vasoSalvia`): `comune()` e' una
+cache sola, e due vasi di colore diverso sotto la stessa chiave vuol dire che
+vince quello costruito per primo — cioe' un colore a caso a seconda di quale
+cubo si disegna prima.
 
-Era una pianta sola con le foglie di lunghezza diversa: dodici cubi con dodici
-volte lo stesso ciuffo. Adesso sono **tre specie con tre sagome diverse**, e
-quale tocchi a un cubo lo decide il suo seme — quindi non cambia a ogni lettera
-scritta nella ricerca, e due mobili accanto non si somigliano.
+**La sansevieria non ha piu' il filo chiaro sul bordo.** Una lama identica
+appena piu' grande dietro e' il modo giusto di disegnare un margine su carta,
+ma qui la lama e' alta novanta pixel e il margine diventava un contorno
+luminoso tutto attorno: da lontano la pianta sembrava accesa. Segnalato in
+questi termini — «rimuovi l'alone luminoso». Quello che le resta a dare vita e'
+che le lame non sono tutte dello stesso verde.
 
-- **Peperomia**, sagoma *tonda*: sei foglie ovali su steli corti. E' la piu'
-  sparsa delle tre, e serve: fra un potos che fa cupola e una sansevieria che
-  fa colonna, una pianta che lascia vedere l'aria fra le foglie e' quella che
-  rompe la fila.
-- **Potos**, sagoma *ricadente*: foglie a cuore, e due che scendono sotto il
-  bordo del vaso. E' la foglia a due segmenti che c'era gia' — il secondo
-  appeso alla punta del primo dentro un gruppo, cosi' la piega e' una rotazione
-  sola e non un conto di seni.
-- **Sansevieria**, sagoma *verticale*: sei lame rigide a ventaglio. E' l'unica
-  che riempie il cubo in altezza, e su un mobile di quattro file serve: senza,
-  le piante restano tutte raccolte sul fondo del vano.
+**E la sua foglia e' un contorno vero**, non una sfera schiacciata: una `Shape`
+con la punta e la rastremazione, estrusa di tre millimetri con un filo di
+smusso. Lo smusso non e' un vezzo — senza, un piano piatto sotto una luce
+diffusa e' una tinta unita e si legge come carta ritagliata. **Il pivot sta
+alla base**: la `Shape` va da y=0 a y=1 e non si centra, cosi' inclinare una
+foglia la fa ruotare attorno al picciolo invece che attorno alla pancia.
 
-**A questa distanza conta la SAGOMA, e una sfera schiacciata non ha la sagoma
-di una foglia: ha quella di un fagiolo.** Il primo tentativo era fatto cosi' —
-ellissoidi orientati attorno al vaso — e da novanta pixel usciva un riccio, non
-una pianta. Segnalato in questi termini: «le piante sono tremende».
-
-Adesso ogni foglia e' un **contorno vero**: una `Shape` con la punta e la
-rastremazione, estrusa di tre millimetri con un filo di smusso. Lo smusso non
-e' un vezzo: senza, un piano piatto sotto una luce diffusa e' una tinta unita e
-si legge come carta ritagliata; con, il bordo prende una luce diversa dalla
-faccia e la foglia diventa una cosa che ha uno spessore.
-
-Tre contorni, **tre geometrie in tutto**: la spada della sansevieria, il cuore
-del potos, il cucchiaio della peperomia. La misura la fa `scale`, come per
-tutto il resto del contorno.
-
-**E il pivot sta alla BASE della foglia**, non al centro: la `Shape` va da y=0 a
-y=1 e non si centra, cosi' inclinare una foglia la fa ruotare attorno al
-picciolo invece che attorno alla pancia — che e' la differenza fra una pianta e
-un mazzo di cose che galleggiano.
-
-**La variegatura non e' una texture.** Basta una seconda foglia della stessa
-forma: piu' piccola davanti dove e' una macchia (peperomia, potos), piu' grande
-DIETRO dove e' un bordo (sansevieria) — cosi' del chiaro resta solo il
-contorno. Una fascia chiara davanti la faceva sembrare dipinta a strisce. E va
-tenuta piccola: a meta' della larghezza usciva un bollo su ogni foglia, e sei
-bolli in un cubo si leggono come un guasto.
-
-**Dentro il vaso c'e' la terra.** Una sfera schiacciata scura sotto le foglie:
-senza, dalla bocca del vaso si vedeva il fondo.
-
-**Il vaso e' un uovo, ed e' uno solo per tutte e tre.** Nella foto di
-riferimento sono tre piante diverse in tre vasi identici: e' il vaso a tenerle
-insieme. Un profilo di sette punti su una `LatheGeometry` fa la pancia e la
-rastremazione senza labbro — il labbro era il ripiego di quando il vaso era un
-cilindro — e resta **una geometria** per tutte le piante di tutte le librerie.
-
-**E il colore si sceglie per come ARRIVA a schermo.** Il cotto di prima
-(`#b2643f`) era l'accento mancato di un soffio, e due terracotta a un passo
-l'uno dall'altro si leggono come un errore di stampa. La salvia della tavolozza
-(`--sage #a6a89c`) sembrava la risposta, ma sotto questa luce e con il tone
-mapping ACES sopra usciva **bianca**: un vaso di gesso. La tinta buona e'
-`#7f8878`, cioe' la salvia scurita quanto basta perche' a schermo sia salvia.
-**Vale anche per i dorsi dei libri**: la terracotta li' e' `#b0552f` e non
-l'accento.
+**Quello che si e' imparato buttando via due giri:** a novanta pixel una sfera
+schiacciata ha la sagoma di un fagiolo, non di una foglia — ma questo vale per
+una foglia lunga e appuntita, non per il ciuffo tondo della pianta di sempre,
+che con le sfere ci sta bene. Non c'e' una tecnica giusta: c'e' quella giusta
+per quella sagoma.
 
 ### Anche sopra il mobile
 
@@ -2767,6 +2719,36 @@ soggetto.
 E i meeple usano `sagomaMeeple`. Prima ne avevano **una loro, fatta a spezzata**:
 era il terzo meeple diverso dentro lo stesso sito, cioe' esattamente quello
 contro cui mette in guardia la nota qui sotto.
+
+#### L'inserto e' quello che la fa leggere come una scatola di giochi
+
+Il primo giro funzionava a meta'. I **meeple erano il doppio dei dadi** — in
+una scatola vera un meeple e' alto come un dado, non come due — e i segnalini
+erano quattordici dischetti sparsi, che a questa distanza sono coriandoli. In
+mezzo restava un buco scuro grande un quarto della scatola.
+
+Quello che mancava sono **due oggetti**, e sono quelli che nessuna scatola non
+ha:
+
+- **l'inserto**: un vassoio di cartone con tre scomparti. Dice «gioco da
+  tavolo» prima di qualunque pezzo ci sia dentro, e mette in ordine quello che
+  prima galleggiava. Le pareti si vedono solo in alto e a sinistra, che e' da
+  dove viene la luce in tutta la scena: un vassoio con quattro bordi uguali
+  sembra disegnato, non illuminato;
+- **il cartoncino fustellato**: la piastra con i segnalini ancora attaccati e i
+  buchi di quelli gia' staccati. E' il pezzo piu' riconoscibile di tutti, e si
+  disegna **con dei buchi** — cioe' con niente: dove il segnalino non c'e' piu'
+  si vede il fondo della scatola, col taglio segnato chiaro sopra e scuro
+  sotto.
+
+E i segnalini stanno in **pile**, non sparsi: e' come finiscono in uno
+scomparto, e tre pile si contano mentre quattordici dischetti sciolti diventano
+grana.
+
+La composizione e' l'ordine in cui si svuota una scatola — dietro le due cose
+piatte (regolamento e mazzo), in mezzo il fustellato, davanti l'inserto con i
+pezzi — ed e' anche quello che tiene le cose grandi in fondo e le piccole
+vicino a chi guarda.
 
 ### Le tendine si aprono, non compaiono
 

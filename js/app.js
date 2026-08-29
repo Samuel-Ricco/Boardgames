@@ -1314,77 +1314,30 @@ function makeGameBox(game){
 /* LE TINTE VENGONO DALLA TAVOLOZZA DEL SITO, non da fuori. Fra le sei
    di prima c'erano un viola (#57406a) e un bordeaux (#6a3a3a) che nel
    resto del sito non esistono da nessuna parte: in un cubo di rovere
-   non si posavano, bucavano.
+   non si posavano, bucavano. Quelle restano fuori anche adesso che il
+   DISEGNO del dorso e' tornato quello di prima -- erano due cose
+   diverse, e solo una delle due era da rifare.
 
    La terracotta e' #b0552f e NON l'accento (#c86a3c): quello e'
-   riservato a quello che si tocca, e un dorso di libro non si tocca.
-   Stessa famiglia, un gradino piu' in la'.
-
-   `t` e' l'altezza del riquadro del titolo, in frazione del dorso, e
-   sono sei valori DIVERSI apposta: prima le due bande chiare stavano
-   al 60% e all'80% di ogni dorso, quindi la fila aveva due righe che
-   la attraversavano tutta -- ed era quello, piu' del colore, a farla
-   sembrare un codice a barre. */
-const DORSI = [
-  { c: '#6b4a33', t: .30 }, { c: '#4d5a48', t: .46 }, { c: '#8e6a4b', t: .36 },
-  { c: '#b0552f', t: .52 }, { c: '#747760', t: .26 }, { c: '#3f4a5c', t: .42 }
-];
-
+   riservato a quello che si tocca, e un dorso di libro non si tocca. */
 function thinSpine(seed){
-  const i = Math.floor(srnd(seed)*DORSI.length) % DORSI.length;
-  const d = DORSI[i];
+  const cols = ['#6b4a33','#4d5a48','#8e6a4b','#b0552f','#747760','#3f4a5c'];
+  const i = Math.floor(srnd(seed)*cols.length) % cols.length;
   return comune('dorso' + i, function(){
-    const S = 128, H = S*3, cx = ART.cnv(S, H), c = cx[0], x = cx[1];
-    x.fillStyle = d.c; x.fillRect(0, 0, S, H);
-    // la luce viene da sinistra: un dorso e' tondo, non piatto
-    const g = x.createLinearGradient(0, 0, S, 0);
-    g.addColorStop(0, 'rgba(255,255,255,.16)');
-    g.addColorStop(.45, 'rgba(255,255,255,0)');
-    g.addColorStop(1, 'rgba(0,0,0,.32)');
-    x.fillStyle = g; x.fillRect(0, 0, S, H);
-
-    /* LE DUE NERVATURE, vicino alla testa e al piede. Sono la cosa che
-       a trenta pixel fa leggere "libro" e non "barra colorata": un
-       dorso vero ha li' i nervi della cucitura. */
-    x.fillStyle = 'rgba(0,0,0,.34)';
-    x.fillRect(0, H*.13, S, 7);
-    x.fillRect(0, H*.87, S, 7);
-
-    // il titolo e' un RIQUADRO con dentro due segni, non due trattini
-    const t = H * d.t;
-    x.fillStyle = 'rgba(245,232,205,.20)';
-    x.fillRect(9, t, S-18, H*.135);
-    x.fillStyle = 'rgba(245,232,205,.88)';
-    x.fillRect(20, t + H*.036, S-40, 9);
-    x.fillStyle = 'rgba(245,232,205,.55)';
-    x.fillRect(20, t + H*.062, (S-40)*.6, 6);
-    // il marchio dell'editore, in fondo
-    x.fillStyle = 'rgba(245,232,205,.34)';
-    x.fillRect(S/2 - 13, H*.93, 26, 6);
-
-    ART.grain(x, S, H, 11);
+    const S = 128, cx = ART.cnv(S, S*3), c = cx[0], x = cx[1];
+    x.fillStyle = cols[i]; x.fillRect(0,0,S,S*3);
+    const g = x.createLinearGradient(0,0,S,0);
+    g.addColorStop(0,'rgba(255,255,255,.14)'); g.addColorStop(1,'rgba(0,0,0,.3)');
+    x.fillStyle = g; x.fillRect(0,0,S,S*3);
+    x.fillStyle = 'rgba(240,225,190,.75)';
+    x.fillRect(18, S*0.6, S-36, 10);
+    x.fillRect(18, S*0.8, (S-36)*.6, 6);
+    x.fillStyle = 'rgba(0,0,0,.3)';
+    x.fillRect(0, S*2.2, S, 14);
+    ART.grain(x, S, S*3, 12);
     return new THREE.MeshStandardMaterial({ map: ART.toTex(c), roughness: .78 });
   });
 }
-
-/* LA CARTA. Un libro CORICATO non mostra il dorso: mostra il taglio
-   delle pagine, che e' crema con le righe sottili. Prima i due volumi
-   sdraiati sopra la fila avevano la texture del dorso su tutte e sei
-   le facce, cioe' un mattone colorato proprio dove ci sarebbe la
-   carta. Un materiale solo, condiviso da tutti i libri coricati di
-   tutte le librerie. */
-const matCarta = () => comune('carta', function(){
-  const W = 96, H = 64, cx = ART.cnv(W, H), c = cx[0], x = cx[1];
-  x.fillStyle = '#e6dcc2'; x.fillRect(0, 0, W, H);
-  x.strokeStyle = 'rgba(150,132,96,.5)'; x.lineWidth = 1;
-  for (let i = 3; i < W; i += 3){
-    x.globalAlpha = .3 + srnd(i) * .5;
-    x.beginPath(); x.moveTo(i + .5, 0); x.lineTo(i + .5, H); x.stroke();
-  }
-  x.globalAlpha = 1;
-  ART.grain(x, W, H, 7);
-  return new THREE.MeshStandardMaterial({ map: ART.toTex(c), roughness: .9 });
-});
 
 /* IL MEEPLE, UNA SAGOMA SOLA.
 
@@ -1490,8 +1443,10 @@ function comune(chiave, fai){
 }
 
 const geoCubo   = () => comune('cubo',   () => new THREE.BoxGeometry(1, 1, 1));
-// la sfera schiacciata: adesso serve solo alla terra dentro il vaso
 const geoFoglia = () => comune('foglia', () => new THREE.SphereGeometry(.17, 7, 5));
+// il vaso a cono della pianta di sempre: alto 1 e scalato, la
+// rastremazione resta quella
+const geoVaso   = () => comune('vaso',   () => new THREE.CylinderGeometry(.38, .28, 1, 14));
 const geoD20    = () => comune('d20',    () => new THREE.IcosahedronGeometry(.62, 0));
 /* IL VASO E' UN UOVO, non un tronco di cono col labbro.
 
@@ -1606,73 +1561,20 @@ const matDado = i => comune('dado' + i, () => {
   });
 });
 
-/* Una fila di libri tutti in piedi, tutti alti uguale e tutti alla
-   stessa distanza si legge come un codice a barre. Tre cose la
-   rimettono in una libreria di casa, e sono tre cose sole:
-
-   IL VUOTO. La fila parte da un bordo e si ferma PRIMA dell'altro. Il
-   lato lo sceglie il seme: fisso, il buco dalla stessa parte in tutti
-   i cubi diventa un motivo invece di un caso. La larghezza si taglia
-   su quello che avanza davvero, se no con cinque libri la fila usciva
-   dal cubo.
-
-   L'APPOGGIO. L'inclinazione di prima era +/-0.06 rad, cioe' dritto.
-   L'ultimo in piedi cade contro il vicino di 0.22, e il centro si
-   sposta perche' il PIEDE resti sul ripiano invece di affondarci
-   dentro: ruotando attorno al centro l'angolo basso scende sotto il
-   legno, ed e' la cosa che si nota per prima.
-
-   I CORICATI. Due volumi sdraiati sopra la parte piu' bassa della
-   fila. E' il gesto che distingue una libreria di casa da uno
-   scaffale di negozio, e costa due mesh sulla geometria che c'e'
-   gia'. */
+/* I libri come stavano prima di tutto questo giro: una fila dritta,
+   passo fisso, e basta. E' la versione richiesta -- il vuoto laterale,
+   il libro appoggiato al vicino e i due volumi coricati sono usciti
+   insieme al disegno nuovo del dorso. */
 function arrLibri(g, seed, x, y){
   const n = 4 + Math.floor(srnd(seed+2)*2);
-  const PASSO = .52, LARGO = 1.55;      // meta' della luce del cubo, meno un filo
-  const fila = (n - 1) * PASSO + .54;
-  const vuoto = Math.min(.5 + srnd(seed+31)*.4, Math.max(0, LARGO*2 - fila));
-  const aDx = srnd(seed+37) < .5;       // da che parte resta il vuoto
-  const parte = -LARGO + (aDx ? 0 : vuoto);
-
-  let basso = 9, xBasso = 0;
   for (let i = 0; i < n; i++){
-    const w = .38 + srnd(seed+i*7)*.16;
-    // 1.6-2.8: prima era 1.9-2.6, e sette millimetri di differenza
-    // non si vedono da nessuna distanza
-    const h = 1.6 + srnd(seed+i*11)*1.2;
-    const px = x + parte + i*PASSO;
+    const w = .38 + srnd(seed+i*7)*.16, h = 1.9 + srnd(seed+i*11)*.7;
     const m = new THREE.Mesh(geoCubo(), thinSpine(seed+i));
-    /* LA PROFONDITA' VARIA. Erano tutti profondi 2.5, quindi il fronte
-       della fila era un muro dritto: guardando uno scaffale vero di
-       sbieco, il bordo irregolare e' la prima cosa che si vede. */
-    m.scale.set(w, h, 2.0 + srnd(seed+i*13)*.6);
-
-    if (i === n - 1){
-      const a = .22 * (aDx ? 1 : -1);
-      m.rotation.z = -a;
-      m.position.set(px + Math.sin(a)*h/2,
-                     y + Math.cos(a)*h/2 + Math.abs(Math.sin(a))*w/2, -.1);
-    } else {
-      m.rotation.y = (srnd(seed+i)-.5)*.06;
-      m.position.set(px, y + h/2, -.1);
-      if (h < basso){ basso = h; xBasso = px; }
-    }
+    m.scale.set(w, h, 2.5);
+    m.position.set(x - 1.15 + i*.56, y + h/2, -.1);
+    m.rotation.y = (srnd(seed+i)-.5)*.06;
     m.castShadow = true; m.receiveShadow = true;
     g.add(m);
-  }
-
-  if (basso < 9){
-    // dove ci stanno: sopra il piu' basso, ma dentro il cubo
-    const cx = Math.min(xBasso + .2, x + LARGO - .55);
-    for (let k = 0; k < 2; k++){
-      // coricati: da davanti si vede la CARTA, non il dorso
-      const l = new THREE.Mesh(geoCubo(), matCarta());
-      l.scale.set(1.02, .14, 2.3);
-      l.position.set(cx + k*.06, y + basso + .07 + k*.14, -.1);
-      l.rotation.y = (srnd(seed+k*17)-.5)*.10;
-      l.castShadow = true; l.receiveShadow = true;
-      g.add(l);
-    }
   }
 }
 
@@ -1790,46 +1692,17 @@ const geoSpada = () => estrusa('fSpada', function(){
   return p;
 });
 
-// il cuore: larga in basso, punta in cima. E' la foglia del potos.
-const geoCuore = () => estrusa('fCuore', function(){
-  const p = new THREE.Shape();
-  p.moveTo(0, 0);
-  p.bezierCurveTo(.34, .04, .50, .30, .40, .62);
-  p.bezierCurveTo(.32, .86, .14, .97, 0, 1);
-  p.bezierCurveTo(-.14, .97, -.32, .86, -.40, .62);
-  p.bezierCurveTo(-.50, .30, -.34, .04, 0, 0);
-  return p;
-});
-
-// il cucchiaio: quasi tonda, appena appuntita. E' la peperomia.
-const geoCucchiaio = () => estrusa('fCucchiaio', function(){
-  const p = new THREE.Shape();
-  p.moveTo(0, 0);
-  p.bezierCurveTo(.40, .06, .48, .50, .30, .84);
-  p.bezierCurveTo(.20, .96, .08, 1, 0, 1);
-  p.bezierCurveTo(-.08, 1, -.20, .96, -.30, .84);
-  p.bezierCurveTo(-.48, .50, -.40, .06, 0, 0);
-  return p;
-});
-
 /* I verdi sono SCURITI rispetto alla tavolozza, per la stessa ragione
    del vaso: la stanza e' illuminata forte e con il tone mapping sopra
    un verde medio arriva a schermo slavato. Questi sono i verdi della
    foto una volta accesa la luce. */
 const VERDI = [0x2f4a2b, 0x3a5a34];
-const CHIARO = 0xa8b566;
 
-function verdeDi(seed){
-  const k = srnd(seed) < .5 ? 0 : 1;
-  return matTinta('foglia' + k, { color: VERDI[k], roughness: .72, side: THREE.DoubleSide });
-}
-const matChiaro = () => matTinta('fogliaChiara',
-  { color: CHIARO, roughness: .70, side: THREE.DoubleSide });
 
 /* Il vaso: uno solo per tutte e tre, ed e' quello a tenerle insieme --
    nella foto sono tre piante diverse in tre vasi identici. */
 function vaso(g, x, y, h){
-  const v = new THREE.Mesh(geoVasoUovo(), matTinta('vasomat', { color: 0x7f8878, roughness: .85 }));
+  const v = new THREE.Mesh(geoVasoUovo(), matTinta('vasoSalvia', { color: 0x7f8878, roughness: .85 }));
   v.scale.set(1, h, 1);
   v.position.set(x, y, .05);
   v.castShadow = true; v.receiveShadow = true;
@@ -1854,13 +1727,20 @@ function foglia(g, geo, mat, x, y, z, lung, largo, giro, apre, chino){
   return f;
 }
 
-/* SANSEVIERIA: lame rigide a ventaglio, con il filo chiaro sul bordo.
-   Il bordo e' una lama IDENTICA appena piu' grande dietro: cosi' del
-   chiaro resta solo il contorno, che e' quello che si vede in una
-   sansevieria vera. Una fascia chiara davanti invece la faceva
-   sembrare dipinta a strisce. */
+/* SANSEVIERIA: lame rigide a ventaglio.
+
+   NIENTE FILO CHIARO SUL BORDO. Una lama identica appena piu' grande
+   dietro e' il modo giusto di disegnare un margine su carta, ma qui la
+   lama e' alta novanta pixel e il margine diventava un contorno
+   luminoso tutto attorno: da lontano la pianta sembrava accesa.
+   Segnalato in questi termini -- "rimuovi l'alone luminoso".
+
+   Quello che resta a darle vita e' che le lame NON sono tutte dello
+   stesso verde: una su tre prende l'altro, e a quella distanza due
+   verdi vicini si leggono meglio di un bordo che brilla. */
 function pSanse(g, seed, x, y, h){
-  const verde = verdeDi(seed + 9);
+  const scuro = matTinta('foglia0', { color: VERDI[0], roughness: .72, side: THREE.DoubleSide });
+  const medio = matTinta('foglia1', { color: VERDI[1], roughness: .72, side: THREE.DoubleSide });
   const n = 7;
   for (let i = 0; i < n; i++){
     const lung = 1.5 + srnd(seed + i*3) * 1.0;
@@ -1870,96 +1750,62 @@ function pSanse(g, seed, x, y, h){
     const px = x + (i - (n-1)/2) * .07;
     const pz = .05 + (srnd(seed + i*11) - .5) * .22;
     const py = y + h - .10;
-    foglia(g, geoSpada(), matChiaro(), px, py, pz - .012, lung * 1.02, largo * 1.14, giro, -apre, 0);
-    foglia(g, geoSpada(), verde,       px, py, pz,        lung,       largo,        giro, -apre, 0);
+    foglia(g, geoSpada(), srnd(seed + i*17) < .34 ? medio : scuro,
+           px, py, pz, lung, largo, giro, -apre, 0);
   }
 }
 
-/* POTOS: cupola di foglie a cuore, e due che ricadono sotto il bordo
-   del vaso. E' quello che fa leggere una pianta appoggiata su un
-   ripiano invece di un cespuglio che ci cresce dentro. */
-function pPotos(g, seed, x, y, h){
-  const verde = verdeDi(seed + 9);
-  const stelo = matTinta('steloMat', { color: 0x4f6b45, roughness: .8 });
-  const n = 7;
+/* LA PIANTA DI SEMPRE, tornata com'era: vaso di cotto e foglie a
+   raggiera, sfere schiacciate orientate attorno alla bocca. E' quella
+   che c'era prima di tutto questo giro, ed e' quella richiesta.
+
+   Il vaso ha una chiave sua (`vasoCotto`, non `vasomat`): `comune()`
+   e' una cache sola, e due vasi di colore diverso sotto la stessa
+   chiave vuol dire che vince quello costruito per primo -- cioe' un
+   colore a caso a seconda di quale cubo si disegna prima. */
+function pTonda(g, seed, x, y){
+  const h = .5 + srnd(seed)*.22;
+  const vaso = new THREE.Mesh(geoVaso(), matTinta('vasoCotto', { color: 0xb2643f, roughness: .88 }));
+  vaso.scale.y = h;
+  vaso.position.set(x, y + h/2, .05);
+  vaso.castShadow = true; vaso.receiveShadow = true;
+  g.add(vaso);
+
+  const verde = srnd(seed+9) < .5
+    ? matTinta('fogliaTonda0', { color: 0x4f7a4a, roughness: .76 })
+    : matTinta('fogliaTonda1', { color: 0x5f8a52, roughness: .76 });
+  const n = 6 + Math.floor(srnd(seed+1)*4);
   for (let i = 0; i < n; i++){
-    const cade = i >= n - 2;
-    const lung = (cade ? .95 : .8) + srnd(seed + i*3) * .35;
-    const giro = (i / n) * Math.PI * 2 + srnd(seed + i) * .6;
-    const apre = cade ? (2.0 + srnd(seed + i*5) * .5) * (i % 2 ? 1 : -1)
-                      : (.5 + srnd(seed + i*5) * .7) * (i % 2 ? 1 : -1);
-    const fuori = cade ? .34 : .12 + srnd(seed + i*7) * .16;
-    const px = x + Math.cos(giro) * fuori;
-    const pz = .05 + Math.sin(giro) * fuori * .7;
-    const py = y + h - (cade ? .16 : .04);
-
-    // il picciolo: corto, ma senza le foglie galleggiano
-    const st = new THREE.Mesh(geoStelo(), stelo);
-    const sl = cade ? .18 : .26;
-    st.scale.set(1, sl, 1);
-    st.position.set((x + px)/2, py + sl*.35, (.05 + pz)/2);
-    st.rotation.z = -apre * .5;
-    g.add(st);
-
-    const f = foglia(g, geoCuore(), verde, px, py, pz, lung, lung * .9, giro, apre, -.25);
-    // la marezzatura: una foglia piu' piccola appena davanti
-    if (srnd(seed + i*13) < .7){
-      const c = new THREE.Mesh(geoCuore(), matChiaro());
-      c.scale.set(lung * .9 * .42, lung * .5, lung * .9 * .42);
-      c.position.set(px, py, pz);
-      c.rotation.copy(f.rotation);
-      c.translateOnAxis(new THREE.Vector3(0, 0, 1), .026);
-      c.translateOnAxis(new THREE.Vector3(0, 1, 0), lung * .26);
-      g.add(c);
-    }
+    const lung = .55 + srnd(seed + i*3)*.75;
+    const f = new THREE.Mesh(geoFoglia(), verde);
+    f.scale.set(.55, lung/.34, .4);
+    const ang = (i / n) * Math.PI * 2 + srnd(seed+i)*.7;
+    const fuori = .25 + srnd(seed+i*2)*.5;
+    f.position.set(x + Math.cos(ang)*fuori*.7, y + h + lung*.42, .05 + Math.sin(ang)*fuori*.5);
+    f.rotation.set(Math.sin(ang)*fuori, 0, -Math.cos(ang)*fuori);
+    f.castShadow = true;
+    g.add(f);
   }
 }
 
-/* PEPEROMIA: foglie a cucchiaio su piccioli, ognuna col cuore chiaro.
-   E' la piu' sparsa delle tre, e serve: fra un potos che fa cupola e
-   una sansevieria che fa colonna, una pianta che lascia vedere l'aria
-   fra le foglie e' quella che rompe la fila. */
-function pPeperomia(g, seed, x, y, h){
-  const verde = verdeDi(seed + 9);
-  const stelo = matTinta('steloMat', { color: 0x4f6b45, roughness: .8 });
-  const n = 7;
-  for (let i = 0; i < n; i++){
-    const giro = (i / n) * Math.PI * 2 + srnd(seed + i) * .7;
-    const alt = .18 + srnd(seed + i*3) * .40;
-    const fuori = .10 + srnd(seed + i*5) * .22;
-    const lung = .62 + srnd(seed + i*7) * .26;
-    const apre = (.35 + srnd(seed + i*11) * .5) * (Math.cos(giro) < 0 ? -1 : 1);
-    const px = x + Math.cos(giro) * fuori;
-    const pz = .05 + Math.sin(giro) * fuori * .7;
-    const py = y + h - .06;
-
-    const st = new THREE.Mesh(geoStelo(), stelo);
-    st.scale.set(1, alt, 1);
-    st.position.set((x + px)/2, py + alt/2, (.05 + pz)/2);
-    st.rotation.z = Math.atan2(px - x, alt) * -1;
-    g.add(st);
-
-    const f = foglia(g, geoCucchiaio(), verde, px, py + alt, pz, lung, lung * .92, giro, apre, -.3);
-    const c = new THREE.Mesh(geoCucchiaio(), matChiaro());
-    c.scale.set(lung * .92 * .40, lung * .44, lung * .92 * .40);
-    c.position.set(px, py + alt, pz);
-    c.rotation.copy(f.rotation);
-    c.translateOnAxis(new THREE.Vector3(0, 0, 1), .026);
-    c.translateOnAxis(new THREE.Vector3(0, 1, 0), lung * .30);
-    g.add(c);
-  }
-}
-
-const PIANTE = [pPeperomia, pPotos, pSanse];
-
-function arrPiante(g, seed, x, y){
+/* La sansevieria col suo vaso: quello a uovo, salvia, con la terra
+   dentro. Le due piante hanno due vasi diversi apposta -- sono due
+   piante diverse, e in casa i vasi non sono mai tutti uguali. */
+function pSanseInVaso(g, seed, x, y){
   const h = .5 + srnd(seed) * .18;
   vaso(g, x, y, h);
-  /* Quale delle tre lo decide il seme del cubo: lo stesso rumore
-     ripetibile che gia' decide tutto il resto, cosi' il cubo non
-     cambia pianta a ogni lettera scritta nella ricerca. */
+  pSanse(g, seed, x, y, h);
+}
+
+/* DUE PIANTE: quella di sempre e la sansevieria. Quale tocchi a un
+   cubo lo decide il seme del cubo -- lo stesso rumore ripetibile che
+   gia' decide tutto il resto, cosi' il cubo non cambia pianta a ogni
+   lettera scritta nella ricerca. */
+const PIANTE = [pTonda, pSanseInVaso];
+
+function arrPiante(g, seed, x, y){
   const quale = Math.floor(srnd(seed + 41) * PIANTE.length) % PIANTE.length;
-  PIANTE[quale](g, seed, x, y, h);
+  PIANTE[quale](g, seed, x, y);
 }
 
 const ARREDI = { libri: arrLibri, dadi: arrDadi, piante: arrPiante };
