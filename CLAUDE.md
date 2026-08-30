@@ -3863,7 +3863,79 @@ Vale la pena scriverlo, se no qualcuno lo rimisura fra sei mesi:
   quello che disegna la linea d'ombra fra coperchio e fondo, e a scatola
   chiusa e' l'unica cosa che fa leggere due pezzi invece di uno.
 
-### La memoria delle texture, che e' l'altra meta'
+### Il freno: l'unica cosa che GARANTISCE i sessanta
+
+Le due sessioni di ottimizzazione precedenti hanno fatto il lavoro che si
+poteva fare **prima** di sapere com'e' andata: niente antialiasing dove i pixel
+sono piccoli, la mappa d'ombra a meta' sugli schermi corti, le ombre solo su
+prenotazione, geometrie e materiali in comune, il raycast solo quando serve. Su
+questa macchina il conto e' 0,33 ms di GPU su un budget di 16,7.
+
+Ma **nessuna configurazione fissa puo' garantire un frame rate su un
+dispositivo che non si e' mai visto**: fra il telefono piu' lento e il monitor
+piu' veloce ci sono dieci volte. Quello che garantisce e' misurare e scendere.
+
+Tre gradini, uno per finestra, in ordine di quanto costano a chi guarda:
+
+1. **Meno pixel.** La leva piu' grossa su un telefono, dove il conto e' quasi
+   tutto riempimento, ed e' anche quella che si vede di meno.
+2. **Via le ombre.** A riposo la passata d'ombra non c'e' gia' (`rifaiOmbre`),
+   quindi questo gradino serve proprio a chi fatica **mentre scorre**, che e'
+   il momento in cui si nota.
+3. **Via le lampade dei vani.** Il conto piu' salato della scena -- misurato,
+   il 28% del tempo GPU -- perche' quattro luci puntiformi le paga ogni
+   frammento di ogni materiale. Ultimo perche' si vede; ma i cubi non restano
+   al buio, perche' l'occlusione e la striscia di luce sono **dipinte** nello
+   schienale e quelle non se ne vanno.
+
+- **Si scende dopo una FINESTRA, mai dopo un fotogramma.** Sessanta lenti su
+  novanta. Un singolo scatto e' una texture che arriva o il sistema operativo
+  che fa altro, e peggiorare il sito a ogni singhiozzo sarebbe la cura peggiore
+  del male.
+- **Non si risale.** Risalire vorrebbe dire tornare lenti, riscendere,
+  risalire: un pendolo che si vede benissimo.
+- **Il metro non e' un numero fisso, ed e' il punto piu' delicato.** Venti
+  millisecondi vorrebbero dire che su uno schermo a **30 Hz** -- dove ogni
+  fotogramma dura 33 ms per costruzione -- il freno scenderebbe fino in fondo
+  senza che ci sia niente da guadagnare. Si prende invece il fotogramma piu'
+  breve mai visto come passo dello schermo, e «lento» vuol dire quasi il doppio
+  di quello. Verificato: 600 fotogrammi a 33,3 ms su uno schermo a 30 Hz
+  lasciano la qualita' a zero; gli stessi 600 a 90 ms la portano in fondo.
+- **Il pixel ratio lo decidono in due** -- il freno e `layout()`, che gira a
+  ogni ridimensionamento -- quindi il valore sta in un posto solo
+  (`pixelRatioOra`): se no il primo resize rimetterebbe su i pixel appena
+  tolti.
+- **Il terzo gradino fa ricompilare tutti i materiali**, perche' cambia il
+  numero di luci. E' uno scatto, si paga una volta sola, su una macchina che
+  sta gia' faticando, e in cambio prende il 28% per sempre.
+- Non giudica durante l'**intro** (pesante per come e' fatta, e dura un attimo)
+  ne' fuori dalla collezione, e **ignora i fotogrammi oltre il mezzo secondo**:
+  una scheda in secondo piano non e' una macchina lenta.
+
+### Quello che si e' misurato e NON era un problema
+
+`sfumaTarghe()` gira a ogni fotogramma di scorrimento e attraversa `cabGroup`,
+come fa gia' `allineaComandi()`: due traversate per fotogramma su un gruppo da
+140 oggetti. Sembrava la regressione ovvia da quando le targhe sfumano.
+Misurato: **0,0023 ms a traversata, 0,0046 per fotogramma** -- cioe' quattro
+millesimi di un budget da 16,7. Non si tocca.
+
+E' la regola di sempre: si misura prima di ottimizzare, anche quando la cosa da
+ottimizzare l'ha scritta chi sta misurando.
+
+### Misurare senza la sessione, e senza fotogrammi
+
+Con la sessione Supabase scaduta il sito resta al cancello e la scena non si
+costruisce nemmeno. Il banco offline documentato piu' sopra va completato con
+**due librerie finte in `caricaLibrerie`**: senza, `LIB.librerie()` e' vuota e
+in scena c'e' solo il mobile fantasma, che gli arredi non li ha per scelta.
+
+E `renderer.render` **e' una proprieta' dell'istanza, non del prototipo**:
+agganciare `THREE.WebGLRenderer.prototype.render` non prende niente. La scena
+si cattura da `THREE.Object3D.prototype.add`, che del prototipo lo e', forzando
+una ricostruzione con una ricerca -- che e' sincrona.
+
+## La memoria delle texture, che e' l'altra meta'
 
 **46 MB con le mipmap**, e la fetta grossa sono le copertine vere (8 texture da
 720x520 e 3 da 760x570 fanno 22 MB). Non si toccano: su uno scaffale sono

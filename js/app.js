@@ -2190,7 +2190,7 @@ function layout(){
 
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(pixelRatioOra());
   renderer.setSize(w, h, false);
 
   if (state.phase === 'browse') camBase.z = state.distShelf;
@@ -8021,8 +8021,105 @@ function updateBoxes(dt){
 
 let last = 0;
 let faseIeri = '';
+/* ===============================================================
+   IL FRENO: sessanta fotogrammi anche dove non ci starebbero
+
+   Nessuna configurazione fissa puo' GARANTIRE un frame rate su un
+   dispositivo che non si e' mai visto. Le due scelte che il sito fa
+   gia' -- niente antialiasing dove i pixel sono piccoli, la mappa
+   d'ombra a meta' sugli schermi corti -- sono indovinate PRIMA di
+   sapere com'e' andata. Questo invece guarda com'e' andata e scende.
+
+   Tre gradini, uno per finestra, in ordine di quanto costano a chi
+   guarda:
+
+   1. MENO PIXEL. E' la leva piu' grossa che ci sia su un telefono,
+      dove il conto e' quasi tutto riempimento, ed e' anche quella che
+      si vede di meno: da densita' 2 a 1.5 si disegna poco piu' della
+      meta' dei pixel e la scalettatura la mangia lo schermo.
+   2. VIA LE OMBRE. La passata d'ombra e' la scena ridisegnata una
+      seconda volta dentro una mappa. A riposo non c'e' gia' (vedi
+      `rifaiOmbre`), quindi questo gradino serve proprio a chi fatica
+      mentre scorre, che e' il momento in cui si nota.
+   3. VIA LE LAMPADE DEI VANI. Sono il conto piu' salato della scena --
+      misurato, il 28% del tempo GPU -- perche' quattro luci puntiformi
+      le paga OGNI frammento di OGNI materiale. E' l'ultimo gradino
+      perche' si vede: i cubi perdono il faretto. Ma non restano al
+      buio, perche' l'occlusione e la striscia di luce sono DIPINTE
+      nello schienale e quelle non se ne vanno.
+
+   SI SCENDE SOLO DOPO UNA FINESTRA DI FOTOGRAMMI LENTI, mai dopo uno:
+   un singolo scatto e' una texture che arriva o il sistema operativo
+   che fa altro, e peggiorare il sito a ogni singhiozzo sarebbe la cura
+   peggiore del male. E NON SI RISALE: risalire vorrebbe dire tornare
+   lenti, riscendere, risalire, in un pendolo che si vede benissimo.
+
+   IL METRO NON E' UN NUMERO FISSO. Venti millisecondi vorrebbero dire
+   che su uno schermo a 30 Hz -- dove ogni fotogramma dura 33 ms per
+   costruzione -- il freno scenderebbe fino in fondo senza che ci sia
+   niente da guadagnare. Si prende invece il fotogramma piu' breve che
+   si e' visto come passo dello schermo, e lento vuol dire quasi il
+   doppio di quello. */
+const FRENO_FINESTRA = 90;      // quanti fotogrammi si guardano per volta
+const FRENO_LENTI = 60;         // quanti devono essere lenti per scendere
+let qualita = 0;                // 0 = tutto, 3 = ultimo gradino
+let passoMin = 999;             // il fotogramma piu' breve visto: e' lo schermo
+let frenoVisti = 0, frenoLenti = 0;
+
+/* Il pixel ratio lo decidono in due -- il freno e `layout()`, che gira
+   a ogni ridimensionamento -- quindi il valore sta in un posto solo: se
+   no il primo resize rimetterebbe su i pixel appena tolti. */
+function pixelRatioOra(){
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  return qualita >= 1 ? Math.max(1, d * .75) : d;
+}
+
+function scendiDiUno(){
+  if (qualita >= 3) return;
+  qualita++;
+  if (qualita === 1 && renderer){
+    renderer.setPixelRatio(pixelRatioOra());
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+  }
+  if (qualita === 2 && renderer){
+    renderer.shadowMap.enabled = false;
+  }
+  if (qualita === 3){
+    /* Le lampade ESCONO dalla scena, non si spengono: una luce a
+       intensita' zero la paga lo shader lo stesso -- e' la lezione gia'
+       pagata con la lampada della scheda aperta.
+
+       Cambiare il numero di luci fa ricompilare tutti i materiali, e
+       quello e' uno scatto: si paga UNA VOLTA, su una macchina che sta
+       gia' faticando, e in cambio si prende il 28% del tempo GPU per
+       sempre. E' il baratto giusto proprio li'. */
+    bayLights.forEach(function(l){ if (l.parent) l.parent.remove(l); });
+  }
+  document.body.setAttribute('data-qualita', qualita);
+  rifaiOmbre();
+}
+
+function freno(passo){
+  /* Solo dove si disegna davvero, e non durante l'ingresso: l'intro e'
+     pesante per come e' fatta e dura un attimo, e giudicare li'
+     vorrebbe dire scendere sempre. */
+  if (state.sezione !== 'collezione') return;
+  if (state.phase !== 'browse' && state.phase !== 'focus' && state.phase !== 'review') return;
+  if (!(passo > 0) || passo > 500) return;      // schede in secondo piano: non contano
+
+  if (passo < passoMin) passoMin = passo;
+  const soglia = Math.max(20, Math.min(60, passoMin * 1.8));
+
+  frenoVisti++;
+  if (passo > soglia) frenoLenti++;
+  if (frenoVisti < FRENO_FINESTRA) return;
+  if (frenoLenti >= FRENO_LENTI) scendiDiUno();
+  frenoVisti = 0; frenoLenti = 0;
+}
+
 function frame(now){
   requestAnimationFrame(frame);
+  if (last) freno(now - last);
   // il passo va tenuto positivo e corto: un dt negativo manderebbe le
   // animazioni all'indietro, uno lungo (scheda tornata in primo piano)
   // le farebbe saltare alla fine di colpo

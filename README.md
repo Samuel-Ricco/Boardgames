@@ -142,6 +142,15 @@ perché sotto l'elenco non c'è niente da vedere.
 **Senza WebGL** il sito resta leggibile: `#flat` mostra le stesse recensioni in
 piano, e la costruzione della scena è dentro un `try`.
 
+**E se la macchina non ce la fa, il sito scende.** Nessuna configurazione fissa
+può garantire sessanta fotogrammi su un dispositivo mai visto, quindi il ciclo
+si misura da sé: dopo una finestra di fotogrammi lenti — sessanta su novanta,
+mai dopo un singolo scatto — taglia i pixel, poi le ombre, poi le lampade dei
+vani. Il metro non è un numero fisso ma il fotogramma più breve che ha visto,
+se no uno schermo a 30 Hz si abbasserebbe la qualità da solo senza guadagnarci
+niente. E non risale: risalire vorrebbe dire tornare lenti e riscendere, in un
+pendolo che si vede.
+
 ## Chi entra, e cosa può fare
 
 All'apertura il sito chiede chi sei, e ci sono due strade.
