@@ -165,6 +165,59 @@ const LUCE_MAX = 1.60;
    la chiave invece di scrivercene una. */
 const CELLE = ['libri', 'dadi', 'piante', 'niente'];
 
+/* LE TAVOLOZZE DELLA STANZA SONO LE SEI TINTE DEL SITO, per ruolo.
+
+   Il noce e' il legno, l'oliva e' l'inchiostro tenue, il cotto e'
+   l'accento: le liste qui sopra non sono mai state altro che questo,
+   scritto a mano. Da quando le tavolozze si cambiano, scritto a mano
+   vuol dire che restano quelle di partenza -- e nel pannello si
+   sceglieva un marrone caldo per una stanza lilla.
+
+   QUELLO CHE SI SALVA NON CAMBIA. Il valore memorizzato resta
+   l'esadecimale della tavolozza di partenza, che qui fa da IDENTIFICATIVO
+   e non da colore: `#8e6a4b` vuol dire "il legno", e che legno sia lo
+   decide la tavolozza al momento di disegnare. Cosi' una stanza salvata
+   non perde niente cambiando tavolozza, e `normalizza` continua a
+   validare sulle stesse liste di sempre.
+
+   I FARETTI NON CI SONO, ed e' voluto: la loro tavolozza non sono le
+   sei tinte del sito ma le temperature che una luce puo' davvero avere,
+   piu' i neon. La temperatura di una lampadina non e' una scelta
+   estetica del sito -- e' fisica -- e un neon deve staccarsi dal muro,
+   non andarci d'accordo. */
+const RUOLI = {
+  scaffali:  ['wood', 'legnoScuro', 'inkSoft', 'sage', 'sand', 'accent'],
+  muro:      ['bg', 'sand', 'sage', 'inkSoft', 'accent', 'ink'],
+  pavimento: ['sand', 'bg', 'sage', 'wood', 'inkSoft', 'accent'],
+  nome:      ['ink', 'card', 'accent', 'wood', 'sand', 'inkSoft']
+};
+const LISTE = { scaffali: LEGNI, muro: MURI, pavimento: PAVIMENTI, nome: NOMI };
+
+/* Da identificativo salvato a colore da disegnare. Se la tavolozza non
+   c'e' -- `tema.js` non caricato -- torna l'identificativo, che e'
+   esattamente il colore di sempre: il sito non perde niente. */
+function tinta(gruppo, id){
+  const lista = LISTE[gruppo], ruoli = RUOLI[gruppo];
+  if (!lista || !ruoli || typeof TEMA === 'undefined') return id;
+  for (let i = 0; i < lista.length; i++){
+    if (lista[i].v === id) return TEMA.ruolo(ruoli[i]) || id;
+  }
+  return id;                       // un valore che non e' nella lista resta se stesso
+}
+
+/* La stanza con i colori gia' risolti: e' quella che disegna la scena.
+   `corrente()` continua a tornare gli identificativi, ed e' quella che
+   si salva -- se le due si scambiassero, sul database finirebbero i
+   colori di una tavolozza invece delle scelte di chi ci abita. */
+function reso(){
+  const o = Object.assign({}, ora);
+  o.scaffali  = tinta('scaffali',  o.scaffali);
+  o.muro      = tinta('muro',      o.muro);
+  o.pavimento = tinta('pavimento', o.pavimento);
+  o.nome      = tinta('nome',      o.nome);
+  return o;                        // `fariTinta` passa com'e': e' una temperatura
+}
+
 /* Una cella non tiene solo COSA c'e' dentro, ma anche QUALE dei suoi:
    le piante sono due specie, i libri e i dadi cambiano con il seme.
    Si scrive tutto in un valore solo -- `piante~1` -- perche' le celle
@@ -317,6 +370,7 @@ function aiValori(){ return { LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, AR
 return {
   DEFAULT: DEFAULT, LEGNI: LEGNI, MURI: MURI, PAVIMENTI: PAVIMENTI, ARREDI: ARREDI, NOMI: NOMI,
   CELLE: CELLE, cella: cella, variante: variante,
+  tinta: tinta, reso: reso,
   setCella: setCella, scordaCelle: scordaCelle,
   FARI: FARI,
   LUCE_MIN: LUCE_MIN, LUCE_MAX: LUCE_MAX,

@@ -444,13 +444,13 @@ function stileLib(l){
   const L = LIB.librerie()[l];
   const s = STANZA.corrente();
   return {
-    scaffali: (L && L.scaffali) || s.scaffali,
+    scaffali: STANZA.tinta('scaffali', (L && L.scaffali) || s.scaffali),
     arredo:   (L && L.arredo)   || s.arredo
   };
 }
 
 function makeMats(){
-  MATS = matsDi(STANZA.corrente().scaffali);
+  MATS = matsDi(STANZA.reso().scaffali);
 }
 
 /* Il pavimento e' a LISTONI, non una tavola sola stirata per tutta la
@@ -462,7 +462,7 @@ function makeMats(){
    Il rilievo sale (`bump` da .012 a .05): sulle fughe c'e' davvero uno
    scalino, ed e' quello che le fa leggere da lontano. */
 function legnoPavimento(){
-  return legno(STANZA.corrente().pavimento,
+  return legno(STANZA.reso().pavimento,
                { parquet: true, cols: 13, repeat:[1,13], rough:.74, bump:.05 });
 }
 
@@ -550,7 +550,7 @@ function buildRoom(){
   // mobile ci si stampa sopra come una lastra
   wallMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 400),
-    new THREE.MeshStandardMaterial({ color: new THREE.Color(STANZA.corrente().muro),
+    new THREE.MeshStandardMaterial({ color: new THREE.Color(STANZA.reso().muro),
                                      roughness: .98, metalness: 0 })
   );
   wallMesh.position.set(0, CENTRO_Y, -KAL.d/2 - .06);
@@ -732,7 +732,7 @@ function sincronizzaFari(m){
    fondo che le mancava. */
 function lumDietroTestata(){
   const st = STANZA.corrente();
-  const h = String(st.muro || '').replace('#', '');
+  const h = String(STANZA.reso().muro || '').replace('#', '');
   if (h.length < 6) return 1;
   const r = parseInt(h.slice(0,2), 16), g = parseInt(h.slice(2,4), 16), b = parseInt(h.slice(4,6), 16);
   const k = .10 + .90 * Math.min(1.3, st.luce);      // com'e' scurito lo sfondo
@@ -764,7 +764,7 @@ function applicaLuce(){
      illuminato. Cala pianissimo -- fra buio e luce piena c'e' un terzo
      scarso -- contro il crollo di tutto il resto. */
   luceFari = fariOra().forza;
-  const tintaFari = new THREE.Color(STANZA.corrente().fariTinta);
+  const tintaFari = new THREE.Color(STANZA.reso().fariTinta);
   Object.keys(MATS_PER_TINTA).forEach(function(t){
     sincronizzaFari(MATS_PER_TINTA[t].fondo);
   });
@@ -786,7 +786,7 @@ function applicaLuce(){
      differenza fra "stanza in penombra" e "filtro grigio". Con il
      fattore di prima, a luce minima la parete in fondo restava chiara e
      tutto sembrava solo un po' spento. */
-  const f = new THREE.Color(STANZA.corrente().muro)
+  const f = new THREE.Color(STANZA.reso().muro)
     .multiplyScalar(.10 + .90 * Math.min(1.3, l));
   if (scene){
     scene.background = f;
@@ -801,7 +801,7 @@ function applicaLuce(){
 function applicaStanza(){
   if (!scene) return;
   applicaLuce();
-  if (wallMesh) wallMesh.material.color.set(new THREE.Color(STANZA.corrente().muro));
+  if (wallMesh) wallMesh.material.color.set(new THREE.Color(STANZA.reso().muro));
   if (floorMesh){
     const vecchio = floorMesh.material;
     floorMesh.material = legnoPavimento();
@@ -848,7 +848,7 @@ function buildCabinet(){
     /* L'ultimo della fila, quando e' in piu' di quelli che esistono, e'
        la scorta: si disegna come un'ombra. */
     const fantasma = l >= quanteVere;
-    const MATS = fantasma ? matsFantasma() : matsDi(stileLib(l).scaffali);
+    const MATS = fantasma ? matsFantasma() : matsDi(STANZA.tinta('scaffali', stileLib(l).scaffali));
 
     // montanti: due esterni e uno per ogni divisione interna
     for (let c = 0; c <= COLS; c++){
@@ -900,7 +900,7 @@ function buildCabinet(){
          misura fissa in scena: su un telefono la camera arretra per far
          stare i dodici cubi, e il nome finiva la meta' di quello che e'
          su un monitor. */
-      const c = ART.targhetta(scritta, STANZA.corrente().nome);
+      const c = ART.targhetta(scritta, STANZA.reso().nome);
       const alt = TARGA_ALT, larg = alt * (c.width / c.height);
       const targa = new THREE.Mesh(
         new THREE.PlaneGeometry(larg, alt),
@@ -1211,6 +1211,36 @@ function rifaiScatole(ids){
     killGroup(b, true);
     boxes.splice(i, 1);
   }
+}
+
+/* CAMBIANDO COLLEZIONE LE SCATOLE SI BUTTANO VIA TUTTE.
+
+   `applyLibrary` ritrova la scatola di un gioco per `userData.id`, e
+   quell'id e' uno SLUG che viene dal titolo: e' unico dentro UNA
+   collezione, non nel mondo. E' la stessa cosa gia' scritta per le
+   query -- "due persone possono avere tutte e due `root`" -- ma li'
+   costava una riga sbagliata sul database, e qui costa peggio:
+   entrando da un amico che ha un gioco che hai anche tu, la scatola
+   che si trova e' LA TUA. Il mesh resta quello, con la tua copertina
+   attaccata e le proporzioni della tua edizione, e si limita a
+   cambiare il gioco che ci sta dietro.
+
+   Non e' un caso raro: fra due collezioni di giochi da tavolo i titoli
+   in comune sono la norma, ed e' esattamente perche' si va a guardare
+   la libreria di un amico.
+
+   Non si aggiusta rendendo l'id unico -- vorrebbe dire toccare la
+   chiave di tutto -- si aggiusta buttando via le scatole quando si
+   cambia collezione. Sono una dozzina di mesh e vanno ricostruiti
+   comunque in quel passaggio: e' il momento in cui il costo non si
+   nota, ed e' l'unico modo di essere sicuri che niente si porti dietro
+   la copertina di un'altra libreria. */
+function svuotaScatole(){
+  for (let i = boxes.length - 1; i >= 0; i--) killGroup(boxes[i], true);
+  boxes.length = 0;
+  state.focused = null;
+  state.presa = null;
+  state.hover = null;
 }
 
 function makeGameBox(game){
@@ -5343,19 +5373,24 @@ function disegnaStanza(){
   q('#st-suono-n').textContent = Math.round(SUONI.volume() * 100) + '%';
   q('#st-quale').textContent = L ? L.nome : TP('stanza.nessunMobile');
 
-  const gruppo = function(sel, lista, valore, testo){
+  /* Il bollino MOSTRA il colore della tavolozza corrente ma SALVA
+     l'identificativo di sempre (`x.v`): quello che finisce sul
+     database e' "il legno", non un marrone -- se no cambiando
+     tavolozza la stanza salvata perderebbe la scelta. */
+  const gruppo = function(sel, lista, valore, testo, chiave){
     q(sel).innerHTML = lista.map(function(x){
       const on = valore === x.v ? ' class="on"' : '';
-      const stile = testo ? '' : ' style="background:' + esc(x.v) + '"';
+      const mostra = chiave ? STANZA.tinta(chiave, x.v) : x.v;
+      const stile = testo ? '' : ' style="background:' + esc(mostra) + '"';
       const nome = TP(x.n);          // `n` e' una chiave, non una parola
       return '<button type="button" data-v="' + esc(x.v) + '" title="' + esc(nome) + '"' +
              on + stile + '>' + (testo ? esc(nome) : '') + '</button>';
     }).join('');
   };
-  gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false);
-  gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false);
-  gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false);
-  gruppo('#st-nome-tinta', STANZA.NOMI,     cur.nome,       false);
+  gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false, 'scaffali');
+  gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false, 'muro');
+  gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false, 'pavimento');
+  gruppo('#st-nome-tinta', STANZA.NOMI,     cur.nome,       false, 'nome');
   gruppo('#st-fari-tinta', STANZA.FARI,     cur.fariTinta,  false);
 }
 
@@ -7669,8 +7704,13 @@ async function visitaLibreria(id, nick){
      tue e restano tue anche mentre sei da lui, quindi entrarci da qui
      e' proprio il giro che questa regola vuole evitare. */
   setSezione('collezione');
-  await CUORI.carica(id);          // i cuori della sua collezione, in una lettura
-  await loadCovers();
+  /* I cuori non devono poter fermare la libreria: se la tabella manca o
+     la lettura va storta, si guarda comunque la sua collezione. Prima
+     un errore qui saltava le due righe sotto, cioe' le copertine e la
+     disposizione. */
+  try { await CUORI.carica(id); } catch(e){}
+  svuotaScatole();                 // le tue non c'entrano piu' niente
+  await loadCovers(true);
   applyLibrary({});
   if (!LIB.all().length) flash(TP('msg.libDiVuota', {chi: chi}));
 }
@@ -7690,7 +7730,8 @@ async function tornaACasa(){
   disegnaLibrerie();
   disegnaGruppiFiltro();
   state.scrollTo = state.scroll = 0;
-  await loadCovers();
+  svuotaScatole();                 // le sue non c'entrano piu' niente
+  await loadCovers(true);
   applyLibrary({});
 }
 
@@ -8364,6 +8405,15 @@ async function boot(){
     if (document.body.classList.contains('elenco')) disegnaMia();
   });
   I18N.suCambio(rilingua);                // quello che disegna il JS lo rifa' il JS
+
+  /* Cambiando tavolozza cambiano anche i legni, i muri e i pavimenti --
+     sono le sei tinte del sito per ruolo -- quindi la scena va
+     ridipinta e i bollini del pannello rifatti. Quello che si e'
+     SCELTO non si tocca: sul database resta l'identificativo. */
+  if (typeof TEMA !== 'undefined' && TEMA.suCambio) TEMA.suCambio(function(){
+    try { applicaStanza(); } catch(e){}
+    try { if (document.body.classList.contains('arreda')) sincronizzaPannello(); } catch(e){}
+  });
   buildFlatList();
 
   // Chi torna da Google ha gia' la sessione: si salta il cancello.

@@ -37,7 +37,8 @@ const TAVOLOZZE = [
   {
     v: 'stanza', n: 'tema.stanza',
     c: { bg:'#cfccc8', card:'#f2f1ed', ink:'#33352b', inkSoft:'#747760',
-         sage:'#a6a89c', sand:'#c7af98', wood:'#8e6a4b', accent:'#c86a3c' }
+         sage:'#a6a89c', sand:'#c7af98', wood:'#8e6a4b', accent:'#c86a3c',
+         woodDark:'#5c4530' }
   },
   {
     /* Vaporwave. Non la versione notturna al neon -- questo sito e'
@@ -48,14 +49,16 @@ const TAVOLOZZE = [
        sopra si legga: un accento e' anche un fondo per del testo. */
     v: 'vaporwave', n: 'tema.vaporwave',
     c: { bg:'#d6cde6', card:'#f7f1fb', ink:'#2c2040', inkSoft:'#6a5788',
-         sage:'#9fc2d6', sand:'#e6b4d2', wood:'#7350a6', accent:'#bf2f80' }
+         sage:'#9fc2d6', sand:'#e6b4d2', wood:'#7350a6', accent:'#bf2f80',
+         woodDark:'#4b346c' }
   },
   {
     /* Bosco. La tavolozza di partenza guarda al legno; questa guarda a
        quello che c'era prima del legno. */
     v: 'bosco', n: 'tema.bosco',
     c: { bg:'#d1d6cb', card:'#f1f4ed', ink:'#222e1e', inkSoft:'#586551',
-         sage:'#9aab93', sand:'#c9bd9a', wood:'#6d583d', accent:'#2f6b43' }
+         sage:'#9aab93', sand:'#c9bd9a', wood:'#6d583d', accent:'#2f6b43',
+         woodDark:'#473928' }
   },
   {
     /* Carta e china. Tutta l'altra meta' del cerchio: dove la stanza e'
@@ -63,7 +66,8 @@ const TAVOLOZZE = [
        una terracotta. */
     v: 'china', n: 'tema.china',
     c: { bg:'#ced2d7', card:'#f3f5f7', ink:'#1f242b', inkSoft:'#5c6570',
-         sage:'#a2acb6', sand:'#b8c1cb', wood:'#4c5967', accent:'#2a63c4' }
+         sage:'#a2acb6', sand:'#b8c1cb', wood:'#4c5967', accent:'#2a63c4',
+         woodDark:'#313a43' }
   }
 ];
 
@@ -243,8 +247,31 @@ else montaSelettore();
 
 applica();
 
+/* IL COLORE DI UN RUOLO, per chi non e' un foglio di stile.
+
+   Le tavolozze della STANZA -- legni, muri, pavimenti, colore del nome
+   -- non sono mai state altro che le sei tinte del sito messe in un
+   altro ordine: il noce e' `wood`, l'oliva e' `inkSoft`, il cotto e'
+   `accent`. Scritte a mano restavano quelle di partenza qualunque
+   tavolozza si scegliesse, e nel pannello si finiva a scegliere un
+   marrone caldo per una stanza lilla.
+
+   `legnoScuro` e' l'unico ruolo derivato, ed e' lo stesso conto che
+   dava il `#5c4530` scritto a mano: il legno tirato al buio di un
+   terzo abbondante. */
+function ruolo(nome){
+  const c = quale(ora).c;
+  /* Il legno scuro e' SCRITTO, non scalato. Una scalatura del noce da'
+     un colore vicinissimo ma non quello: il `#5c4530` di sempre non e'
+     una percentuale del `#8e6a4b`, e' una tinta scelta. Derivarlo
+     vorrebbe dire che chi non cambia tavolozza si vede lo scaffale
+     spostarsi di un paio di unita' -- invisibile, ma per niente. */
+  if (nome === 'legnoScuro') return c.woodDark || scala(c.wood, -.35);
+  return c[nome] || c.accent;
+}
+
 return {
-  TAVOLOZZE: TAVOLOZZE,
+  TAVOLOZZE: TAVOLOZZE, ruolo: ruolo,
   corrente: function(){ return ora; },
   tinte: function(){ return quale(ora).c; },
   scegli: scegli, suCambio: suCambio

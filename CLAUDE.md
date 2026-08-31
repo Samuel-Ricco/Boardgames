@@ -1033,6 +1033,33 @@ sito sa fare bene.
   — e poi non capire più di chi sia la collezione che si guarda. Si esce da un
   posto solo, il cartello che dice di chi è la libreria.
 
+### In casa d'altri le scatole si buttano via tutte
+
+Segnalato come «aprendo la libreria degli amici non carica le copertine».
+
+`applyLibrary` ritrova la scatola di un gioco per `userData.id`, e quell'id e'
+uno **slug che viene dal titolo**: e' unico dentro *una* collezione, non nel
+mondo. E' la stessa cosa gia' scritta per le query -- «due persone possono avere
+tutte e due `root`» -- ma li' costava una riga sbagliata sul database, qui costa
+peggio: entrando da un amico che ha un gioco che hai anche tu, la scatola che si
+trova e' **la tua**. Il mesh resta quello, con la tua copertina attaccata e le
+proporzioni della tua edizione, e cambia solo il gioco che ci sta dietro.
+
+Non e' un caso raro: fra due collezioni di giochi da tavolo i titoli in comune
+sono la norma, ed e' esattamente il motivo per cui si va a guardare la libreria
+di un amico.
+
+Non si aggiusta rendendo l'id unico -- vorrebbe dire toccare la chiave di tutto
+-- si aggiusta con `svuotaScatole()` **nei due passaggi**, entrando e tornando:
+sono una dozzina di mesh e vanno ricostruiti comunque, quindi e' il momento in
+cui il costo non si nota.
+
+**E i cuori non devono poter fermare la libreria.** `await CUORI.carica(id)`
+stava prima di `loadCovers()` e di `applyLibrary()`: un errore li' -- la tabella
+che manca, una lettura storta -- saltava tutte e due le righe, cioe' le
+copertine e la disposizione. Adesso e' dentro un `try`: la collezione di un
+amico si guarda anche senza i suoi cuori.
+
 ### Il cuore: l'unica cosa che si tocca in casa d'altri
 
 `js/apprezzamenti.js` + tabella `apprezzamenti` (migrazione
@@ -2221,6 +2248,48 @@ china**. Si scelgono da una tendina in fondo al profilo.
   superfici chiare, e rovesciarlo vorrebbe dire riscrivere ogni regola che da'
   per scontata la carta sotto il testo. Lilla, magenta e ciano dicono
   «vaporwave» senza chiedere di rifare il foglio.
+
+### Anche la stanza segue la tavolozza, ma quello che si e' scelto non cambia
+
+Le tavolozze del pannello -- legni, muri, pavimenti, colore del nome -- **non
+sono mai state altro che le sei tinte del sito messe in un altro ordine**: il
+noce e' `wood`, l'oliva e' `inkSoft`, il cotto e' `accent`. Scritte a mano
+restavano quelle di partenza qualunque tavolozza si scegliesse, e nel pannello
+si finiva a scegliere un marrone caldo per una stanza lilla.
+
+Adesso sono **ruoli** (`RUOLI` in `js/stanza.js`) risolti sulla tavolozza
+corrente.
+
+- **Quello che si salva non cambia.** Il valore memorizzato resta
+  l'esadecimale della tavolozza di partenza, che li' fa da **identificativo** e
+  non da colore: `#8e6a4b` vuol dire «il legno», e che legno sia lo decide la
+  tavolozza al momento di disegnare. Cosi' una stanza salvata non perde niente
+  cambiando tavolozza, e `normalizza` continua a validare sulle liste di sempre
+  -- nessuna migrazione.
+- **`corrente()` torna gli identificativi, `reso()` i colori.** Sono due cose
+  diverse e vanno tenute separate: `salva()` scrive `corrente()`, e se le due si
+  scambiassero sul database finirebbero i colori di una tavolozza al posto delle
+  scelte di chi ci abita.
+- **Il bollino mostra il colore della tavolozza ma salva l'identificativo.**
+  `data-v` resta `x.v`, il fondo passa da `STANZA.tinta()`.
+- **Il legno scuro e' SCRITTO, non scalato.** Il `#5c4530` di sempre non e' una
+  percentuale del `#8e6a4b` -- e' una tinta scelta -- e derivarlo vorrebbe dire
+  che chi non cambia tavolozza si vede lo scaffale spostarsi di un paio di
+  unita'. Invisibile, ma per niente. Ogni tavolozza ha il suo `woodDark`.
+- **I faretti non seguono**, ed e' voluto: la loro tavolozza non sono le sei
+  tinte del sito ma le **temperature** che una luce puo' davvero avere, piu' i
+  neon. La temperatura di una lampadina non e' una scelta estetica -- e' fisica
+  -- e un neon deve staccarsi dal muro, non andarci d'accordo.
+- **La prova che conta e' l'identita'**: con la tavolozza di partenza ogni
+  identificativo deve tornare **se stesso**, in tutti e quattro i gruppi. Se no
+  chi non cambia mai tavolozza si vedrebbe la stanza cambiare sotto gli occhi.
+  Verificato: vero su tutti e ventiquattro i valori.
+
+**E qui cade la regola scritta due commit fa.** «La tavolozza veste il sito, non
+arreda casa d'altri» diceva che la stanza non cambiava: adesso cambia, ed e'
+stato chiesto. Il prezzo va detto: un amico che viene a guardare la tua libreria
+la vede **con la sua tavolozza**, non con la tua. La scelta resta la tua -- il
+noce resta il noce -- ma il noce che vede lui e' quello del suo mondo.
 
 ### Il contrasto si misura, e la tavolozza di partenza e' la piu' debole
 

@@ -252,10 +252,17 @@ Una tavolozza è un ricambio completo di quelle otto, e **tutto il resto si
 deriva**: i fili, le ombre, il velo della testata e il fondo delle schermate
 piatte sono l'inchiostro e la carta a percentuali diverse.
 
+**Anche la stanza segue**: legni, muri e pavimenti del pannello non sono mai
+stati altro che le sei tinte del sito in un altro ordine, quindi cambiano con
+la tavolozza. Ma **quello che hai scelto non cambia**: sul database resta un
+identificativo — «il legno», non un marrone — e che legno sia lo decide la
+tavolozza al momento di disegnare. Il prezzo, detto chiaro: un amico che viene
+a guardare la tua libreria la vede con la *sua* tavolozza.
+
 Due cose non cambiano mai. Il **rosso** di quello che distrugge, che non è
-decorazione ma un segnale. E la **stanza**: legno, muro, pavimento e faretti
-sono scelte di chi ci abita, stanno sul suo profilo, e un amico che viene a
-trovarlo le vede com'erano. La tavolozza veste il sito, non arreda casa d'altri.
+decorazione ma un segnale. E i **faretti**: la loro tavolozza non sono le sei
+tinte del sito ma le temperature che una luce può davvero avere, più i neon —
+e la temperatura di una lampadina non è una scelta estetica, è fisica.
 
 **Gli arredi dei cubi vuoti si scelgono uno per uno**, e non c'è nessun pulsante:
 si **tiene premuto un cubo vuoto** e esce una fila di cinque icone — come la
