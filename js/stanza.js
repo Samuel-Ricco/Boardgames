@@ -196,11 +196,30 @@ const LISTE = { scaffali: LEGNI, muro: MURI, pavimento: PAVIMENTI, nome: NOMI };
 /* Da identificativo salvato a colore da disegnare. Se la tavolozza non
    c'e' -- `tema.js` non caricato -- torna l'identificativo, che e'
    esattamente il colore di sempre: il sito non perde niente. */
+/* CON QUALE TAVOLOZZA SI DISEGNA QUESTA STANZA.
+
+   A casa propria, la propria: e' quella scelta adesso, e cambiarla si
+   vede subito. In casa di un amico, LA SUA -- se no la sua libreria
+   sarebbe la tua ridipinta, e il legno che ha scelto lui non vorrebbe
+   piu' dire niente.
+
+   La sua viaggia dentro `profili.stanza`, che e' il jsonb che gli amici
+   leggono gia' per luce, muro e pavimento: nessuna migrazione, e la
+   tavolozza sta esattamente dove stanno le altre scelte della stanza.
+   Quella salvata prima di questa modifica non ce l'ha: si torna alla
+   tavolozza di chi guarda, che e' come funzionava un attimo fa. */
+function tavolozzaQui(){
+  if (typeof TEMA === 'undefined') return null;
+  if (!miei && ora.tavolozza && TEMA.esiste(ora.tavolozza)) return ora.tavolozza;
+  return null;                     // null = quella corrente
+}
+
 function tinta(gruppo, id){
   const lista = LISTE[gruppo], ruoli = RUOLI[gruppo];
   if (!lista || !ruoli || typeof TEMA === 'undefined') return id;
+  const tav = tavolozzaQui();
   for (let i = 0; i < lista.length; i++){
-    if (lista[i].v === id) return TEMA.ruolo(ruoli[i]) || id;
+    if (lista[i].v === id) return TEMA.ruolo(ruoli[i], tav) || id;
   }
   return id;                       // un valore che non e' nella lista resta se stesso
 }
@@ -250,6 +269,10 @@ function normalizza(s){
   o.arredo    = dentro(ARREDI,    o.arredo,    DEFAULT.arredo);
   o.nome      = dentro(NOMI,      o.nome,      DEFAULT.nome);
   o.fariTinta = dentro(FARI,      o.fariTinta, DEFAULT.fariTinta);
+  /* La tavolozza con cui la stanza va disegnata. Un nome che non esiste
+     -- dato vecchio, o una tavolozza tolta -- vale come non scelto. */
+  o.tavolozza = (typeof TEMA !== 'undefined' && TEMA.esiste(o.tavolozza))
+    ? o.tavolozza : null;
 
   /* Le celle si ripuliscono a ogni lettura: e' roba che arriva dal
      database, e una chiave storta o un valore che non esiste piu' --
@@ -348,6 +371,9 @@ function cambia(patch){
 
 async function salva(){
   if (!miei) return;
+  /* La propria stanza porta sempre la propria tavolozza: e' quello che
+     la rende riconoscibile a chi viene a guardarla. */
+  if (typeof TEMA !== 'undefined') ora.tavolozza = TEMA.corrente();
   const c = (typeof AUTH !== 'undefined' && AUTH.attivo()) ? AUTH.client() : null;
   if (!c || !AUTH.stato().dentro) return;
   const r = await c.from('profili').update({ stanza: ora }).eq('id', AUTH.stato().id);

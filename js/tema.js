@@ -18,10 +18,16 @@
    - il ROSSO di quello che distrugge. Non e' decorazione, e' un
      segnale, e un rosso "coordinato" con la tavolozza smette di dire
      quello che deve dire.
-   - la STANZA. Legno, muro, pavimento e faretti sono scelte di chi ci
-     abita, stanno sul suo profilo e un amico che viene a trovarlo le
-     vede com'erano. La tavolozza veste il sito, non arreda casa
-     d'altri.
+   - le SCELTE della stanza. Legno, muro, pavimento e faretti stanno sul
+     profilo di chi ci abita e non si toccano: quello che cambia con la
+     tavolozza e' come vengono DISEGNATE, non quali sono. Sul database
+     resta un identificativo -- "il legno" -- e che legno sia lo decide
+     la tavolozza.
+   - e in casa d'altri decide LA SUA. La tavolozza viaggia dentro
+     `profili.stanza`, quindi la libreria di un amico si vede con i
+     colori del suo tema: se no sarebbe la tua ridipinta, e il legno che
+     ha scelto lui non vorrebbe piu' dire niente. Il sito attorno
+     invece resta vestito come piace a te.
 
    Sta nel `<head>` apposta, e non in fondo al body con gli altri: le
    variabili vanno scritte PRIMA che la pagina si dipinga, se no si
@@ -259,8 +265,11 @@ applica();
    `legnoScuro` e' l'unico ruolo derivato, ed e' lo stesso conto che
    dava il `#5c4530` scritto a mano: il legno tirato al buio di un
    terzo abbondante. */
-function ruolo(nome){
-  const c = quale(ora).c;
+function ruolo(nome, tavolozza){
+  /* La tavolozza si puo' chiedere: serve a disegnare la stanza di un
+     amico con la SUA, che e' l'unica cosa che rende quella libreria la
+     sua invece di una copia della tua ridipinta. */
+  const c = quale(tavolozza || ora).c;
   /* Il legno scuro e' SCRITTO, non scalato. Una scalatura del noce da'
      un colore vicinissimo ma non quello: il `#5c4530` di sempre non e'
      una percentuale del `#8e6a4b`, e' una tinta scelta. Derivarlo
@@ -273,6 +282,7 @@ function ruolo(nome){
 return {
   TAVOLOZZE: TAVOLOZZE, ruolo: ruolo,
   corrente: function(){ return ora; },
+  esiste: function(v){ return TAVOLOZZE.some(function(t){ return t.v === v; }); },
   tinte: function(){ return quale(ora).c; },
   scegli: scegli, suCambio: suCambio
 };

@@ -2287,9 +2287,32 @@ corrente.
 
 **E qui cade la regola scritta due commit fa.** «La tavolozza veste il sito, non
 arreda casa d'altri» diceva che la stanza non cambiava: adesso cambia, ed e'
-stato chiesto. Il prezzo va detto: un amico che viene a guardare la tua libreria
-la vede **con la sua tavolozza**, non con la tua. La scelta resta la tua -- il
-noce resta il noce -- ma il noce che vede lui e' quello del suo mondo.
+stato chiesto.
+
+### In casa di un amico comanda la SUA tavolozza
+
+Il primo giro aveva lasciato un prezzo, ed era quello sbagliato: la libreria di
+un amico si vedeva con la tavolozza di chi guardava. Cioe' la sua libreria era
+**la tua ridipinta**, e il legno che aveva scelto lui non voleva piu' dire
+niente -- che e' esattamente il contrario del motivo per cui si va a guardare la
+libreria di qualcuno.
+
+La tavolozza adesso **viaggia dentro `profili.stanza`**, che e' il jsonb che gli
+amici leggono gia' per luce, muro e pavimento: nessuna migrazione, e sta dove
+stanno le altre scelte della stanza.
+
+- **Solo la STANZA prende la sua**, non il sito. La testata, gli elenchi e il
+  catalogo restano vestiti come piace a chi guarda: sono roba sua, non di chi
+  ospita. Quello che diventa suo e' il mobile, il muro, il pavimento e il colore
+  del nome -- la scena.
+- **`salva()` timbra sempre la propria tavolozza**, e cambiandola la stanza si
+  risalva: se no la porterebbe solo chi tocca anche qualcos'altro nel pannello,
+  e gli amici resterebbero indietro di una scelta.
+- **Una stanza salvata prima di questa modifica non ce l'ha**, e allora si torna
+  a quella di chi guarda -- cioe' esattamente come funzionava un attimo prima.
+  Verificato.
+- I **faretti** passano com'erano anche di la': sono temperature, non tinte del
+  sito.
 
 ### Il contrasto si misura, e la tavolozza di partenza e' la piu' debole
 

@@ -8413,6 +8413,12 @@ async function boot(){
   if (typeof TEMA !== 'undefined' && TEMA.suCambio) TEMA.suCambio(function(){
     try { applicaStanza(); } catch(e){}
     try { if (document.body.classList.contains('arreda')) sincronizzaPannello(); } catch(e){}
+    /* E si RISALVA la stanza. La tavolozza viaggia dentro
+       `profili.stanza`, ed e' l'unico modo perche' un amico veda la tua
+       libreria con la tua: senza questa riga la porterebbe solo chi
+       tocca anche qualcos'altro nel pannello. In casa d'altri non si
+       salva niente -- `STANZA.salva()` esce da solo. */
+    try { STANZA.salva().catch(function(){}); } catch(e){}
   });
   buildFlatList();
 

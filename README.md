@@ -256,8 +256,13 @@ piatte sono l'inchiostro e la carta a percentuali diverse.
 stati altro che le sei tinte del sito in un altro ordine, quindi cambiano con
 la tavolozza. Ma **quello che hai scelto non cambia**: sul database resta un
 identificativo — «il legno», non un marrone — e che legno sia lo decide la
-tavolozza al momento di disegnare. Il prezzo, detto chiaro: un amico che viene
-a guardare la tua libreria la vede con la *sua* tavolozza.
+tavolozza al momento di disegnare.
+
+**E in casa di un amico comanda la sua.** La tavolozza viaggia dentro la stanza
+salvata sul profilo, quindi la sua libreria si vede con i colori del suo tema:
+se no sarebbe la tua ridipinta, e il legno che ha scelto lui non vorrebbe più
+dire niente. Il sito attorno — testata, elenchi, catalogo — resta vestito come
+piace a te: quello è tuo, non suo.
 
 Due cose non cambiano mai. Il **rosso** di quello che distrugge, che non è
 decorazione ma un segnale. E i **faretti**: la loro tavolozza non sono le sei
