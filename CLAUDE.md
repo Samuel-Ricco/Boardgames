@@ -4489,101 +4489,55 @@ dal ritaglio vecchio stanno in `localStorage` e nessuno li rilegge mai: senza
 cambiare chiave restavano sbagliati per sempre. La vecchia si cancella al primo
 avvio.
 
-### L'orientamento delle scatole: provato e rimesso com'era
+### La forma la dà la copertina, la misura le dimensioni di BGG
 
-Segnalato come «a volte i giochi sono disposti storti sulla libreria». La prima
-cosa misurata dice che **ruotate non erano**: il bordo alto della faccia pende
-al massimo di **un pixel** (0,33°), non c'è nessuna rotazione oltre al filo di
-imbardata di sempre, e i due vuoti ai lati del vano sono simmetrici entro il
-millimetro. Quello resta un fatto utile: se un giorno qualcuno rivede «storto»,
-non è una rotazione.
+Sono **due domande diverse**, e per un pezzo erano una sola — ed è da lì che
+venivano tutti i guai di questa parte del sito.
 
-Quello che si è provato — e **rimesso indietro** — è l'orientamento. La regola
-di sempre sceglie fra le due sistemazioni possibili quella dal rapporto più
-simile alla copertina; l'ho sostituita con la convenzione «il lato lungo in
-verticale», e il risultato è stato bocciato: «ieri le scatole venivano
-visualizzate correttamente, oggi si sono rotte». Rimesso il codice di prima,
-byte per byte.
+Prendendo la forma dalla SCATOLA si finiva con una faccia di un rapporto e
+un'immagine di un altro, e da quel disaccordo escono solo tre mosse, tutte
+brutte: **tagliare** la copertina (e mangiarsi il titolo: su Gloomhaven il 49%
+della larghezza, sul fronte restava «OOMHAVE»), **stirarla** (si vede subito), o
+lasciarle attorno delle **barre** (provato, ed è venuto un grigio spento attorno
+a ogni scatola).
 
-**La misura che l'aveva motivata resta agli atti**, perché vale la pena averla
-scritta anche se non si è agito: sulla collezione vera, delle nove scatole non
-quadrate **sei venivano coricate** — Gloomhaven, Twilight Imperium, War of the
-Ring, SETI, Root, Arcs — e quelle scatole nella realtà stanno in piedi. Le tre
-«giuste» erano quelle la cui foto BGG era per caso verticale.
+Così invece il disaccordo non esiste:
 
-E si è capito perché il rimedio ovvio non basta: **mettendole in piedi il
-ritaglio della copertina esplode** (su Gloomhaven il 49% della larghezza, e sul
-fronte restava «OOMHAVE»), e cappare il ritaglio schiaccia la grafica del 52%,
-che si vede molto di più. Chi ci tornerà deve risolvere quel nodo per primo,
-non l'orientamento.
+- **la FORMA è quella della copertina.** La faccia ha esattamente il rapporto
+  dell'immagine, che quindi ci entra intera e senza deformarsi. Non è un
+  ripiego, è anche vero: la copertina è il fronte della scatola, quindi la sua
+  forma *è* la forma del fronte.
+- **la MISURA la danno le dimensioni di BGG.** Si conserva l'**area** della
+  faccia vera: larghezza e altezza escono dal sistema `w*h = area`,
+  `w/h = rapporto della copertina`. Un mattone come Gloomhaven resta un mattone,
+  un'espansione da 8x13 resta piccola, e fra due giochi sullo stesso ripiano il
+  rapporto di grandezza è quello vero.
+- **lo spessore** resta quello di BGG.
 
-**E una cosa imparata chiedendo a BGG**: la misura di una scatola può arrivare
-da **una sola edizione** (la risposta porta `edizioni` e `concordi`). Root ne ha
-32 con 23 concordi, ma capita di trovarne una sola — e una misura appoggiata a
-un'edizione unica è un indizio debole, che può dare una scatola della misura
-sbagliata. Quei due numeri arrivano già dal proxy: se un giorno le misure
-sballano, sono la prima cosa da guardare.
+E `entraNelCubo` scala larghezza e altezza per lo **stesso** fattore, quindi
+nemmeno il limite del vano rompe l'accordo con la copertina.
 
-### La copertina non si stira: si ritaglia
+**Il ritaglio non c'è più**, e non serve piu' a niente: c'era solo per rimediare
+a quel disaccordo. Verificato sul codice vero: rapporto della faccia e rapporto
+della copertina coincidono alla terza cifra, sia con le misure di BGG sia sulla
+strada di chi non ce le ha — lì l'altezza esce già dal rapporto dell'immagine.
 
-Con le misure vere la faccia della scatola ha il rapporto della scatola, e
-l'immagine di BGG quasi mai lo stesso. Spalmarla sopra la deforma, e si vede
-subito.
+**Quello che NON si fa è lasciare che l'immagine detti anche la misura.** È il
+motivo per cui BGG serve ancora: senza, tutte le scatole verrebbero larghe
+uguali e la libreria diventerebbe una griglia di rettangoli tutti della stessa
+grandezza.
 
-**E l'immagine non puo' dettare la forma.** Il primo tentativo faceva cosi' —
-la faccia prendeva il rapporto della foto — e il risultato era sbagliato,
-perche' **le immagini di BGG non sono scansioni del fronte**: sono spesso
-rendering ritagliati in 4:3 o in quadrato. Terraforming Mars, che ha la scatola
-quadrata, diventava 4:3; Gloomhaven si sdraiava.
+#### Due cose misurate lungo la strada, che restano vere
 
-Quindi: **la forma la dice la scatola, l'immagine dice solo da che parte sta.**
-
-- **L'orientamento** si sceglie fra le due sistemazioni possibili prendendo
-  quella il cui rapporto somiglia di piu' a quello della copertina — e solo se
-  la scatola non e' quadrata, se no la domanda non si pone. Girare l'immagine
-  non e' mai la risposta: si gira la scatola.
-- **Il ritaglio** e' `object-fit: cover`, centrato: si stringe la finestra
-  della texture sul lato che abbonda e si sposta di meta' della differenza. E'
-  quello che fa una scatola vera -- la grafica copre tutto il fronte e quello
-  che avanza esce dai bordi. Due numeri sulla texture, niente da ridisegnare.
-
-Misurato sulla collezione: il ritaglio e' dell'1-2% dove l'immagine e' davvero
-il fronte (Gloomhaven, Twilight Imperium, War of the Ring) e sale al 22-25% solo
-dove l'immagine e' un rendering di un'altra forma (Terraforming Mars, Arcs).
-Stiramento residuo: **zero, su tutte**.
-
-**E le misure si chiedono a OGNI aggiunta**, non solo all'avvio: dal catalogo,
-dal modulo «aggiungi un gioco», e al caricamento per quelle che mancano.
-
-## Il nome dell'oggetto dice da dove viene la copertina
-
-«Non utilizzi sempre la giusta immagine per i giochi, in BGG c'è sempre
-l'immagine della copertina.» Vero, e dietro c'erano **due difetti diversi che si
-sommavano**, tutti e due nel percorso dell'oggetto nel bucket — che era
-`<uid>/<slug>.jpg` e non diceva niente su cosa ci fosse dentro.
-
-1. **Una copertina sbagliata non si poteva più correggere.** Le regole dello
-   storage danno insert e delete, non update, quindi `upsert:false` è obbligato:
-   trovando l'oggetto già lì si riusava **quello vecchio**. Si rifaceva il giro,
-   si caricava, e tornava indietro l'indirizzo di prima con dentro la figura di
-   prima.
-2. **Nessuno tornava a chiedere le copertine dei giochi già in collezione.**
-   Prima del token le schede venivano da Wikidata, che le copertine non le ha:
-   le sue immagini stanno su Wikimedia Commons, che accetta solo licenze libere,
-   e la grafica di una scatola è protetta. Quello che arrivava era una **foto del
-   gioco allestito sul tavolo** — e restava lì per sempre, perché la copertina si
-   chiede una volta sola, quando il gioco entra sullo scaffale.
-
-**Adesso il marchio sta nel nome**, e si legge dall'indirizzo: `-p9156909` è
-l'immagine 9156909 di BGG, `-mano` è un file scelto dall'utente. Da qui
-discende tutto il resto:
-
-- una figura diversa è **un percorso diverso**, quindi l'insert non incontra più
-  niente e una correzione arriva davvero a destinazione;
-- la vecchia si cancella **dopo** che la nuova è arrivata: un caricamento fallito
-  non deve lasciare la scatola senza niente addosso;
-- e chi cancella un gioco cancella **l'oggetto che c'è davvero** (`oggettoDi`,
-  che lo ricava dall'indirizzo) e non quello che si aspetta di trovare.
+- **Le scatole non erano mai ruotate.** Segnalate come «storte», ma il bordo
+  alto della faccia pende al massimo di **un pixel** (0,33°) e i due vuoti ai
+  lati del vano sono simmetrici entro il millimetro. Se qualcuno rivede
+  «storto», non è una rotazione.
+- **Una misura di BGG può poggiare su una sola edizione.** La risposta porta
+  `edizioni` e `concordi`: Root ne ha 32 con 23 concordi, ma certi titoli ne
+  hanno una sola — e una misura appoggiata a un'edizione unica è un indizio
+  debole, che può dare una scatola della misura sbagliata. Sono i due numeri da
+  guardare per primi se le misure sballano.
 
 ### Come si sa se una copertina è già quella giusta, senza scaricarla
 

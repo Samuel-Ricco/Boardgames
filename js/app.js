@@ -1009,36 +1009,34 @@ function salvaMisure(){
 function misureDi(game, asp){
   const m = game && game.bgg && misureCache()[String(game.bgg)];
   if (!m || !(m.larghezza > 0) || !(m.lunghezza > 0)) return null;
+  if (!(asp > 0)) return null;
 
-  const gr = Math.max(m.larghezza, m.lunghezza);
-  const pi = Math.min(m.larghezza, m.lunghezza);
+  /* LA FORMA LA DA' LA COPERTINA, LA MISURA LE DIMENSIONI DI BGG.
 
-  /* COME STA IN PIEDI LA SCATOLA.
+     Sono due domande diverse e prima erano una sola, ed e' da li' che
+     venivano tutti i guai. Prendere la forma dalla SCATOLA voleva dire
+     una faccia con un rapporto e un'immagine con un altro, e da quel
+     disaccordo nascono le uniche tre cose che si possono fare, tutte
+     brutte: tagliare la copertina (e mangiarsi il titolo), stirarla (e
+     si vede subito), o lasciarle attorno delle barre.
 
-     BGG da' due lati della faccia e non dice quale sia in verticale.
-     A romperlo e' l'immagine: fra le due sistemazioni possibili si
-     prende quella il cui rapporto somiglia di piu' a quello della
-     copertina. Se la scatola e' quadrata la domanda non si pone.
+     Cosi' invece il disaccordo non esiste: la faccia ha ESATTAMENTE il
+     rapporto dell'immagine, che quindi ci entra intera e senza
+     deformarsi. Non e' un ripiego -- e' anche vero: la copertina e' il
+     fronte della scatola, quindi la sua forma E' la forma del fronte.
 
-     Quello che NON si fa e' lasciare che sia l'immagine a dettare la
-     forma: le immagini di BGG non sono scansioni del fronte, sono
-     spesso rendering ritagliati in 4:3 o in quadrato. Prendendole alla
-     lettera, una scatola quadrata come Terraforming Mars diventava
-     4:3 e Gloomhaven si sdraiava. La forma la dice la SCATOLA;
-     l'immagine dice solo da che parte sta. */
-  let w, h;
-  if (gr / pi < 1.06){                 // quadrata: non c'e' niente da girare
-    w = gr / 10; h = pi / 10;
-  } else {
-    const disteso = gr / pi;           // lato lungo orizzontale
-    const eretto  = pi / gr;           // lato lungo verticale
-    const orizz = Math.abs(Math.log(asp / disteso)) <= Math.abs(Math.log(asp / eretto));
-    w = (orizz ? gr : pi) / 10;
-    h = (orizz ? pi : gr) / 10;
-  }
+     Quello che le dimensioni di BGG danno e' la MISURA: si conserva
+     l'AREA della faccia vera. Un mattone come Gloomhaven resta un
+     mattone, una espansione da 8x13 resta piccola, e fra due giochi
+     sullo stesso ripiano il rapporto di grandezza e' quello vero.
+     Larghezza e altezza escono dal sistema `w*h = area`, `w/h = asp`. */
+  const area = (m.larghezza / 10) * (m.lunghezza / 10);
+  const h = Math.sqrt(area / asp);
+  const w = asp * h;
 
-  // il limite non lo mette piu' questa funzione: lo mette
-  // `entraNelCubo`, che vale anche per chi le misure non le ha
+  // il limite non lo mette questa funzione: lo mette `entraNelCubo`,
+  // che vale anche per chi le misure non le ha -- e scala w e h per lo
+  // stesso fattore, quindi il rapporto con la copertina non si perde
   return { w: w, h: h, t: m.spessore > 0 ? m.spessore / 10 : BOX.t };
 }
 
@@ -1268,29 +1266,15 @@ function makeGameBox(game){
                            mis ? mis.t : BOX.t);
   const W = dim.w, H = dim.h, T = dim.t;
 
-  /* LA COPERTINA SI RITAGLIA, NON SI STIRA.
+  /* NIENTE RITAGLIO, E NIENTE DA STIRARE.
 
-     Con le misure vere la faccia ha il rapporto della scatola, e
-     l'immagine quasi mai lo stesso. Spalmarla sopra la deforma -- una
-     scatola quadrata con una foto 4:3 diventa una scatola schiacciata,
-     e si vede subito. Si fa invece quello che fa una scatola vera: la
-     grafica copre tutto il fronte e quello che avanza esce dai bordi.
-
-     E' `object-fit: cover`, centrato: si stringe la finestra della
-     texture sul lato che abbonda e si sposta di meta' della
-     differenza. Niente da ridisegnare, sono due numeri sulla texture. */
-  if (mis && aspect > 0){
-    const rapp = W / H;
-    if (aspect > rapp){                       // immagine piu' larga: si taglia ai lati
-      const f = rapp / aspect;
-      coverTex.repeat.set(f, 1);
-      coverTex.offset.set((1 - f) / 2, 0);
-    } else if (aspect < rapp){                // piu' alta: si taglia sopra e sotto
-      const f = aspect / rapp;
-      coverTex.repeat.set(1, f);
-      coverTex.offset.set(0, (1 - f) / 2);
-    }
-  }
+     C'era un `object-fit: cover` qui, e serviva perche' la faccia
+     prendeva il rapporto della SCATOLA mentre l'immagine ne aveva un
+     altro. Adesso la faccia prende il rapporto dell'IMMAGINE e
+     `entraNelCubo` scala larghezza e altezza per lo stesso fattore:
+     il disaccordo non esiste piu', e la copertina ci sta esatta per
+     costruzione. La stessa cosa vale sulla strada di chi le misure non
+     ce l'ha, dove l'altezza esce gia' dal rapporto della copertina. */
   // il coperchio resta la stessa frazione della scatola che era prima
   const LID = Math.min(T * (BOX.lid / BOX.t), T - .12);
 
