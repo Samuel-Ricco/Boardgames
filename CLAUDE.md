@@ -4557,6 +4557,16 @@ grandezza.
   **duplicato** fra `tools/bgg-lib.mjs` e la edge function, e se cambia uno deve
   cambiare l'altro. Provato contro BGG vero: Root 22,5x29 (ed. 2025), Gloomhaven
   29,8x41,3x20,2 (2022).
+- **La risposta porta anche `edizione`**, cioe' il nome della versione da cui la
+  misura viene. Non e' un di piu': senza, il numero e' un numero e non si puo'
+  controllare -- e appena messo ha mostrato una cosa che va saputa. «L'ultima
+  edizione» quasi sempre e' una LOCALIZZAZIONE: Gloomhaven arriva dalla «Czech
+  edition, fourth printing», Root dalla «German edition 2025», Scythe dalla
+  «Czech seventh edition», Twilight Imperium dalla «Hungarian edition». Le misure
+  restano buone -- una scatola ceca e' la stessa scatola -- ma la regola sceglie
+  la traduzione uscita per ultima, non la stampa corrente dell'originale. Se un
+  giorno una localizzazione avra' una scatola davvero diversa, e' da li' che
+  arrivera' il numero sbagliato.
 - **La cache e' passata a `dado-misure-3`.** Quello che c'era dentro veniva da
   una regola diversa e nessuno lo rilegge mai: senza cambiare chiave resterebbe
   sbagliato per sempre. E' la seconda volta che succede, ed e' il modo giusto.

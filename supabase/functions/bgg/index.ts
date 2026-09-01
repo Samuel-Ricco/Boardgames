@@ -137,8 +137,11 @@ function parseMisure(xml: string) {
     const n = (t: string) => Number(attr(b, t, 'value')) || 0;
     const w = n('width'), l = n('length'), d = n('depth');
     if (w < 1 || l < 1 || w > 30 || l > 30) continue;
+    // il nome dell'edizione: dice da quale scatola viene la misura
+    const nome = b.match(/<name[^>]*value="([^"]*)"/);
     versioni.push({ w, l, d: d > 0 && d < 20 ? d : 0,
-                    anno: n('yearpublished'), i: versioni.length });
+                    anno: n('yearpublished'), i: versioni.length,
+                    nome: nome ? unesc(nome[1]) : '' });
   }
   if (!versioni.length) return null;
 
@@ -157,6 +160,7 @@ function parseMisure(xml: string) {
     spessore: ultima.d ? +(ultima.d * P).toFixed(1) : 0,
     edizioni: versioni.length,
     anno: ultima.anno || 0,
+    edizione: ultima.nome || '',
   };
 }
 

@@ -115,8 +115,13 @@ export function parseMisure(xml){
     // fuori le misure assurde: una scatola da mezzo pollice o da un
     // metro e' un dato sbagliato, non una scatola
     if (w < 1 || l < 1 || w > 30 || l > 30) continue;
+    /* Il NOME dell'edizione: e' quello che dice se la misura viene
+       dalla ristampa italiana o dalla deluxe da Kickstarter. Senza, il
+       numero e' un numero e non si puo' controllare. */
+    const nome = b.match(/<name[^>]*value="([^"]*)"/);
     versioni.push({ w: w, l: l, d: d > 0 && d < 20 ? d : 0,
-                    anno: n('yearpublished'), i: versioni.length });
+                    anno: n('yearpublished'), i: versioni.length,
+                    nome: nome ? unesc(nome[1]) : '' });
   }
   if (!versioni.length) return null;
 
@@ -134,7 +139,8 @@ export function parseMisure(xml){
     lunghezza: +(ultima.l * pollici).toFixed(1),
     spessore: ultima.d ? +(ultima.d * pollici).toFixed(1) : 0,
     edizioni: versioni.length,
-    anno: ultima.anno || 0
+    anno: ultima.anno || 0,
+    edizione: ultima.nome || ''
   };
 }
 
