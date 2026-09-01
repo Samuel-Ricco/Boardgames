@@ -32,44 +32,6 @@ function toTex(c, opt){
 }
 
 // Texture da un'immagine gia' caricata (le copertine vere in img/).
-/* LA COPERTINA DENTRO IL FRONTE, QUANDO NON CI STA.
-
-   Con le misure vere la faccia ha il rapporto della SCATOLA, e
-   l'immagine di BGG quasi mai lo stesso -- sono rendering, spesso
-   orizzontali, di scatole che stanno in piedi. Ritagliarle per
-   riempire il fronte va benissimo finche' si taglia poco; quando il
-   taglio arriva a meta' larghezza si porta via il titolo, e una
-   scatola con scritto "OOMHAVE" e' peggio di qualunque cosa si stia
-   cercando di risolvere.
-
-   Allora si fa quello che fa una scatola vera che non ha la grafica a
-   pieno fronte: la si stampa DENTRO UN BORDO. L'immagine entra intera,
-   centrata, e il resto e' una tinta presa dall'immagine stessa --
-   scurita un filo, cosi' il pannello si stacca invece di sfumarci
-   dentro. Niente si deforma e niente si perde. */
-function coverBordata(im, rapp){
-  const W = 760, H = Math.max(16, Math.round(W / rapp));
-  const [c, x] = cnv(W, H);
-
-  // la tinta del bordo: la media dell'immagine, portata al buio
-  const [pc, px] = cnv(1, 1);
-  px.drawImage(im, 0, 0, 1, 1);
-  const d = px.getImageData(0, 0, 1, 1).data;
-  x.fillStyle = 'rgb(' + Math.round(d[0]*.62) + ',' + Math.round(d[1]*.62) + ',' + Math.round(d[2]*.62) + ')';
-  x.fillRect(0, 0, W, H);
-
-  // l'immagine intera, `contain`, centrata
-  const a = im.naturalWidth / im.naturalHeight;
-  let w = W, h = W / a;
-  if (h > H){ h = H; w = H * a; }
-  x.drawImage(im, (W - w)/2, (H - h)/2, w, h);
-
-  // un filo d'ombra sotto il pannello: senza, sembra incollato
-  x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = 2;
-  x.strokeRect((W - w)/2 + 1, (H - h)/2 + 1, w - 2, h - 2);
-  return c;
-}
-
 function imgTex(im){
   const t = new THREE.Texture(im);
   if (THREE.SRGBColorSpace) t.colorSpace = THREE.SRGBColorSpace;
@@ -1166,7 +1128,6 @@ return {
   parquet: parquet, contatto: contatto,
   avatar: avatar, targhetta: targhetta,
   coverRoot: coverRoot, coverScythe: coverScythe, coverTitolo: coverTitolo,
-  coverBordata: coverBordata,
   spine: spine, cardboard: cardboard, inside: inside,
   dieFace: dieFace
 };

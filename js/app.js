@@ -1278,22 +1278,28 @@ function makeGameBox(game){
      E' `object-fit: cover`, centrato: si stringe la finestra della
      texture sul lato che abbonda e si sposta di meta' della
      differenza. Niente da ridisegnare, sono due numeri sulla texture. */
-  /* MA SI TAGLIA POCO, NON A META'. Il ritaglio funziona finche' quello
-     che se ne va e' un margine; oltre, si porta via il titolo -- su
-     Gloomhaven erano il 49% della larghezza, e sul fronte restava
-     "OOMHAVE". Da li' in poi la grafica si stampa dentro un bordo,
-     che e' quello che fa una scatola vera quando l'arte non copre
-     tutto il fronte: entra intera e non si deforma niente. */
-  const TAGLIO_MAX = .25;                    // oltre un quarto, si borda
+  /* PROVATO E TOLTO: la grafica dentro un bordo stampato.
+
+     Quando il ritaglio si mangia mezza larghezza -- su Gloomhaven il
+     49%, e sul fronte restava "OOMHAVE" -- sembrava giusto stampare
+     l'immagine intera dentro una cornice, come fa una scatola vera che
+     non ha l'arte a pieno fronte. In scena e' venuta male e basta: la
+     tinta della cornice e' la media dell'immagine, cioe' un grigio
+     spento qualunque sia la copertina, e la banda si mangiava meta'
+     scatola. Segnalato in questi termini -- "le scatole sono
+     orribili".
+
+     Quindi si torna al ritaglio pieno: qualche titolo si accorcia, ma
+     una scatola con la copertina a pieno fronte somiglia a una scatola,
+     e una con la cornice grigia non somigliava a niente. */
   if (mis && aspect > 0){
     const rapp = W / H;
-    const f = aspect > rapp ? rapp / aspect : aspect / rapp;
-    if (f < 1 - TAGLIO_MAX && copertinaVera){
-      coverTex = ART.toTex(ART.coverBordata(game.img, rapp));
-    } else if (aspect > rapp){                // immagine piu' larga: si taglia ai lati
+    if (aspect > rapp){                       // immagine piu' larga: si taglia ai lati
+      const f = rapp / aspect;
       coverTex.repeat.set(f, 1);
       coverTex.offset.set((1 - f) / 2, 0);
     } else if (aspect < rapp){                // piu' alta: si taglia sopra e sotto
+      const f = aspect / rapp;
       coverTex.repeat.set(1, f);
       coverTex.offset.set(0, (1 - f) / 2);
     }

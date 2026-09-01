@@ -4512,27 +4512,31 @@ Adesso decide la convenzione, che è anche il motivo per cui le scatole sono
 fatte così: **il lato lungo in verticale**. Si sbaglia sulle poche davvero
 coricate, invece che su due terzi di tutte.
 
-### Ma allora il ritaglio si mangiava il titolo
+### Il bordo stampato: provato e tolto
 
 Rimessa in piedi la scatola, la faccia ha il rapporto della scatola e
-l'immagine quasi mai lo stesso -- e il ritaglio «cover», che finora bastava,
-diventava enorme: su Gloomhaven il **49% della larghezza**, e sul fronte
-restava «OOMHAVE».
+l'immagine quasi mai lo stesso -- e il ritaglio «cover» diventava enorme: su
+Gloomhaven il **49% della larghezza**, e sul fronte restava «OOMHAVE».
 
 Cappare il ritaglio non si può: tenere il 78% invece del 51% vuol dire
-schiacciare la grafica del 52%, che si vede molto più di un taglio.
+schiacciare la grafica del 52%, che si vede molto più di un taglio. Allora la
+grafica era stata stampata **dentro un bordo**, come fa una scatola vera quando
+l'arte non copre tutto il fronte.
 
-Quindi oltre un quarto di taglio la grafica **si stampa dentro un bordo**, che
-è quello che fa una scatola vera quando l'arte non copre tutto il fronte:
-l'immagine entra intera, centrata, e il resto è una tinta presa dall'immagine
-stessa e scurita di un terzo, così il pannello si stacca invece di sfumarci
-dentro. Niente si deforma e niente si perde.
+**In scena è venuta male, ed è stata tolta.** Segnalata così: «le scatole sono
+orribili». Due motivi, e valgono per qualunque cornice futura:
 
-- **La soglia è un quarto** e non zero: sotto, il pieno fronte è più bello e il
-  poco che se ne va è margine.
-- Il bordo si costruisce **su canvas**, come tutto il resto del sito: una
-  copertina bordata è una texture in più solo per le scatole che ne hanno
-  bisogno.
+- **la tinta era la media dell'immagine**, cioè un grigio spento qualunque sia
+  la copertina -- la media di un'illustrazione a colori è sempre un grigio, e
+  un grigio spento attorno all'arte non somiglia a nessuna scatola;
+- **la banda si mangiava metà scatola.** Con `contain` puro, un'immagine
+  orizzontale dentro una faccia verticale lascia due fasce enormi.
+
+Resta il ritaglio pieno: qualche titolo si accorcia, ma una scatola con la
+copertina a pieno fronte somiglia a una scatola, e una con la cornice grigia non
+somigliava a niente. **Se un giorno si riprova**, la tinta va presa dai pixel
+del BORDO dell'immagine e non dalla media, e il ritaglio va fatto lo stesso
+fino a un quarto prima di lasciare la fascia.
 
 ### La copertina non si stira: si ritaglia
 
