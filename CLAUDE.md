@@ -3094,7 +3094,27 @@ piccolo non può anche essere tenue**.
   appoggiato su un altro pannello. Adesso è pieno, e sta fuori dalle liste del
   livello tinto.
 
-### Il chip di chi sei sparisce appena sei dentro
+### Il chip e' solo la porta
+
+Aveva tre vite e due erano di troppo:
+
+- **dentro**: una targhetta che diceva «admin» o «utente», `disabled`. Un
+  pulsante che non fa niente e ripete una cosa che il profilo dice meglio.
+- **senza backend**: l'interruttore locale fra admin e utente, che non protegge
+  niente ed era una comodita' del banco offline.
+- **ospite**: dice «entra» ed è il solo modo di accedere senza ricaricare, per
+  chi al cancello ha scelto il catalogo e poi ha cambiato idea.
+
+Resta la terza, che è l'unica che fa qualcosa. Le prime due sono via, e con
+loro il tasto «admin» non esiste piu' in nessuno stato. In testata valeva la
+larghezza di una parola in una riga che fra gli 881 e i 1150 ne ha già una di
+troppo: **68 px** restituiti agli strumenti.
+
+Conseguenza dichiarata: **senza backend non si diventa piu' admin**. Il banco
+offline perde i comandi da admin -- è un attrezzo da sviluppo, e il sito vero il
+backend ce l'ha sempre.
+
+### Come si sceglieva prima chi sei
 
 Diceva «admin» o «utente» ed era `disabled`: un pulsante che non fa niente e
 ripete una cosa che il profilo dice meglio -- lì c'è il nick, la faccia e il
@@ -4529,6 +4549,20 @@ grandezza.
 
 #### Due cose misurate lungo la strada, che restano vere
 
+- **Le misure vengono dall'ULTIMA EDIZIONE**, non piu' dalla faccia piu' comune
+  fra tutte: anno piu' alto, e a parita' l'ultima che BGG elenca. E' la scatola
+  che si compra oggi, quindi quella che uno ha davvero sullo scaffale. La regola
+  vecchia pesava allo stesso modo una prima tiratura del 2015 e la ristampa di
+  quest'anno, e quando il formato cambiava dava la scatola vecchia. Il codice e'
+  **duplicato** fra `tools/bgg-lib.mjs` e la edge function, e se cambia uno deve
+  cambiare l'altro. Provato contro BGG vero: Root 22,5x29 (ed. 2025), Gloomhaven
+  29,8x41,3x20,2 (2022).
+- **La cache e' passata a `dado-misure-3`.** Quello che c'era dentro veniva da
+  una regola diversa e nessuno lo rilegge mai: senza cambiare chiave resterebbe
+  sbagliato per sempre. E' la seconda volta che succede, ed e' il modo giusto.
+- **Il tetto del vano non deforma**: `entraNelCubo` scala larghezza e altezza per
+  lo STESSO fattore, quindi un gioco troppo grande viene ridotto alla misura
+  massima ma resta delle proporzioni della copertina.
 - **Le scatole non erano mai ruotate.** Segnalate come «storte», ma il bordo
   alto della faccia pende al massimo di **un pixel** (0,33°) e i due vuoti ai
   lati del vano sono simmetrici entro il millimetro. Se qualcuno rivede

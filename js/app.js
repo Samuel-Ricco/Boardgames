@@ -986,7 +986,10 @@ function buildCabinet(){
    Quei numeri sono in `localStorage` e nessuno li rilegge mai: senza
    cambiare chiave resterebbero sbagliati per sempre. La vecchia si
    cancella, se no resta li' a occupare spazio per niente. */
-const MIS_KEY = 'dado-misure-2';
+/* E si cambia di nuovo passando all'ULTIMA EDIZIONE: quello che c'e'
+   in cache viene dalla faccia piu' comune, cioe' da una regola diversa,
+   e nessuno lo rilegge mai. */
+const MIS_KEY = 'dado-misure-3';
 let MISURE = null;
 
 function misureCache(){
@@ -994,6 +997,7 @@ function misureCache(){
   try {
     MISURE = JSON.parse(localStorage.getItem(MIS_KEY) || '{}') || {};
     localStorage.removeItem('dado-misure');
+    localStorage.removeItem('dado-misure-2');
   }
   catch(e){ MISURE = {}; }
   return MISURE;
@@ -1062,6 +1066,10 @@ function entraNelCubo(w, h, t){
   if (!(w > 0)) w = BOX.w;
   if (!(h > 0)) h = BOX.h;
   if (!(t > 0)) t = BOX.t;
+  /* IL TETTO NON DEFORMA. Un gioco troppo grande per il vano viene
+     ridotto a una misura massima, e larghezza e altezza sono scalate
+     per lo STESSO fattore: le proporzioni della copertina restano
+     quelle, e l'immagine continua a entrarci esatta. */
   const k = Math.min(1, (KAL.cell * .92) / Math.max(w, h));
   return {
     w: w * k,
@@ -3686,27 +3694,22 @@ function setMode(st){
   state.dentro = !!st.dentro;
   document.body.classList.toggle('admin', !!st.admin);
   document.body.classList.toggle('dentro', !!st.dentro || !AUTH.attivo());
+  /* IL CHIP E' SOLO LA PORTA, e non dice piu' chi sei.
+
+     Aveva tre vite e due erano di troppo. Dentro era una targhetta che
+     diceva "admin" o "utente" ed era `disabled`: un pulsante che non fa
+     niente e ripete una cosa che il profilo dice meglio -- li' c'e' il
+     nick, la faccia e il codice amico. Senza backend era l'interruttore
+     locale fra admin e utente, che non protegge niente ed era una
+     comodita' del banco offline.
+
+     Resta la terza, che e' l'unica che fa qualcosa: da OSPITE dice
+     "entra" ed e' il solo modo di accedere senza ricaricare, per chi
+     al cancello ha scelto il catalogo e poi ha cambiato idea. */
   const chip = q('#mode');
-  if (!AUTH.attivo()){
-    chip.hidden = false;
-    chip.textContent = state.mode;          // senza backend resta l'interruttore locale
-    chip.title = TP('testa.cambiaMod');
-  } else if (st.dentro){
-    /* ENTRATI, IL CHIP SPARISCE.
-
-       Diceva "admin" o "utente" ed era `disabled`: un pulsante che non
-       fa niente e ripete una cosa che il profilo dice meglio -- li' c'e'
-       il nick, la faccia e il codice amico. In testata occupava lo
-       spazio di una parola in una riga che, fra gli 881 e i 1150, ne ha
-       gia' una di troppo: e' l'unico numero da cui dipende la fascia
-       libera sopra il mobile.
-
-       Resta invece quando NON si e' dentro, perche' li' non e' una
-       targhetta ma la porta: dice "entra" e funziona. E resta senza
-       backend, dove e' l'interruttore locale fra admin e utente. */
-    chip.hidden = true;
-  } else {
-    chip.hidden = false;
+  const porta = AUTH.attivo() && !st.dentro;
+  chip.hidden = !porta;
+  if (porta){
     chip.textContent = TP('testa.entra');
     chip.title = TP('testa.entraGoogle');
     chip.disabled = false;
@@ -3714,14 +3717,10 @@ function setMode(st){
 }
 
 function bindTools(){
+  /* Una cosa sola: portare su Google. Dentro il chip non c'e', e senza
+     backend nemmeno -- non c'e' niente in cui entrare. */
   q('#mode').addEventListener('click', async function(){
-    if (!AUTH.attivo()){
-      // senza database resta l'interruttore locale di prima
-      setMode({ dentro: false, admin: state.mode !== 'admin' });
-      flash(TP(state.mode === 'admin' ? 'msg.modAdmin' : 'msg.modUtente'));
-      return;
-    }
-    if (AUTH.stato().dentro) return;     // qui dentro il chip e' solo un'etichetta
+    if (!AUTH.attivo() || AUTH.stato().dentro) return;
     try { await AUTH.entra(); }          // porta su Google e poi torna qui
     catch(e){ flash(TP('msg.accessoNo', {e: e.message})); }
   });

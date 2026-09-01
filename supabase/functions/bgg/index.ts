@@ -137,25 +137,26 @@ function parseMisure(xml: string) {
     const n = (t: string) => Number(attr(b, t, 'value')) || 0;
     const w = n('width'), l = n('length'), d = n('depth');
     if (w < 1 || l < 1 || w > 30 || l > 30) continue;
-    versioni.push({ w, l, d: d > 0 && d < 20 ? d : 0 });
+    versioni.push({ w, l, d: d > 0 && d < 20 ? d : 0,
+                    anno: n('yearpublished'), i: versioni.length });
   }
   if (!versioni.length) return null;
 
-  const chiave = (v: { w: number; l: number }) => v.w.toFixed(2) + 'x' + v.l.toFixed(2);
-  const conta: Record<string, number> = {};
-  versioni.forEach((v) => { conta[chiave(v)] = (conta[chiave(v)] || 0) + 1; });
-  let migliore = '', quante = -1;
-  for (const k of Object.keys(conta)) if (conta[k] > quante) { quante = conta[k]; migliore = k; }
+  /* L'ULTIMA EDIZIONE: anno piu' alto, a parita' l'ultima elencata. E'
+     la scatola che si compra oggi. Stessa regola di `tools/bgg-lib.mjs`
+     -- il codice e' duplicato apposta, e se cambia uno cambia l'altro. */
+  let ultima = versioni[0];
+  versioni.forEach((v) => {
+    if (v.anno > ultima.anno || (v.anno === ultima.anno && v.i > ultima.i)) ultima = v;
+  });
 
-  const gruppo = versioni.filter((v) => chiave(v) === migliore);
-  const spessori = gruppo.map((v) => v.d).filter(Boolean).sort((a, b) => a - b);
   const P = 2.54;
   return {
-    larghezza: +(gruppo[0].w * P).toFixed(1),
-    lunghezza: +(gruppo[0].l * P).toFixed(1),
-    spessore: spessori.length ? +(spessori[Math.floor(spessori.length / 2)] * P).toFixed(1) : 0,
+    larghezza: +(ultima.w * P).toFixed(1),
+    lunghezza: +(ultima.l * P).toFixed(1),
+    spessore: ultima.d ? +(ultima.d * P).toFixed(1) : 0,
     edizioni: versioni.length,
-    concordi: gruppo.length,
+    anno: ultima.anno || 0,
   };
 }
 

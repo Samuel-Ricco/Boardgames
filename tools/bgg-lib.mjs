@@ -93,12 +93,15 @@ export function parseSearch(xml){
    -- e non sono tutte uguali: cambiano le ristampe, le scatole
    deluxe, i formati da viaggio.
 
-   Si prende la FACCIA PIU' COMUNE, cioe' la coppia larghezza-lunghezza
-   che ricorre di piu': le ristampe condividono lo stampo, quindi la
-   moda e' l'edizione "normale" e le stranezze restano fuori da sole.
-   Lo spessore e' la mediana fra le edizioni con quella faccia -- li'
-   la variazione e' vera (una deluxe e' piu' alta) e la mediana e' il
-   valore che rappresenta il grosso.
+   Si prende l'ULTIMA EDIZIONE: quella con l'anno piu' alto, e a parita'
+   d'anno l'ultima che BGG elenca. E' la scatola che si compra oggi,
+   quindi e' quella che uno ha davvero sullo scaffale.
+
+   Prima si prendeva la faccia piu' comune fra tutte le edizioni. Su
+   carta e' piu' robusta -- le ristampe condividono lo stampo, quindi la
+   moda e' l'edizione "normale" -- ma pesa allo stesso modo una prima
+   tiratura del 2015 e la ristampa di quest'anno, e quando il formato e'
+   cambiato dava la scatola vecchia.
 
    Torna centimetri: i pollici non li usa nessuno qui dentro. */
 export function parseMisure(xml){
@@ -112,27 +115,26 @@ export function parseMisure(xml){
     // fuori le misure assurde: una scatola da mezzo pollice o da un
     // metro e' un dato sbagliato, non una scatola
     if (w < 1 || l < 1 || w > 30 || l > 30) continue;
-    versioni.push({ w: w, l: l, d: d > 0 && d < 20 ? d : 0 });
+    versioni.push({ w: w, l: l, d: d > 0 && d < 20 ? d : 0,
+                    anno: n('yearpublished'), i: versioni.length });
   }
   if (!versioni.length) return null;
 
-  const chiave = function(v){ return v.w.toFixed(2) + 'x' + v.l.toFixed(2); };
-  const conta = {};
-  versioni.forEach(function(v){ conta[chiave(v)] = (conta[chiave(v)] || 0) + 1; });
-  let migliore = null, quante = -1;
-  Object.keys(conta).forEach(function(k){
-    if (conta[k] > quante){ quante = conta[k]; migliore = k; }
+  /* L'ultima: anno piu' alto, e a parita' l'ultima elencata. Chi non ha
+     l'anno perde il confronto ma resta in gioco, se no un gioco le cui
+     edizioni sono tutte senza anno non avrebbe misure affatto. */
+  let ultima = versioni[0];
+  versioni.forEach(function(v){
+    if (v.anno > ultima.anno || (v.anno === ultima.anno && v.i > ultima.i)) ultima = v;
   });
 
-  const gruppo = versioni.filter(function(v){ return chiave(v) === migliore; });
-  const spessori = gruppo.map(function(v){ return v.d; }).filter(Boolean).sort(function(a, b){ return a - b; });
   const pollici = 2.54;
   return {
-    larghezza: +(gruppo[0].w * pollici).toFixed(1),
-    lunghezza: +(gruppo[0].l * pollici).toFixed(1),
-    spessore: spessori.length ? +(spessori[Math.floor(spessori.length / 2)] * pollici).toFixed(1) : 0,
+    larghezza: +(ultima.w * pollici).toFixed(1),
+    lunghezza: +(ultima.l * pollici).toFixed(1),
+    spessore: ultima.d ? +(ultima.d * pollici).toFixed(1) : 0,
     edizioni: versioni.length,
-    concordi: gruppo.length
+    anno: ultima.anno || 0
   };
 }
 
