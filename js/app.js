@@ -3704,15 +3704,25 @@ function setMode(st){
   document.body.classList.toggle('dentro', !!st.dentro || !AUTH.attivo());
   const chip = q('#mode');
   if (!AUTH.attivo()){
+    chip.hidden = false;
     chip.textContent = state.mode;          // senza backend resta l'interruttore locale
     chip.title = TP('testa.cambiaMod');
   } else if (st.dentro){
-    // il chip dice CHI sei, non fa niente: uscire ha un tasto suo, se no
-    // e' un pulsante che cambia significato a seconda dello stato
-    chip.textContent = TP(st.admin ? 'testa.admin' : 'testa.utente');
-    chip.title = (st.nome || '') + (st.admin ? ' -- admin' : '');
-    chip.disabled = true;
+    /* ENTRATI, IL CHIP SPARISCE.
+
+       Diceva "admin" o "utente" ed era `disabled`: un pulsante che non
+       fa niente e ripete una cosa che il profilo dice meglio -- li' c'e'
+       il nick, la faccia e il codice amico. In testata occupava lo
+       spazio di una parola in una riga che, fra gli 881 e i 1150, ne ha
+       gia' una di troppo: e' l'unico numero da cui dipende la fascia
+       libera sopra il mobile.
+
+       Resta invece quando NON si e' dentro, perche' li' non e' una
+       targhetta ma la porta: dice "entra" e funziona. E resta senza
+       backend, dove e' l'interruttore locale fra admin e utente. */
+    chip.hidden = true;
   } else {
+    chip.hidden = false;
     chip.textContent = TP('testa.entra');
     chip.title = TP('testa.entraGoogle');
     chip.disabled = false;
@@ -7739,7 +7749,7 @@ async function tornaACasa(){
      piu' sullo scaffale: si tornava a casa con addosso la recensione di
      qualcun altro. */
   if (state.phase === 'focus' || state.phase === 'review') unfocus();
-  LIB.torna();
+  await LIB.torna();               // i suoi mobili se ne vanno prima di ridisegnare
   CUORI.vuota();                   // i suoi cuori non c'entrano piu' niente
   document.body.classList.remove('visita');
 

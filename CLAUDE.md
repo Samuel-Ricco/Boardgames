@@ -1054,6 +1054,10 @@ Non si aggiusta rendendo l'id unico -- vorrebbe dire toccare la chiave di tutto
 sono una dozzina di mesh e vanno ricostruiti comunque, quindi e' il momento in
 cui il costo non si nota.
 
+**Verificato sul database vero** con i due account: entrando da samuel2 escono
+le sue otto copertine, comprese quelle di Root, Arcs e Deep Regrets -- i tre
+titoli che ho anch'io, cioe' esattamente i casi che prima mostravano le mie.
+
 **E i cuori non devono poter fermare la libreria.** `await CUORI.carica(id)`
 stava prima di `loadCovers()` e di `applyLibrary()`: un errore li' -- la tabella
 che manca, una lettura storta -- saltava tutte e due le righe, cioe' le
@@ -3089,6 +3093,41 @@ piccolo non può anche essere tenue**.
   una superficie, non una tinta** — e vale a maggior ragione per un comando
   appoggiato su un altro pannello. Adesso è pieno, e sta fuori dalle liste del
   livello tinto.
+
+### Il chip di chi sei sparisce appena sei dentro
+
+Diceva «admin» o «utente» ed era `disabled`: un pulsante che non fa niente e
+ripete una cosa che il profilo dice meglio -- lì c'è il nick, la faccia e il
+codice amico. In testata costava la larghezza di una parola in una riga che fra
+gli 881 e i 1150 ne ha già una di troppo. Misurato: **68 px** restituiti agli
+strumenti.
+
+Ma il chip ha **tre stati**, e solo uno andava tolto:
+
+- **dentro** (con backend): la targhetta disabilitata. Via.
+- **ospite**: dice «entra» ed è **la porta** -- l'unico modo di accedere da
+  quella schermata. Resta.
+- **senza backend**: è l'interruttore locale fra admin e utente, che serve al
+  banco offline. Resta.
+
+Sotto gli 880 spariva già (`#mode, #esci{display:none !important}`), quindi il
+guadagno è tutto dove serviva.
+
+### Tornare a casa è una lettura, e va aspettata
+
+`LIB.torna()` faceva `visitata = null` e poi `caricaLibrerie()` **senza
+aspettarla**: i giochi tornavano tuoi nello stesso istante, ma i MOBILI si
+rileggono dal server e `applyLibrary()` girava prima che arrivassero. Risultato:
+i propri giochi sugli scaffali dell'amico -- il nome del mobile e il legno
+ancora i suoi, e il binario che diceva «1 / 3» perché le librerie in memoria
+erano le sue tre. Si sistemava solo al primo gesto che ricostruiva la scena.
+
+`visita()` la aspettava già, ed è esattamente per questo che **entrare
+funzionava e uscire no**: la stessa lettura, awaited da una parte e no
+dall'altra. Adesso `torna()` restituisce la promessa e `tornaACasa` la aspetta.
+
+Verificato sul database vero, andata e ritorno: di là 8 giochi e 8 copertine su
+«PROVA» + «test», tornando 14 giochi, 14 copertine e «Libreria 5».
 
 ### La via di casa è un pulsante in testata, non un cartello sulla scena
 

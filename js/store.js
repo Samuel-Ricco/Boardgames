@@ -199,10 +199,20 @@ async function visita(uid, nick){
   return visitata;
 }
 
+/* TORNARE E' UNA LETTURA, e va aspettata come quella dell'andata.
+
+   `visitata = null` e' immediato -- i giochi tornano i tuoi nello
+   stesso istante -- ma i MOBILI e i GRUPPI si rileggono dal server, e
+   senza aspettarli chi torna si ritrova i propri giochi sugli scaffali
+   dell'amico: il nome del mobile e il legno erano ancora i suoi, e il
+   binario diceva "1 / 3" perche' le librerie in memoria erano le tre
+   sue. Si sistemava solo al primo gesto che ricostruiva la scena.
+
+   `visita()` la aspettava gia', ed e' per questo che entrare
+   funzionava e uscire no. */
 function torna(){
   visitata = null;
-  caricaLibrerie();                   // e si tornano a leggere i propri
-  caricaGruppi();
+  return Promise.all([caricaLibrerie(), caricaGruppi()]);
 }
 function ospitePresso(){ return visitata; }
 
