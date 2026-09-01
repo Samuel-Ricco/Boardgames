@@ -4489,54 +4489,40 @@ dal ritaglio vecchio stanno in `localStorage` e nessuno li rilegge mai: senza
 cambiare chiave restavano sbagliati per sempre. La vecchia si cancella al primo
 avvio.
 
-### Una scatola sta in piedi, e non lo decide la foto
+### L'orientamento delle scatole: provato e rimesso com'era
 
-Segnalato come «a volte i giochi sono disposti storti sulla libreria». Storti
-non erano: misurato in pixel, il bordo alto della faccia pendeva **al massimo di
-un pixel** e non c'era nessuna rotazione oltre al filo di imbardata di sempre.
-Erano **coricate**.
+Segnalato come «a volte i giochi sono disposti storti sulla libreria». La prima
+cosa misurata dice che **ruotate non erano**: il bordo alto della faccia pende
+al massimo di **un pixel** (0,33°), non c'è nessuna rotazione oltre al filo di
+imbardata di sempre, e i due vuoti ai lati del vano sono simmetrici entro il
+millimetro. Quello resta un fatto utile: se un giorno qualcuno rivede «storto»,
+non è una rotazione.
 
-BGG dà i due lati della faccia e non dice quale vada in su, e a deciderlo era
-l'IMMAGINE: fra le due sistemazioni possibili si prendeva quella dal rapporto
-più simile a quello della copertina. Sembra ragionevole e non lo è, perché
-quelle immagini non sono scansioni del fronte -- sono rendering, spesso
-inquadrati in orizzontale.
+Quello che si è provato — e **rimesso indietro** — è l'orientamento. La regola
+di sempre sceglie fra le due sistemazioni possibili quella dal rapporto più
+simile alla copertina; l'ho sostituita con la convenzione «il lato lungo in
+verticale», e il risultato è stato bocciato: «ieri le scatole venivano
+visualizzate correttamente, oggi si sono rotte». Rimesso il codice di prima,
+byte per byte.
 
-Misurato sulla collezione vera: delle nove scatole non quadrate, **sei venivano
-coricate** -- Gloomhaven, Twilight Imperium, War of the Ring, SETI, Root, Arcs
--- e tutte e sei nella realtà stanno in piedi. Le tre giuste erano quelle la cui
-foto era per caso verticale. Cioè l'immagine **non è una prova
-sull'orientamento**: è una prova su come BGG ha scattato la foto.
+**La misura che l'aveva motivata resta agli atti**, perché vale la pena averla
+scritta anche se non si è agito: sulla collezione vera, delle nove scatole non
+quadrate **sei venivano coricate** — Gloomhaven, Twilight Imperium, War of the
+Ring, SETI, Root, Arcs — e quelle scatole nella realtà stanno in piedi. Le tre
+«giuste» erano quelle la cui foto BGG era per caso verticale.
 
-Adesso decide la convenzione, che è anche il motivo per cui le scatole sono
-fatte così: **il lato lungo in verticale**. Si sbaglia sulle poche davvero
-coricate, invece che su due terzi di tutte.
+E si è capito perché il rimedio ovvio non basta: **mettendole in piedi il
+ritaglio della copertina esplode** (su Gloomhaven il 49% della larghezza, e sul
+fronte restava «OOMHAVE»), e cappare il ritaglio schiaccia la grafica del 52%,
+che si vede molto di più. Chi ci tornerà deve risolvere quel nodo per primo,
+non l'orientamento.
 
-### Il bordo stampato: provato e tolto
-
-Rimessa in piedi la scatola, la faccia ha il rapporto della scatola e
-l'immagine quasi mai lo stesso -- e il ritaglio «cover» diventava enorme: su
-Gloomhaven il **49% della larghezza**, e sul fronte restava «OOMHAVE».
-
-Cappare il ritaglio non si può: tenere il 78% invece del 51% vuol dire
-schiacciare la grafica del 52%, che si vede molto più di un taglio. Allora la
-grafica era stata stampata **dentro un bordo**, come fa una scatola vera quando
-l'arte non copre tutto il fronte.
-
-**In scena è venuta male, ed è stata tolta.** Segnalata così: «le scatole sono
-orribili». Due motivi, e valgono per qualunque cornice futura:
-
-- **la tinta era la media dell'immagine**, cioè un grigio spento qualunque sia
-  la copertina -- la media di un'illustrazione a colori è sempre un grigio, e
-  un grigio spento attorno all'arte non somiglia a nessuna scatola;
-- **la banda si mangiava metà scatola.** Con `contain` puro, un'immagine
-  orizzontale dentro una faccia verticale lascia due fasce enormi.
-
-Resta il ritaglio pieno: qualche titolo si accorcia, ma una scatola con la
-copertina a pieno fronte somiglia a una scatola, e una con la cornice grigia non
-somigliava a niente. **Se un giorno si riprova**, la tinta va presa dai pixel
-del BORDO dell'immagine e non dalla media, e il ritaglio va fatto lo stesso
-fino a un quarto prima di lasciare la fascia.
+**E una cosa imparata chiedendo a BGG**: la misura di una scatola può arrivare
+da **una sola edizione** (la risposta porta `edizioni` e `concordi`). Root ne ha
+32 con 23 concordi, ma capita di trovarne una sola — e una misura appoggiata a
+un'edizione unica è un indizio debole, che può dare una scatola della misura
+sbagliata. Quei due numeri arrivano già dal proxy: se un giorno le misure
+sballano, sono la prima cosa da guardare.
 
 ### La copertina non si stira: si ritaglia
 
