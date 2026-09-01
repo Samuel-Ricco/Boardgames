@@ -1255,8 +1255,13 @@ function makeGameBox(game){
   let coverTex, aspect;
   const copertinaVera = !!(game.img && game.img.naturalWidth && game.img.naturalHeight);
   if (copertinaVera){
-    coverTex = ART.imgTex(game.img);
-    aspect = game.img.naturalWidth / game.img.naturalHeight;
+    /* Il rapporto deve essere quello del DISEGNO, non quello del file:
+       vedi `senzaBande` in art.js. Quasi sempre non c'e' niente da
+       togliere e si tiene l'immagine com'e'. */
+    const netta = ART.senzaBande(game.img);
+    coverTex = netta ? ART.toTex(netta) : ART.imgTex(game.img);
+    aspect = netta ? netta.width / netta.height
+                   : game.img.naturalWidth / game.img.naturalHeight;
   } else {
     const c = game.art === 'root'   ? ART.coverRoot()
             : game.art === 'scythe' ? ART.coverScythe()
@@ -8343,7 +8348,28 @@ function loadCovers(forza){
         im.crossOrigin = 'anonymous';
       }
 
-      im.onload = function(){ if (im.naturalWidth) g.img = im; done(); };
+      im.onload = function(){
+        if (im.naturalWidth){
+          g.img = im;
+          /* LE BANDE SI CERCANO QUI, NON QUANDO SI COSTRUISCE LA SCATOLA.
+
+             Leggere i pixel di un'immagine appena arrivata costa la sua
+             DECODIFICA -- centoquaranta millisecondi su una copertina da
+             cinque megapixel -- e il risultato resta attaccato
+             all'immagine. Dentro `makeGameBox` sarebbe un conto del
+             genere per scatola dentro un fotogramma; qui siamo nel
+             posto dove le copertine si aspettano gia', con la barra di
+             caricamento a schermo. E' la stessa ragione per cui le
+             copertine si caricano prima di costruire il mobile: la
+             geometria deve sapere che proporzioni avere, e le bande
+             sono appunto una questione di proporzioni.
+
+             Non puo' fermare niente: una copertina con o senza bande e'
+             comunque una copertina. */
+          try { ART.senzaBande(im); } catch (e) {}
+        }
+        done();
+      };
       im.onerror = function(){ done(); };
       im.src = g.cover;
     });

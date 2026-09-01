@@ -41,6 +41,142 @@ function imgTex(im){
   return t;
 }
 
+/* LE BANDE NERE NON SONO LA COPERTINA.
+
+   Da quando la faccia della scatola prende il rapporto dell'immagine,
+   quel rapporto deve essere quello del DISEGNO -- non quello del file.
+   E i due non coincidono sempre: la copertina di Arcs su BGG e' un
+   1000x1000 con 111 righe di nero puro sopra e 111 sotto, cioe' una
+   copertina orizzontale impacchettata dentro un quadrato. Il risultato
+   era una scatola quadrata con due bande nere, e sarebbe capitato a
+   qualunque altro gioco caricato allo stesso modo.
+
+   Prima non si vedeva per caso: il ritaglio `cover` tagliava via
+   proprio quelle bande mentre stringeva l'immagine sulla forma della
+   scatola. Tolto il ritaglio, e' saltato fuori quello che c'era
+   sempre stato.
+
+   Si tagliano le righe e le colonne PIATTE che partono dal bordo:
+   piatte davvero (variazione quasi nulla su tutti e tre i canali) e
+   dello stesso colore del bordo. Il tetto per lato e' il 30%: una
+   banda piu' larga di cosi' e' un pezzo di grafica -- un cielo, un
+   fondo pieno -- e togliergliela vorrebbe dire rovinare la copertina
+   invece di scartocciarla.
+
+   Torna un canvas, oppure `null` se non c'e' niente da togliere: chi
+   chiama tiene l'immagine com'e', che e' la strada di quasi tutti.
+   `getImageData` su un'immagine contaminata lancia -- e' lo stesso
+   controllo che fa WebGL -- quindi nel dubbio non si tocca niente. */
+function senzaBande(im){
+  const W = im.naturalWidth || im.width, H = im.naturalHeight || im.height;
+  if (!(W > 8) || !(H > 8)) return null;
+  if (im.__bande !== undefined) return im.__bande;
+
+  /* SI CERCA SU UNA COPIA RIDOTTA, NON SULL'ORIGINALE.
+
+     `getImageData` alloca l'immagine intera: su una copertina da
+     5233x3544 sono settanta megabyte e duecento millisecondi, e le
+     scatole si costruiscono dodici alla volta dentro un fotogramma.
+     Su una copia da 360 pixel di lato il conto scende a qualche
+     millesimo e il bordo resta al suo posto: quello che si perde e'
+     meno di un pixel dell'originale.
+
+     Il taglio pero' si fa sull'ORIGINALE, se no la texture partirebbe
+     da un'immagine da 360 pixel. */
+  const scala = Math.min(1, 360 / Math.max(W, H));
+  const w = Math.max(8, Math.round(W * scala)), h = Math.max(8, Math.round(H * scala));
+  const [c, x] = cnv(w, h);
+  x.drawImage(im, 0, 0, W, H, 0, 0, w, h);
+  let d;
+  try { d = x.getImageData(0, 0, w, h).data; }
+  catch (e) { im.__bande = null; return null; }
+
+  const VAR = 12;    // quanto puo' variare una riga per dirsi piatta
+  const VIC = 16;    // quanto puo' allontanarsi dal colore del bordo
+  const TETTO = .30; // oltre questo non e' una banda, e' grafica
+  const MINIMO = .015;
+
+  function piatta(passo, n, dai){
+    let mn0=255,mn1=255,mn2=255, mx0=0,mx1=0,mx2=0, s0=0,s1=0,s2=0, q=0;
+    for (let i = 0; i < n; i += passo){
+      const p = dai(i) * 4;
+      const a = d[p], b = d[p+1], g = d[p+2];
+      if (a<mn0) mn0=a; if (a>mx0) mx0=a;
+      if (b<mn1) mn1=b; if (b>mx1) mx1=b;
+      if (g<mn2) mn2=g; if (g>mx2) mx2=g;
+      s0+=a; s1+=b; s2+=g; q++;
+    }
+    return { v: Math.max(mx0-mn0, mx1-mn1, mx2-mn2), m: [s0/q, s1/q, s2/q] };
+  }
+  const riga = (y) => piatta(1, w, (i) => y*w + i);
+  const colo = (cx) => piatta(1, h, (i) => i*w + cx);
+
+  const vicini = (a, b) => Math.abs(a[0]-b[0]) <= VIC &&
+                           Math.abs(a[1]-b[1]) <= VIC &&
+                           Math.abs(a[2]-b[2]) <= VIC;
+
+  function quante(tot, prendi){
+    const primo = prendi(0);
+    if (primo.v > VAR) return { n: 0, col: primo.m };
+    const lim = Math.floor(tot * TETTO);
+    let n = 1;
+    while (n < lim){
+      const r = prendi(n);
+      if (r.v > VAR || !vicini(r.m, primo.m)) break;
+      n++;
+    }
+    // arrivata al tetto: e' grafica, non una banda
+    return { n: n >= lim ? 0 : n, col: primo.m };
+  }
+
+  /* Il bordo trovato sulla copia ridotta va riportato all'originale, e
+     con un pixel ridotto di margine: rimpicciolendo, la riga di
+     confine mescola nero e disegno e non risulta piatta, quindi la
+     ricerca si ferma un filo prima. Senza il margine resterebbe un
+     capello scuro sul bordo della scatola. */
+  const mgV = Math.ceil(H / h), mgO = Math.ceil(W / w);
+  const vero = (n, tot, piccolo, margine) => n ? Math.min(Math.round(n * tot / piccolo) + margine, tot) : 0;
+
+  /* UNA FASCIA SOLA NON E' UNA BANDA.
+
+     Questa e' la regola che tiene fuori la grafica, e viene da un
+     falso positivo vero: la copertina di Deep Regrets comincia con
+     cinquantatre righe di verde piatto, e quel verde e' il DICIOTTO
+     PER CENTO dell'immagine -- e' il fondo del disegno, che continua
+     sotto il taglio. Tolte, la copertina cambiava proporzioni per una
+     cosa che era sua.
+
+     Impacchettare un'immagine dentro un riquadro di un'altra forma
+     produce due bande UGUALI e contrapposte, perche' quello che si fa
+     e' centrarla: sopra e sotto, oppure a destra e a sinistra, dello
+     stesso colore e dello stesso spessore. Arcs ha 111 righe di nero
+     sopra e 111 sotto; Deep Regrets ha una fascia sola. Quindi si
+     taglia a coppie, e su un asse solo. */
+  const A = quante(h, riga), B = quante(h, (n) => riga(h-1-n));
+  const C = quante(w, colo), D = quante(w, (n) => colo(w-1-n));
+  const coppia = (a, b) => a.n > 0 && b.n > 0 &&
+    Math.abs(a.n - b.n) <= Math.max(2, .25 * Math.max(a.n, b.n)) &&
+    vicini(a.col, b.col);
+
+  let su = 0, gi = 0, sx = 0, dx = 0;
+  const vert = coppia(A, B), oriz = coppia(C, D);
+  if (vert && (!oriz || A.n + B.n >= C.n + D.n)){
+    su = vero(A.n, H, h, mgV); gi = vero(B.n, H, h, mgV);
+    if (su < H*MINIMO || gi < H*MINIMO){ su = 0; gi = 0; }
+  } else if (oriz){
+    sx = vero(C.n, W, w, mgO); dx = vero(D.n, W, w, mgO);
+    if (sx < W*MINIMO || dx < W*MINIMO){ sx = 0; dx = 0; }
+  }
+
+  const nw = W - sx - dx, nh = H - su - gi;
+  if ((!su && !gi && !sx && !dx) || nw < W*.2 || nh < H*.2){ im.__bande = null; return null; }
+
+  const [c2, x2] = cnv(nw, nh);
+  x2.drawImage(im, sx, su, nw, nh, 0, 0, nw, nh);
+  im.__bande = c2;
+  return c2;
+}
+
 const rnd = (a,b) => a + Math.random()*(b-a);
 
 // La faccia dei titoli disegnati su canvas. E' LA STESSA del CSS -- ce
@@ -1124,6 +1260,7 @@ function targhetta(nome, tinta){
 
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
+  senzaBande: senzaBande,
   aoCubi: aoCubi, fariCubi: fariCubi, copia: copia,
   parquet: parquet, contatto: contatto,
   avatar: avatar, targhetta: targhetta,

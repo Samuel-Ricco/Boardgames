@@ -4578,10 +4578,76 @@ grandezza.
   lati del vano sono simmetrici entro il millimetro. Se qualcuno rivede
   «storto», non è una rotazione.
 - **Una misura di BGG può poggiare su una sola edizione.** La risposta porta
-  `edizioni` e `concordi`: Root ne ha 32 con 23 concordi, ma certi titoli ne
-  hanno una sola — e una misura appoggiata a un'edizione unica è un indizio
-  debole, che può dare una scatola della misura sbagliata. Sono i due numeri da
-  guardare per primi se le misure sballano.
+  `edizioni`: Root ne ha 32, ma certi titoli ne hanno una sola — e una misura
+  appoggiata a un'edizione unica è un indizio debole, che può dare una scatola
+  della misura sbagliata. È il primo numero da guardare se le misure sballano,
+  insieme a `edizione`, che dice da quale versione viene.
+
+#### Le bande nere non sono la copertina
+
+Segnalato come «solo Arcs ha le dimensioni sbagliate, con delle bande nere sopra
+e sotto». Da quando la faccia prende il rapporto dell'immagine, quel rapporto
+deve essere quello del **disegno** — e non e' detto che sia quello del file.
+
+La copertina di Arcs su BGG e' un **1000x1000 con 111 righe di nero puro sopra e
+111 sotto**: una copertina orizzontale impacchettata dentro un quadrato. La
+scatola usciva quadrata e con due bande nere, e il rapporto vero (1,286) era
+proprio quello che si vedeva buttato via.
+
+**Prima non si vedeva per caso.** Il ritaglio `cover` — che c'era per rimediare
+al disaccordo fra faccia e immagine — tagliava via proprio quelle bande mentre
+stringeva l'immagine sulla forma della scatola. Tolto il ritaglio e' saltato
+fuori quello che c'era sempre stato: e' la stessa lezione del token che ha fatto
+uscire due difetti vecchi, cioe' **una copertura casuale non e' una soluzione, e
+quando cade lascia scoperto quello che nascondeva.**
+
+`ART.senzaBande(im)` toglie le righe e le colonne piatte che partono dal bordo, e
+torna un canvas — oppure `null`, che e' il caso di quasi tutti.
+
+- **UNA FASCIA SOLA NON E' UNA BANDA**, ed e' la regola che tiene fuori la
+  grafica. Viene da un falso positivo vero: la copertina di Deep Regrets comincia
+  con cinquantatre righe di verde piatto, e quel verde e' il **18,7%
+  dell'immagine** — e' il fondo del disegno, che continua sotto il taglio.
+  Impacchettare un'immagine dentro un riquadro di un'altra forma vuol dire
+  **centrarla**, quindi produce due bande contrapposte, dello stesso colore e
+  dello stesso spessore. Si taglia a coppie, e su un asse solo.
+- **Il tetto e' il 30% per lato.** Una banda piu' larga di cosi' e' un pezzo di
+  grafica — un cielo, un fondo pieno — e togliergliela vorrebbe dire rovinare
+  la copertina invece di scartocciarla.
+- **Si cerca su una copia ridotta a 360 px, ma si taglia sull'originale.**
+  `getImageData` sull'immagine intera alloca settanta megabyte su una copertina
+  da cinque megapixel; il taglio pero' deve partire dai pixel veri, se no la
+  texture nascerebbe da un'immagine da 360 px. Il bordo trovato si riporta
+  all'originale **con un pixel ridotto di margine**: rimpicciolendo, la riga di
+  confine mescola nero e disegno e non risulta piatta, quindi la ricerca si ferma
+  un filo prima e senza margine resterebbe un capello scuro.
+- **Si cerca in `loadCovers`, non in `makeGameBox`.** Leggere i pixel di
+  un'immagine appena arrivata ne provoca la **decodifica** — centoquaranta
+  millisecondi su una copertina da cinque megapixel — e dodici scatole si
+  costruiscono dentro un fotogramma. `loadCovers` e' il posto dove le copertine
+  si aspettano gia', con la barra a schermo, ed e' la stessa ragione per cui le
+  copertine si caricano prima di costruire il mobile: la geometria deve sapere
+  che proporzioni avere, e le bande sono appunto una questione di proporzioni.
+  Il risultato resta attaccato all'immagine (`im.__bande`), quindi chi arriva
+  dopo lo trova gia' fatto.
+- **`getImageData` su un'immagine contaminata lancia** — e' lo stesso controllo
+  che fa WebGL — quindi nel dubbio non si tocca niente e la copertina resta
+  com'e'.
+
+Verificato sulla collezione vera e su tredici copertine prese da BGG: **tocca
+solo Arcs** (760x760 -> 760x590, rapporto 1,288 contro la scatola vera di
+22,5x29, cioe' 1,289) e lascia intatte le copertine davvero quadrate — Wingspan,
+Everdell, Dune, Brass, Terraforming Mars. Su casi costruiti a mano: taglia le
+bande simmetriche sopra/sotto e destra/sinistra, e **non** tocca la fascia sola,
+le bande di spessore diverso, e il fondo piatto per meta' immagine.
+
+**Nell'elenco e nel catalogo le bande si vedono ancora.** La miniatura sta in un
+riquadro quadrato con `object-fit:cover`, quindi su un'immagine quadrata non
+viene ritagliato niente. Li' lo stesso rimedio non si puo' applicare: le
+miniature del catalogo arrivano dal CDN di BGG **senza CORS**, e un canvas non
+puo' leggerle — e' la stessa ragione per cui quelle finiscono in un `<img>` e
+basta. Costa una barra sottile su un riquadro da 88 px, contro una scatola della
+forma sbagliata: e' il baratto che si e' accettato.
 
 ### Come si sa se una copertina è già quella giusta, senza scaricarla
 
