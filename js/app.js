@@ -1279,20 +1279,6 @@ function makeGameBox(game){
      E' `object-fit: cover`, centrato: si stringe la finestra della
      texture sul lato che abbonda e si sposta di meta' della
      differenza. Niente da ridisegnare, sono due numeri sulla texture. */
-  /* PROVATO E TOLTO: la grafica dentro un bordo stampato.
-
-     Quando il ritaglio si mangia mezza larghezza -- su Gloomhaven il
-     49%, e sul fronte restava "OOMHAVE" -- sembrava giusto stampare
-     l'immagine intera dentro una cornice, come fa una scatola vera che
-     non ha l'arte a pieno fronte. In scena e' venuta male e basta: la
-     tinta della cornice e' la media dell'immagine, cioe' un grigio
-     spento qualunque sia la copertina, e la banda si mangiava meta'
-     scatola. Segnalato in questi termini -- "le scatole sono
-     orribili".
-
-     Quindi si torna al ritaglio pieno: qualche titolo si accorcia, ma
-     una scatola con la copertina a pieno fronte somiglia a una scatola,
-     e una con la cornice grigia non somigliava a niente. */
   if (mis && aspect > 0){
     const rapp = W / H;
     if (aspect > rapp){                       // immagine piu' larga: si taglia ai lati
