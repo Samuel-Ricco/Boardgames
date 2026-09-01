@@ -2210,6 +2210,9 @@ function layout(){
   state.distShelf = KAL.front + Math.max(bh / tan, bw / (tan * aspect));
 
   segnaFerma();
+  /* La forma del contatore dipende dalla larghezza: quando cambia, va
+     riscritto. */
+  try { updateConta(); } catch(e){}
 
   /* Intro: si parte abbastanza indietro da vedere la stanza e un pezzo
      della libreria accanto, e ci si avvicina alla prima. Le misure sono
@@ -3841,9 +3844,23 @@ function updateConta(){
      agli scaffali -- e allora deve dirlo, se no e' un pulsante acceso
      che ripete il nome della schermata in cui ci si trova gia' e non
      promette nessuna via d'uscita. */
+  /* In visita il contatore porta anche il NOME: e' l'unico posto che
+     lo dice, da quando il cartello sotto la testata non c'e' piu'.
+     Senza nick si ripiega su "la sua", che e' quello che diceva prima. */
+  const ospite = LIB.ospitePresso();
+  const chi = (ospite && ospite.nick) || '';
+  /* IL NOME PER ESTESO SOLO DOVE CI STA. A 390 px "la libreria di
+     Samuel: 11" manda la testata a capo, e una testata che va a capo
+     qui non e' un difetto della testata: e' l'unico numero da cui
+     dipende la fascia libera sopra il mobile, dove vivono il nome della
+     libreria e i due comandi che galleggiano. Misurato: 82 px invece di
+     69. Sotto gli 880 resta il nick e basta, che dice comunque di chi
+     e' la libreria. */
+  const stretto = window.innerWidth < 880;
   el.innerHTML = aperto
-    ? T(sua ? 'mia.tornaSua' : 'mia.torna')
-    : T(sua ? 'mia.contaSua' : 'mia.conta', {n: tot});
+    ? T(sua ? (chi && !stretto ? 'mia.tornaDi' : 'mia.tornaSua') : 'mia.torna', {chi: esc(chi)})
+    : T(sua ? (chi ? (stretto ? 'mia.contaDiCorto' : 'mia.contaDi') : 'mia.contaSua')
+            : 'mia.conta', {n: tot, chi: esc(chi)});
   el.title = TP(aperto ? 'mia.tornaTitolo' : 'mia.apriTitolo');
 
   /* E il conto non si sposta da nessuna parte: `#mia-msg`, due righe
@@ -7682,8 +7699,9 @@ async function visitaLibreria(id, nick){
   }
   document.body.classList.add('visita');
   chiudiArreda();
-  q('#vis-chi').textContent = chi;
-  q('#visita').setAttribute('aria-hidden', 'false');
+  /* Il nome del padrone di casa lo porta il contatore: il cartello che
+     lo diceva non c'e' piu', perche' copriva il nome della libreria. */
+  updateConta();
 
   /* La sua stanza, non la tua: una collezione si guarda com'e' a casa
      di chi ce l'ha. `stanza` e' fra le colonne che gli amici leggono. */
@@ -7724,7 +7742,7 @@ async function tornaACasa(){
   LIB.torna();
   CUORI.vuota();                   // i suoi cuori non c'entrano piu' niente
   document.body.classList.remove('visita');
-  q('#visita').setAttribute('aria-hidden', 'true');
+
   STANZA.daProfilo();
   applicaStanza();
   disegnaLibrerie();

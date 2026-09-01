@@ -39,6 +39,25 @@
        sei, dove sei, quanti giochi hai. Cercare e ordinare riguardano
        solo lo scaffale, e sono passati sotto l'imbuto. -->
   <div class="tools">
+    <!-- LA VIA DI CASA, in casa di un altro. Era un cartello che
+         scendeva sotto la testata, centrato: cioe' esattamente nella
+         fascia dove vive il NOME DELLA LIBRERIA, che copriva. Le due
+         cose si contendevano lo stesso posto e a vincere era quella
+         che non dice dove sei.
+
+         Qui invece sta dove sta sempre quello che porta via da una
+         schermata, e non copre niente. Chi sia il padrone di casa lo
+         dice il contatore accanto, che in visita porta gia' il suo
+         nome: due cose diverse, due posti diversi.
+
+         Solo l'icona: una casa non ha bisogno di essere spiegata, e
+         accanto a un contatore che porta un nick la parola sarebbe la
+         terza cosa da leggere in una riga che ne ha gia' due. -->
+    <button id="vis-torna" type="button" class="tool casa"
+            data-i18n-title="visita.tornaTitolo" title="torna alla tua libreria"
+            data-i18n-aria="visita.tornaTitolo" aria-label="torna alla tua libreria">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M3.6 10.6L12 4l8.4 6.6M5.8 9.2V19a1 1 0 001 1h10.4a1 1 0 001-1V9.2M9.8 20v-5.4h4.4V20"/></svg>
+    </button>
     <button id="conta" type="button" class="tool count" aria-live="polite"
             data-i18n-title="testa.contaTitolo" title="vedi la collezione come elenco"></button>
     <button id="mode" type="button" class="tool chip" data-i18n-title="testa.entra"
@@ -47,21 +66,6 @@
             title="chiudi la sessione" data-i18n="testa.esci">esci</button>
   </div>
 </header>
-
-<!-- Quando si guarda la libreria di un amico: chi e', e come si torna
-     a casa. Sta sotto la testata perche' e' una condizione della
-     schermata, non un messaggio di passaggio. -->
-<div id="visita" aria-hidden="true">
-  <!-- La frase e' spezzata attorno a `#vis-chi`: con una chiave sola,
-       riapplicare la lingua cancellerebbe il nome che ci mette il JS. -->
-  <span><i data-i18n="visita.di">la libreria di</i> <b id="vis-chi"></b></span>
-  <!-- La freccia sta FUORI da `data-i18n`: quell'attributo scrive in
-       `innerHTML`, e con la chiave sul pulsante il disegno sparirebbe al
-       primo cambio di lingua. E' la stessa lezione di `#p-pref`. -->
-  <button id="vis-torna" type="button">
-    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M10 5l-7 7 7 7M3 12h18"/></svg><span data-i18n="visita.torna">torna alla tua</span>
-  </button>
-</div>
 
 <!-- LA VISTA DELLO SCAFFALE. Cercare, ordinare e scegliere il mobile
      sono la stessa domanda -- "cosa vedo su questo scaffale" -- e

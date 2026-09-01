@@ -66,6 +66,7 @@ it: {
   /* --- in casa di un amico --- */
   'visita.di':          'la libreria di',
   'visita.torna':       'torna alla tua',
+  'visita.tornaTitolo': 'torna alla tua libreria',
 
   /* --- l'imbuto: cosa vedi sullo scaffale --- */
   'vista.apriTitolo':   'cerca, ordina, scegli il mobile',
@@ -166,9 +167,12 @@ it: {
   'mia.aggiungi':       '+ aggiungi un gioco',
   'mia.conta':          'la mia collezione: <b>{n}</b>',
   'mia.contaSua':       'la sua collezione: <b>{n}</b>',
+  'mia.contaDi':        'la libreria di {chi}: <b>{n}</b>',
+  'mia.contaDiCorto':   '{chi}: <b>{n}</b>',
   'mia.contaCerca':     'la mia collezione: <b>{n}</b> di {m}',
   'mia.torna':          'le mie librerie',
   'mia.tornaSua':       'la sua libreria',
+  'mia.tornaDi':        'le librerie di {chi}',
   'mia.tornaTitolo':    'torna agli scaffali',
   'mia.apriTitolo':     'guarda la collezione come elenco',
 
@@ -680,6 +684,7 @@ en: {
 
   'visita.di':          'the collection of',
   'visita.torna':       'back to yours',
+  'visita.tornaTitolo': 'back to your own library',
 
   'vista.apriTitolo':   'search, sort, choose the bookcase',
   'vista.apriAria':     'filters',
@@ -775,9 +780,12 @@ en: {
   'mia.aggiungi':       '+ add a game',
   'mia.conta':          'my collection: <b>{n}</b>',
   'mia.contaSua':       'their collection: <b>{n}</b>',
+  'mia.contaDi':        '{chi}&#39;s collection: <b>{n}</b>',
+  'mia.contaDiCorto':   '{chi}: <b>{n}</b>',
   'mia.contaCerca':     'my collection: <b>{n}</b> of {m}',
   'mia.torna':          'my bookcases',
   'mia.tornaSua':       'their bookcase',
+  'mia.tornaDi':        '{chi}&#39;s bookcases',
   'mia.tornaTitolo':    'back to the shelves',
   'mia.apriTitolo':     'see the collection as a list',
 

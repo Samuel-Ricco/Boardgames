@@ -1088,19 +1088,6 @@ body.sez-partite #partite{display:block}
 #nick-msg.ok{color:var(--ink-soft)}
 
 /* --- in casa di un amico ---------------------------------------- */
-#visita{
-  position:fixed; z-index:4; left:50%; top:0; transform:translate(-50%,-100%);
-  display:flex; align-items:center; gap:14px;
-  background:var(--card); border:1px solid var(--line); border-top:0;
-  padding:9px 10px 9px 16px; box-shadow:var(--shadow);
-  transition:transform .4s ease;
-}
-/* scende SOTTO la testata: a 390 px, centrato in alto, finiva sopra gli
-   strumenti -- ed e' una condizione della schermata, non un avviso che
-   deve coprire quello che c'e' gia' */
-body.visita #visita{transform:translate(-50%,84px)}
-#visita span{font-size:12px; color:var(--ink-soft)}
-#visita b{font-weight:500; color:var(--ink)}
 
 /* in casa d'altri si guarda e basta: via tutto quello che modifica */
 body.visita #add,
@@ -1500,10 +1487,6 @@ body.review .pan-scroll>*:nth-child(7){transition-delay:.66s}
   /* il contenuto non deve finire sotto la barra */
   .cat-in, .pro-in{padding-bottom:104px}
   #rail{bottom:calc(58px + env(safe-area-inset-bottom))}
-
-  body.visita #visita{transform:translate(-50%,80px)}
-  #visita{padding:8px 8px 8px 13px; gap:10px}
-  #visita span{font-size:11px}
 
   #stanza-apri{bottom:calc(66px + env(safe-area-inset-bottom))}
   #stanza{
@@ -2712,13 +2695,6 @@ body.elenco #conta b{color:#fff}
 @media (pointer:coarse){ .rail-passo{width:26px; height:26px} }
 #rail-txt{color:var(--ink); opacity:.85}
 .rail-bar{background:rgba(var(--ink-rgb),.22)}
-
-/* Il cartello di quando sei in casa di un altro, con la stessa mano */
-#visita{
-  background:rgba(var(--card-rgb),.9); border:0; border-radius:999px;
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  box-shadow:var(--ombra-lieve);
-}
 
 /* Il binario si stringe sul suo contenuto: con la barra a `flex:1` la
    pastiglia si allargava fino ai bordi dello schermo e sembrava una
@@ -4013,46 +3989,30 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
   font-family:var(--ff-display); font-weight:400; font-size:17px; color:var(--accent);
 }
 
-/* ===================================================================
-   IL CARTELLO DI CASA D'ALTRI
+/* ====================================================================
+   LA VIA DI CASA, in casa di un altro
 
-   Dice di chi e' la libreria che stai guardando, ed e' l'unica uscita:
-   di la' il catalogo e il profilo spariscono apposta. Era un rettangolo
-   squadrato con dentro un blocco terracotta grande quanto meta'
-   cartello, che su un telefono andava a capo -- "torna / alla tua" --
-   e sbilanciava tutto.
+   Era un cartello che scendeva sotto la testata, centrato -- cioe'
+   esattamente nella fascia dove vive il NOME DELLA LIBRERIA, che
+   copriva. Due cose nello stesso posto, e a vincere era quella che non
+   dice dove sei.
 
-   Adesso e' una pastiglia sola, come le altre cose che galleggiano
-   sulla scena: carta velata con la sfocatura dietro. Il testo si
-   stringe con l'ellissi se il nick e' lungo, il pulsante non si
-   stringe mai -- e' l'uscita, e un'uscita non va a capo.
+   Adesso e' un pulsante nella testata, dove il sito mette da sempre
+   quello che porta via da una schermata, e non copre piu' niente. Solo
+   l'icona: una casa non ha bisogno di essere spiegata, e chi sia il
+   padrone di casa lo dice gia' il contatore accanto, che in visita
+   porta il suo nome.
 
-   Le misure stanno QUI e non nel blocco di `#visita` piu' su: il
-   livello "pieno" della sezione I COMANDI arriva dopo, e gli
-   riscriverebbe corpo, peso e imbottitura.
-   =================================================================== */
-#visita{
-  gap:10px; max-width:calc(100vw - 24px);
-  background:rgba(var(--card-rgb),.92); backdrop-filter:blur(10px);
-  border:0; border-radius:999px; padding:6px 6px 6px 17px;
-}
-#visita span{
-  min-width:0; font-size:12.5px; white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis;
-}
-#visita b{font-weight:600}
-/* Bianco su terracotta a dodici pixel e mezzo fa poco piu' di tre a
-   uno: sotto la soglia, ed e' il motivo per cui non si leggeva. Il
-   fondo scuro lo porta oltre dieci a uno, e per un'uscita e' anche il
-   tono giusto -- non e' un'azione allegra, e' il modo di andarsene. */
-#vis-torna{
-  flex:none; display:inline-flex; align-items:center; gap:7px;
-  font-size:13px; font-weight:600; white-space:nowrap;
-  padding:9px 15px; border-radius:999px;
-  background:var(--ink); color:#f4f2ee;
-}
-#vis-torna:hover{background:#22241c; color:#fff}
-#vis-torna .ico{width:15px; height:15px; flex:none}
+   Le misure stanno QUI e non piu' su: il livello "pieno" della sezione
+   I COMANDI arriva dopo, e gli riscriverebbe imbottitura e colore. */
+#vis-torna{display:none; flex:none; padding:8px; line-height:0; border-radius:999px}
+body.visita #vis-torna{display:inline-flex; align-items:center}
+/* Terracotta e pieno, come tutto quello che si tocca: e' l'uscita da
+   una schermata in cui si e' entrati apposta. */
+#vis-torna{background:var(--accent); color:var(--card); border:0}
+#vis-torna:hover{background:var(--accent-su); color:var(--card)}
+#vis-torna .ico{width:17px; height:17px; flex:none}
+@media (pointer:coarse){ #vis-torna{padding:11px} }
 
 /* --- il tuo winrate su un gioco solo -------------------------------
    Nel pannello della recensione e dentro la riga aperta del catalogo:

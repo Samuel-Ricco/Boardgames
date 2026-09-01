@@ -3090,21 +3090,32 @@ piccolo non può anche essere tenue**.
   appoggiato su un altro pannello. Adesso è pieno, e sta fuori dalle liste del
   livello tinto.
 
-### Il cartello di casa d'altri
+### La via di casa è un pulsante in testata, non un cartello sulla scena
 
-Era un rettangolo squadrato con dentro un blocco terracotta grande quanto metà
-cartello: su un telefono il pulsante andava a capo — «torna / alla tua» — e
-il cartello si sbilanciava. Adesso è **una pastiglia sola**, come tutto quello
-che galleggia sulla scena: carta velata con la sfocatura dietro, il testo che si
-stringe con l'ellissi se il nick è lungo, e il pulsante che **non si stringe
-mai** — è l'uscita, e un'uscita non va a capo.
+Il cartello «la libreria di X — torna alla tua» scendeva **sotto la testata,
+centrato**: cioè esattamente nella fascia dove vive il **nome della libreria**,
+che copriva. Due cose nello stesso posto, e a vincere era quella che non dice
+dove sei.
 
-- Le misure stanno **in fondo al foglio**, dopo la sezione I COMANDI: il livello
-  «pieno» arriva dopo il blocco di `#visita` e gli riscriverebbe corpo, peso e
-  imbottitura.
-- La freccia sta **fuori da `data-i18n`**: quell'attributo scrive in `innerHTML`,
-  e con la chiave sul pulsante il disegno sparirebbe al primo cambio di lingua.
-  È la stessa lezione di `#p-pref`.
+Adesso è un pulsante nella testata, accanto al contatore, dove il sito mette da
+sempre quello che porta via da una schermata — e non copre più niente.
+
+- **Solo l'icona di una casa.** Una casa non ha bisogno di essere spiegata, e
+  accanto a un contatore che porta un nick la parola sarebbe la terza cosa da
+  leggere in una riga che ne ha già due. Quello che fa sta nel `title`.
+- **Chi sia il padrone di casa lo dice il contatore**, che in visita porta il
+  suo nome: due domande diverse — «di chi è questa libreria» e «come esco» —
+  in due posti diversi, invece che in un cartello che le impacchettava insieme.
+- **Il nome per esteso solo dove ci sta.** A 390 px «la libreria di Samuel: 11»
+  manda la testata a capo, e qui una testata che va a capo non è un difetto
+  della testata: è l'unico numero da cui dipende la fascia libera sopra il
+  mobile. Misurato: **82 px invece di 69**. Sotto gli 880 resta «Samuel: 11»,
+  che dice comunque di chi è. E `layout()` richiama `updateConta()`, se no la
+  forma resterebbe quella della larghezza di prima.
+- Il pulsante è **terracotta e pieno**, come tutto quello che si tocca: è
+  l'uscita da una schermata in cui si è entrati apposta, non un comando fra
+  tanti. Le misure stanno **in fondo al foglio**, dopo la sezione I COMANDI, se
+  no il livello «pieno» gli riscriverebbe imbottitura e colore.
 
 ### La pastiglia dice qual e' quella scelta, non che sono pulsanti
 
