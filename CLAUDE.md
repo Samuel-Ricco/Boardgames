@@ -4489,6 +4489,51 @@ dal ritaglio vecchio stanno in `localStorage` e nessuno li rilegge mai: senza
 cambiare chiave restavano sbagliati per sempre. La vecchia si cancella al primo
 avvio.
 
+### Una scatola sta in piedi, e non lo decide la foto
+
+Segnalato come «a volte i giochi sono disposti storti sulla libreria». Storti
+non erano: misurato in pixel, il bordo alto della faccia pendeva **al massimo di
+un pixel** e non c'era nessuna rotazione oltre al filo di imbardata di sempre.
+Erano **coricate**.
+
+BGG dà i due lati della faccia e non dice quale vada in su, e a deciderlo era
+l'IMMAGINE: fra le due sistemazioni possibili si prendeva quella dal rapporto
+più simile a quello della copertina. Sembra ragionevole e non lo è, perché
+quelle immagini non sono scansioni del fronte -- sono rendering, spesso
+inquadrati in orizzontale.
+
+Misurato sulla collezione vera: delle nove scatole non quadrate, **sei venivano
+coricate** -- Gloomhaven, Twilight Imperium, War of the Ring, SETI, Root, Arcs
+-- e tutte e sei nella realtà stanno in piedi. Le tre giuste erano quelle la cui
+foto era per caso verticale. Cioè l'immagine **non è una prova
+sull'orientamento**: è una prova su come BGG ha scattato la foto.
+
+Adesso decide la convenzione, che è anche il motivo per cui le scatole sono
+fatte così: **il lato lungo in verticale**. Si sbaglia sulle poche davvero
+coricate, invece che su due terzi di tutte.
+
+### Ma allora il ritaglio si mangiava il titolo
+
+Rimessa in piedi la scatola, la faccia ha il rapporto della scatola e
+l'immagine quasi mai lo stesso -- e il ritaglio «cover», che finora bastava,
+diventava enorme: su Gloomhaven il **49% della larghezza**, e sul fronte
+restava «OOMHAVE».
+
+Cappare il ritaglio non si può: tenere il 78% invece del 51% vuol dire
+schiacciare la grafica del 52%, che si vede molto più di un taglio.
+
+Quindi oltre un quarto di taglio la grafica **si stampa dentro un bordo**, che
+è quello che fa una scatola vera quando l'arte non copre tutto il fronte:
+l'immagine entra intera, centrata, e il resto è una tinta presa dall'immagine
+stessa e scurita di un terzo, così il pannello si stacca invece di sfumarci
+dentro. Niente si deforma e niente si perde.
+
+- **La soglia è un quarto** e non zero: sotto, il pieno fronte è più bello e il
+  poco che se ne va è margine.
+- Il bordo si costruisce **su canvas**, come tutto il resto del sito: una
+  copertina bordata è una texture in più solo per le scatole che ne hanno
+  bisogno.
+
 ### La copertina non si stira: si ritaglia
 
 Con le misure vere la faccia della scatola ha il rapporto della scatola, e

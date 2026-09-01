@@ -1006,39 +1006,38 @@ function salvaMisure(){
 /* Le misure di una scatola in unita' di scena, o `null` se non si
    sanno. `asp` e' il rapporto della copertina: BGG da' due lati della
    faccia ma non dice come sta in piedi, e a dirlo e' l'immagine. */
-function misureDi(game, asp){
+function misureDi(game){
   const m = game && game.bgg && misureCache()[String(game.bgg)];
   if (!m || !(m.larghezza > 0) || !(m.lunghezza > 0)) return null;
 
-  const gr = Math.max(m.larghezza, m.lunghezza);
-  const pi = Math.min(m.larghezza, m.lunghezza);
+  /* COME STA IN PIEDI LA SCATOLA: IL LATO LUNGO IN VERTICALE.
 
-  /* COME STA IN PIEDI LA SCATOLA.
+     BGG da' i due lati della faccia e non dice quale vada in su, e per
+     un pezzo a deciderlo e' stata l'IMMAGINE -- fra le due sistemazioni
+     possibili si prendeva quella dal rapporto piu' simile a quello
+     della copertina. Sembra ragionevole e non lo e', perche' quelle
+     immagini non sono scansioni del fronte: sono rendering, spesso
+     inquadrati in orizzontale.
 
-     BGG da' due lati della faccia e non dice quale sia in verticale.
-     A romperlo e' l'immagine: fra le due sistemazioni possibili si
-     prende quella il cui rapporto somiglia di piu' a quello della
-     copertina. Se la scatola e' quadrata la domanda non si pone.
+     Misurato sulla collezione vera: delle nove scatole non quadrate,
+     SEI venivano coricate -- Gloomhaven, Twilight Imperium, War of the
+     Ring, SETI, Root, Arcs -- e tutte e sei nella realta' stanno in
+     piedi. Le tre giuste erano quelle la cui foto era per caso
+     verticale. Cioe' l'immagine non e' una prova sull'orientamento: e'
+     una prova su come BGG ha scattato la foto.
 
-     Quello che NON si fa e' lasciare che sia l'immagine a dettare la
-     forma: le immagini di BGG non sono scansioni del fronte, sono
-     spesso rendering ritagliati in 4:3 o in quadrato. Prendendole alla
-     lettera, una scatola quadrata come Terraforming Mars diventava
-     4:3 e Gloomhaven si sdraiava. La forma la dice la SCATOLA;
-     l'immagine dice solo da che parte sta. */
-  let w, h;
-  if (gr / pi < 1.06){                 // quadrata: non c'e' niente da girare
-    w = gr / 10; h = pi / 10;
-  } else {
-    const disteso = gr / pi;           // lato lungo orizzontale
-    const eretto  = pi / gr;           // lato lungo verticale
-    const orizz = Math.abs(Math.log(asp / disteso)) <= Math.abs(Math.log(asp / eretto));
-    w = (orizz ? gr : pi) / 10;
-    h = (orizz ? pi : gr) / 10;
-  }
+     Quindi decide la convenzione, che e' anche il motivo per cui le
+     scatole sono fatte cosi': una scatola di un gioco da tavolo sta in
+     piedi con il lato lungo in verticale. Si sbaglia sulle poche
+     davvero coricate, invece che su due terzi di tutte.
 
-  // il limite non lo mette piu' questa funzione: lo mette
-  // `entraNelCubo`, che vale anche per chi le misure non le ha
+     La forma resta quella della SCATOLA: la copertina si ritaglia per
+     entrarci, e non e' mai lei a dettare le proporzioni. */
+  const w = Math.min(m.larghezza, m.lunghezza) / 10;
+  const h = Math.max(m.larghezza, m.lunghezza) / 10;
+
+  // il limite non lo mette questa funzione: lo mette `entraNelCubo`,
+  // che vale anche per chi le misure non le ha
   return { w: w, h: h, t: m.spessore > 0 ? m.spessore / 10 : BOX.t };
 }
 
@@ -1262,7 +1261,7 @@ function makeGameBox(game){
      fissa e altezza dal rapporto della copertina. In tutti e due i
      casi passano da `entraNelCubo`, che e' l'unico punto in cui si
      decide che una scatola sta nel suo vano. */
-  const mis = misureDi(game, aspect);
+  const mis = misureDi(game);
   const dim = entraNelCubo(mis ? mis.w : BOX.w,
                            mis ? mis.h : BOX.w / aspect,
                            mis ? mis.t : BOX.t);
@@ -1279,14 +1278,22 @@ function makeGameBox(game){
      E' `object-fit: cover`, centrato: si stringe la finestra della
      texture sul lato che abbonda e si sposta di meta' della
      differenza. Niente da ridisegnare, sono due numeri sulla texture. */
+  /* MA SI TAGLIA POCO, NON A META'. Il ritaglio funziona finche' quello
+     che se ne va e' un margine; oltre, si porta via il titolo -- su
+     Gloomhaven erano il 49% della larghezza, e sul fronte restava
+     "OOMHAVE". Da li' in poi la grafica si stampa dentro un bordo,
+     che e' quello che fa una scatola vera quando l'arte non copre
+     tutto il fronte: entra intera e non si deforma niente. */
+  const TAGLIO_MAX = .25;                    // oltre un quarto, si borda
   if (mis && aspect > 0){
     const rapp = W / H;
-    if (aspect > rapp){                       // immagine piu' larga: si taglia ai lati
-      const f = rapp / aspect;
+    const f = aspect > rapp ? rapp / aspect : aspect / rapp;
+    if (f < 1 - TAGLIO_MAX && copertinaVera){
+      coverTex = ART.toTex(ART.coverBordata(game.img, rapp));
+    } else if (aspect > rapp){                // immagine piu' larga: si taglia ai lati
       coverTex.repeat.set(f, 1);
       coverTex.offset.set((1 - f) / 2, 0);
     } else if (aspect < rapp){                // piu' alta: si taglia sopra e sotto
-      const f = aspect / rapp;
       coverTex.repeat.set(1, f);
       coverTex.offset.set(0, (1 - f) / 2);
     }
