@@ -263,7 +263,22 @@ function normalizza(s){
   const dentro = function(lista, v, d){
     return lista.some(function(x){ return x.v === v; }) ? v : d;
   };
-  o.scaffali  = dentro(LEGNI,     o.scaffali,  DEFAULT.scaffali);
+  /* LE TAVOLOZZE ERANO CHIUSE, E ADESSO NON PIU' -- per il legno.
+
+     La regola di prima diceva che un selettore libero dava scaffali
+     fucsia su muri verde acido, ed era vera. Ma il legno del mobile e'
+     stato chiesto libero, e la differenza con il muro e' che il mobile
+     e' UNO: si accorda con la stanza chi lo sceglie, non il sito.
+
+     Muro, pavimento, colore del nome e temperatura dei faretti restano
+     chiusi: quelli sono la stanza, e sono anche il fondo su cui il
+     testo del sito deve restare leggibile. */
+  const ESA = /^#[0-9a-fA-F]{6}$/;
+  const dentroOTinta = function(lista, v, d){
+    if (lista.some(function(x){ return x.v === v; })) return v;
+    return ESA.test(v) ? String(v).toLowerCase() : d;
+  };
+  o.scaffali  = dentroOTinta(LEGNI, o.scaffali, DEFAULT.scaffali);
   o.muro      = dentro(MURI,      o.muro,      DEFAULT.muro);
   o.pavimento = dentro(PAVIMENTI, o.pavimento, DEFAULT.pavimento);
   o.arredo    = dentro(ARREDI,    o.arredo,    DEFAULT.arredo);

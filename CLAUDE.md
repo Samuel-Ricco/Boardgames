@@ -1763,9 +1763,27 @@ colonne che gli amici leggono.
 
 - **`js/stanza.js` non sa niente di three.js**: tiene i valori e le tavolozze,
   li traduce `app.js`. Cosi' la stanza si legge anche senza WebGL.
-- **Le tavolozze sono chiuse.** Un selettore di colore libero dava scaffali
-  fucsia su muri verde acido: sei tinte per superficie, che stanno insieme, e
-  ognuna e' un legno o un intonaco che esiste.
+- ~~**Le tavolozze sono chiuse.**~~ Lo erano, e il motivo era buono: un
+  selettore di colore libero dava scaffali fucsia su muri verde acido. **Dal
+  2026-09-02 il legno del mobile ha anche la ruota**, ed e' stato chiesto.
+  La differenza con il muro e' che il mobile e' **uno**: chi sceglie un legno
+  strano lo accorda alla sua stanza, mentre muro e pavimento sono il fondo su
+  cui deve restare leggibile il testo del sito. Muro, pavimento, colore del
+  nome e temperatura dei faretti **restano chiusi**.
+- **I predefiniti non sono un ripiego**, e restano al loro posto: sono sei
+  legni che esistono, e chi non ha voglia di scegliere ne tocca uno e ha
+  finito. La ruota e' l'ultima della fila perche' e' l'unica che non offre
+  una scelta gia' fatta ma la chiede, e porta il **bordo tratteggiato con il
+  colore rientrato**: riempiendo il cerchio si leggeva come un settimo
+  bollino. Se il colore corrente non e' nessuno dei predefiniti non si accende
+  nessun bollino e l'anello dell'accento va alla ruota.
+- **Il meeple non ha avuto bisogno di permessi**: `ART.avatar` prende
+  `{corpo, fondo}` come esadecimali da sempre, e le pastiglie erano l'unica
+  cosa che li teneva su una lista. Li' la ruota ascolta `input` e non
+  `change` -- non salva niente, ridisegna una faccia, e vedere il meeple
+  cambiare mentre si trascina il cursore e' meta' del senso di avere una
+  ruota. Sul legno invece si ascolta `change`, se no sarebbe una scrittura
+  sul database per ogni pixel di trascinamento.
 - **Da una tinta sola escono le tre di un legno** (`legno()`): la base, la vena
   scurita, il riflesso verso il bianco. Sceglierne tre a mano per essenza voleva
   dire diciotto colori da tenere in accordo.

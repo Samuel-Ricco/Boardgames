@@ -5625,8 +5625,20 @@ function disegnaStanza(){
      l'identificativo di sempre (`x.v`): quello che finisce sul
      database e' "il legno", non un marrone -- se no cambiando
      tavolozza la stanza salvata perderebbe la scelta. */
-  const gruppo = function(sel, lista, valore, testo, chiave){
-    q(sel).innerHTML = lista.map(function(x){
+  const gruppo = function(sel, lista, valore, testo, chiave, ruota){
+    /* I BOLLINI RESTANO, E ACCANTO C'E' LA RUOTA.
+
+       I predefiniti non sono un ripiego: sono sei legni che esistono, e
+       chi non ha voglia di scegliere un colore ne tocca uno e ha finito.
+       La ruota e' per chi il colore ce l'ha in mente -- ed e' l'ultima
+       della fila, perche' e' l'unica che non offre una scelta gia'
+       fatta ma la chiede.
+
+       Il bollino acceso e' quello scelto; se il colore non e' nessuno
+       dei sei -- cioe' viene dalla ruota -- non si accende nessun
+       bollino e la ruota porta quel colore addosso. */
+    const scelto = lista.some(function(x){ return x.v === valore; });
+    const html = lista.map(function(x){
       const on = valore === x.v ? ' class="on"' : '';
       const mostra = chiave ? STANZA.tinta(chiave, x.v) : x.v;
       const stile = testo ? '' : ' style="background:' + esc(mostra) + '"';
@@ -5634,8 +5646,14 @@ function disegnaStanza(){
       return '<button type="button" data-v="' + esc(x.v) + '" title="' + esc(nome) + '"' +
              on + stile + '>' + (testo ? esc(nome) : '') + '</button>';
     }).join('');
+    const conRuota = ruota
+      ? '<input type="color" class="ruota' + (scelto ? '' : ' on') + '" value="' +
+        esc(chiave ? STANZA.tinta(chiave, valore) : valore) + '" ' +
+        'title="' + esc(TP('stanza.ruota')) + '" aria-label="' + esc(TP('stanza.ruota')) + '">'
+      : '';
+    q(sel).innerHTML = html + conRuota;
   };
-  gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false, 'scaffali');
+  gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false, 'scaffali', true);
   gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false, 'muro');
   gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false, 'pavimento');
   gruppo('#st-nome-tinta', STANZA.NOMI,     cur.nome,       false, 'nome');
@@ -6085,6 +6103,26 @@ function bindStanza(){
      `librerie.arredo` resta sul database e resta quello che una cella
      eredita dicendo "come la libreria": si legge, non si scrive piu'
      da qui. */
+  /* La ruota manda `input` mentre si trascina nel selettore del
+     sistema, e `change` quando si chiude. Si ascolta `change`: salvare
+     a ogni pixel di trascinamento vorrebbe dire una scrittura al
+     secondo sul database, ed e' la stessa ragione per cui il cursore
+     della luce salva dopo una pausa. */
+  q('#st-scaffali').addEventListener('change', function(e){
+    const r = e.target.closest('input.ruota');
+    if (!r) return;
+    const L = libCorrente();
+    if (!L){ flash(TP('stanza.nienteArredo')); return; }
+    q('#st-msg').textContent = TP('stanza.salvando');
+    LIB.stileLibreria(L.id, { scaffali: r.value }).then(function(){
+      q('#st-msg').textContent = TP('stanza.salvata');
+    }).catch(function(err){
+      q('#st-msg').textContent = TP('stanza.nonSalvata', {e: err.message});
+    });
+    disegnaStanza();
+    applicaStanza();
+  });
+
   [['#st-scaffali','scaffali']].forEach(function(par){
     q(par[0]).addEventListener('click', function(e){
       const b = e.target.closest('button[data-v]');
@@ -6610,19 +6648,40 @@ function chiudiLab(){
 }
 
 function disegnaPastiglie(){
+  /* Stessa forma del pannello della libreria: i predefiniti, e in fondo
+     la ruota per chi il colore ce l'ha in mente. Qui il colore libero
+     non ha nemmeno bisogno di essere permesso -- `ART.avatar` prende
+     `{corpo, fondo}` come esadecimali e basta, e le pastiglie erano
+     l'unica cosa che li teneva su una lista. */
   const gruppo = function(sel, valori, campo, testo){
-    q(sel).innerHTML = valori.map(function(v){
-      const scelto = String(labAvatar[campo]) === String(v) ? ' class="on"' : '';
+    const scelto = valori.some(function(v){ return String(labAvatar[campo]) === String(v); });
+    const html = valori.map(function(v){
+      const on = String(labAvatar[campo]) === String(v) ? ' class="on"' : '';
       const stile = testo ? '' : ' style="background:' + esc(v) + '"';
-      return '<button type="button" data-v="' + esc(v) + '"' + scelto + stile + '>' +
+      return '<button type="button" data-v="' + esc(v) + '"' + on + stile + '>' +
              (testo ? (v || '&mdash;') : '') + '</button>';
     }).join('');
+    q(sel).innerHTML = html + (testo ? '' :
+      '<input type="color" class="ruota' + (scelto ? '' : ' on') + '" value="' +
+      esc(labAvatar[campo] || '#000000') + '" title="' + esc(TP('stanza.ruota')) +
+      '" aria-label="' + esc(TP('stanza.ruota')) + '">');
     qa(sel + ' button').forEach(function(b){
       b.addEventListener('click', function(){
         const v = b.getAttribute('data-v');
         labAvatar[campo] = testo ? (parseInt(v, 10) || 0) : v;
         disegnaPastiglie();
       });
+    });
+    const r = q(sel + ' input.ruota');
+    /* Qui si ascolta `input` e non `change`: non si salva niente, si
+       ridisegna una faccia su canvas -- e vedere il meeple cambiare
+       mentre si trascina il cursore e' meta' del senso di avere una
+       ruota. Il salvataggio e' un pulsante suo. */
+    if (r) r.addEventListener('input', function(){
+      labAvatar[campo] = r.value;
+      disegnaFaccia(q('#pro-avatar'), labAvatar, 160);
+      qa(sel + ' button.on').forEach(function(b){ b.classList.remove('on'); });
+      r.classList.add('on');
     });
   };
   gruppo('#lab-corpi', PROFILO.CORPI, 'corpo', false);

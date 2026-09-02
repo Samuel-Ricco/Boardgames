@@ -3295,6 +3295,34 @@ body.arreda #stanza{transform:none}
   box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent);
 }
 
+/* LA RUOTA. Stessa forma e stessa misura dei bollini -- e' una scelta
+   nella stessa fila, e due forme diverse si leggerebbero come due cose
+   diverse -- ma con il bordo tratteggiato, che dice "qui il colore lo
+   metti tu" invece di mostrarne uno gia' scelto.
+
+   `input[type=color]` disegna un proprio riquadro dentro di se': senza
+   i due `::-webkit-color-swatch` dentro il cerchio resta un quadratino
+   con il suo margine. */
+.pastiglie.tinte .ruota, #st-scaffali .ruota{
+  width:34px; height:34px; padding:0; border-radius:50%; cursor:pointer;
+  background:none; border:1.5px dashed rgba(var(--ink-rgb),.34);
+  -webkit-appearance:none; appearance:none;
+}
+/* Il colore sta RIENTRATO, se no riempie il cerchio e la ruota si
+   legge come un settimo bollino: l'anello tratteggiato che resta
+   attorno e' tutta la differenza fra "questo colore" e "scegli un
+   colore". */
+.pastiglie.tinte .ruota::-webkit-color-swatch-wrapper,
+#st-scaffali .ruota::-webkit-color-swatch-wrapper{padding:5px}
+.pastiglie.tinte .ruota::-webkit-color-swatch,
+#st-scaffali .ruota::-webkit-color-swatch{border:0; border-radius:50%}
+/* Scelto dalla ruota: l'anello dell'accento, come per i bollini, cosi'
+   si vede che a comandare e' lei e non uno dei predefiniti. */
+.pastiglie.tinte .ruota.on, #st-scaffali .ruota.on{
+  border-style:solid; border-color:transparent;
+  box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent);
+}
+
 .pastiglie.testo button{
   width:auto; height:auto; border-radius:999px; padding:8px 14px;
   font-family:var(--ff); font-size:13px; font-weight:500;
