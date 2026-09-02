@@ -3088,42 +3088,71 @@ body.sez-collezione:not(.elenco) header{
 }
 .tavolozze[open] > summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
 
-/* La striscia di tinte: nel riassunto dice qual e' quella scelta, nelle
-   voci dice come sono fatte le altre. */
+/* Nel riassunto della tendina basta il colore scelto: la domanda a cui
+   quella riga risponde e' "di che colore e' adesso". */
 .tav-mostra{display:flex; gap:2px; flex:none}
-.tav-mostra i{width:9px; height:16px; border-radius:2px; display:block}
+.tav-mostra i{width:16px; height:16px; border-radius:50%; display:block}
 
 #pro-tema-lista{
-  display:flex; flex-direction:column; gap:6px; margin:8px 0 0; padding:0 2px;
+  display:flex; flex-direction:column; gap:12px; margin:8px 0 0; padding:0 2px;
   animation:apreSotto .22s var(--ease) both;
 }
+
+/* LE DUE BASI, affiancate. Ognuna porta un "Aa" sul proprio fondo e con
+   il proprio inchiostro: e' l'unica anteprima che serve, perche' e'
+   esattamente la cosa che la base decide -- se il testo si legge. */
+.tav-basi{display:flex; gap:8px}
+
 /* PESANO DUE ID, e non e' un vezzo: dentro il profilo c'e' gia'
    `#profilo button:not(.primario):not(.secondario):not(.distruttivo)`,
    che vale un id, TRE classi e un elemento -- ogni `:not()` conta come
    la cosa che contiene. Con un id solo la voce scelta restava col
-   fondo grigio del profilo e un contorno terracotta, invece del pieno.
-   E' la stessa lezione della pastiglia della lingua, pagata due volte. */
-#profilo #pro-tema-lista button{
-  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+   fondo grigio del profilo invece del pieno. E' la lezione della
+   pastiglia della lingua, pagata due volte. */
+#profilo #pro-tema-lista .tav-base{
+  flex:1; display:flex; align-items:center; gap:9px; text-align:left;
   font-family:var(--ff-text); font-size:13px; font-weight:500; color:var(--ink-soft);
   padding:8px 12px; border-radius:var(--r-s); cursor:pointer;
   background:rgba(var(--ink-rgb),.05); border:1px solid transparent;
 }
-#profilo #pro-tema-lista button:hover{color:var(--ink); background:rgba(var(--ink-rgb),.10)}
-/* Quella scelta e' PIENA, come la pastiglia della barra in basso e come
-   l'icona scelta nel menu di una cella: fra voci dello stesso peso, un
-   contorno di un altro colore si legge come "questa e' diversa", non
-   come "questa e' quella". */
-#profilo #pro-tema-lista button[aria-pressed="true"]{
+#profilo #pro-tema-lista .tav-base:hover{color:var(--ink); background:rgba(var(--ink-rgb),.10)}
+#profilo #pro-tema-lista .tav-base.on{
   color:var(--card); background:var(--accent); border-color:var(--accent);
 }
-#profilo #pro-tema-lista button[aria-pressed="true"] .tav-mostra i{
-  box-shadow:0 0 0 1px rgba(255,255,255,.45);
+.tav-prova{
+  flex:none; width:30px; height:30px; border-radius:var(--r-s);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--ff-display); font-size:13px; line-height:1;
+  box-shadow:inset 0 0 0 1px rgba(var(--ink-rgb),.14);
 }
 #pro-tema-lista .tav-nome{flex:1; min-width:0}
+
+/* L'ACCENTO: otto predefiniti e la ruota in fondo, la stessa forma del
+   pannello della libreria. */
+.tav-accenti{display:flex; flex-wrap:wrap; gap:9px; align-items:center}
+#profilo #pro-tema-lista .tav-acc{
+  width:30px; height:30px; padding:0; border-radius:50%; border:0; cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(var(--ink-rgb),.14);
+}
+#profilo #pro-tema-lista .tav-acc.on{
+  box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent);
+}
+#pro-tema-lista .ruota{
+  width:30px; height:30px; padding:0; border-radius:50%; cursor:pointer;
+  background:none; border:1.5px dashed rgba(var(--ink-rgb),.34);
+  -webkit-appearance:none; appearance:none;
+}
+#pro-tema-lista .ruota::-webkit-color-swatch-wrapper{padding:5px}
+#pro-tema-lista .ruota::-webkit-color-swatch{border:0; border-radius:50%}
+#pro-tema-lista .ruota.on{
+  border-style:solid; border-color:transparent;
+  box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent);
+}
+
 @media (pointer:coarse){
   .tavolozze > summary{padding:11px 12px}
-  #profilo #pro-tema-lista button{padding:11px 12px}
+  #profilo #pro-tema-lista .tav-base{padding:11px 12px}
+  #profilo #pro-tema-lista .tav-acc, #pro-tema-lista .ruota{width:34px; height:34px}
 }
 
 /* --- il marchio, piu' grande --------------------------------------- */

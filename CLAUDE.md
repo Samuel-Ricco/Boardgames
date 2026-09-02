@@ -4370,6 +4370,34 @@ annidati e si confronta la media della luminanza con quella della sorgente. E
 attenzione: spegnere una lampada da console non si vede, perche' il ciclo di
 rendering le riscrive l'intensita' a ogni fotogramma.
 
+## Due basi e un accento, non cinque tavolozze
+
+Le tavolozze erano cinque e complete: ognuna cambiava tutte e otto le tinte.
+Erano belle e servivano a poco -- chi apriva quel menu voleva due cose, *chiaro
+o scuro* e *di che colore*, e doveva invece scegliere fra cinque mondi gia'
+fatti in cui quelle due domande erano impacchettate insieme.
+
+Adesso la **base** dice solo chiaro o scuro -- fondo, carta e inchiostro, cioe'
+quello che decide se il sito si legge -- e l'**accento** e' una scelta libera
+che ci si posa sopra, con otto predefiniti e la ruota in fondo. La disciplina di
+prima resta: otto tinte, e tutto il resto derivato.
+
+- **Le tre tavolozze che se ne vanno non sono perse.** Vaporwave, bosco e china
+  erano, di fatto, tre accenti: magenta, verde e blu. Sono fra i predefiniti, e
+  `VECCHIE` traduce il valore salvato -- chi aveva `notte` si ritrova la base
+  scura, gli altri il chiaro con il loro accento. Nessuna migrazione.
+- **Una tavolozza si scrive in una stringa sola** (`scuro~#2f6b43`), perche' e'
+  cosi' che viaggia: dentro `profili.stanza.tavolozza`, che e' quello che un
+  amico legge per vedere la tua libreria con i tuoi colori. Il separatore e' `~`
+  come per le celle degli arredi.
+- **L'accento si adatta alla base, e non e' un vezzo.** L'accento fa anche da
+  FONDO per del testo (`--card` sopra `--accent`): un verde scelto sul chiaro,
+  messo sullo scuro, diventa fango. `adattaAccento` lo tira verso il bianco
+  finche' il contrasto con la carta non regge. Misurato: `#2f6b43` resta se
+  stesso sul chiaro e diventa `#598867` sullo scuro.
+- **Il rosso non e' fra i predefiniti e non ci sara'**: non e' decorazione, e'
+  il segnale di quello che distrugge, e un accento rosso lo renderebbe muto.
+
 ## Il tema scuro, che si era detto di non fare
 
 `tema.notte` in `js/tema.js`. La nota del vaporwave diceva: «il sito e' fatto di

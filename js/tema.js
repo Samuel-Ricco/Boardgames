@@ -35,85 +35,144 @@
    =============================================================== */
 const TEMA = (function(){
 
-const CHIAVE = 'dado-tavolozza';
+const CHIAVE = 'dado-tavolozza';     // la base: 'chiaro' o 'scuro'
+const CHIAVE_ACC = 'dado-accento';   // l'accento scelto, o vuoto
 
-/* Otto tinte per tavolozza, nello stesso ordine e con lo stesso
-   mestiere: chi ne aggiunge una riempie queste otto e basta. */
-const TAVOLOZZE = [
+/* DUE BASI E UN ACCENTO.
+
+   Le tavolozze erano cinque e complete: ognuna cambiava tutte e otto le
+   tinte. Erano belle e servivano a poco -- chi apriva quel menu voleva
+   due cose, "chiaro o scuro" e "di che colore", e doveva invece
+   scegliere fra cinque mondi gia' fatti in cui quelle due domande erano
+   impacchettate insieme.
+
+   Adesso la BASE dice solo chiaro o scuro -- e' il fondo, la carta e
+   l'inchiostro, cioe' quello che decide se il sito si legge -- e
+   l'ACCENTO e' una scelta libera che ci si posa sopra. La stessa
+   disciplina di prima resta: otto tinte, e tutto il resto derivato.
+
+   Le tre tavolozze che se ne vanno (vaporwave, bosco, china) non sono
+   perse: i loro accenti sono fra i predefiniti qui sotto, ed e' quello
+   che di loro si sceglieva davvero. */
+const BASI = [
   {
-    v: 'stanza', n: 'tema.stanza',
+    v: 'chiaro', n: 'tema.chiaro',
     c: { bg:'#cfccc8', card:'#f2f1ed', ink:'#33352b', inkSoft:'#747760',
          sage:'#a6a89c', sand:'#c7af98', wood:'#8e6a4b', accent:'#c86a3c',
          woodDark:'#5c4530' }
   },
   {
-    /* Vaporwave. Non la versione notturna al neon -- questo sito e'
-       fatto di superfici chiare, e rovesciarlo vorrebbe dire riscrivere
-       ogni regola che da' per scontata la carta sotto il testo. E'
-       l'altra meta' del vaporwave, quella pastello: lilla, magenta e
-       ciano. Il magenta e' scurito quanto basta perche' la scritta
-       sopra si legga: un accento e' anche un fondo per del testo. */
-    v: 'vaporwave', n: 'tema.vaporwave',
-    c: { bg:'#d6cde6', card:'#f7f1fb', ink:'#2c2040', inkSoft:'#6a5788',
-         sage:'#9fc2d6', sand:'#e6b4d2', wood:'#7350a6', accent:'#bf2f80',
-         woodDark:'#4b346c' }
-  },
-  {
-    /* Bosco. La tavolozza di partenza guarda al legno; questa guarda a
-       quello che c'era prima del legno. */
-    v: 'bosco', n: 'tema.bosco',
-    c: { bg:'#d1d6cb', card:'#f1f4ed', ink:'#222e1e', inkSoft:'#586551',
-         sage:'#9aab93', sand:'#c9bd9a', wood:'#6d583d', accent:'#2f6b43',
-         woodDark:'#473928' }
-  },
-  {
-    /* NOTTE. La prima tavolozza scura del sito, ed e' quella che qui
-       sopra si diceva di non fare: "il sito e' fatto di superfici
-       chiare, e rovesciarlo vorrebbe dire riscrivere ogni regola che
-       da' per scontata la carta sotto il testo". Non e' stato
-       necessario, e la ragione e' la disciplina di questo file: le
-       regole non nominano quasi mai un colore, nominano `--ink` e
-       `--card`. Rovesciare quei due basta.
-
-       L'unica cosa che NON si poteva derivare sono le ombre -- erano
-       l'inchiostro a bassa opacita', e con l'inchiostro chiaro
-       diventavano aloni luminosi. Vedi `applica()`.
-
-       Le otto tinte hanno lo stesso mestiere di sempre: `bg` e' la
-       stanza (la piu' scura, perche' e' il fondo su cui tutto poggia),
-       `card` sono i pannelli, che stanno un gradino sopra. Il legno e'
-       schiarito quanto basta perche' la carta ci si legga sopra, e
-       l'accento e' la stessa terracotta tirata su: su un fondo scuro
-       quella di sempre diventava fango. */
-    v: 'notte', n: 'tema.notte',
+    /* Lo scuro non e' il chiaro invertito: e' scelto. `bg` e' la stanza
+       -- la piu' scura, perche' e' il fondo su cui tutto poggia -- e
+       `card` sono i pannelli, un gradino sopra. Il legno e' schiarito
+       quanto basta perche' la carta ci si legga sopra. */
+    v: 'scuro', n: 'tema.scuro',
     c: { bg:'#1b1d22', card:'#262a31', ink:'#e8e6e1', inkSoft:'#a4a8b0',
          sage:'#7c8894', sand:'#b09a7c', wood:'#b08c63', accent:'#e08551',
          woodDark:'#6a5238' }
-  },
-  {
-    /* Carta e china. Tutta l'altra meta' del cerchio: dove la stanza e'
-       calda questa e' fredda, e l'accento e' un blu da penna invece di
-       una terracotta. */
-    v: 'china', n: 'tema.china',
-    c: { bg:'#ced2d7', card:'#f3f5f7', ink:'#1f242b', inkSoft:'#5c6570',
-         sage:'#a2acb6', sand:'#b8c1cb', wood:'#4c5967', accent:'#2a63c4',
-         woodDark:'#313a43' }
   }
 ];
 
-let ora = leggi();
+/* I predefiniti. Non sono un ripiego per chi non sa usare la ruota:
+   sono otto colori che su tutte e due le basi funzionano, e chi non ha
+   un colore in mente ne tocca uno e ha finito. Il rosso non c'e' e non
+   ci sara': non e' decorazione, e' il segnale di quello che distrugge,
+   e un accento rosso lo renderebbe muto. */
+const ACCENTI = [
+  '#c86a3c', '#2f6b43', '#2a63c4', '#7350a6',
+  '#0f7d86', '#bf2f80', '#a8791b', '#4a6b8a'
+];
+
+const ESA = /^#[0-9a-fA-F]{6}$/;
 const iscritti = [];
 
-function leggi(){
+/* Le vecchie tavolozze non si buttano via: si traducono. Chi aveva
+   `notte` si ritrova la base scura; chi aveva bosco, china o vaporwave
+   si ritrova il chiaro -- e il loro accento e' fra i predefiniti,
+   quindi non e' andato perso, e' diventato una scelta invece che un
+   pacchetto. */
+const VECCHIE = {
+  stanza:    { b: 'chiaro', a: '' },
+  vaporwave: { b: 'chiaro', a: '#bf2f80' },
+  bosco:     { b: 'chiaro', a: '#2f6b43' },
+  china:     { b: 'chiaro', a: '#2a63c4' },
+  notte:     { b: 'scuro',  a: '' }
+};
+
+let base = leggiBase();
+let accento = leggiAccento();
+
+function leggiBase(){
+  let v = '';
+  try { v = localStorage.getItem(CHIAVE) || ''; } catch (e) {}
+  if (BASI.some(function(t){ return t.v === v; })) return v;
+  if (VECCHIE[v]) return VECCHIE[v].b;
+  return BASI[0].v;
+}
+
+function leggiAccento(){
+  let v = '', vecchia = '';
   try {
-    const v = localStorage.getItem(CHIAVE);
-    return TAVOLOZZE.some(function(t){ return t.v === v; }) ? v : TAVOLOZZE[0].v;
-  } catch (e) { return TAVOLOZZE[0].v; }
+    v = localStorage.getItem(CHIAVE_ACC) || '';
+    vecchia = localStorage.getItem(CHIAVE) || '';
+  } catch (e) {}
+  if (ESA.test(v)) return v.toLowerCase();
+  if (VECCHIE[vecchia]) return VECCHIE[vecchia].a;
+  return '';
 }
 
 function quale(v){
-  for (let i = 0; i < TAVOLOZZE.length; i++) if (TAVOLOZZE[i].v === v) return TAVOLOZZE[i];
-  return TAVOLOZZE[0];
+  for (let i = 0; i < BASI.length; i++) if (BASI[i].v === v) return BASI[i];
+  return BASI[0];
+}
+
+/* Una tavolozza si scrive in una stringa sola -- `scuro~#2f6b43` --
+   perche' e' cosi' che viaggia: dentro `profili.stanza.tavolozza`, che
+   e' quello che un amico legge per vedere la tua libreria con i tuoi
+   colori. Il separatore e' `~` come per le celle degli arredi, e non
+   `:` che qui vorrebbe dire un'altra cosa. */
+function componi(b, a){ return a ? (b + '~' + a) : b; }
+
+function scomponi(v){
+  const t = String(v || '').split('~');
+  const b = BASI.some(function(x){ return x.v === t[0]; }) ? t[0]
+          : (VECCHIE[t[0]] ? VECCHIE[t[0]].b : null);
+  if (!b) return null;
+  const a = ESA.test(t[1] || '') ? t[1].toLowerCase()
+          : (VECCHIE[t[0]] ? VECCHIE[t[0]].a : '');
+  return { base: b, accento: a };
+}
+
+/* Le otto tinte gia' risolte: la base, con l'accento al posto del suo.
+   Su fondo scuro un accento scelto per il chiaro diventa fango, quindi
+   si schiarisce quanto basta -- non e' un vezzo, e' che l'accento fa
+   anche da FONDO per del testo, e sotto un certo contrasto quel testo
+   non si legge piu'. */
+function tinteDi(b, a){
+  const t = quale(b);
+  if (!a) return t.c;
+  const c = Object.assign({}, t.c);
+  c.accent = adattaAccento(a, t.c);
+  return c;
+}
+
+function adattaAccento(a, c){
+  const scuroFondo = lum(c.bg) <= .18;
+  let v = a;
+  /* Su fondo scuro l'accento deve staccarsi dal fondo; su fondo chiaro
+     deve reggere la carta scritta sopra. Due vincoli opposti, un conto
+     solo: si tira verso il bianco finche' il contrasto con la carta non
+     e' quello che serve. */
+  const soglia = scuroFondo ? 3.2 : 2.6;
+  for (let i = 0; i < 14 && contrasto(v, c.card) < soglia; i++){
+    v = scala(v, scuroFondo ? .07 : -.05);
+  }
+  return v;
+}
+
+function contrasto(a, b){
+  const x = lum(a), y = lum(b);
+  return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
 }
 
 /* --- i conti sui colori ---------------------------------------- */
@@ -157,8 +216,8 @@ function mescola(a, b, p){
 /* --- applicare --------------------------------------------------- */
 
 function applica(){
-  const t = quale(ora);
-  const c = t.c;
+  const t = quale(base);
+  const c = tinteDi(base, accento);
   const r = document.documentElement;
   const s = r.style;
   const inkT = tri(c.ink);
@@ -224,15 +283,32 @@ function applica(){
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', c.bg);
 
-  r.setAttribute('data-tema', ora);
-  iscritti.forEach(function(f){ try { f(t); } catch (e) {} });
+  r.setAttribute('data-tema', base);
+  iscritti.forEach(function(f){ try { f({ v: base, n: t.n, c: c }); } catch (e) {} });
 }
 
 function scegli(v){
-  if (!TAVOLOZZE.some(function(t){ return t.v === v; })) return;
-  ora = v;
-  try { localStorage.setItem(CHIAVE, v); } catch (e) {}
+  /* Accetta anche la forma composta e le tavolozze vecchie: e' quello
+     che arriva da `profili.stanza.tavolozza`. */
+  const q = scomponi(v);
+  if (!q) return;
+  base = q.base;
+  if (q.accento) accento = q.accento;
+  salva();
   applica();
+}
+
+function scegliAccento(v){
+  accento = ESA.test(v || '') ? String(v).toLowerCase() : '';
+  salva();
+  applica();
+}
+
+function salva(){
+  try {
+    localStorage.setItem(CHIAVE, base);
+    localStorage.setItem(CHIAVE_ACC, accento);
+  } catch (e) {}
 }
 
 /* Chi ha gia' disegnato qualcosa con un colore in mano -- la scena 3D,
@@ -252,41 +328,79 @@ function nome(chiave){
   return (typeof T === 'function') ? T(chiave) : chiave;
 }
 
-function striscia(c){
-  const s = document.createElement('span');
-  s.className = 'tav-mostra';
-  s.setAttribute('aria-hidden', 'true');
-  ['bg','card','ink','inkSoft','sage','sand','wood','accent'].forEach(function(k){
-    const i = document.createElement('i');
-    i.style.background = c[k];
-    s.appendChild(i);
-  });
-  return s;
+/* IL SELETTORE. Due domande, in quest'ordine: chiaro o scuro -- che e'
+   quella che decide se il sito si legge -- e poi di che colore.
+
+   I predefiniti stanno in fila e la RUOTA e' l'ultima, come nel
+   pannello della libreria: la stessa forma per la stessa scelta, e chi
+   ha capito una volta ha capito. */
+function bollino(hex, scelto){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'tav-acc' + (scelto ? ' on' : '');
+  b.setAttribute('data-acc', hex);
+  b.style.background = hex;
+  b.setAttribute('aria-pressed', scelto ? 'true' : 'false');
+  return b;
 }
 
 function disegnaSelettore(){
   const lista = document.getElementById('pro-tema-lista');
   if (!lista) return;
-  const t = quale(ora);
+  const t = quale(base);
+  const c = tinteDi(base, accento);
 
   const ora_n = document.getElementById('pro-tema-ora');
   if (ora_n) ora_n.textContent = nome(t.n);
   const mostra = document.getElementById('pro-tema-mostra');
-  if (mostra){ mostra.innerHTML = ''; mostra.appendChild(striscia(t.c)); }
+  if (mostra){
+    mostra.innerHTML = '';
+    const i = document.createElement('i');
+    i.style.background = c.accent;
+    mostra.appendChild(i);
+  }
 
   lista.innerHTML = '';
-  TAVOLOZZE.forEach(function(x){
+
+  // le due basi
+  const basi = document.createElement('div');
+  basi.className = 'tav-basi';
+  BASI.forEach(function(x){
     const b = document.createElement('button');
     b.type = 'button';
+    b.className = 'tav-base' + (x.v === base ? ' on' : '');
     b.setAttribute('data-tav', x.v);
-    b.setAttribute('aria-pressed', x.v === ora ? 'true' : 'false');
+    b.setAttribute('aria-pressed', x.v === base ? 'true' : 'false');
+    const p = document.createElement('span');
+    p.className = 'tav-prova';
+    p.style.background = x.c.bg;
+    p.style.color = x.c.ink;
+    p.textContent = 'Aa';
+    b.appendChild(p);
     const n = document.createElement('span');
     n.className = 'tav-nome';
     n.textContent = nome(x.n);
     b.appendChild(n);
-    b.appendChild(striscia(x.c));
-    lista.appendChild(b);
+    basi.appendChild(b);
   });
+  lista.appendChild(basi);
+
+  // l'accento: i predefiniti, poi la ruota
+  const acc = document.createElement('div');
+  acc.className = 'tav-accenti';
+  const suo = accento || quale(base).c.accent;
+  ACCENTI.forEach(function(hex){
+    acc.appendChild(bollino(hex, accento === hex));
+  });
+  const r = document.createElement('input');
+  r.type = 'color';
+  r.className = 'ruota' + (accento && ACCENTI.indexOf(accento) < 0 ? ' on' : '');
+  r.value = suo;
+  r.setAttribute('data-acc-ruota', '1');
+  const tit = (typeof T === 'function') ? T('stanza.ruota') : 'colore';
+  r.title = tit; r.setAttribute('aria-label', tit);
+  acc.appendChild(r);
+  lista.appendChild(acc);
 }
 
 function montaSelettore(){
@@ -298,7 +412,17 @@ function montaSelettore(){
      ogni volta. */
   lista.addEventListener('click', function(e){
     const b = e.target.closest('button[data-tav]');
-    if (b) scegli(b.getAttribute('data-tav'));
+    if (b){ scegli(b.getAttribute('data-tav')); return; }
+    const a = e.target.closest('button[data-acc]');
+    if (a) scegliAccento(a.getAttribute('data-acc'));
+  });
+  /* La ruota manda `input` mentre si trascina: qui si vuole vedere il
+     sito cambiare colore sotto il cursore, non dopo. E' la stessa
+     scelta del meeple, e per lo stesso motivo -- qui non si scrive
+     niente sul database, si riscrivono delle variabili CSS. */
+  lista.addEventListener('input', function(e){
+    const r = e.target.closest('input[data-acc-ruota]');
+    if (r) scegliAccento(r.value);
   });
   if (typeof I18N !== 'undefined' && I18N.suCambio) I18N.suCambio(disegnaSelettore);
 }
@@ -326,7 +450,8 @@ function ruolo(nome, tavolozza){
   /* La tavolozza si puo' chiedere: serve a disegnare la stanza di un
      amico con la SUA, che e' l'unica cosa che rende quella libreria la
      sua invece di una copia della tua ridipinta. */
-  const c = quale(tavolozza || ora).c;
+  const q = tavolozza ? scomponi(tavolozza) : null;
+  const c = q ? tinteDi(q.base, q.accento) : tinteDi(base, accento);
   /* Il legno scuro e' SCRITTO, non scalato. Una scalatura del noce da'
      un colore vicinissimo ma non quello: il `#5c4530` di sempre non e'
      una percentuale del `#8e6a4b`, e' una tinta scelta. Derivarlo
@@ -337,10 +462,14 @@ function ruolo(nome, tavolozza){
 }
 
 return {
-  TAVOLOZZE: TAVOLOZZE, ruolo: ruolo,
-  corrente: function(){ return ora; },
-  esiste: function(v){ return TAVOLOZZE.some(function(t){ return t.v === v; }); },
-  tinte: function(){ return quale(ora).c; },
-  scegli: scegli, suCambio: suCambio
+  BASI: BASI, ACCENTI: ACCENTI, ruolo: ruolo,
+  /* `corrente()` torna la forma composta: e' quella che si salva, ed e'
+     quella che un amico legge. */
+  corrente: function(){ return componi(base, accento); },
+  base: function(){ return base; },
+  accento: function(){ return accento; },
+  esiste: function(v){ return !!scomponi(v); },
+  tinte: function(){ return tinteDi(base, accento); },
+  scegli: scegli, scegliAccento: scegliAccento, suCambio: suCambio
 };
 })();
