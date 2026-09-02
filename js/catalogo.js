@@ -388,14 +388,10 @@ async function miniatura(fileUrl){
   throw new Error(TP('err.miniatura'));
 }
 
-function ridimensiona(im){
-  const W = Math.min(760, im.naturalWidth || im.width);
-  const H = Math.round((im.naturalHeight || im.height) * (W / (im.naturalWidth || im.width)));
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  c.getContext('2d').drawImage(im, 0, 0, W, H);
-  return c.toDataURL('image/jpeg', .82);
-}
+/* Il tetto e il taglio stanno in `art.js`, in un posto solo: erano
+   copiati qui e in `bgg.js`, tutti e due sulla larghezza invece che sul
+   lato lungo. */
+function ridimensiona(im){ return ART.copertinaSalva(im); }
 
 function carica(url, conCors){
   return new Promise(function(res, rej){

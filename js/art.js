@@ -177,6 +177,70 @@ function senzaBande(im){
   return c2;
 }
 
+/* IL TETTO STA SUL LATO LUNGO, NON SULLA LARGHEZZA.
+
+   Il ridimensionamento c'era gia' -- 760 px e JPEG .82 -- ma tagliava
+   sulla LARGHEZZA, e questo dava esattamente il contrario di quello che
+   serve. Una copertina verticale finiva 760x1102, cioe' il doppio dei
+   pixel di una orizzontale (760x543), mentre sullo schermo si vede piu'
+   PICCOLA: con la scatola aperta il fit lo decide `focusPose`, e per un
+   formato verticale a comandare e' l'altezza. Misurato su una finestra
+   1440x900 a densita' 2: una copertina orizzontale viene disegnata larga
+   1114 pixel veri, una verticale alta 720. Quindi 760 sul lato lungo
+   basta a tutte e due, e alla verticale toglie un terzo del peso.
+
+   760 non si abbassa: e' gia' SOTTO la misura a cui una copertina
+   orizzontale viene disegnata su un desktop retina. Scendere si
+   vedrebbe, e si vedrebbe proprio nel momento in cui la copertina e'
+   l'unica cosa a schermo. */
+const COP_MAX = 760;
+
+function riduciA(src, max){
+  const W = src.naturalWidth || src.width, H = src.naturalHeight || src.height;
+  const lungo = Math.max(W, H);
+  if (!(lungo > max)) return null;
+  const k = max / lungo;
+  const w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k));
+  const [c, x] = cnv(w, h);
+  x.imageSmoothingQuality = 'high';
+  x.drawImage(src, 0, 0, W, H, 0, 0, w, h);
+  return c;
+}
+
+/* Quello che va sulla scheda video: senza bande e dentro il tetto.
+
+   Le due cose stanno insieme perche' sono la stessa domanda -- che
+   immagine e' davvero questa -- e perche' pagarle due volte vorrebbe
+   dire decodificare due volte. Il risultato resta attaccato
+   all'immagine, quindi chi arriva dopo lo trova gia' fatto.
+
+   E vale anche per le copertine GIA' caricate: il tetto si applica qui,
+   non nel bucket, quindi una libreria vecchia smette di pagare la
+   differenza senza che nessuno debba ricaricare niente. */
+function copertinaTex(im){
+  if (im.__cop !== undefined) return im.__cop;
+  let c = null;
+  try {
+    const netta = senzaBande(im);
+    c = riduciA(netta || im, COP_MAX) || netta;
+  } catch (e) { c = null; }
+  im.__cop = c;
+  return c;
+}
+
+/* Quello che va nel bucket. Stessa regola, e un posto solo: prima
+   questa funzione era scritta due volte, in `catalogo.js` e in
+   `bgg.js`, con lo stesso difetto in tutte e due. */
+function copertinaSalva(im){
+  const c = riduciA(im, COP_MAX);
+  if (!c) {
+    const [c2, x2] = cnv(im.naturalWidth || im.width, im.naturalHeight || im.height);
+    x2.drawImage(im, 0, 0);
+    return c2.toDataURL('image/jpeg', .82);
+  }
+  return c.toDataURL('image/jpeg', .82);
+}
+
 const rnd = (a,b) => a + Math.random()*(b-a);
 
 // La faccia dei titoli disegnati su canvas. E' LA STESSA del CSS -- ce
@@ -1260,7 +1324,7 @@ function targhetta(nome, tinta){
 
 return {
   cnv: cnv, toTex: toTex, imgTex: imgTex, wood: wood, spaced: spaced, grain: grain,
-  senzaBande: senzaBande,
+  senzaBande: senzaBande, copertinaTex: copertinaTex, copertinaSalva: copertinaSalva,
   aoCubi: aoCubi, fariCubi: fariCubi, copia: copia,
   parquet: parquet, contatto: contatto,
   avatar: avatar, targhetta: targhetta,

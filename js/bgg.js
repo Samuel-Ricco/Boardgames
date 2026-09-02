@@ -150,12 +150,8 @@ async function copertina(id){
       i.onerror = rej;
       i.src = url;
     });
-    const W = Math.min(760, im.naturalWidth);
-    const H = Math.round(im.naturalHeight * (W / im.naturalWidth));
-    const c = document.createElement('canvas');
-    c.width = W; c.height = H;
-    c.getContext('2d').drawImage(im, 0, 0, W, H);
-    return c.toDataURL('image/jpeg', .82);
+    // il tetto sta sul lato lungo, e sta in `art.js`: vedi li' il perche'
+    return ART.copertinaSalva(im);
   } finally {
     URL.revokeObjectURL(url);
   }

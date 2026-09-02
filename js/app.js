@@ -1258,7 +1258,7 @@ function makeGameBox(game){
     /* Il rapporto deve essere quello del DISEGNO, non quello del file:
        vedi `senzaBande` in art.js. Quasi sempre non c'e' niente da
        togliere e si tiene l'immagine com'e'. */
-    const netta = ART.senzaBande(game.img);
+    const netta = ART.copertinaTex(game.img);
     coverTex = netta ? ART.toTex(netta) : ART.imgTex(game.img);
     aspect = netta ? netta.width / netta.height
                    : game.img.naturalWidth / game.img.naturalHeight;
@@ -8366,7 +8366,7 @@ function loadCovers(forza){
 
              Non puo' fermare niente: una copertina con o senza bande e'
              comunque una copertina. */
-          try { ART.senzaBande(im); } catch (e) {}
+          try { ART.copertinaTex(im); } catch (e) {}
         }
         done();
       };

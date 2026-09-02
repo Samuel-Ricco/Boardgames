@@ -4099,10 +4099,52 @@ una ricostruzione con una ricerca -- che e' sincrona.
 
 ## La memoria delle texture, che e' l'altra meta'
 
-**46 MB con le mipmap**, e la fetta grossa sono le copertine vere (8 texture da
-720x520 e 3 da 760x570 fanno 22 MB). Non si toccano: su uno scaffale sono
-larghe 90 px, ma con una scheda aperta sono larghe 400 e a densita' 2 fanno
-800 — la risoluzione la comanda quel caso li', non lo scaffale.
+La fetta grossa sono le copertine vere: su questa collezione da quattordici
+giochi, **36 MB con le mipmap** (`W * H * 4 * 1,33`). La risoluzione la comanda
+la scatola APERTA, non lo scaffale: li' una copertina e' larga 90 px, aperta
+occupa una fetta di schermo.
+
+### Il tetto va sul LATO LUNGO, non sulla larghezza
+
+Il ridimensionamento c'era gia' — 760 px e JPEG .82 — ma tagliava sulla
+**larghezza**, e questo dava esattamente il contrario di quello che serve.
+
+Con la scatola aperta il fit lo decide `focusPose`, e quale dei due lati comanda
+dipende dal formato: per una copertina **orizzontale** comanda la larghezza (la
+faccia occupa `fw / 1.24`, cioe' il **38,7%** della finestra su desktop), per una
+**verticale** comanda l'altezza (circa il **40%** dell'altezza). Misurato su
+1440x900 a densita' 2: l'orizzontale viene disegnata larga **1114 pixel veri**,
+la verticale alta **720**.
+
+Quindi tagliando sulla larghezza una copertina verticale finiva **760x1102** —
+il doppio dei pixel di una orizzontale (760x543) — mentre sullo schermo si vede
+**piu' piccola**. Il tetto sul lato lungo lascia le orizzontali dove sono e
+sistema le verticali: Deep Regrets 760x1102 -> 524x760 (**-52%**), Ark Nova
+-33%, Arcs -22%. In totale **36 MB -> 31,5 MB, cioe' -13%**, e su una collezione
+con piu' formati verticali vale di piu'.
+
+- **760 non si abbassa.** E' gia' SOTTO la misura a cui una copertina
+  orizzontale viene disegnata su un desktop retina (760 contro 1114): scendere
+  si vedrebbe, e si vedrebbe proprio nel momento in cui la copertina e' l'unica
+  cosa a schermo. Verificato che copra anche il caso peggiore del telefono
+  (390x844 a densita' 3: 699 px).
+- **Il tetto si applica alla TEXTURE, non solo al file** (`ART.copertinaTex`,
+  chiamata da `loadCovers` insieme al taglio delle bande). Cosi' vale anche per
+  le copertine gia' nel bucket, senza ricaricare niente: quello che sta su
+  Supabase resta com'e', quello che va sulla scheda video e' dentro il tetto.
+- **Il conto stava scritto due volte**, in `catalogo.js` e in `bgg.js`, con lo
+  stesso difetto in tutte e due — e la strada di BGG e' quella che si usa da
+  quando c'e' il token, quindi il difetto era sulla strada principale. Adesso e'
+  in `art.js`, che e' il file del canvas, e le due lo chiamano.
+- **Il rapporto non cambia**: si scala per un fattore solo, quindi la faccia
+  resta quella della copertina. Verificato su tutte e quattordici, scarto
+  massimo 0,0003.
+
+**Quello che NON si risolve ridimensionando:** la memoria cresce con quante
+scatole ci sono sugli scaffali, non con la misura della singola copertina. A
+tre librerie piene sono trentasei texture, cioe' un ordine di grandezza sopra.
+Se un giorno dara' fastidio, la mossa non e' tagliare ancora — e' tenere alla
+risoluzione piena solo la scatola aperta, che e' una per volta.
 
 ## Il neon si dipinge come si dipinge una luce, non un muro
 
