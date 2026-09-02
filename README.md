@@ -16,8 +16,13 @@ Il sito ha quattro sezioni:
 - **il profilo** — chi sei, la tua faccia, i tuoi amici, i giocatori con cui
   giochi.
 
-Su schermo stretto le quattro sezioni stanno in una barra in basso, dove arriva
-il pollice.
+Accanto alle quattro c'e' **l'elenco della collezione**, che dal 2026-09-02 e'
+una voce di navigazione sua: la stessa collezione vista come righe invece che
+come scaffale. Il **profilo** invece e' salito in testata, un cerchio in alto a
+destra.
+
+Su schermo stretto le voci stanno in una barra in basso, dove arriva il
+pollice.
 
 Il sito è in **italiano e in inglese**, e la lingua si cambia dal cancello
 d'ingresso e dal fondo del profilo.
@@ -41,7 +46,7 @@ js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori, arredi della stanza e dei singoli cubi
 js/suoni.js           i quindici suoni, sintetizzati -- nessun file audio
-js/tema.js            le quattro tavolozze del sito
+js/tema.js            due basi (chiaro e scuro) e l'accento scelto
 js/bgg.js             BGG: sceglie da sé fra proxy locale e edge function
 js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
 js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
@@ -102,10 +107,17 @@ da diciannove centimetri, e sullo scaffale si vede. Quello che non entra nel
 cubo si rimpicciolisce tenendo le proporzioni. Se una copertina non arriva, la
 scatola ripiega sull'illustrazione disegnata e il sito va avanti.
 
-**La copertina si ritaglia, non si stira.** Le immagini di BGG non sono
-scansioni del fronte, quindi non possono dettare la forma della scatola: la
-forma la dice la scatola, l'immagine dice solo da che parte sta in piedi, e
-quello che avanza esce dai bordi come su una scatola vera.
+**La forma la dà la copertina, la misura le dimensioni di BGG.** Sono due
+domande diverse, e per un pezzo erano una sola: da quel disaccordo nascevano
+solo tre mosse, tutte brutte — tagliare la copertina, stirarla, o lasciarle
+attorno delle barre. Adesso la faccia ha esattamente il rapporto dell'immagine,
+quindi ci sta intera e senza deformarsi, e le dimensioni di BGG danno la
+**grandezza**: si conserva l'area della faccia vera. Un mattone resta un
+mattone, un'espansione resta piccola.
+
+E se l'immagine ha delle **bande nere** — succede: la copertina di Arcs su BGG
+è un quadrato con dentro una copertina orizzontale — vengono tolte prima, se no
+sarebbero loro a dettare il rapporto.
 
 **Una libreria è sempre 3 × 4.** Dodici cubi, dodici giochi, su qualunque
 schermo. Non cambia col formato e non si allunga con la collezione: finiti i
@@ -240,18 +252,34 @@ dispositivo: la luce è della stanza e un amico la vede com'è da te, ma il volu
 e faretti; l'**interruttore** sta in fondo al profilo, che è dove ci si chiede
 «lo voglio o no» invece di «quanto forte».
 
-## Le tavolozze
+## Il tema: due basi e un accento
 
-Il sito ha sempre avuto **sei tinte e basta**. Quella disciplina non cambia:
-cambia quali sono le sei. In fondo al profilo c'è una tendina con quattro
-tavolozze — **la stanza** (quella di sempre: grigio caldo, oliva, terracotta),
-**vaporwave** (lilla, magenta e ciano), **bosco** (verdi profondi) e **carta e
-china** (grigi freddi e un blu da penna) — e ognuna porta addosso le sue otto
-tinte in fila: si sceglie guardando, non leggendo.
+Il sito ha sempre avuto **sei tinte e basta**, e quella disciplina non cambia.
+Quello che e' cambiato e' come si scelgono. In fondo al profilo ci sono due
+domande, in quest'ordine:
 
-Una tavolozza è un ricambio completo di quelle otto, e **tutto il resto si
+- la **base**, chiaro o scuro. E' il fondo, la carta e l'inchiostro, cioe'
+  quello che decide se il sito si legge — e ognuna delle due porta un "Aa" sul
+  proprio fondo, che e' l'unica anteprima che serve;
+- l'**accento**, il colore di tutto quello che si tocca: otto predefiniti e la
+  ruota in fondo, per chi ne ha uno in mente.
+
+Prima erano cinque tavolozze complete, e rispondevano alla domanda sbagliata:
+chi apriva quel menu voleva sapere «chiaro o scuro» e «di che colore», e doveva
+scegliere fra cinque mondi gia' fatti con le due risposte impacchettate dentro.
+Vaporwave, bosco e china erano, di fatto, tre accenti: sono fra i predefiniti,
+e chi le aveva scelte se le ritrova.
+
+Una base e' un ricambio completo delle otto tinte, e **tutto il resto si
 deriva**: i fili, le ombre, il velo della testata e il fondo delle schermate
-piatte sono l'inchiostro e la carta a percentuali diverse.
+piatte sono l'inchiostro e la carta a percentuali diverse. L'unica cosa che non
+si poteva derivare sono le **ombre**: erano l'inchiostro a bassa opacita', e con
+l'inchiostro chiaro diventano aloni, quindi sul fondo scuro si prendono dal nero.
+
+**L'accento si adatta alla base.** L'accento fa anche da fondo per del testo, e
+un verde scelto sul chiaro, messo sullo scuro, diventa fango: si schiarisce
+finche' il contrasto con la carta non regge. Il rosso non e' fra i predefiniti e
+non ci sara': non e' decorazione, e' il segnale di quello che distrugge.
 
 **Anche la stanza segue**: legni, muri e pavimenti del pannello non sono mai
 stati altro che le sei tinte del sito in un altro ordine, quindi cambiano con
@@ -318,6 +346,29 @@ punti non deve anche contare chi è arrivato primo. La corona segue i punti finc
 nessuno la tocca; toccandola, comanda la persona. C'è anche una **calcolatrice**,
 perché un punteggio è quasi sempre una somma di quattro pezzi e farla a mente col
 telefono in mano è il modo più rapido di sbagliare vincitore.
+
+## Il wrap
+
+Le partite dicono cosa hai giocato una riga per volta. Il wrap dice com'e'
+andato in **otto numeri**, e sono numeri che si guardano tutti insieme: per
+quello sono slide e non un elenco.
+
+Quante partite, quante ore al tavolo, a cosa hai giocato di piu', quanti giochi
+hai, quanto vinci, con chi giochi, **la tua bestia nera** — che non e' chi vince
+di piu' in assoluto, e' chi vince di piu' *quando ci sei tu* — e quante persone
+in media al tavolo. Ognuna porta il suo contorno: due o tre righe di dettaglio,
+o una strisciata di barre mese per mese.
+
+**Niente si inventa.** Una slide senza il suo dato non mostra uno zero: dice
+cosa manca e come si rimedia.
+
+Ogni slide **si salva come immagine** (PNG 1080x1350, il ritratto che tutti i
+posti dove si pubblica accettano). E' l'unica funzione del sito che produce un
+file, ed e' anche il motivo per cui un wrap esiste: si guarda e si manda a
+qualcuno. La slide viene ridisegnata su canvas invece che fotografata dal
+documento — non c'e' modo di rasterizzare dell'HTML senza una libreria, e una
+libreria per sei rettangoli e tre righe di testo peserebbe piu' di tutto il
+resto del sito.
 
 ## Cosa sta in libreria
 
@@ -531,8 +582,16 @@ Il font è Poppins, licenza SIL Open Font. three.js è MIT.
   dei nomi doppi vive in `store.js` e regge, ma la garanzia sarebbe quella;
 - le **partite restano private**: gli amici vedono libreria e recensioni, non le
   partite. È il cambio di una policy, ed è una scelta di chi ci abita;
-- le **misure delle scatole stanno in `localStorage`**, non sul database. Sono
-  fatti sul gioco e uguali per tutti, quindi la cache per id BGG è il posto
-  giusto finché è una sola persona a usarlo;
+- la migrazione **`schede_bgg` non è ancora applicata**: è quella che rende
+  misure e copertine un fatto sul *gioco* invece che sulla *tua copia*, cioè
+  una figura per immagine invece di una per utente. Finché manca, il sito si
+  comporta come prima e lo dice;
+- **cancellare un gioco non ha più nessuna porta**, e con lui sono senza porta
+  il modulo di aggiunta a mano e la correzione della scheda. Le funzioni ci
+  sono e gli agganci sono condizionati: manca il posto da cui chiamarle, e il
+  posto naturale è il menu a tre punti dell'elenco;
+- le **espansioni**: nella scheda di un gioco, quali hai e quali ti mancano, e
+  la possibilità di raggrupparle sotto il gioco base. È il lavoro più grosso
+  rimasto, e le domande che apre sono di prodotto più che di codice;
 - su telefono la scatola è larga 90 px: si riconosce la copertina, non si legge
   il titolo. È il prezzo delle tre colonne.

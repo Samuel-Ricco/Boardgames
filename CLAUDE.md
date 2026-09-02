@@ -57,11 +57,15 @@ js/i18n.js            le due lingue: dizionario, chiavi, selettore
 js/config.js          url e chiave pubblica di Supabase
 js/auth.js            accesso con Google, e "sono admin?"
 js/store.js           la libreria: database, copia locale, ordinamenti, ricerca
+js/schede.js          quello che di un gioco e' uguale per tutti: misure, copertina
 js/recensioni.js      le recensioni del sito: pubbliche, lette anche dall'ospite
 js/apprezzamenti.js   i cuori sotto la recensione di un amico
+js/desideri.js        la wishlist: i giochi che non hai ancora
 js/profilo.js         nick, faccia, codice amico, amicizie
 js/partite.js         giocatori salvati e partite giocate
 js/stanza.js          luce, colori e arredi scelti da chi ci abita
+js/suoni.js           i quindici suoni, sintetizzati -- nessun file audio
+js/tema.js            due basi (chiaro/scuro) e l'accento scelto
 js/bgg.js             ricerca BGG: sceglie da se' fra proxy locale e edge function
 js/bggdump.js         l'indice di BGG in casa: cerca e classifica, senza rete
 js/catalogo.js        tre fonti per le schede: BGG col token, il dump, Wikidata
@@ -5156,22 +5160,65 @@ l'indirizzo della funzione.
 
 ## Stato attuale
 
-**Aggiornato al 2026-08-25.** Questa sezione e la prossima bastano a ripartire a
-freddo: cosa c'è, com'è messo il database, e cosa resta da fare. Per il
-racconto lungo di com'è nato tutto c'è `contest_boardgame.md`; per il *come
-è fatto* c'è tutto il resto di questo file, che è aggiornato.
+**Aggiornato al 2026-09-02.** Questa sezione e la prossima bastano a ripartire a
+freddo: cosa c'e', com'e' messo il database, e cosa resta da fare. Per il
+racconto lungo di com'e' nato tutto c'e' `contest_boardgame.md`; per il *come
+e' fatto* c'e' tutto il resto di questo file, che e' aggiornato.
 
 Il sito ha **quattro sezioni** — collezione (la scena 3D), catalogo, partite,
-profilo — **due lingue** con circa 510 chiavi per ramo, e **tutte e dodici le
-migrazioni applicate**, `punti_partita` compresa.
+profilo — piu' **l'elenco della collezione**, che dal 2026-09-02 e' una voce di
+navigazione sua e non piu' un pulsante in testata. Due lingue, **604 chiavi in
+italiano e 597 in inglese**. **Sedici migrazioni nel repo, quindici applicate**:
+manca solo `schede_bgg`.
 
-**E da qui in poi BGG lo serve una edge function**, non piu' solo il proxy
-locale: vedi «La edge function» piu' sopra. E' la differenza fra un sito che
-funziona su questa macchina e uno che funziona anche su GitHub Pages.
+BGG lo serve una **edge function**, non piu' solo il proxy locale: e' la
+differenza fra un sito che funziona su questa macchina e uno che funziona anche
+su GitHub Pages.
 
-Le misure, per sapere in che cosa si mette le mani: `index.html` 815 righe,
-`css/style.css` 3.564, `js/app.js` 7.323, piu' `supabase/functions/bgg/index.ts`
-291.
+Le misure, per sapere in che cosa si mette le mani: `index.html` 1.074 righe,
+`css/style.css` 4.840, `js/app.js` 9.674, `js/tema.js` 486, `js/schede.js` 167,
+piu' `supabase/functions/bgg/index.ts` 291.
+
+### Dove sta la lista delle cose da fare
+
+**Fuori dal repo**, in `C:\Users\Windows\_Claude\TODO_DADO.txt`. L'utente ci
+rimanda dandolo per noto («prendi la lista da...»), e non e' deducibile da qui.
+Va **riletto** prima di ripartire: lo aggiorna fra una sessione e l'altra. In
+fondo ha una sezione **«DA ANCORA NON FARE»** che non si tocca finche' non lo
+dice lui.
+
+### La sessione del 2026-09-02
+
+Sedici commit, tutti su `libreria` e portati anche su `main`. Raggruppati per
+argomento:
+
+| argomento | cosa |
+|---|---|
+| le copertine | bande nere tolte (Arcs), tetto sul lato lungo e non sulla larghezza, e la luce addosso alle scatole abbassata: erano il 10% piu' chiare del proprio file |
+| condividere | `schede_bgg`: misure e copertine sono fatti sul gioco, non sulla tua copia -- una figura per `pic`, non una per utente |
+| la scatola storta | posandola in un altro cubo si animava solo la posizione: restava inclinata e piu' grande |
+| navigazione | l'elenco della collezione e' una voce, il profilo e' salito in testata |
+| il pannello | faretti dentro «modifica libreria», ogni sezione una tendina, la ruota dei colori ovunque, il volume nel profilo |
+| i temi | da cinque tavolozze a **due basi e un accento** libero |
+| il voto | `voto_mio` accanto a `voto`: il tuo non cancella piu' quello di BGG |
+| le partite | durata opzionale, ore al tavolo, meeple accanto al nome, corone a medaglia, podio |
+| il wrap | otto slide con il loro dettaglio, esportabili come PNG 1080x1350 |
+
+**Le lezioni generali** di questa sessione, quelle da rileggere prima di toccare
+le stesse cose:
+
+- «Le bande nere non sono la copertina» — una copertura casuale non e' una
+  soluzione, e quando cade lascia scoperto quello che nascondeva.
+- «Quello che si svuota va svuotato anche sul database» — `aRiga` salta i campi
+  vuoti apposta, e solo chi ha in mano la patch sa distinguere «assente» da
+  «cancellato».
+- «Le ombre non sono l'inchiostro: sono il buio» — quello che si deriva da una
+  tinta va ripensato quando la tinta si rovescia.
+- «La ruota del tema si guarda dal vivo e si salva al rilascio» — scrivere a
+  ogni pixel di trascinamento rende definitivo un colore di passaggio.
+- E la trappola gia' nota, ripresentata due volte: **una regola in fondo al
+  foglio con un id e tre `:not()` batte quasi tutto**. Ha tenuto la corona
+  scura per mesi senza che nessuno se ne accorgesse.
 
 ### La sessione del 2026-08-23
 
@@ -5328,10 +5375,25 @@ e serve a orientarsi, non a fare i conti.
 Se il sito sembra «vuoto» o mancano i comandi da admin, la prima cosa da
 guardare e' `AUTH.stato().email`: quasi sempre e' entrato il secondo.
 
-Al 25 agosto, sull'account di prova: **1 gioco**, 2 librerie, **10 partite**
-(Root, Arcs, Scythe, Ark Nova), stanza con muro salvia e pavimento noce.
-Sull'account admin la collezione oscillava fra 8 e 11 giochi, una libreria
-`Libreria 5`, una partita `Arcs`.
+Al **2 settembre**, sull'account admin: **14 giochi**, una libreria
+`Libreria 5` (legno `#8e6a4b`), **11 sugli scaffali** e tre solo in collezione
+(Terraforming Mars, SETI, Brass: Birmingham), **una partita** (Arcs, senza
+durata), nessun preferito, nessun voto proprio, tema `chiaro` senza accento
+scelto, luce 0.32 e faretti 0.44.
+
+**Il bucket `copertine` ha 14 file nella cartella dell'admin, uno per gioco, e
+tutti e quattordici sono riferiti** -- verificato incrociando i nomi con
+`giochi.copertina`: nessun orfano, nessun riferimento a un file che non c'e'.
+Ci sono poi **quattro cartelle di altri account** (9, 44, 17 e 3 file, 8,8 MB
+in tutto) e un `monopoly.jpg` nella radice che non e' riferito da niente --
+quello non si puo' cancellare dall'API, perche' la regola dello storage
+permette di cancellare solo dentro la propria cartella: va tolto dal pannello.
+
+**ATTENZIONE VERIFICANDO SUL SITO VERO.** In questa sessione due volte un clic
+di prova ha lasciato un segno sui dati veri: un accento verde acido sul profilo,
+e una «Libreria 6» creata con tre giochi messi in vetrina che non ci stavano.
+Tutti e due ripristinati, ma la lezione e' che **provare cliccando su una
+collezione vera lascia tracce**: si guarda cosa c'era prima, e si rimette.
 
 Le recensioni sono ancora **lorem ipsum**: sono opinioni dell'utente sui suoi
 giochi e non si inventano.
@@ -5388,9 +5450,9 @@ rimozione, copertine caricate nel bucket, **ordine manuale** scritto in
 faccia** salvati sul profilo, le due funzioni di **richiesta amicizia**
 (codice inesistente, proprio codice, email ignota: nessuna crea righe),
 **giocatori salvati** con il rifiuto del doppione, e una **partita** completa di
-partecipanti, posizioni e vincitore. **Dodici migrazioni su tredici sono
-applicate**, `punti_partita` compresa (2026-08-22, dall'SQL editor del pannello:
-qui non c'è la CLI di Supabase).
+partecipanti, posizioni e vincitore. **Quindici migrazioni su sedici sono
+applicate**: manca solo `schede_bgg`. Si passa dall'SQL editor del pannello --
+qui non c'è la CLI di Supabase.
 Verificato rileggendo il database dall'esterno, non dalla cache del browser.
 
 Collaudato di nuovo il **2026-08-23**, sempre contro il progetto vero: lo
@@ -5413,6 +5475,15 @@ di nick e faccia, elenco amici e richiesta per codice continuano a funzionare:
 la funzione di ricerca è `security definer` e legge la colonna che il client non
 può leggere.
 
+Collaudato di nuovo il **2026-09-02**, contro il progetto vero, dopo le due
+migrazioni applicate quel giorno: una partita salvata con **95 minuti** e
+riletta dal database, le ore che arrivano ai tre numeri in cima e alla slide del
+wrap, e i due voti che convivono su `giochi` -- `voto` 8.5 da BGG e `voto_mio` 9,
+poi tolto e tornato a `null`. Da qui e' uscito un difetto vero: **un campo
+svuotato non arrivava al database**, perche' `aRiga` salta i vuoti (vedi
+«Quello che si svuota va svuotato anche sul database»). I dati di prova sono
+stati ripuliti a fine giro.
+
 E il **2026-08-25** si e' aggiunta la edge function, che e' la prima cosa del
 progetto a girare su Supabase e non solo a parlarci. Provata prima in locale
 con Deno e il token vero, poi in produzione: `/ping` risponde
@@ -5423,42 +5494,55 @@ circa una settimana senza traffico -- la prima chiamata puo' metterci qualche
 secondo: per questo il taglio della remota e' sei secondi e non quattro
 decimi.
 
-Cosa manca, in ordine di fastidio. **Riscritta il 2026-08-25**: mezza lista
-di prima era diventata falsa quando e' arrivato il token.
+Cosa manca, in ordine di fastidio. **Riscritta il 2026-09-02.**
 
-0. **La migrazione `schede_bgg` non è ancora applicata** (2026-09-02). Il
-   codice c'è tutto e degrada come deve — `SCHEDE.problema()` dice «manca la
-   migrazione schede_bgg» invece di un errore di schema cache, le misure
-   restano in `localStorage` e le copertine nella cartella personale, cioè
-   esattamente il comportamento di prima — ma finché non si incolla
-   `supabase/migrations/20260902120000_schede_bgg.sql` nell'SQL editor, niente
-   viene condiviso. È l'unica cosa che questa macchina non può fare da sola:
-   qui non c'è la CLI di Supabase. (La `wishlist` invece è applicata:
-   verificato il 2026-09-02, `WISH.problema()` risponde vuoto.)
+0. **La migrazione `schede_bgg` non e' ancora applicata.** E' l'unica delle
+   sedici a mancare: `voto_mio` e `durata_partita` sono state applicate il
+   2026-09-02 e verificate contro il database vero. Il codice degrada come
+   deve -- `SCHEDE.problema()` dice quale migrazione manca, le misure restano
+   in `localStorage` e le copertine nella cartella personale -- ma finche' non
+   si incolla `supabase/migrations/20260902120000_schede_bgg.sql` nell'SQL
+   editor, niente viene condiviso. E' l'unica cosa che questa macchina non puo'
+   fare da sola: qui non c'e' la CLI di Supabase.
 1. **Le recensioni sono lorem ipsum.** E' l'unica cosa che tiene il sito
    lontano dall'essere finito: si scrivono dal sito con *la tua recensione*, e
    da li' si pubblicano nel catalogo con la casella in fondo al modulo. Sono
    opinioni di chi ci gioca, quindi non le puo' scrivere nessun altro.
-2. **La scheda di un gioco non si corregge da nessuna parte.** `apriModifica()`
-   — autore, editore, anno, voto, copertina — e' intatta ma **senza porta**, da
-   quando il pulsante «scheda» e' uscito dal piede della scheda. Col token
-   quei campi si riempiono da soli all'aggiunta, quindi fa meno male di prima;
-   ma per correggere a mano non c'e' strada. Il posto naturale e' il menu a tre
-   punti dell'elenco.
-3. **Manca l'indice unico su `(proprietario, nome)`** delle librerie. Il
+2. **Le espansioni** -- le due voci della lista fuori dal repo. Nella scheda di
+   un gioco una sezione che distingue le espansioni che hai da quelle che ti
+   mancano, e la possibilita' di raggrupparle sotto il gioco base gioco per
+   gioco. E' il lavoro piu' grosso rimasto, e non e' un lavoro di codice: sono
+   domande di prodotto -- se un'espansione occupa un cubo, se sparisce dentro
+   il gioco base, se si conta nel totale della collezione.
+3. **Cancellare un gioco non ha piu' nessuna porta.** Il menu della riga e il
+   piede della scheda tengono ormai un gesto solo, «rimuovi», e quel gesto e'
+   uscire dallo scaffale. `removeFocused` e' intatta e l'aggancio e'
+   condizionato; il posto naturale per rimetterla e' il menu a tre punti
+   dell'elenco. **Insieme a lei sono senza porta `apriModifica`** (autore,
+   editore, anno, voto, copertina) **e il modulo di aggiunta a mano**
+   (`openAdd`), che ha perso il suo «+» dalla collezione.
+4. **Manca l'indice unico su `(proprietario, nome)`** delle librerie. Il
    divieto dei nomi doppi vive in `store.js` e regge; l'indice sarebbe la
    garanzia, e adesso che i doppioni non ci sono piu' la migrazione passerebbe.
-4. **Le partite restano private.** Gli amici vedono libreria e recensioni, non
+5. **Le partite restano private.** Gli amici vedono libreria e recensioni, non
    le partite: e' il cambio di una policy, ed e' una scelta dell'utente.
-5. **Su telefono la scatola e' larga 90 px**: si riconosce la copertina ma non
+6. **Le copertine gia' caricate restano nella cartella personale.** La
+   condivisione vale da qui in avanti; le quattordici figure gia' in
+   `copertine/<uid>/` stanno dove sono. Se un giorno serve, il posto e'
+   `riparaCopertine`, che gia' gira all'avvio e gia' sa il `pic` di ogni gioco.
+7. **La cache locale delle copertine (IndexedDB) e' stata valutata e NON
+   fatta.** Misurato: un blob da IndexedDB da' un `blob:` URL same-origin,
+   quindi il canvas resta pulito e la texture funziona -- tecnicamente si puo'.
+   Ma **non puo' sostituire il bucket**: la stessa copertina pesa 142 KB dal
+   bucket e **706 KB dall'origine via edge function** (misurato, 852 ms),
+   perche' li' arriva l'originale di BGG. Senza bucket ogni dispositivo nuovo,
+   e ogni amico in visita, pagherebbe cinque volte i byte piu' un'invocazione.
+   Ha senso solo **davanti** al bucket, come cache: il guadagno vero e' che
+   oggi `cache-control` e' `max-age=3600`, quindi a rete staccata dopo un'ora
+   le copertine spariscono. Trenta righe, nessuna migrazione.
+8. **Su telefono la scatola e' larga 90 px**: si riconosce la copertina ma non
    si legge il titolo. E' il prezzo delle tre colonne; se da' fastidio,
    l'alternativa e' tornare a due.
-6. **Le copertine già caricate restano nella cartella personale.** La
-   condivisione vale da qui in avanti: chi aggiunge un gioco da adesso scrive
-   in `copertine/bgg/`, ma le quattordici figure già in `copertine/<uid>/`
-   stanno dove sono — sono 1,5 MB e spostarle vorrebbe dire scaricarle e
-   ricaricarle una per una. Se un giorno serve, il posto è `riparaCopertine`,
-   che già gira all'avvio e già sa il `pic` di ogni gioco.
 
 **Quello che NON manca piu'** (era in questa lista fino al 24 agosto, e
 lasciarcelo confonde chi riparte a freddo):
