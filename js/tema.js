@@ -298,9 +298,16 @@ function scegli(v){
   applica();
 }
 
-function scegliAccento(v){
+/* `soloVista` applica senza salvare. La ruota manda `input` a ogni
+   pixel di trascinamento, ed e' giusto che il sito cambi colore sotto
+   il cursore -- e' meta' del senso di avere una ruota. Ma scrivere a
+   ogni pixel vuol dire che un tocco di sfuggita lascia addosso un
+   colore che nessuno ha scelto davvero, e da li' finisce in
+   `localStorage` e poi in `profili.stanza`, cioe' anche negli occhi
+   degli amici. Si guarda dal vivo, si salva al rilascio. */
+function scegliAccento(v, soloVista){
   accento = ESA.test(v || '') ? String(v).toLowerCase() : '';
-  salva();
+  if (!soloVista) salva();
   applica();
 }
 
@@ -422,7 +429,11 @@ function montaSelettore(){
      niente sul database, si riscrivono delle variabili CSS. */
   lista.addEventListener('input', function(e){
     const r = e.target.closest('input[data-acc-ruota]');
-    if (r) scegliAccento(r.value);
+    if (r) scegliAccento(r.value, true);      // si vede, non si scrive
+  });
+  lista.addEventListener('change', function(e){
+    const r = e.target.closest('input[data-acc-ruota]');
+    if (r) scegliAccento(r.value);            // al rilascio si salva
   });
   if (typeof I18N !== 'undefined' && I18N.suCambio) I18N.suCambio(disegnaSelettore);
 }

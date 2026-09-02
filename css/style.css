@@ -4742,6 +4742,8 @@ body.wrap-su #wrap{display:flex}
 .wrap-slide.tono3{background:linear-gradient(160deg, var(--ink-soft), var(--wood))}
 .wrap-slide.tono4{background:linear-gradient(160deg, var(--accent), var(--ink))}
 .wrap-slide.tono5{background:linear-gradient(160deg, var(--ink), var(--accent-su))}
+.wrap-slide.tono6{background:linear-gradient(160deg, var(--wood), var(--ink))}
+.wrap-slide.tono7{background:linear-gradient(160deg, var(--accent-su), var(--ink-soft))}
 
 .wrap-t{
   margin:0; font-size:12.5px; letter-spacing:.10em; text-transform:uppercase;
@@ -4749,7 +4751,7 @@ body.wrap-su #wrap{display:flex}
 }
 .wrap-n{
   margin:0; font-family:var(--ff-display); font-weight:600;
-  font-size:clamp(58px, 22vw, 132px); line-height:1; letter-spacing:-.02em;
+  font-size:clamp(52px, 18vw, 108px); line-height:1; letter-spacing:-.02em;
 }
 /* Un titolo non e' un numero: sta piu' piccolo e va a capo, se no
    "Deep Regrets: Lamentable Tentacles" non ci sta in nessuna
@@ -4759,6 +4761,48 @@ body.wrap-su #wrap{display:flex}
   letter-spacing:-.01em;
 }
 .wrap-s{margin:4px 0 0; font-size:15px; opacity:.88; max-width:26ch; line-height:1.5}
+
+/* IL DETTAGLIO: due o tre righe di contorno sotto il numero grande. Un
+   numero solo su un fondo colorato e' un manifesto, non un wrap --
+   quello che si guarda davvero e' cosa c'e' intorno a quel numero.
+
+   Le righe hanno un fondo appena accennato: sono dentro la slide, non
+   sopra, e un riquadro con il suo bordo le staccherebbe da lei. */
+.wrap-righe{
+  list-style:none; margin:22px 0 0; padding:0;
+  width:100%; max-width:360px; display:flex; flex-direction:column; gap:7px;
+}
+.wrap-righe li{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:10px 15px; border-radius:var(--r-s);
+  background:rgba(255,255,255,.13); font-size:13.5px; text-align:left;
+}
+.wrap-righe li span{opacity:.86; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.wrap-righe li b{
+  flex:none; font-family:var(--ff-display); font-size:15px; letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+}
+
+/* LE BARRE, un mese per barra. Sono in proporzione al mese piu' pieno e
+   non hanno una scala: quello che si legge e' la FORMA -- quando si e'
+   giocato tanto e quando niente -- e una scala numerata direbbe una
+   precisione che qui non serve a nessuno. */
+.wrap-barre{
+  list-style:none; margin:26px 0 0; padding:0;
+  width:100%; max-width:400px; height:132px;
+  display:flex; align-items:flex-end; gap:5px;
+}
+.wrap-barre li{
+  flex:1; min-width:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-end; height:100%; gap:6px;
+}
+.wrap-barre i{
+  width:100%; border-radius:5px 5px 0 0; background:rgba(255,255,255,.34);
+  display:block;
+}
+.wrap-barre span{
+  font-size:10px; letter-spacing:.03em; opacity:.72; white-space:nowrap;
+}
 /* La firma sta in fondo, ma FUORI dal flusso: con `margin-top:auto`
    spingeva tutto il resto contro il bordo di sopra invece di lasciarlo
    in mezzo, che e' il contrario di quello che serve a una slide. */

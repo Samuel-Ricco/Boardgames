@@ -6956,14 +6956,84 @@ function bestiaNera(lista){
   return tutti[0] || null;
 }
 
-/* Le sei slide. Ognuna ha un titolo, un numero grande, una riga sotto e
-   un tono -- e chi non ha il suo dato lo dice invece di mostrare zero. */
+/* CHI GIOCA CON TE. Fra le partite in cui c'ero io, chi c'era piu'
+   spesso -- e quante ne ha vinte, che e' il contorno che rende
+   interessante il nome. */
+function compagni(lista){
+  const io = piattoNome(PARTITE.mioNome());
+  const per = {};
+  (lista || []).forEach(function(p){
+    const chi = p.chi || [];
+    if (io && !chi.some(function(x){ return piattoNome(x.nome) === io; })) return;
+    chi.forEach(function(x){
+      if (io && piattoNome(x.nome) === io) return;
+      const v = per[x.nome] || (per[x.nome] = { nome: x.nome, con: 0, vinte: 0 });
+      v.con++;
+      if (x.vincitore) v.vinte++;
+    });
+  });
+  return Object.keys(per).map(function(k){ return per[k]; })
+    .sort(function(a, b){ return b.con - a.con ||
+      String(a.nome).localeCompare(String(b.nome), 'it'); });
+}
+
+/* Quante persone al tavolo, in media e al massimo. Le partite senza
+   nessuno segnato non contano: sarebbero uno zero che abbassa la media
+   dicendo una cosa che non e' successa. */
+function tavoli(lista){
+  let somma = 0, quante = 0, max = 0, quandoMax = null;
+  (lista || []).forEach(function(p){
+    const n = (p.chi || []).length;
+    if (!n) return;
+    somma += n; quante++;
+    if (n > max){ max = n; quandoMax = p; }
+  });
+  return { media: quante ? Math.round(somma * 10 / quante) / 10 : null,
+           max: max, quante: quante, quandoMax: quandoMax };
+}
+
+/* Le partite mese per mese, per la strisciata di barre. Si tengono gli
+   ultimi dodici mesi in cui si e' giocato: un anno di barre e' un anno
+   che si legge, e i buchi in mezzo restano perche' sono la storia. */
+function perMese(lista){
+  const per = {};
+  (lista || []).forEach(function(p){
+    const d = String(p.giocata_il || '');
+    if (d.length < 7) return;
+    const k = d.slice(0, 7);
+    per[k] = (per[k] || 0) + 1;
+  });
+  const chiavi = Object.keys(per).sort();
+  if (!chiavi.length) return [];
+  const mesi = (T('cal.mesi') || '').split(',');
+  return chiavi.slice(-12).map(function(k){
+    const m = parseInt(k.slice(5), 10) - 1;
+    return { k: (mesi[m] || k.slice(5)).slice(0, 3), v: per[k] };
+  });
+}
+
+function minTesto(min){
+  if (!min) return '';
+  if (min < 60) return min + '&prime;';
+  const h = Math.floor(min / 60), r = min % 60;
+  return r ? h + 'h ' + r + '&prime;' : h + 'h';
+}
+
+/* Le slide. Ognuna ha un titolo, un numero grande, una riga sotto e --
+   ed e' quello che le riempie -- un DETTAGLIO: due o tre righe di
+   contorno, o una strisciata di barre. Un numero solo su un fondo
+   colorato e' un manifesto, non un wrap: quello che si guarda davvero
+   e' cosa c'e' intorno a quel numero.
+
+   Chi non ha il suo dato lo dice invece di mostrare uno zero. */
 function slideWrap(){
   const tutte = PARTITE.tutte();
   const ore = oreGiocate(tutte);
   const w = PARTITE.winrate(tutte);
   const perGioco = PARTITE.winratePerGioco(tutte);
   const bestia = bestiaNera(tutte);
+  const amici = compagni(tutte);
+  const tav = tavoli(tutte);
 
   // a cosa si e' giocato di piu'
   const conta = {};
@@ -6972,33 +7042,100 @@ function slideWrap(){
     const v = conta[k] || (conta[k] = { titolo: p.titolo, n: 0 });
     v.n++;
   });
-  const piu = Object.keys(conta).map(function(k){ return conta[k]; })
-    .sort(function(a, b){ return b.n - a.n; })[0];
+  const classifica = Object.keys(conta).map(function(k){ return conta[k]; })
+    .sort(function(a, b){ return b.n - a.n ||
+      String(a.titolo).localeCompare(String(b.titolo), 'it'); });
+  const piu = classifica[0];
 
   const giochi = LIB.all().length;
   const inVetrina = LIB.all().filter(function(g){ return g.libreria; }).length;
-  // il gioco a cui si vince di piu': serve almeno una vittoria
+  const mobili = LIB.librerie().length;
+  const miei = LIB.all().filter(function(g){ return g.mioVoto; }).length;
+  const desideri = (typeof WISH !== 'undefined' && WISH.quanti) ? WISH.quanti() : 0;
+
   const forte = perGioco.filter(function(g){ return g.perc > 0; })[0];
+  const debole = perGioco.length > 1 ? perGioco[perGioco.length - 1] : null;
+
+  // la piu' lunga, fra quelle che hanno una durata
+  const lunghe = tutte.filter(function(p){ return parseInt(p.minuti, 10) > 0; })
+    .sort(function(a, b){ return b.minuti - a.minuti; });
+  const media = ore.quante ? Math.round(ore.minuti / ore.quante) : 0;
+
+  const prima = tutte.slice().sort(function(a, b){
+    return String(a.giocata_il || '').localeCompare(String(b.giocata_il || '')); })[0];
+
+  const righeGiochi = classifica.slice(0, 3).map(function(g){
+    return { k: g.titolo, v: g.n };
+  });
 
   return [
-    { t: 'wrap.partite', n: String(tutte.length), s: '', tono: 0 },
+    /* Le barre solo da TRE mesi in su. Con uno o due, quella strisciata
+       non e' un grafico: e' un rettangolo che riempie la larghezza e non
+       dice niente. Sotto la soglia si mostrano le righe, che con pochi
+       dati dicono di piu'. */
+    (function(){
+      const mesi = perMese(tutte);
+      const base = { t: 'wrap.partite', n: String(tutte.length), tono: 0,
+        s: prima && prima.giocata_il ? TP('wrap.dalPrimo', {d: dataIt(prima.giocata_il)}) : '' };
+      if (mesi.length >= 3){ base.barre = mesi; return base; }
+      const ultima = tutte.slice().sort(function(a, b){
+        return String(b.giocata_il || '').localeCompare(String(a.giocata_il || '')); })[0];
+      base.righe = [];
+      if (ultima && ultima.giocata_il)
+        base.righe.push({ k: TP('wrap.ultima'), v: dataIt(ultima.giocata_il) });
+      base.righe.push({ k: TP('wrap.giochiDiversi'), v: classifica.length });
+      return base;
+    })(),
+
     ore.minuti > 0
-      ? { t: 'wrap.ore', n: oreTesto(ore.minuti), s: '', tono: 1 }
+      ? { t: 'wrap.ore', n: oreTesto(ore.minuti), tono: 1,
+          s: TP('wrap.suQuante', {n: ore.quante}),
+          righe: [ { k: TP('wrap.media'), v: minTesto(media) } ].concat(
+            lunghe[0] ? [{ k: TP('wrap.piuLunga'), v: lunghe[0].titolo + ' &middot; ' + minTesto(lunghe[0].minuti) }] : []) }
       : { t: 'wrap.ore', n: null, s: TP('wrap.oreNo'), tono: 1 },
-    piu ? { t: 'wrap.piuGiocato', n: piu.titolo, testo: true,
-            s: TP(piu.n === 1 ? 'wrap.volta' : 'wrap.volte', {n: piu.n}), tono: 2 }
+
+    piu ? { t: 'wrap.piuGiocato', n: piu.titolo, testo: true, tono: 2,
+            s: TP(piu.n === 1 ? 'wrap.volta' : 'wrap.volte', {n: piu.n}),
+            righe: righeGiochi }
         : { t: 'wrap.piuGiocato', n: null, s: TP('wrap.vuoto'), tono: 2 },
-    { t: 'wrap.collezione', n: String(giochi),
-      s: TP('wrap.suScaffali', {n: inVetrina}), tono: 3 },
+
+    { t: 'wrap.collezione', n: String(giochi), tono: 3,
+      s: TP('wrap.suScaffali', {n: inVetrina}),
+      righe: [ { k: TP('wrap.mobili'), v: mobili },
+               { k: TP('wrap.votati'), v: miei },
+               { k: TP('wrap.desiderati'), v: desideri } ] },
+
     w.perc === null
       ? { t: 'wrap.winrate', n: null, s: TP('par.wrNick'), tono: 4 }
-      : { t: 'wrap.winrate', n: w.perc + '%',
+      : { t: 'wrap.winrate', n: w.perc + '%', tono: 4, anello: w.perc,
           s: TP(w.vinte === 1 ? 'wrap.suPartiteUna' : 'wrap.suPartite',
-                 {v: w.vinte, g: w.gioc}), tono: 4 },
+                {v: w.vinte, g: w.gioc}),
+          righe: (forte ? [{ k: TP('wrap.meglio'), v: forte.titolo + ' &middot; ' + forte.perc + '%' }] : [])
+            .concat(debole && debole !== forte
+              ? [{ k: TP('wrap.peggio'), v: debole.titolo + ' &middot; ' + debole.perc + '%' }] : []) },
+
+    amici.length
+      ? { t: 'wrap.conChi', n: amici[0].nome, testo: true, tono: 6,
+          s: TP(amici[0].con === 1 ? 'wrap.insiemeUna' : 'wrap.insieme', {n: amici[0].con}),
+          righe: amici.slice(0, 3).map(function(a){ return { k: a.nome, v: a.con }; }) }
+      : { t: 'wrap.conChi', n: null, s: TP('wrap.nessuno'), tono: 6 },
+
     bestia
-      ? { t: 'wrap.bestia', n: bestia.nome, testo: true,
-          s: TP('wrap.bestiaSotto', {n: bestia.vinte}), tono: 5 }
-      : { t: 'wrap.bestia', n: null, s: TP('wrap.nessuno'), tono: 5 }
+      ? { t: 'wrap.bestia', n: bestia.nome, testo: true, tono: 5,
+          s: TP('wrap.bestiaSotto', {n: bestia.vinte}),
+          righe: (function(){
+            const suo = amici.filter(function(a){ return a.nome === bestia.nome; })[0];
+            return suo ? [{ k: TP('wrap.insiemeK'), v: suo.con },
+                          { k: TP('wrap.lueVinte'), v: suo.vinte }] : [];
+          })() }
+      : { t: 'wrap.bestia', n: null, s: TP('wrap.nessuno'), tono: 5 },
+
+    tav.media !== null
+      ? { t: 'wrap.tavolo', n: String(tav.media).replace('.', ','), tono: 7,
+          s: TP('wrap.inMediaAlTavolo'),
+          righe: [ { k: TP('wrap.piuGrande'), v: tav.max },
+                   { k: TP('wrap.contate'), v: tav.quante } ] }
+      : { t: 'wrap.tavolo', n: null, s: TP('wrap.vuoto'), tono: 7 }
   ];
 }
 
@@ -7010,12 +7147,28 @@ function disegnaWrap(){
     /* Il numero grande e' piu' piccolo quando e' un titolo: "Deep
        Regrets: Lamentable Tentacles" a centoventi pixel non ci sta in
        nessuna larghezza. */
+    let sotto = '';
+    if (x.righe && x.righe.length){
+      sotto = '<ul class="wrap-righe">' + x.righe.map(function(r){
+        return '<li><span>' + esc(r.k) + '</span><b>' + r.v + '</b></li>';
+      }).join('') + '</ul>';
+    } else if (x.barre && x.barre.length){
+      /* Le barre sono in proporzione al mese piu' pieno: non c'e' una
+         scala e non serve, perche' quello che si legge e' la FORMA --
+         quando si e' giocato tanto e quando niente. */
+      const top = Math.max.apply(null, x.barre.map(function(b){ return b.v; })) || 1;
+      sotto = '<ul class="wrap-barre">' + x.barre.map(function(b){
+        return '<li><i style="height:' + Math.max(6, Math.round(b.v * 100 / top)) + '%"></i>' +
+               '<span>' + esc(b.k) + '</span></li>';
+      }).join('') + '</ul>';
+    }
     return '<article class="wrap-slide tono' + x.tono + '" data-i="' + i + '">' +
       '<p class="wrap-t">' + T(x.t) + '</p>' +
       (x.n !== null
         ? '<p class="wrap-n' + (x.testo ? ' testo' : '') + '">' + esc(x.n) + '</p>'
         : '') +
       (x.s ? '<p class="wrap-s">' + esc(x.s) + '</p>' : '') +
+      sotto +
       '<p class="wrap-firma">il dado <i>&egrave;</i> trap</p>' +
     '</article>';
   }).join('');
@@ -7098,8 +7251,45 @@ function salvaSlide(){
   if (sl.s){
     x.font = '400 42px ' + FONT_SLIDE;
     x.globalAlpha = .86;
-    testoACapo(x, sl.s, W/2, sl.n === null ? 560 : 820, W - 200, 56, '400 42px ' + FONT_SLIDE);
+    testoACapo(x, sl.s, W/2, sl.n === null ? 560 : 800, W - 200, 56, '400 42px ' + FONT_SLIDE);
     x.globalAlpha = 1;
+  }
+
+  /* IL DETTAGLIO VA NELL'IMMAGINE. Senza, la slide che si pubblica
+     sarebbe piu' povera di quella che si e' guardata -- e sarebbe la
+     meta' vuota, per giunta. */
+  if (sl.righe && sl.righe.length){
+    let y = 960;
+    sl.righe.slice(0, 3).forEach(function(r){
+      x.globalAlpha = .12;
+      arrotondato(x, 120, y - 46, W - 240, 74, 22);
+      x.fill();
+      x.globalAlpha = 1;
+      x.textAlign = 'left';
+      x.font = '400 34px ' + FONT_SLIDE;
+      x.globalAlpha = .8;
+      x.fillText(togliEntita(r.k), 156, y);
+      x.globalAlpha = 1;
+      x.textAlign = 'right';
+      x.font = '600 34px ' + FONT_SLIDE;
+      x.fillText(togliEntita(String(r.v)), W - 156, y);
+      y += 92;
+    });
+    x.textAlign = 'center';
+  } else if (sl.barre && sl.barre.length){
+    const b = sl.barre, larg = (W - 240) / b.length;
+    const top = Math.max.apply(null, b.map(function(z){ return z.v; })) || 1;
+    b.forEach(function(z, i){
+      const h = Math.max(10, Math.round(z.v * 240 / top));
+      const bx = 120 + i * larg;
+      x.globalAlpha = .34;
+      arrotondato(x, bx + larg * .18, 1090 - h, larg * .64, h, 10);
+      x.fill();
+      x.globalAlpha = .75;
+      x.font = '400 22px ' + FONT_SLIDE;
+      x.fillText(togliEntita(z.k), bx + larg / 2, 1136);
+      x.globalAlpha = 1;
+    });
   }
 
   x.font = '500 36px ' + FONT_SLIDE;
@@ -7115,6 +7305,27 @@ function salvaSlide(){
 }
 
 const FONT_SLIDE = "'Poppins', system-ui, sans-serif";
+
+/* Un rettangolo con gli angoli tondi. `roundRect` non c'e' su tutti i
+   browser che questo sito prende ancora, e sono sei righe. */
+function arrotondato(x, sx, sy, w, h, r){
+  x.beginPath();
+  x.moveTo(sx + r, sy);
+  x.arcTo(sx + w, sy, sx + w, sy + h, r);
+  x.arcTo(sx + w, sy + h, sx, sy + h, r);
+  x.arcTo(sx, sy + h, sx, sy, r);
+  x.arcTo(sx, sy, sx + w, sy, r);
+  x.closePath();
+}
+
+/* Nel canvas non si disegnano entita' HTML: `&middot;` verrebbe scritto
+   cosi' com'e'. Le poche che il wrap usa si sciolgono qui. */
+function togliEntita(t){
+  return String(t)
+    .replace(/&middot;/g, String.fromCharCode(183))
+    .replace(/&prime;/g, String.fromCharCode(8242))
+    .replace(/&amp;/g, '&');
+}
 
 function mescolaEsa(a, b, p){
   const r = function(h){ h = h.replace('#',''); return [

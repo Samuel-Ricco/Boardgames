@@ -1638,6 +1638,42 @@ cosa ho giocato di piu', quanti giochi ho, quanto vinco, e **chi mi batte**.
   muovevano piu' niente, perche' `vaiSlide` ritagliava sempre allo stesso
   estremo.
 
+### Una slide non e' un numero su un fondo colorato
+
+Le prime sei slide erano un'etichetta, un numero e una riga: un manifesto, non
+un wrap. Quello che si guarda davvero e' **cosa c'e' intorno** a quel numero, e
+adesso ogni slide porta un dettaglio -- due o tre righe di contorno, oppure una
+strisciata di barre.
+
+Le slide sono **otto**: partite, ore, gioco piu' giocato, collezione, winrate,
+con chi giochi, bestia nera, e il tavolo (quante persone in media).
+
+- **Le barre solo da TRE mesi in su.** Con uno o due, quella strisciata non e'
+  un grafico: e' un rettangolo che riempie la larghezza e non dice niente.
+  Sotto la soglia si mostrano le righe, che con pochi dati dicono di piu'.
+- **Le barre non hanno una scala**, e non serve: quello che si legge e' la
+  FORMA -- quando si e' giocato tanto e quando niente -- e una scala numerata
+  direbbe una precisione che li' non serve a nessuno.
+- **Il dettaglio va anche nell'immagine esportata.** Senza, la slide che si
+  pubblica sarebbe piu' povera di quella che si e' guardata, e sarebbe la meta'
+  vuota per giunta. Nel canvas pero' le **entita' HTML non si disegnano**:
+  `&middot;` verrebbe scritto cosi' com'e', e le poche che il wrap usa si
+  sciolgono in `togliEntita`.
+- **`roundRect` non c'e' su tutti i browser** che questo sito prende ancora: gli
+  angoli tondi del canvas sono sei righe di `arcTo`.
+
+### La ruota del tema si guarda dal vivo e si salva al rilascio
+
+La ruota dell'accento scriveva a ogni `input`, cioe' a ogni pixel di
+trascinamento. Il colore dal vivo e' meta' del senso di avere una ruota -- ma
+scrivere a ogni pixel vuol dire che **un tocco di sfuggita lascia addosso un
+colore che nessuno ha scelto davvero**, e da li' finisce in `localStorage`, poi
+in `profili.stanza`, e quindi anche negli occhi degli amici. E' successo due
+volte durante la verifica, con un verde acido. Adesso `input` applica e basta,
+`change` salva -- la stessa divisione gia' scelta per la ruota del legno, ma per
+la ragione opposta: li' si evitava una scrittura al secondo sul database, qui si
+evita di rendere definitivo un colore di passaggio.
+
 ### Salvare una slide
 
 E' **l'unica funzione del sito che produce un file**, ed e' anche il motivo per
