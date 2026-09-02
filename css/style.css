@@ -3362,7 +3362,7 @@ body.arreda #stanza{transform:none}
    `input[type=color]` disegna un proprio riquadro dentro di se': senza
    i due `::-webkit-color-swatch` dentro il cerchio resta un quadratino
    con il suo margine. */
-.pastiglie.tinte .ruota, #st-scaffali .ruota{
+.pastiglie.tinte .ruota, #stanza .pastiglie .ruota{
   width:34px; height:34px; padding:0; border-radius:50%; cursor:pointer;
   background:none; border:1.5px dashed rgba(var(--ink-rgb),.34);
   -webkit-appearance:none; appearance:none;
@@ -3372,12 +3372,12 @@ body.arreda #stanza{transform:none}
    attorno e' tutta la differenza fra "questo colore" e "scegli un
    colore". */
 .pastiglie.tinte .ruota::-webkit-color-swatch-wrapper,
-#st-scaffali .ruota::-webkit-color-swatch-wrapper{padding:5px}
+#stanza .pastiglie .ruota::-webkit-color-swatch-wrapper{padding:5px}
 .pastiglie.tinte .ruota::-webkit-color-swatch,
-#st-scaffali .ruota::-webkit-color-swatch{border:0; border-radius:50%}
+#stanza .pastiglie .ruota::-webkit-color-swatch{border:0; border-radius:50%}
 /* Scelto dalla ruota: l'anello dell'accento, come per i bollini, cosi'
    si vede che a comandare e' lei e non uno dei predefiniti. */
-.pastiglie.tinte .ruota.on, #st-scaffali .ruota.on{
+.pastiglie.tinte .ruota.on, #stanza .pastiglie .ruota.on{
   border-style:solid; border-color:transparent;
   box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent);
 }
@@ -4564,3 +4564,61 @@ body.muro-scuro.sez-collezione:not(.elenco) header{
 #partitalayer .pa-chi li .corona.oro .ico path,
 #partitalayer .pa-chi li .corona.argento .ico path,
 #partitalayer .pa-chi li .corona.bronzo .ico path{fill:currentColor}
+
+
+/* ============================================================
+   LE TENDINE DENTRO IL PANNELLO DELLA LIBRERIA
+
+   Aperte tutte insieme, le cinque scelte di "modifica libreria" erano
+   nove righe di bollini una sotto l'altra: da fuori non si capiva
+   quali appartenessero a cosa. Adesso ognuna e' una tendina, e la
+   gerarchia si vede in TRE modi insieme -- come per le partite, dove
+   la stessa cosa e' gia' scritta: un RIENTRO, un FILO verticale che
+   dice a chi appartiene quel rientro, e un PESO di testo minore.
+   Uno solo non basta a farla leggere.
+   ============================================================ */
+.st-sotto{
+  margin:0 0 2px; padding-left:12px;
+  border-left:2px solid rgba(var(--ink-rgb),.12);
+}
+.st-sotto > summary{
+  display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none;
+  padding:8px 10px; border-radius:var(--r-s);
+  font-family:var(--ff-text); font-size:12.5px; font-weight:500;
+  letter-spacing:.02em; color:var(--ink-soft);
+}
+.st-sotto > summary::-webkit-details-marker{display:none}
+.st-sotto > summary:hover{background:rgba(var(--ink-rgb),.07); color:var(--ink)}
+/* Il chevron: la stessa freccia della tendina di sopra, piu' piccola.
+   Serve a dire "questa si apre" -- senza, cinque titoli in fila si
+   leggono come cinque etichette. */
+.st-sotto > summary::after{
+  content:""; margin-left:auto; width:6px; height:6px;
+  border-right:1.6px solid currentColor; border-bottom:1.6px solid currentColor;
+  transform:rotate(45deg) translate(-2px,-2px);
+  transition:transform .18s var(--ease);
+}
+.st-sotto[open] > summary::after{transform:rotate(-135deg) translate(-1px,-1px)}
+.st-sotto[open] > summary{color:var(--ink)}
+.st-sotto-dentro{
+  padding:4px 0 10px 10px;
+  animation:apreSotto .2s var(--ease) both;
+}
+.st-sotto-dentro .st-riga{margin:0 0 8px}
+.st-sotto-dentro .st-riga.luce{display:flex; align-items:center; gap:10px}
+.st-sotto-dentro .st-riga.luce input[type=range]{flex:1; min-width:0}
+
+/* IL VOLUME NEL PROFILO, accanto al suo interruttore: e' la stessa
+   scelta, e stavano in due schermate diverse. */
+.pro-volume{
+  display:flex; align-items:center; gap:10px; margin:14px 0 0;
+}
+.pro-volume > span{
+  flex:none; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.pro-volume input[type=range]{flex:1; min-width:0}
+.pro-volume b{
+  flex:none; font-family:var(--ff-display); font-size:12px; letter-spacing:0;
+  color:var(--ink-soft); font-variant-numeric:tabular-nums;
+}

@@ -278,12 +278,16 @@ function normalizza(s){
     if (lista.some(function(x){ return x.v === v; })) return v;
     return ESA.test(v) ? String(v).toLowerCase() : d;
   };
-  o.scaffali  = dentroOTinta(LEGNI, o.scaffali, DEFAULT.scaffali);
-  o.muro      = dentro(MURI,      o.muro,      DEFAULT.muro);
-  o.pavimento = dentro(PAVIMENTI, o.pavimento, DEFAULT.pavimento);
+  /* Tutte le superfici accettano un colore libero: ogni sezione che ha
+     dei bollini ha anche la sua ruota, e quello che la ruota produce e'
+     un esadecimale che non sta in nessuna lista. `arredo` no, che non
+     e' un colore ma uno stile. */
+  o.scaffali  = dentroOTinta(LEGNI,     o.scaffali,  DEFAULT.scaffali);
+  o.muro      = dentroOTinta(MURI,      o.muro,      DEFAULT.muro);
+  o.pavimento = dentroOTinta(PAVIMENTI, o.pavimento, DEFAULT.pavimento);
+  o.nome      = dentroOTinta(NOMI,      o.nome,      DEFAULT.nome);
+  o.fariTinta = dentroOTinta(FARI,      o.fariTinta, DEFAULT.fariTinta);
   o.arredo    = dentro(ARREDI,    o.arredo,    DEFAULT.arredo);
-  o.nome      = dentro(NOMI,      o.nome,      DEFAULT.nome);
-  o.fariTinta = dentro(FARI,      o.fariTinta, DEFAULT.fariTinta);
   /* La tavolozza con cui la stanza va disegnata. Un nome che non esiste
      -- dato vecchio, o una tavolozza tolta -- vale come non scelto. */
   o.tavolozza = (typeof TEMA !== 'undefined' && TEMA.esiste(o.tavolozza))

@@ -5653,11 +5653,13 @@ function disegnaStanza(){
       : '';
     q(sel).innerHTML = html + conRuota;
   };
-  gruppo('#st-scaffali',  STANZA.LEGNI,     suo.scaffali,   false, 'scaffali', true);
-  gruppo('#st-muro',      STANZA.MURI,      cur.muro,       false, 'muro');
-  gruppo('#st-pavimento', STANZA.PAVIMENTI, cur.pavimento,  false, 'pavimento');
-  gruppo('#st-nome-tinta', STANZA.NOMI,     cur.nome,       false, 'nome');
-  gruppo('#st-fari-tinta', STANZA.FARI,     cur.fariTinta,  false);
+  /* Ogni sezione che ha dei colori ha anche la sua ruota: chi ne ha
+     uno in mente non deve accontentarsi di sei. */
+  gruppo('#st-scaffali',   STANZA.LEGNI,     suo.scaffali,   false, 'scaffali', true);
+  gruppo('#st-muro',       STANZA.MURI,      cur.muro,       false, 'muro', true);
+  gruppo('#st-pavimento',  STANZA.PAVIMENTI, cur.pavimento,  false, 'pavimento', true);
+  gruppo('#st-nome-tinta', STANZA.NOMI,      cur.nome,       false, 'nome', true);
+  gruppo('#st-fari-tinta', STANZA.FARI,      cur.fariTinta,  false, null, true);
 }
 
 /* CLICCANDO FUORI SI CHIUDE.
@@ -6075,6 +6077,24 @@ function bindStanza(){
     disegnaStanza();
     applicaLuce();
     salvaStanzaTraPoco();
+  });
+
+  /* Le ruote delle superfici della stanza. Come per il legno si
+     ascolta `change` e non `input`: dietro c'e' una scrittura sul
+     profilo, e salvare a ogni pixel di trascinamento vorrebbe dire una
+     scrittura al secondo. */
+  [['#st-muro','muro'], ['#st-pavimento','pavimento'],
+   ['#st-nome-tinta','nome'], ['#st-fari-tinta','fariTinta']].forEach(function(par){
+    q(par[0]).addEventListener('change', function(e){
+      const r = e.target.closest('input.ruota');
+      if (!r) return;
+      const patch = {};
+      patch[par[1]] = r.value;
+      STANZA.cambia(patch);
+      disegnaStanza();
+      if (par[1] === 'fariTinta') applicaLuce(); else applicaStanza();
+      salvaStanzaTraPoco();
+    });
   });
 
   // muro e pavimento sono la stanza

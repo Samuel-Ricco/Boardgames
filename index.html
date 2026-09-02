@@ -155,40 +155,6 @@
     <b id="st-luce-n">100%</b>
   </p>
 
-  <!-- I FARETTI SOTTO I RIPIANI. Non seguono la luce della stanza: e'
-       tutto il punto. Abbassando la luce la stanza si spegne e il
-       mobile resta acceso da dentro, che e' quello che fa una libreria
-       illuminata la sera -- e a luce piena si notano appena, come si
-       notano appena i faretti veri a mezzogiorno. -->
-  <p class="st-riga luce">
-    <span data-i18n="stanza.faretti">faretti</span>
-    <input id="st-faretti" type="range" min="0" max="1" step="0.02" value="0.4"
-           data-i18n-aria="stanza.farettiAria" aria-label="faretti della libreria">
-    <b id="st-faretti-n">40%</b>
-  </p>
-  <!-- IL SUONO, terzo cursore accanto alla luce e ai faretti. Ha la
-       stessa forma perche' e' la stessa domanda -- com'e' questo
-       posto -- e "spento" e' semplicemente zero, senza un
-       interruttore in piu' a dire la stessa cosa.
-
-       Il valore pero' NON sta nel jsonb della stanza come gli altri
-       due: quelli sono della stanza e un amico che viene a guardare
-       la tua libreria li vede come li hai messi tu, mentre il volume
-       e' di chi ascolta. Sta in `localStorage`, come la scelta al
-       cancello. -->
-  <p class="st-riga luce">
-    <span data-i18n="stanza.suono">suono</span>
-    <input id="st-suono" type="range" min="0" max="1" step="0.02" value="0.6"
-           data-i18n-aria="stanza.suonoAria" aria-label="volume dei suoni">
-    <b id="st-suono-n">60%</b>
-  </p>
-
-  <!-- Il colore dei faretti sta attaccato al loro cursore e non giu'
-       con muro e pavimento: quanto sono accesi e di che colore sono
-       la stessa domanda, e separarle vorrebbe dire cercare in due
-       posti la stessa manopola. -->
-  <p class="st-riga"><span data-i18n="stanza.fariTinta">tinta</span><span id="st-fari-tinta" class="pastiglie"></span></p>
-
   <!-- Il nome sta in chiaro e non dentro una tendina: e' quello che
        distingue un mobile dall'altro, e si cambia spesso all'inizio. -->
   <p class="st-nome">
@@ -198,19 +164,62 @@
             data-i18n="stanza.salva">salva</button>
   </p>
 
+  <!-- OGNI SEZIONE E' UNA TENDINA, e stanno una dentro l'altra: il
+       pannello -> "modifica libreria" -> le cinque scelte. Aperte
+       tutte insieme erano nove righe di bollini una sotto l'altra, e
+       da fuori non si capiva quali appartenessero a cosa.
+
+       La gerarchia si vede in TRE modi insieme, come nelle partite: un
+       rientro, un filo verticale che dice a chi appartiene quel
+       rientro, e un peso di testo minore. Uno solo non basta a farla
+       leggere. -->
   <details id="st-aspetto" class="st-tendina">
     <summary data-i18n="stanza.modifica">modifica libreria</summary>
     <div class="st-dentro">
       <!-- spezzata attorno a `#st-quale`, che lo riempie il JS -->
       <p class="st-quale"><i data-i18n="stanza.legnoDi">legno e arredi di</i> <b id="st-quale">questo mobile</b></p>
-      <p class="st-riga"><span data-i18n="stanza.scaffali">scaffali</span><span id="st-scaffali" class="pastiglie"></span></p>
-      <p class="st-riga"><span data-i18n="stanza.muro">muro</span><span id="st-muro" class="pastiglie"></span></p>
-      <p class="st-riga"><span data-i18n="stanza.pavimento">pavimento</span><span id="st-pavimento" class="pastiglie"></span></p>
+
+      <!-- I FARETTI SOTTO I RIPIANI, che stavano in cima al pannello
+           accanto alla luce della stanza. Sono del MOBILE, non della
+           stanza, e quindi appartengono qui: quanto sono accesi e di
+           che colore sono la stessa domanda, e stanno nella stessa
+           tendina. -->
+      <details class="st-sotto">
+        <summary data-i18n="stanza.faretti">faretti</summary>
+        <div class="st-sotto-dentro">
+          <p class="st-riga luce">
+            <input id="st-faretti" type="range" min="0" max="1" step="0.02" value="0.4"
+                   data-i18n-aria="stanza.farettiAria" aria-label="faretti della libreria">
+            <b id="st-faretti-n">40%</b>
+          </p>
+          <span id="st-fari-tinta" class="pastiglie"></span>
+        </div>
+      </details>
+
+      <details class="st-sotto">
+        <summary data-i18n="stanza.scaffali">scaffali</summary>
+        <div class="st-sotto-dentro"><span id="st-scaffali" class="pastiglie"></span></div>
+      </details>
+
+      <details class="st-sotto">
+        <summary data-i18n="stanza.muro">muro</summary>
+        <div class="st-sotto-dentro"><span id="st-muro" class="pastiglie"></span></div>
+      </details>
+
+      <details class="st-sotto">
+        <summary data-i18n="stanza.pavimento">pavimento</summary>
+        <div class="st-sotto-dentro"><span id="st-pavimento" class="pastiglie"></span></div>
+      </details>
+
       <!-- Il colore del nome scritto sulla parete. E' una scelta della
            stanza e non del mobile: due nomi di colore diverso sulla
            stessa parete non si leggono come due nomi, si leggono come
            un errore. -->
-      <p class="st-riga"><span data-i18n="stanza.nomeColore">nome</span><span id="st-nome-tinta" class="pastiglie"></span></p>
+      <details class="st-sotto">
+        <summary data-i18n="stanza.nomeColore">nome</summary>
+        <div class="st-sotto-dentro"><span id="st-nome-tinta" class="pastiglie"></span></div>
+      </details>
+
       <p class="st-quale sotto" data-i18n="stanza.dellaStanza">luce, muro e pavimento sono della stanza intera</p>
       <p class="st-fondo">
         <span id="st-msg" data-i18n="stanza.siSalva">si salva da solo</span>
@@ -574,7 +583,22 @@
          soprattutto un `<select>` mostra dei NOMI, mentre qui la cosa
          che si sta scegliendo sono dei COLORI. Ognuna porta le sue
          otto tinte in fila: si sceglie guardando, non leggendo. -->
-    <details class="tavolozze" id="pro-tema">
+    <!-- IL VOLUME STA QUI, non nel pannello della libreria. Era il terzo
+     cursore accanto a luce e faretti, e la ragione di allora era che
+     "e' la stessa domanda, com'e' questo posto". Ma non lo e': la luce
+     e i faretti sono della STANZA -- un amico che viene a guardare la
+     tua libreria li vede come li hai messi tu -- mentre il volume e' di
+     chi ascolta, sta in `localStorage` e non viaggia con nessuno. Sta
+     accanto al suo interruttore, che e' l'altra meta' della stessa
+     scelta. -->
+<p class="pro-volume">
+  <span data-i18n="stanza.suono">suono</span>
+  <input id="st-suono" type="range" min="0" max="1" step="0.02" value="0.6"
+         data-i18n-aria="stanza.suonoAria" aria-label="volume dei suoni">
+  <b id="st-suono-n">60%</b>
+</p>
+
+<details class="tavolozze" id="pro-tema">
       <summary>
         <span class="lingua-tit" data-i18n="pro.tavolozza">tavolozza</span>
         <b id="pro-tema-ora"></b>
