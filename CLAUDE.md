@@ -476,6 +476,26 @@ cancellazione da qualcosa che potrebbe non succedere.**
    quel gioco non c'è: la sua scatola non se ne sarebbe andata mai.
    `Object.create(null)` e il caso non esiste più.
 
+### Quello che si svuota va svuotato anche sul database
+
+`aRiga` salta i campi vuoti apposta — è quello che rende **parziale** una
+modifica: si manda quello che c'è, non tutto. Ma così un campo **cancellato**
+non arrivava mai, e il sintomo era che il proprio voto non si poteva più
+togliere: lo si svuotava, il sito lo mostrava vuoto, e al ricaricamento tornava.
+
+La distinzione la può fare solo **chi ha in mano la patch**: `aRiga` vede il
+gioco già fuso e non sa se un campo era assente o è stato svuotato. Quindi le
+chiavi svuotate viaggiano a parte, e `mandaModifica` le scrive a `null`.
+
+`MAI_VUOTE` tiene fuori le colonne `not null` — titolo, tag, recensione, e le
+tre dell'aspetto della scatola disegnata: un gioco senza titolo non è un caso
+da gestire, è un caso da non permettere, e mandarci un nulla farebbe fallire
+tutta la scrittura invece di quel campo.
+
+Vale per **ogni campo di testo**, non solo per il voto: era la stessa cosa per
+autore, editore e anno, e nessuno se n'era accorto perché quei campi non si
+svuotano quasi mai.
+
 ### Zero righe cancellate non è un successo
 
 Il quarto, e il più insidioso, stava nel database. `.delete().eq(...)` **senza
