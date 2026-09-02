@@ -205,6 +205,7 @@ const ICO = {
               '<circle cx="12" cy="18.5" r="1.6" fill="currentColor"/></svg>',
   cestino:  '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M5 7h14M10 7V5h4v2M6.5 7l.8 12h9.4l.8-12M10.5 10.5v5.5M13.5 10.5v5.5"/></svg>',
   chiudi:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>',
+  ospite:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="10" r="2.6"/><path d="M7.2 18.4a5.1 5.1 0 0 1 9.6 0"/></g></svg>',
   corona:   '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 8l3.5 3L12 5l4.5 6L20 8l-1.6 9H5.6zM5.6 20h12.8"/></svg>',
   maniglia: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M6 9h12M6 15h12"/></svg>',
   /* I quattro dell'arredo di una cella. Stesso tratto e stesso
@@ -7604,6 +7605,83 @@ function calcUsa(){
   disegnaTavolo();                 // la calcolatrice sta FUORI da #pa-chi
 }
 
+/* LA FACCIA DI CHI E' AL TAVOLO.
+
+   I partecipanti sono NOMI, non account -- e' una scelta che regge, e
+   il prezzo e' che l'unico modo di riconoscere qualcuno e' il nome
+   appiattito. Chi ha un profilo sul sito porta il suo meeple, come
+   nella sezione profilo; chi non ce l'ha porta una sagoma neutra, che
+   dice la stessa cosa senza fingere di essere una faccia.
+
+   Torna l'avatar oppure `null`: chi disegna decide cosa metterci. */
+function avatarDi(nome){
+  const k = piattoNome(nome);
+  if (!k) return null;
+  if (typeof PARTITE !== 'undefined' && piattoNome(PARTITE.mioNome()) === k){
+    const mio = (typeof PROFILO !== 'undefined') && PROFILO.mio();
+    if (mio && mio.avatar) return mio.avatar;
+  }
+  if (typeof PROFILO === 'undefined') return null;
+  const chi = PROFILO.amici().find(function(a){
+    const pr = a.profilo || {};
+    return piattoNome(pr.nick || pr.nome || '') === k;
+  });
+  return (chi && chi.profilo && chi.profilo.avatar) || null;
+}
+
+/* ORO, ARGENTO, BRONZO -- e dal quarto in poi niente.
+
+   La corona resta l'interruttore che dice chi ha vinto (vedi "Le
+   posizioni non si scrivono: si calcolano"), e questo e' solo il suo
+   colore: lo decide la POSIZIONE, che e' quello che si vuole leggere
+   scorrendo un tavolo. Senza posizioni -- un gioco senza punti --
+   comanda ancora il solo `vincitore`, ed e' oro. */
+const MEDAGLIE = { 1: 'oro', 2: 'argento', 3: 'bronzo' };
+
+function medagliaDi(x){
+  if (x.posizione >= 1 && x.posizione <= 3) return MEDAGLIE[x.posizione];
+  if (!x.posizione && x.vincitore) return 'oro';
+  return '';
+}
+
+/* IL PODIO. I numeretti accanto ai nomi si leggono uno per uno; un
+   podio si legge tutto insieme. Ci stanno i primi QUATTRO, che e' il
+   tavolo tipico di un gioco da tavolo: tre sui gradini e il quarto
+   accanto, su una pedana piatta -- perche' un podio ha tre posti, e
+   fingere che ne abbia quattro sarebbe disegnare una cosa che non
+   esiste. I pari merito ci stanno tutti: la posizione la decide
+   `ricalcolaPosizioni`, e due primi sono due primi. */
+function disegnaPodio(){
+  const el = q('#pa-podio');
+  if (!el) return;
+  const chi = (paCorrente ? paCorrente.chi : [])
+    .filter(function(x){ return x.posizione >= 1 && x.posizione <= 4; });
+  if (!chi.length){
+    el.hidden = true; el.setAttribute('aria-hidden', 'true'); el.innerHTML = '';
+    return;
+  }
+  chi.sort(function(a, b){ return a.posizione - b.posizione; });
+
+  const gradino = function(x){
+    const m = MEDAGLIE[x.posizione] || 'quarto';
+    return '<div class="pod-posto ' + m + '" data-p="' + x.posizione + '">' +
+      '<span class="pod-nome">' + esc(x.nome) + '</span>' +
+      (x.punti == null ? '' : '<span class="pod-punti">' + esc(x.punti) + '</span>') +
+      '<span class="pod-base"><b>' + x.posizione + '</b></span>' +
+    '</div>';
+  };
+
+  /* L'ordine sullo schermo non e' quello della classifica: un podio si
+     guarda con il primo IN MEZZO, il secondo a sinistra e il terzo a
+     destra. Il quarto sta fuori, a destra di tutti. */
+  const dai = function(pos){ return chi.filter(function(x){ return x.posizione === pos; }); };
+  const html = [].concat(dai(2), dai(1), dai(3), dai(4)).map(gradino).join('');
+  el.innerHTML = html;
+  el.hidden = false;
+  el.setAttribute('aria-hidden', 'false');
+  el.setAttribute('aria-label', TP('pa.podio'));
+}
+
 function disegnaTavolo(){
   if (!paCorrente) return;
   q('#pa-chi').innerHTML = paCorrente.chi.map(function(x, i){
@@ -7614,10 +7692,17 @@ function disegnaTavolo(){
        appena accennato, e si accende sotto il dito: senza, non ci
        sarebbe piu' modo di dire chi ha vinto quando i punti non ci sono
        o non sono di tutti. */
+    const av = avatarDi(x.nome);
+    const med = medagliaDi(x);
     return '<li data-i="' + i + '"' + (x.vincitore ? ' class="vince"' : '') + '>' +
+      (av
+        ? '<canvas class="chi-faccia" width="34" height="34" aria-hidden="true"></canvas>'
+        : '<span class="chi-faccia vuota" title="' + esc(TP('pa.senzaProfilo', {n: x.nome})) +
+          '">' + ICO.ospite + '</span>') +
       '<span class="chi-nome">' +
         '<span class="nome">' + esc(x.nome) + '</span>' +
-        '<button type="button" class="corona' + (x.vincitore ? ' on' : '') + '" data-fa="vince" ' +
+        '<button type="button" class="corona' + (x.vincitore ? ' on' : '') +
+          (med ? ' ' + med : '') + '" data-fa="vince" ' +
           'aria-pressed="' + (x.vincitore ? 'true' : 'false') + '" ' +
           'aria-label="' + esc(TP('pa.haVinto', {n: x.nome})) + '">' + ICO.corona + '</button>' +
       '</span>' +
@@ -7633,6 +7718,15 @@ function disegnaTavolo(){
         ICO.chiudi + '</button>' +
     '</li>';
   }).join('');
+
+  /* Le facce si disegnano DOPO l'innerHTML, come nell'elenco degli
+     amici: un canvas non si riempie da una stringa. */
+  qa('#pa-chi li').forEach(function(li, i){
+    const c = li.querySelector('canvas.chi-faccia');
+    if (c) disegnaFaccia(c, avatarDi(paCorrente.chi[i].nome), 34);
+  });
+
+  disegnaPodio();
 
   // i suggerimenti si rifanno con quello che c'e' scritto adesso
   const campo = q('#pa-chi-q');
@@ -7750,7 +7844,18 @@ function aggiornaTavoloInPosto(){
     if (!x) return;
     li.classList.toggle('vince', !!x.vincitore);
     const c = li.querySelector('.corona');
-    if (c){ c.classList.toggle('on', !!x.vincitore); c.setAttribute('aria-pressed', x.vincitore ? 'true' : 'false'); }
+    if (c){
+      c.classList.toggle('on', !!x.vincitore);
+      c.setAttribute('aria-pressed', x.vincitore ? 'true' : 'false');
+      /* Anche la MEDAGLIA si aggiorna qui. Scrivendo i punti la riga non
+         si ridisegna -- si aggiornano numeri e corone in posto, se no si
+         staccherebbe il campo in cui si sta scrivendo -- quindi tutto
+         quello che dipende dalla posizione va rimesso in pari anche da
+         questa parte, e non solo in `disegnaTavolo`. */
+      const med = medagliaDi(x);
+      c.classList.remove('oro', 'argento', 'bronzo');
+      if (med) c.classList.add(med);
+    }
     let p = li.querySelector('.posto');
     if (x.posizione){
       if (!p){ p = document.createElement('span'); p.className = 'posto';
@@ -7758,6 +7863,9 @@ function aggiornaTavoloInPosto(){
       p.textContent = x.posizione + '\u00b0';
     } else if (p) p.remove();
   });
+  /* Il podio invece si rifa' per intero: sono quattro nodi, e li' sotto
+     il dito non c'e' niente da staccare. */
+  disegnaPodio();
 }
 
 /* --- il gioco si cerca -------------------------------------------

@@ -3675,7 +3675,68 @@ body.browse:not(.elenco):not(.ferma):not(.sez-catalogo):not(.sez-profilo) .rail-
 }
 .pa-chi .corona:hover{background:rgba(200,106,60,.14); color:var(--accent)}
 .pa-chi .corona.on{color:var(--accent)}
-.pa-chi .corona.on .ico{fill:currentColor}
+/* La corona si RIEMPIE da accesa, e per riempirla si mira al `path`:
+   l'icona porta `fill="none"` addosso come attributo, e un attributo
+   sul figlio vince su una proprieta' ereditata dal padre. La regola sul
+   solo `<svg>` cambiava il contorno e basta -- e' la trappola gia'
+   scritta per il cuore e la stella del pannello. */
+.pa-chi .corona.on .ico, .pa-chi .corona.on .ico path{fill:currentColor}
+
+/* ORO, ARGENTO, BRONZO. Sono le uniche tinte del sito che non vengono
+   dalla tavolozza, ed e' voluto: una medaglia non e' una scelta
+   estetica, e' un oggetto che ha il suo colore -- come le temperature
+   dei faretti, che per lo stesso motivo non seguono le tavolozze. Dal
+   quarto in poi non c'e' medaglia, che e' come funziona un podio. */
+
+/* LA FACCIA DI CHI E' AL TAVOLO. Il meeple di chi ha un profilo, una
+   sagoma neutra per gli altri: al tavolo c'e' quasi sempre qualcuno
+   che sul sito non c'e', e disegnargli una faccia finta direbbe una
+   cosa che non e' vera. */
+.pa-chi .chi-faccia{
+  width:34px; height:34px; flex:none; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.pa-chi .chi-faccia.vuota{
+  color:var(--ink-soft); background:rgba(var(--ink-rgb),.06);
+}
+.pa-chi .chi-faccia.vuota .ico{width:19px; height:19px}
+
+/* IL PODIO. Tre gradini piu' una pedana: il primo in mezzo e piu' alto,
+   il secondo a sinistra, il terzo a destra, il quarto fuori dal podio
+   perche' un podio ha tre posti. Le altezze sono quelle e non una
+   proporzione dei punti: un podio dice l'ORDINE, non la distanza. */
+.pa-podio{
+  display:flex; align-items:flex-end; justify-content:center; gap:6px;
+  margin:14px 0 4px; padding:0 2px;
+  /* Il piano su cui i gradini poggiano. Senza, quattro rettangoli di
+     altezza diversa allineati in basso si leggono come le barre di un
+     grafico -- e un grafico direbbe la DISTANZA fra i punteggi, che
+     non e' quello che un podio racconta. */
+  border-bottom:2px solid rgba(var(--ink-rgb),.18);
+}
+.pod-posto{
+  flex:1 1 0; min-width:0; display:flex; flex-direction:column;
+  align-items:center; gap:2px; text-align:center;
+}
+.pod-nome{
+  font-size:12px; font-weight:600; color:var(--ink);
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.pod-punti{font-size:11px; color:var(--ink-soft); font-variant-numeric:tabular-nums}
+.pod-base{
+  width:100%; border-radius:var(--r-s) var(--r-s) 0 0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--ff-display); font-size:15px; color:var(--card);
+}
+.pod-posto.oro     .pod-base{height:56px; background:#c8971f}
+.pod-posto.argento .pod-base{height:42px; background:#8d949c}
+.pod-posto.bronzo  .pod-base{height:32px; background:#a2683c}
+/* Il quarto non ha medaglia e non ha gradino: una pedana bassa, del
+   grigio della stanza, che dice "sei arrivato quarto" senza fingere. */
+.pod-posto.quarto  .pod-base{
+  height:18px; background:rgba(var(--ink-rgb),.14); color:var(--ink-soft);
+  font-size:12px;
+}
 .pa-chi .via:hover{background:rgba(190,60,40,.14); color:#a8341f}
 
 /* Il modulo della partita su schermo stretto: la riga del tavolo ha
@@ -4354,3 +4415,32 @@ body.muro-scuro.sez-collezione:not(.elenco) header{
   .cal-seg .ico{width:11px; height:11px}
   .cal-testa b{font-size:17px}
 }
+
+
+/* ============================================================
+   LE MEDAGLIE DEL TAVOLO -- e stanno IN FONDO AL FOGLIO apposta.
+
+   Dentro `#partitalayer` c'e' una regola che decide il colore di
+   QUALUNQUE pulsante:
+
+     #partitalayer button:not(.primario):not(.secondario):not(.distruttivo)
+
+   che pesa un id, tre classi e un elemento -- ogni `:not()` conta come
+   la cosa che contiene. `.pa-chi .corona.oro` sono tre classi e perde,
+   e perdeva anche `.pa-chi .corona.on`: la corona accesa non e' MAI
+   stata terracotta, era inchiostro come tutti gli altri pulsanti del
+   modulo, e nessuno se n'era accorto finche' le medaglie non hanno
+   dato un colore da confrontare.
+
+   E' la lezione della pastiglia della lingua, ripresentata. Qui si
+   risolve come la risolve gia' il pulsante del ritorno a casa: le
+   misure che devono vincere stanno dopo, in fondo.
+   ============================================================ */
+#partitalayer .pa-chi li .corona.on{color:var(--accent)}
+#partitalayer .pa-chi li .corona.oro{color:#c8971f; opacity:1}
+#partitalayer .pa-chi li .corona.argento{color:#8d949c; opacity:1}
+#partitalayer .pa-chi li .corona.bronzo{color:#a2683c; opacity:1}
+#partitalayer .pa-chi li .corona.on .ico path,
+#partitalayer .pa-chi li .corona.oro .ico path,
+#partitalayer .pa-chi li .corona.argento .ico path,
+#partitalayer .pa-chi li .corona.bronzo .ico path{fill:currentColor}
