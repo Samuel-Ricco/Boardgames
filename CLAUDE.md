@@ -1586,6 +1586,73 @@ imparato a usare quello sa già usare questo.
 - `#pro-partite`, `#par-msg` e `#par-nuova` **hanno tenuto il loro id**: il
   markup si è spostato, il codice che ci parlava no.
 
+## Quanto e' durata, e le ore al tavolo
+
+`partite.minuti` (migrazione `durata_partita`). Di una partita si segnava il
+giorno, chi c'era e chi ha vinto: non quanto e' durata — ed e' il numero da cui
+nasce la domanda che la sezione partite non sapeva ancora rispondere, **quante
+ore abbiamo giocato**.
+
+- **In minuti, non un intervallo.** Si scrive a mano, e chi lo scrive ha in
+  mente «novanta», non un tipo di Postgres. La conversione in ore la fa chi
+  mostra il totale.
+- **E' opzionale e resta tale.** Di molte partite non ci si ricorda, e un campo
+  obbligatorio qui vorrebbe dire o un numero inventato o una partita non
+  segnata — e fra le due, la seconda e' la perdita vera.
+- **Nullo non e' zero.** Una partita senza durata non entra nel conto delle ore,
+  ne' al numeratore ne' al denominatore: sommarla come zero direbbe una cosa
+  falsa che peggiora piano piano. Ed e' anche perche' il terzo riquadro non
+  compare finche' nessuna partita ha una durata.
+- **Il ripiego, come per i punti**: senza la migrazione PostgREST butta via
+  l'intera scrittura, quindi si riprova senza `minuti` — e lo si dice, perche'
+  un ripiegamento che non si vede e' peggio di un errore.
+- `oreTesto` scrive i minuti sotto l'ora (`45'`), un decimale finche' sono
+  poche (`3,5h`) e nessuno quando sono tante: «128,4 h» non dice niente a
+  nessuno.
+
+## Il wrap
+
+`#wrap` in `index.html`, la logica in `app.js`. La sezione partite dice cosa hai
+giocato una riga per volta; il wrap dice com'e' andato in **sei numeri**, e sono
+numeri che si guardano tutti insieme: per quello sono slide e non un elenco.
+
+Le sei domande sono quelle che uno si fa davvero: quante partite, quante ore, a
+cosa ho giocato di piu', quanti giochi ho, quanto vinco, e **chi mi batte**.
+
+- **La bestia nera non e' chi vince di piu' in assoluto**, e' chi vince di piu'
+  QUANDO CI SONO IO. Il conto e' sui nomi, come la classifica, se no cancellare
+  un giocatore cancellerebbe anche le sue vittorie.
+- **Niente si inventa.** Una slide senza il suo dato non mostra uno zero: dice
+  cosa manca e come si rimedia. E' la stessa regola del winrate, che non e' mai
+  «zero per cento» quando non hai mai giocato.
+- **Sta sopra tutto** (`z-index:6`, testata e barra comprese) e si esce dalla
+  sua croce. Lasciata al livello dell'elenco finiva sotto la barra in basso, e
+  con lei il piede con le frecce e il salva — cioe' tutto quello che serve a
+  usarla.
+- **La firma sta fuori dal flusso.** Con `margin-top:auto` spingeva il resto
+  contro il bordo di sopra invece di lasciarlo in mezzo, che e' il contrario di
+  quello che serve a una slide.
+- **La larghezza del mazzo va controllata prima di usarla.** Il mazzo vive in
+  una schermata che parte nascosta, e un `clientWidth` a zero manda l'indice
+  all'infinito: il puntino finiva su una slide a caso e da li' le frecce non
+  muovevano piu' niente, perche' `vaiSlide` ritagliava sempre allo stesso
+  estremo.
+
+### Salvare una slide
+
+E' **l'unica funzione del sito che produce un file**, ed e' anche il motivo per
+cui un wrap esiste: si guarda e si manda a qualcuno.
+
+La slide si **ridisegna su canvas** invece di fotografare il DOM: non c'e' modo
+di rasterizzare dell'HTML senza una libreria, e una libreria per sei rettangoli
+e tre righe di testo sarebbe piu' pesante di tutto il resto del sito. Il formato
+e' **1080x1350**, il ritratto che tutti i posti dove si pubblica accettano, e il
+fondo e' l'**accento** e non il fondo del sito: una slide che si pubblica deve
+reggere da sola, fuori dalla pagina che la conteneva.
+
+Verificato: esce un PNG da 1,4 MB, `dado-wrap-6.png`, e il titolo lungo va a
+capo invece di uscire dal bordo.
+
 ## Il winrate: «chi vince» e «come vado io» sono due domande
 
 `vinceDi()` risponde alla prima — chi sta in testa fra chi c'era — e resta

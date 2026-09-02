@@ -26,6 +26,16 @@ let guaio = '';
    ripiegamento che non si vede e' peggio di un errore: chi ha scritto
    i punti deve sapere che sul server non sono arrivati. */
 let puntiPersi = false;
+let durataPersa_ = false;
+
+/* Quella colonna non c'e' ancora? Il codice non basta -- Postgres dice
+   `42703`, PostgREST `PGRST204` -- e il nome si cerca DENTRO il
+   messaggio, senza regex. */
+function mancaColonna(e, nome){
+  if (!e) return false;
+  const m = String(e.message || '');
+  return (e.code === '42703' || e.code === 'PGRST204') && m.indexOf(nome) >= 0;
+}
 
 function cli(){
   return (typeof AUTH !== 'undefined' && AUTH.attivo()) ? AUTH.client() : null;
@@ -168,18 +178,35 @@ async function salva(p){
     bgg: parseInt(p.bgg, 10) || null,
     titolo: titolo,
     giocata_il: p.giocata_il || null,
+    minuti: numero(p.minuti),
     ora: p.ora || null,
     note: p.note || null
   };
 
+  /* Senza la migrazione `durata_partita` la colonna non c'e' e
+     PostgREST butta via l'intera scrittura: meglio salvare la partita
+     senza la durata che non salvarla. Stessa strada dei punti, e come
+     per quelli un ripiegamento che non si vede sarebbe peggio di un
+     errore -- lo racconta `durataPersa()`. */
+  const senzaMinuti = function(r){ const y = Object.assign({}, r); delete y.minuti; return y; };
+  durataPersa_ = false;
+
   let id = p.id;
   if (id){
-    const u = await c.from('partite').update(riga).eq('id', id);
+    let u = await c.from('partite').update(riga).eq('id', id);
+    if (u.error && mancaColonna(u.error, 'minuti')){
+      durataPersa_ = true;
+      u = await c.from('partite').update(senzaMinuti(riga)).eq('id', id);
+    }
     if (u.error) throw u.error;
     const d = await c.from('partecipanti').delete().eq('partita', id);
     if (d.error) throw d.error;
   } else {
-    const i = await c.from('partite').insert(riga).select().single();
+    let i = await c.from('partite').insert(riga).select().single();
+    if (i.error && mancaColonna(i.error, 'minuti')){
+      durataPersa_ = true;
+      i = await c.from('partite').insert(senzaMinuti(riga)).select().single();
+    }
     if (i.error) throw i.error;
     id = i.data.id;
   }
@@ -340,6 +367,7 @@ return {
   carica: carica, tutte: tutte, diGioco: diGioco,
   salva: salva, togli: togli, classifica: classifica,
   puntiPersi: function(){ return puntiPersi; },
+  durataPersa: function(){ return durataPersa_; },
   mioNome: mioNome, winrate: winrate,
   winrateTotale: winrateTotale, winratePerGioco: winratePerGioco
 };

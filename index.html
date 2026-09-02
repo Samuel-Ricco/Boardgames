@@ -366,6 +366,29 @@
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span data-i18n="tab.partite">partite</span></button>
 </nav>
 
+<!-- IL WRAP. Le partite dicono cosa hai giocato una riga per volta; il
+     wrap dice com'e' andato l'anno in sei numeri, ed e' una cosa da
+     guardare tutta insieme -- per quello sono slide e non un elenco.
+
+     Sta SOPRA la sezione partite come una schermata a se' (`z-index:3`,
+     come l'elenco della collezione) e non come una quarta vista: le tre
+     viste delle partite sono tre modi di guardare le stesse righe,
+     questo e' un'altra cosa. Ci si arriva dal suo pulsante, che sta
+     dove stanno i numeri di cui e' il seguito.
+
+     Ogni slide si esporta come immagine: e' il motivo per cui esistono
+     i wrap, ed e' l'unica funzione del sito che produce un file. -->
+<section id="wrap" aria-hidden="true" data-i18n-aria="wrap.aria" aria-label="il tuo wrap">
+  <button id="wrap-x" type="button" data-i18n-aria="pan.chiudi" aria-label="chiudi">&times;</button>
+  <div class="wrap-deck" id="wrap-deck" role="group"></div>
+  <div class="wrap-piede">
+    <button id="wrap-prima" type="button" class="wrap-frec" data-i18n-aria="wrap.prima" aria-label="slide precedente">&lsaquo;</button>
+    <span class="wrap-punti" id="wrap-punti" aria-hidden="true"></span>
+    <button id="wrap-dopo" type="button" class="wrap-frec" data-i18n-aria="wrap.dopo" aria-label="slide successiva">&rsaquo;</button>
+    <button id="wrap-salva" type="button" class="primario" data-i18n="wrap.salva">salva questa slide</button>
+  </div>
+</section>
+
 <!-- LA MIA LIBRERIA COME ELENCO. Lo scaffale in tre dimensioni e' bello
      da guardare ma pessimo da consultare: dodici scatole per schermata,
      i titoli piccoli, e per sapere se hai gia' un gioco devi scorrere i
@@ -665,6 +688,9 @@
            un colpo d'occhio. Il terzo e' un pulsante: dietro c'e' lo
            stesso winrate gioco per gioco. -->
       <div id="par-somma" class="par-somma"></div>
+      <!-- Il wrap e' il seguito di questi tre numeri: sta attaccato a
+           loro, non in una navigazione. -->
+      <button id="par-wrap" type="button" class="par-wrap dentro-only" data-i18n="wrap.apri">il tuo wrap</button>
       <div id="par-wr" class="par-wr-lista" hidden></div>
 
       <!-- Due modi di guardarle: per gioco (quante volte a Root, chi
@@ -935,7 +961,15 @@
       </label>
       <!-- Solo la data: di una partita ci si ricorda il giorno, non il
            minuto. L'ora era un campo che nessuno riempiva. -->
-      <label class="wide"><span data-i18n="pa.data">data</span> <input id="pa-data" type="date"></label>
+      <label><span data-i18n="pa.data">data</span> <input id="pa-data" type="date"></label>
+      <!-- QUANTO E' DURATA, ed e' opzionale: di molte partite non ci si
+           ricorda, e un campo obbligatorio qui vorrebbe dire o un numero
+           inventato o una partita non segnata. Fra le due, la seconda e'
+           la perdita vera. In minuti, perche' e' cosi' che uno ce l'ha
+           in mente -- "novanta", non "un'ora e mezza". -->
+      <label><span data-i18n="pa.durata">durata</span>
+        <input id="pa-minuti" type="text" inputmode="numeric" maxlength="4"
+               data-i18n-ph="pa.durataPh" placeholder="minuti" autocomplete="off"></label>
     </div>
     <ul id="pa-sugg" class="pa-sugg" role="listbox" hidden></ul>
 

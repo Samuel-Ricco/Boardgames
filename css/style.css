@@ -4692,3 +4692,105 @@ body.dentro #pro-apri{display:inline-flex}
 #pro-apri .ico{width:18px; height:18px}
 body.sez-profilo #pro-apri{background:var(--accent); color:var(--card)}
 @media (pointer:coarse){ #pro-apri{width:40px; height:40px} }
+
+
+/* ============================================================
+   IL WRAP
+
+   Sei slide che si guardano una alla volta e si salvano come immagine.
+   La schermata sta sopra tutto quello che copre la pagina (`z-index:3`
+   come l'elenco della collezione, sotto la testata che sta a 4) e ha un
+   fondo suo: una slide deve reggere da sola, perche' e' fatta per
+   uscire dal sito.
+   ============================================================ */
+/* SOPRA TUTTO, testata e barra comprese. Non e' una schermata come le
+   altre: e' un mazzo di slide che si guarda a schermo pieno e da cui si
+   esce dalla sua croce, come da una storia. Lasciata a `z-index:3`
+   finiva sotto la barra in basso, e con lei il piede con le frecce e il
+   salva -- cioe' tutto quello che serve a usarla. */
+#wrap{
+  position:fixed; inset:0; z-index:6; display:none;
+  flex-direction:column; background:var(--fondo);
+}
+body.wrap-su #wrap{display:flex}
+#wrap-x{
+  position:absolute; top:14px; right:14px; z-index:2;
+  width:34px; height:34px; border:0; border-radius:50%; cursor:pointer;
+  background:var(--accent); color:var(--card); font-size:20px; line-height:1;
+}
+@media (pointer:coarse){ #wrap-x{width:40px; height:40px} }
+
+/* Il mazzo scorre in orizzontale e si aggancia: una slide per schermata,
+   perche' mezza slide accanto direbbe "qui si scorre" e basta. */
+.wrap-deck{
+  flex:1; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory; scrollbar-width:none;
+}
+.wrap-deck::-webkit-scrollbar{display:none}
+.wrap-slide{
+  flex:0 0 100%; scroll-snap-align:start;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; padding:56px 26px 74px; text-align:center; color:var(--card);
+  position:relative;
+}
+/* Sei toni dallo stesso accento: la slide cambia colore scorrendo, e
+   sono tutti parenti perche' vengono tutti da li'. Il fondo non e'
+   quello del sito -- una slide che si pubblica si porta il proprio. */
+.wrap-slide.tono0{background:linear-gradient(160deg, var(--accent), var(--accent-su))}
+.wrap-slide.tono1{background:linear-gradient(160deg, var(--wood), var(--accent-su))}
+.wrap-slide.tono2{background:linear-gradient(160deg, var(--accent-su), var(--ink))}
+.wrap-slide.tono3{background:linear-gradient(160deg, var(--ink-soft), var(--wood))}
+.wrap-slide.tono4{background:linear-gradient(160deg, var(--accent), var(--ink))}
+.wrap-slide.tono5{background:linear-gradient(160deg, var(--ink), var(--accent-su))}
+
+.wrap-t{
+  margin:0; font-size:12.5px; letter-spacing:.10em; text-transform:uppercase;
+  opacity:.82;
+}
+.wrap-n{
+  margin:0; font-family:var(--ff-display); font-weight:600;
+  font-size:clamp(58px, 22vw, 132px); line-height:1; letter-spacing:-.02em;
+}
+/* Un titolo non e' un numero: sta piu' piccolo e va a capo, se no
+   "Deep Regrets: Lamentable Tentacles" non ci sta in nessuna
+   larghezza. */
+.wrap-n.testo{
+  font-size:clamp(28px, 8.4vw, 52px); line-height:1.1; max-width:16ch;
+  letter-spacing:-.01em;
+}
+.wrap-s{margin:4px 0 0; font-size:15px; opacity:.88; max-width:26ch; line-height:1.5}
+/* La firma sta in fondo, ma FUORI dal flusso: con `margin-top:auto`
+   spingeva tutto il resto contro il bordo di sopra invece di lasciarlo
+   in mezzo, che e' il contrario di quello che serve a una slide. */
+.wrap-firma{
+  position:absolute; left:0; right:0; bottom:26px; margin:0;
+  font-family:var(--ff-display); font-size:13px; opacity:.62;
+}
+.wrap-firma i{font-style:normal; opacity:.85}
+
+.wrap-piede{
+  flex:none; display:flex; align-items:center; gap:10px;
+  padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top:1px solid var(--line); background:var(--card);
+}
+.wrap-frec{
+  width:34px; height:34px; flex:none; border:0; border-radius:50%; cursor:pointer;
+  background:rgba(var(--ink-rgb),.07); color:var(--ink); font-size:19px; line-height:1;
+}
+.wrap-frec:hover{background:rgba(var(--ink-rgb),.13)}
+.wrap-punti{display:flex; gap:6px; flex:1; justify-content:center}
+.wrap-punti i{
+  width:7px; height:7px; border-radius:50%; background:rgba(var(--ink-rgb),.20);
+  transition:background .18s var(--ease), transform .18s var(--ease);
+}
+.wrap-punti i.on{background:var(--accent); transform:scale(1.25)}
+
+/* Il pulsante che porta al wrap sta attaccato ai tre numeri di cui e'
+   il seguito, non in una navigazione. */
+.par-wrap{
+  display:block; width:100%; margin:10px 0 0; padding:12px 16px;
+  border:0; border-radius:var(--r-s); cursor:pointer;
+  font-family:var(--ff-text); font-size:13.5px; font-weight:600; letter-spacing:0;
+  color:var(--card); background:var(--accent);
+}
+.par-wrap:hover{background:var(--accent-su)}

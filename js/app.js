@@ -5986,6 +5986,7 @@ function chiudiPannelli(tranne){
   if (tranne !== 'add')     closeAdd();
   if (tranne !== 'gruppi')  chiudiGestioneGruppi();
   if (tranne !== 'cella')   chiudiCella();
+  if (tranne !== 'wrap')    chiudiWrap();
 }
 
 /* --- l'imbuto: cosa vedi sullo scaffale ---------------------------
@@ -6912,6 +6913,267 @@ function azzeraSchermata(){
   state.wrAperto = false;
 }
 
+
+/* ===============================================================
+   IL WRAP
+   ===============================================================
+
+   La sezione partite dice cosa hai giocato una riga per volta. Il wrap
+   dice com'e' andato in sei numeri, e sono numeri che si guardano
+   tutti insieme: per quello sono slide e non un elenco.
+
+   Le sei domande sono quelle che uno si fa davvero -- quante partite,
+   quante ore, a cosa ho giocato di piu', quanti giochi ho, quanto
+   vinco, e chi mi batte. L'ultima e' la piu' divertente ed e' anche
+   l'unica che ha bisogno di un conto vero: la bestia nera non e' chi
+   vince di piu' in assoluto, e' chi vince di piu' QUANDO CI SONO IO.
+
+   NIENTE SI INVENTA. Una slide senza il suo dato non mostra uno zero:
+   dice cosa manca e come si rimedia -- e' la stessa regola del winrate
+   che non e' mai zero per cento quando non hai mai giocato. */
+
+let wrapOra = 0;                 // quale slide si sta guardando
+
+/* La bestia nera: fra le partite in cui c'ero io, chi ha vinto di piu'.
+   Il conto e' sui NOMI, come la classifica, se no cancellare un
+   giocatore cancellerebbe anche le sue vittorie. */
+function bestiaNera(lista){
+  const io = piattoNome(PARTITE.mioNome());
+  if (!io) return null;
+  const per = {};
+  (lista || []).forEach(function(p){
+    const chi = p.chi || [];
+    if (!chi.some(function(x){ return piattoNome(x.nome) === io; })) return;
+    chi.forEach(function(x){
+      if (piattoNome(x.nome) === io || !x.vincitore) return;
+      const v = per[x.nome] || (per[x.nome] = { nome: x.nome, vinte: 0 });
+      v.vinte++;
+    });
+  });
+  const tutti = Object.keys(per).map(function(k){ return per[k]; })
+    .sort(function(a, b){ return b.vinte - a.vinte ||
+      String(a.nome).localeCompare(String(b.nome), 'it'); });
+  return tutti[0] || null;
+}
+
+/* Le sei slide. Ognuna ha un titolo, un numero grande, una riga sotto e
+   un tono -- e chi non ha il suo dato lo dice invece di mostrare zero. */
+function slideWrap(){
+  const tutte = PARTITE.tutte();
+  const ore = oreGiocate(tutte);
+  const w = PARTITE.winrate(tutte);
+  const perGioco = PARTITE.winratePerGioco(tutte);
+  const bestia = bestiaNera(tutte);
+
+  // a cosa si e' giocato di piu'
+  const conta = {};
+  tutte.forEach(function(p){
+    const k = p.bgg ? 'b' + p.bgg : 't' + p.titolo;
+    const v = conta[k] || (conta[k] = { titolo: p.titolo, n: 0 });
+    v.n++;
+  });
+  const piu = Object.keys(conta).map(function(k){ return conta[k]; })
+    .sort(function(a, b){ return b.n - a.n; })[0];
+
+  const giochi = LIB.all().length;
+  const inVetrina = LIB.all().filter(function(g){ return g.libreria; }).length;
+  // il gioco a cui si vince di piu': serve almeno una vittoria
+  const forte = perGioco.filter(function(g){ return g.perc > 0; })[0];
+
+  return [
+    { t: 'wrap.partite', n: String(tutte.length), s: '', tono: 0 },
+    ore.minuti > 0
+      ? { t: 'wrap.ore', n: oreTesto(ore.minuti), s: '', tono: 1 }
+      : { t: 'wrap.ore', n: null, s: TP('wrap.oreNo'), tono: 1 },
+    piu ? { t: 'wrap.piuGiocato', n: piu.titolo, testo: true,
+            s: TP(piu.n === 1 ? 'wrap.volta' : 'wrap.volte', {n: piu.n}), tono: 2 }
+        : { t: 'wrap.piuGiocato', n: null, s: TP('wrap.vuoto'), tono: 2 },
+    { t: 'wrap.collezione', n: String(giochi),
+      s: TP('wrap.suScaffali', {n: inVetrina}), tono: 3 },
+    w.perc === null
+      ? { t: 'wrap.winrate', n: null, s: TP('par.wrNick'), tono: 4 }
+      : { t: 'wrap.winrate', n: w.perc + '%',
+          s: TP(w.vinte === 1 ? 'wrap.suPartiteUna' : 'wrap.suPartite',
+                 {v: w.vinte, g: w.gioc}), tono: 4 },
+    bestia
+      ? { t: 'wrap.bestia', n: bestia.nome, testo: true,
+          s: TP('wrap.bestiaSotto', {n: bestia.vinte}), tono: 5 }
+      : { t: 'wrap.bestia', n: null, s: TP('wrap.nessuno'), tono: 5 }
+  ];
+}
+
+function disegnaWrap(){
+  const deck = q('#wrap-deck');
+  if (!deck) return;
+  const sl = slideWrap();
+  deck.innerHTML = sl.map(function(x, i){
+    /* Il numero grande e' piu' piccolo quando e' un titolo: "Deep
+       Regrets: Lamentable Tentacles" a centoventi pixel non ci sta in
+       nessuna larghezza. */
+    return '<article class="wrap-slide tono' + x.tono + '" data-i="' + i + '">' +
+      '<p class="wrap-t">' + T(x.t) + '</p>' +
+      (x.n !== null
+        ? '<p class="wrap-n' + (x.testo ? ' testo' : '') + '">' + esc(x.n) + '</p>'
+        : '') +
+      (x.s ? '<p class="wrap-s">' + esc(x.s) + '</p>' : '') +
+      '<p class="wrap-firma">il dado <i>&egrave;</i> trap</p>' +
+    '</article>';
+  }).join('');
+  q('#wrap-punti').innerHTML = sl.map(function(x, i){
+    return '<i' + (i === wrapOra ? ' class="on"' : '') + '></i>';
+  }).join('');
+  vaiSlide(Math.min(wrapOra, sl.length - 1), false);
+}
+
+function vaiSlide(i, morbido){
+  const deck = q('#wrap-deck');
+  const n = deck ? deck.children.length : 0;
+  if (!n) return;
+  wrapOra = Math.max(0, Math.min(n - 1, i));
+  const el = deck.children[wrapOra];
+  deck.scrollTo({ left: el.offsetLeft - deck.offsetLeft,
+                  behavior: morbido ? 'smooth' : 'auto' });
+  qa('#wrap-punti i').forEach(function(p, k){ p.classList.toggle('on', k === wrapOra); });
+}
+
+function apriWrap(){
+  if (PARTITE.problema()){ flash(PARTITE.problema()); return; }
+  chiudiPannelli('wrap');
+  wrapOra = 0;
+  document.body.classList.add('wrap-su');
+  q('#wrap').setAttribute('aria-hidden', 'false');
+  disegnaWrap();
+}
+
+function chiudiWrap(){
+  document.body.classList.remove('wrap-su');
+  q('#wrap').setAttribute('aria-hidden', 'true');
+}
+
+/* SALVARE UNA SLIDE COME IMMAGINE.
+
+   E' l'unica funzione del sito che produce un file, ed e' anche il
+   motivo per cui un wrap esiste: si guarda e si manda a qualcuno.
+
+   La slide si RIDISEGNA su canvas invece di fotografare il DOM: non
+   c'e' modo di rasterizzare dell'HTML senza una libreria, e una
+   libreria per sei rettangoli e tre righe di testo sarebbe piu' pesante
+   di tutto il resto del sito. Il formato e' 1080x1350, che e' il
+   ritratto che tutti i posti dove si pubblica accettano. */
+function salvaSlide(){
+  const sl = slideWrap()[wrapOra];
+  if (!sl) return;
+  const W = 1080, H = 1350;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+
+  const css = getComputedStyle(document.documentElement);
+  const acc = css.getPropertyValue('--accent').trim() || '#c86a3c';
+  const carta = css.getPropertyValue('--card').trim() || '#f2f1ed';
+  const ink = css.getPropertyValue('--ink').trim() || '#33352b';
+
+  /* Il fondo e' l'accento, non il fondo del sito: una slide che si
+     pubblica deve reggere da sola, fuori dalla pagina che la conteneva. */
+  const g = x.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, acc);
+  g.addColorStop(1, mescolaEsa(acc, ink, .45));
+  x.fillStyle = g;
+  x.fillRect(0, 0, W, H);
+
+  x.textAlign = 'center';
+  x.fillStyle = carta;
+
+  x.font = '500 40px ' + FONT_SLIDE;
+  x.globalAlpha = .82;
+  x.fillText(TP(sl.t).toUpperCase(), W/2, 300);
+  x.globalAlpha = 1;
+
+  if (sl.n !== null){
+    /* Un titolo lungo va a capo; un numero no -- e a un numero il capo
+       non serve mai. */
+    if (sl.testo) testoACapo(x, sl.n, W/2, 560, W - 160, 96, '600 92px ' + FONT_SLIDE);
+    else { x.font = '600 210px ' + FONT_SLIDE; x.fillText(sl.n, W/2, 640); }
+  }
+  if (sl.s){
+    x.font = '400 42px ' + FONT_SLIDE;
+    x.globalAlpha = .86;
+    testoACapo(x, sl.s, W/2, sl.n === null ? 560 : 820, W - 200, 56, '400 42px ' + FONT_SLIDE);
+    x.globalAlpha = 1;
+  }
+
+  x.font = '500 36px ' + FONT_SLIDE;
+  x.globalAlpha = .7;
+  x.fillText('il dado e\u2019 trap', W/2, H - 90);
+  x.globalAlpha = 1;
+
+  const a = document.createElement('a');
+  a.download = 'dado-wrap-' + (wrapOra + 1) + '.png';
+  a.href = c.toDataURL('image/png');
+  a.click();
+  flash(TP('wrap.salvata'));
+}
+
+const FONT_SLIDE = "'Poppins', system-ui, sans-serif";
+
+function mescolaEsa(a, b, p){
+  const r = function(h){ h = h.replace('#',''); return [
+    parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; };
+  const u = r(a), v = r(b);
+  return '#' + [0,1,2].map(function(i){
+    const n = Math.round(u[i] + (v[i]-u[i])*p);
+    return (n<16?'0':'') + n.toString(16);
+  }).join('');
+}
+
+/* Il testo lungo va a capo da solo: una slide con un titolo che esce
+   dal bordo e' una slide che non si pubblica. */
+function testoACapo(x, testo, cx, y, larg, passo, font){
+  x.font = font;
+  const parole = String(testo).split(/\s+/);
+  const righe = [];
+  let riga = '';
+  parole.forEach(function(p){
+    const prova = riga ? riga + ' ' + p : p;
+    if (x.measureText(prova).width > larg && riga){ righe.push(riga); riga = p; }
+    else riga = prova;
+  });
+  if (riga) righe.push(riga);
+  righe.slice(0, 4).forEach(function(r, i){ x.fillText(r, cx, y + i * passo); });
+}
+
+function bindWrap(){
+  const apri = q('#par-wrap');
+  if (apri) apri.addEventListener('click', apriWrap);
+  const chiudi = q('#wrap-x');
+  if (chiudi) chiudi.addEventListener('click', chiudiWrap);
+  const pre = q('#wrap-prima');
+  if (pre) pre.addEventListener('click', function(){ vaiSlide(wrapOra - 1, true); });
+  const dop = q('#wrap-dopo');
+  if (dop) dop.addEventListener('click', function(){ vaiSlide(wrapOra + 1, true); });
+  const sav = q('#wrap-salva');
+  if (sav) sav.addEventListener('click', salvaSlide);
+
+  /* Scorrendo con il dito il puntino deve seguire: e' l'unica cosa che
+     dice a che punto si e'. */
+  const deck = q('#wrap-deck');
+  if (deck) deck.addEventListener('scroll', function(){
+    /* La larghezza va PRESA E CONTROLLATA. Il mazzo e' dentro una
+       schermata che parte nascosta, e un `clientWidth` a zero manda
+       l'indice all'infinito: il puntino finiva su una slide a caso e da
+       li' le frecce non muovevano piu' niente, perche' `vaiSlide`
+       ritagliava sempre allo stesso estremo. */
+    const n = deck.children.length;
+    const w = deck.clientWidth;
+    if (!n || w < 2) return;
+    const i = Math.max(0, Math.min(n - 1, Math.round(deck.scrollLeft / w)));
+    if (i !== wrapOra){
+      wrapOra = i;
+      qa('#wrap-punti i').forEach(function(p, k){ p.classList.toggle('on', k === wrapOra); });
+    }
+  });
+}
+
 function bindProfilo(){
   bindBlocchi();
   /* Solo le voci che sono una SEZIONE. Da quando l'elenco della
@@ -7437,14 +7699,43 @@ function disegnaWinratePerGioco(lista){
    di tutto su di te: adesso e' il TUO winrate, ed e' un pulsante --
    dietro c'e' lo stesso numero gioco per gioco, che e' la domanda
    subito successiva. */
+/* Le ore giocate, dalle partite che hanno una durata. Torna anche il
+   totale in minuti, perche' chi chiama deve poter distinguere "zero
+   ore" da "nessuna durata registrata". */
+function oreGiocate(lista){
+  let m = 0, quante = 0;
+  (lista || []).forEach(function(p){
+    const v = parseInt(p.minuti, 10);
+    if (isFinite(v) && v > 0){ m += v; quante++; }
+  });
+  return { minuti: m, quante: quante, testo: oreTesto(m) };
+}
+
+/* Sotto l'ora si scrivono i minuti: "45 min" e non "0,8 h", che nessuno
+   legge. Sopra, le ore con un decimale finche' sono poche e intere
+   quando sono tante -- "3,5 h" dice qualcosa, "128,4 h" no. */
+function oreTesto(min){
+  if (!min) return '0';
+  if (min < 60) return min + '&prime;';
+  const h = min / 60;
+  return (h < 10 ? (Math.round(h * 10) / 10) : Math.round(h)) + 'h';
+}
+
 function disegnaSommaPartite(tutte, quantiGiochi){
   const el = q('#par-somma');
   if (!el) return;
   if (!tutte.length){ el.innerHTML = ''; return; }
+  /* LE ORE GIOCATE, terzo numero accanto agli altri due. Contano solo
+     le partite di cui la durata c'e': una partita senza durata non vale
+     zero ore, vale "non lo so", e sommarla come zero direbbe una cosa
+     falsa che peggiora piano piano. Per lo stesso motivo il numero non
+     compare finche' nessuna partita ha una durata. */
+  const ore = oreGiocate(tutte);
   const voci = [
     [tutte.length, T(tutte.length === 1 ? 'par.serata' : 'par.serate')],
     [quantiGiochi, T(quantiGiochi === 1 ? 'par.gioco' : 'par.giochi')]
   ];
+  if (ore.minuti > 0) voci.push([ore.testo, T('par.ore')]);
   /* `winrate(tutte)` e non `winrateTotale()`: con la ricerca accesa
      questi tre numeri devono parlare delle partite che si stanno
      guardando. Senza filtro `tutte` E' l'elenco intero, quindi non
@@ -7597,12 +7888,14 @@ function apriPartita(dati){
   if (PARTITE.problema()){ flash(PARTITE.problema()); return; }
   chiudiPannelli('partita');
   paCorrente = Object.assign({ id: null, bgg: '', titolo: '', giocata_il: oggiIso(),
-                               ora: '', note: '', chi: [] }, dati || {});
+                               minuti: null, ora: '', note: '', chi: [] }, dati || {});
   paCorrente.chi = (paCorrente.chi || []).map(function(x){ return Object.assign({}, x); });
 
   q('#pa-h').textContent = TP(paCorrente.id ? 'pa.hCorreggi' : 'pa.h');
   q('#pa-titolo').value = paCorrente.titolo || '';
   q('#pa-data').value   = paCorrente.giocata_il || '';
+  const cm = q('#pa-minuti');
+  if (cm) cm.value = paCorrente.minuti == null ? '' : paCorrente.minuti;
   q('#pa-togli').hidden = !paCorrente.id;
   q('#pa-chi-q').value = '';
   chiudiSuggChi();
@@ -8171,6 +8464,12 @@ async function salvaPartita(){
      Quelle gia' scritte non si buttano via -- `paCorrente` se le porta
      dietro e tornano sul database com'erano. */
   paCorrente.giocata_il = q('#pa-data').value || null;
+  /* La durata e' opzionale: vuoto vuol dire "non registrata", non zero.
+     E' la stessa distinzione dei punti e delle posizioni -- `numero()`
+     al posto di `parseInt(x) || null`, che di uno zero farebbe un
+     nulla. Qui uno zero non ha senso, ma la regola resta la stessa. */
+  const min = parseInt(String(q('#pa-minuti') ? q('#pa-minuti').value : '').trim(), 10);
+  paCorrente.minuti = (isFinite(min) && min > 0) ? Math.min(min, 9999) : null;
 
   b.disabled = true;
   try {
@@ -8179,7 +8478,9 @@ async function salvaPartita(){
     disegnaPartite();
     disegnaGiocate(state.focused && state.focused.userData.game);
     // se i punteggi non sono passati lo si dice: la partita c'e' lo stesso
-    flash(TP(PARTITE.puntiPersi() ? 'msg.partitaSenzaPunti' : 'msg.partitaSegnata'));
+    flash(TP(PARTITE.puntiPersi() ? 'msg.partitaSenzaPunti'
+           : (PARTITE.durataPersa && PARTITE.durataPersa()) ? 'msg.partitaSenzaDurata'
+           : 'msg.partitaSegnata'));
   } catch(e){
     q('#pa-msg').textContent = TP('pa.nonSalvata', {e: e.message});
   }
@@ -9103,7 +9404,8 @@ async function boot(){
   [['input', bindInput], ['strumenti', bindTools], ['vista', bindVista],
    ['binario', bindRail], ['cuore', bindCuore], ['gruppi', bindPiedeGruppi],
    ['stanza', bindStanza], ['cella', bindCella], ['clic fuori', bindClicFuori],
-   ['librerie', bindLibrerie], ['etichette', bindGruppi], ['suoni', bindSuoni]
+   ['librerie', bindLibrerie], ['etichette', bindGruppi], ['suoni', bindSuoni],
+   ['wrap', bindWrap]
   ].forEach(function(x){
     try { x[1](); }
     catch(e){ mancati.push(x[0]); if (window.console) console.error('aggancio "' + x[0] + '" fallito:', e); }
