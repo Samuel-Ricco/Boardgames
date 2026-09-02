@@ -36,7 +36,12 @@ const DA_DB = {
   id:'id', titolo:'title', sottotitolo:'sub', bgg:'bgg', anno:'year',
   autore:'designer', editore:'publisher', illustratore:'artist',
   giocatori:'players', durata:'time', eta:'age', peso:'weight',
-  voto:'score', tag:'tags', recensione:'review', copertina:'cover',
+  /* DUE VOTI, NON UNO. `voto` e' la media di BoardGameGeek -- un fatto
+     sul gioco, uguale per tutti -- e `voto_mio` e' l'opinione di chi ha
+     questa copia. Stavano nella stessa colonna e il secondo cancellava
+     il primo. */
+  voto:'score', voto_mio:'mioVoto',
+  tag:'tags', recensione:'review', copertina:'cover',
   arte:'art', wrap:'wrap', ink:'ink', posizione:'pos',
   libreria:'libreria', posto:'posto', preferito:'preferito'
 };
@@ -251,7 +256,11 @@ const ORDERS = {
   },
   aggiunta: function(a,b){ return (a.added||0) - (b.added||0); },
   nome:     function(a,b){ return String(a.title).localeCompare(String(b.title), 'it'); },
-  voto:     function(a,b){ return (parseFloat(b.score)||0) - (parseFloat(a.score)||0); }
+  voto:     function(a,b){ return (parseFloat(b.score)||0) - (parseFloat(a.score)||0); },
+  /* Due ordinamenti per due voti. Chi non ha messo il proprio va in
+     fondo, come chi non ha una posizione manuale: "non l'ho votato" e
+     "l'ho votato zero" sono due cose diverse. */
+  votoMio:  function(a,b){ return (parseFloat(b.mioVoto)||0) - (parseFloat(a.mioVoto)||0); }
 };
 
 /* --- ricerca -----------------------------------------------------
@@ -515,8 +524,20 @@ async function mandaModifica(c, g, prima, marchio){
 
     // lo slug e' unico DENTRO una collezione, non nel mondo: senza il
     // proprietario questa update parla di tutte le righe con quell'id
-    const r = await c.from('giochi').update(riga)
+    let r = await c.from('giochi').update(riga)
       .eq('proprietario', AUTH.stato().id).eq('id', g.id);
+    /* PostgREST su una colonna inesistente butta via l'INTERA
+       scrittura, non solo quel campo: senza questo ripiego, finche' la
+       migrazione `voto_mio` non e' applicata non si potrebbe piu'
+       salvare nemmeno una recensione. Si riprova senza, e lo si dice --
+       un ripiegamento che non si vede e' peggio di un errore. */
+    if (r.error && manca(r.error, 'voto_mio') && 'voto_mio' in riga){
+      const senza = Object.assign({}, riga);
+      delete senza.voto_mio;
+      r = await c.from('giochi').update(senza)
+        .eq('proprietario', AUTH.stato().id).eq('id', g.id);
+      if (!r.error) onErrore(TP('err.votoMigr'));
+    }
     if (r.error) throw r.error;
     salvaLocale();
   } catch(e){
@@ -1039,12 +1060,23 @@ function messaggio(err){
        espressione che le prenda tutte e due prendeva la lettera
        sbagliata. Si cerca il nome che si conosce dentro il messaggio,
        che e' l'unica cosa che funziona con tutti e due. */
+    if (/voto_mio/.test(m)) return TP('err.votoMigr');
     if (/posizione/.test(m)) return TP('err.ordineMigr');
     if (/preferito|scaffali|arredo/.test(m)) return TP('err.stileMigr');
     if (/libreria|posto|stanza/.test(m)) return TP('err.stanzaMigr');
     return TP('err.colonnaIgnota');
   }
   return m;
+}
+
+/* Quella colonna non c'e' ancora? Il codice non basta -- Postgres dice
+   `42703`, PostgREST dice `PGRST204` con un messaggio suo -- e il nome
+   si cerca DENTRO il messaggio, senza regex: e' la stessa lezione gia'
+   pagata per `preferito`. */
+function manca(err, colonna){
+  if (!err) return false;
+  const m = String(err.message || '');
+  return (err.code === '42703' || err.code === 'PGRST204') && m.indexOf(colonna) >= 0;
 }
 
 function reset(){

@@ -83,7 +83,8 @@ it: {
   'sort.mio':           'il mio ordine',
   'sort.aggiunta':      'data di aggiunta',
   'sort.nome':          'nome',
-  'sort.voto':          'voto',
+  'sort.votoBgg':       'voto BGG',
+  'sort.votoMio':       'il mio voto',
   'vista.ilMobile':     'il mobile',
   'vista.nuovaLib':     'nuova libreria',
 
@@ -298,6 +299,8 @@ it: {
   'rec.h':              'La tua recensione',
   'rec.nota1':          'La leggono i tuoi amici quando aprono',
   'rec.nota2':          'nella tua libreria. Poche righe bastano.',
+  'rec.votoMio':        'il tuo voto',
+  'rec.votoBgg':        'BGG',
   'rec.voto':           'voto',
   'rec.recensione':     'recensione',
   'rec.ph':             'Com&rsquo;&egrave;? A chi lo consiglieresti? Una riga vuota separa un capoverso.',
@@ -637,6 +640,7 @@ it: {
   'err.nonTolto':       'non sono riuscito a toglierlo: {e}',
   'err.nonToltoZero':   'il database non ha tolto {g}: la riga &egrave; ancora l&igrave;',
   'err.nonAdmin':       'il database dice di no, questo account non &egrave; admin',
+  'err.votoMigr':       'manca la migrazione voto_mio: il tuo voto non si salva',
   'err.ordineMigr':     'manca la migrazione ordine_manuale',
   'err.colonnaIgnota':  'manca una colonna: controlla le migrazioni non applicate',
 
@@ -709,7 +713,8 @@ en: {
   'sort.mio':           'my own order',
   'sort.aggiunta':      'date added',
   'sort.nome':          'name',
-  'sort.voto':          'rating',
+  'sort.votoBgg':       'BGG score',
+  'sort.votoMio':       'my score',
   'vista.ilMobile':     'the bookcase',
   'vista.nuovaLib':     'new bookcase',
 
@@ -910,6 +915,8 @@ en: {
   'rec.h':              'Your review',
   'rec.nota1':          'Your friends read this when they open',
   'rec.nota2':          'in your collection. A few lines are plenty.',
+  'rec.votoMio':        'your score',
+  'rec.votoBgg':        'BGG',
   'rec.voto':           'rating',
   'rec.recensione':     'review',
   'rec.ph':             'What is it like? Who would you recommend it to? An empty line separates a paragraph.',
@@ -1228,6 +1235,7 @@ en: {
   'err.nonTolto':       'could not remove it: {e}',
   'err.nonToltoZero':   'the database did not remove {g}: the row is still there',
   'err.nonAdmin':       'the database says no, this account is not an admin',
+  'err.votoMigr':       'the voto_mio migration is missing: your score is not saved',
   'err.ordineMigr':     'the ordine_manuale migration is missing',
   'err.colonnaIgnota':  'a column is missing: check the migrations not yet applied',
 

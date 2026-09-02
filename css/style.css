@@ -4622,3 +4622,73 @@ body.muro-scuro.sez-collezione:not(.elenco) header{
   flex:none; font-family:var(--ff-display); font-size:12px; letter-spacing:0;
   color:var(--ink-soft); font-variant-numeric:tabular-nums;
 }
+
+
+/* I DUE VOTI, affiancati. Quello di BGG e' un fatto sul gioco, il tuo
+   e' un'opinione: stavano nella stessa colonna e il secondo cancellava
+   il primo. Il tuo si distingue per l'accento -- e' l'unico dei due che
+   hai scritto tu -- e compare solo se c'e'. */
+.voti{display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap}
+.voti .score{margin:0}
+.voti .score.mio b{color:var(--accent)}
+
+/* Nella riga aperta dell'elenco i due stanno in fila con l'etichetta
+   sotto: due numeri accanto, senza, non dicono chi sia chi. */
+.riga-info .voto{display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap}
+.riga-info .voto > span{display:flex; align-items:baseline; gap:1px; position:relative}
+.riga-info .voto em{
+  font-style:normal; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-soft); margin-left:5px; align-self:center;
+}
+.riga-info .voto > span.mio{color:var(--accent)}
+.riga-info .voto > span.mio em{color:var(--accent)}
+
+
+/* ============================================================
+   LA RIFINITURA CHIESTA IN BLOCCO
+   ============================================================ */
+
+/* "La tua recensione" sta sotto la recensione, non nel piede: e' l'unico
+   comando della scheda che parla del testo qui sopra. */
+.pan-scrivi{margin:14px 0 0}
+
+/* LA BARRA DI RICERCA DELLA COLLEZIONE, come quella del catalogo: una
+   superficie con il suo fondo invece di un campo trasparente con un filo
+   attorno, e il segnaposto in tondo invece che in maiuscoletto spaziato.
+   Erano due ricerche con due facce diverse nello stesso sito. */
+#cerca, #mia-q{
+  font-family:var(--ff-text); font-size:14px; letter-spacing:0;
+  color:var(--ink); background:var(--card);
+  border:1px solid var(--line); border-radius:var(--r-s);
+  padding:11px 34px 11px 13px;
+}
+#cerca::placeholder, #mia-q::placeholder{
+  color:var(--ink-soft); text-transform:none; letter-spacing:0; font-size:13px;
+}
+#cerca:focus, #mia-q:focus{border-color:var(--accent)}
+#cerca-x, #mia-q-x{right:8px}
+
+/* IL CUORE, rifatto: una pastiglia che si riempie invece di un contorno
+   che cambia colore. Da spento e' quieto come gli altri comandi del
+   piede; da acceso e' pieno, ed e' l'unico gesto che si puo' fare in
+   casa di un altro -- vale che si veda. */
+#p-cuore{border-radius:999px; transition:background .18s var(--ease), color .18s var(--ease)}
+#p-cuore[aria-pressed="true"]{
+  background:var(--accent); color:var(--card); border-color:transparent;
+}
+#p-cuore[aria-pressed="true"] #p-cuore-n{color:var(--card)}
+
+/* IL TASTO DEL PROFILO: un cerchio pieno, non un riquadro con gli
+   angoli molto tondi. Con il bordo e l'imbottitura di `.tool` restava
+   un rettangolo arrotondato, e accanto al marchio si leggeva come una
+   pastiglia invece che come una faccia. */
+#pro-apri{
+  width:34px; height:34px; padding:0; flex:none; border:0; cursor:pointer;
+  display:none; align-items:center; justify-content:center; border-radius:50%;
+  background:rgba(var(--ink-rgb),.07); color:var(--ink-soft);
+}
+body.dentro #pro-apri{display:inline-flex}
+#pro-apri:hover{background:rgba(var(--ink-rgb),.12); color:var(--ink)}
+#pro-apri .ico{width:18px; height:18px}
+body.sez-profilo #pro-apri{background:var(--accent); color:var(--card)}
+@media (pointer:coarse){ #pro-apri{width:40px; height:40px} }

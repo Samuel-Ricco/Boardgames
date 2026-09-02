@@ -69,7 +69,7 @@
          (`mia.occhielloDi`) e `#mia-msg`, che dice anche quanti sono in
          vetrina; la terza e' una voce di navigazione, e adesso lo e'
          per davvero. -->
-    <button id="pro-apri" type="button" class="tool tondo dentro-only"
+    <button id="pro-apri" type="button" class="tondo dentro-only"
             data-i18n-title="testa.profiloTitolo" title="il tuo profilo"
             data-i18n-aria="testa.profiloTitolo" aria-label="il tuo profilo"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.2a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2zM4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></button>
     <button id="mode" type="button" class="tool chip" data-i18n-title="testa.entra"
@@ -109,7 +109,8 @@
     <button type="button" data-sort="mio" role="menuitem" data-i18n="sort.mio">il mio ordine</button>
     <button type="button" data-sort="aggiunta" role="menuitem" data-i18n="sort.aggiunta">data di aggiunta</button>
     <button type="button" data-sort="nome" role="menuitem" data-i18n="sort.nome">nome</button>
-    <button type="button" data-sort="voto" role="menuitem" data-i18n="sort.voto">voto</button>
+    <button type="button" data-sort="voto" role="menuitem" data-i18n="sort.votoBgg">voto BGG</button>
+    <button type="button" data-sort="votoMio" role="menuitem" data-i18n="sort.votoMio">il mio voto</button>
   </div>
 
   <!-- Il nome del mobile non sta piu' in fondo allo schermo, ma la porta
@@ -277,10 +278,33 @@
     <h2 id="p-title"></h2>
     <p class="byline" id="p-by"></p>
     <ul class="specs" id="p-specs"></ul>
-    <div class="score"><b id="p-score"></b><i>/10</i><small data-i18n="pan.voto">il voto della<br>ludoteca</small></div>
+    <!-- DUE VOTI AFFIANCATI, non uno al posto dell'altro. Quello di
+         BGG e' un fatto sul gioco, il tuo e' un'opinione: "8.6 su BGG,
+         7 per me" e' esattamente il tipo di cosa che un sito di
+         recensioni deve saper dire. Il tuo compare solo se c'e': un
+         trattino accanto a un numero vero si legge come un guasto. -->
+    <div class="voti">
+      <div class="score" id="p-score-bgg"><b></b><i>/10</i><small data-i18n="rec.votoBgg">BGG</small></div>
+      <div class="score mio" id="p-score-mio" hidden><b></b><i>/10</i><small data-i18n="rec.votoMio">il tuo voto</small></div>
+    </div>
     <div class="body" id="p-body"></div>
+
+    <!-- SCRIVERE STA SOTTO QUELLO CHE C'E' GIA' SCRITTO. Era nel piede,
+         in fila con la stella e il cuore, e da li' non si capiva su
+         cosa agisse: e' l'unico comando della scheda che parla del
+         testo qui sopra, e adesso sta attaccato a lui. -->
+    <p class="pan-scrivi">
+      <button id="p-mia" type="button" class="dentro-only"
+              data-i18n-title="pan.miaTitolo" title="scrivi cosa ne pensi tu">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pan.mia">la tua recensione</span>
+      </button>
+    </p>
+
     <div class="tags" id="p-tags"></div>
     <div class="giocate" id="p-giocate"></div>
+
+    <!-- Il collegamento a BGG e' l'ULTIMA cosa: porta via dal sito, e
+         quello che porta via si mette dopo tutto quello che tiene. -->
     <p class="pan-link">
       <a class="bgg" id="p-bgg" href="#" target="_blank" rel="noopener"
          data-i18n="pan.bgg">scheda su BoardGameGeek &#8599;</a>
@@ -306,23 +330,22 @@
             data-i18n-title="pan.segnaTitolo" title="segna una partita a questo gioco">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg> <span data-i18n="pan.segna">partita</span>
     </button>
+    <!-- UN GESTO SOLO, E SI CHIAMA "RIMUOVI".
+
+         C'erano due pulsanti che si somigliavano nel nome e non nelle
+         conseguenze: "togli dallo scaffale", reversibile in un clic, ed
+         "elimina", che no. Adesso ne resta uno e fa il primo: il gioco
+         esce dalla vetrina e resta in collezione, dove lo si ritrova
+         nell'elenco.
+
+         CONSEGUENZA DICHIARATA: cancellare un gioco dalla collezione
+         non ha piu' nessuna porta nel sito. E' la stessa scelta gia'
+         fatta nel menu della riga -- prima era li' e restava qui --
+         solo che adesso non e' piu' da nessuna parte. Il posto naturale
+         per rimetterla, se servira', e' il menu a tre punti
+         dell'elenco. -->
     <button id="p-fuori" type="button" class="dentro-only"
             data-i18n-title="pan.fuoriTitolo" title="lascia lo scaffale, resta nella tua collezione">
-      <span data-i18n="pan.fuori">togli dallo scaffale</span>
-    </button>
-
-    <!-- Il piede va a capo qui: sopra le cose che si fanno di sfuggita,
-         sotto le due che pesano -- scrivere cosa ne pensi, e toglierlo.
-         Un elemento largo quanto la riga e alto zero: il flex va a capo
-         da solo, senza un secondo contenitore. -->
-    <span class="pan-acapo" aria-hidden="true"></span>
-
-    <button id="p-mia" type="button" class="dentro-only"
-            data-i18n-title="pan.miaTitolo" title="scrivi cosa ne pensi tu">
-      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3zM14.5 6.5l3 3"/></svg> <span data-i18n="pan.mia">la tua recensione</span>
-    </button>
-    <button id="del" type="button" class="dentro-only"
-            data-i18n-title="pan.eliminaTitolo" title="rimuovi il gioco dalla tua collezione, per sempre">
       <span data-i18n="pan.elimina">rimuovi</span>
     </button>
   </p>

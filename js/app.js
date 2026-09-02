@@ -3292,7 +3292,15 @@ function showPanel(game){
     return '<li><b>' + esc(s[0]) + '</b><span>' + T(s[1]) + '</span></li>';
   }).join('');
 
-  q('#p-score').textContent = game.score || '--';
+  /* Due voti affiancati. Quello di BGG c'e' quasi sempre; il proprio
+     compare solo se e' stato messo -- un trattino accanto a un numero
+     vero si legge come un guasto, non come un vuoto. */
+  const vb = q('#p-score-bgg'), vm = q('#p-score-mio');
+  if (vb){ vb.querySelector('b').textContent = game.score || '--'; }
+  if (vm){
+    vm.hidden = !game.mioVoto;
+    vm.querySelector('b').textContent = game.mioVoto || '';
+  }
   q('#p-body').innerHTML = (game.review || []).map(function(t){ return '<p>' + esc(t) + '</p>'; }).join('');
   q('#p-tags').innerHTML = (game.tags || []).map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('');
 
@@ -3754,7 +3762,15 @@ function bindInput(){
     togliDaScaffale(g.id);
   });
 
-  armaBottone(q('#del'), 'pan.eliminaLungo', 'pan.eliminaOk', removeFocused);
+  /* `#del` NON C'E' PIU' NEL MARKUP. Il piede della scheda tiene un
+     gesto solo, "rimuovi", e quel gesto e' uscire dallo scaffale:
+     cancellare un gioco dalla collezione non ha piu' una porta nel
+     sito. `removeFocused` resta scritta e funzionante -- e' la stessa
+     situazione dichiarata di `apriModifica` -- ma l'aggancio va
+     condizionato, se no `armaBottone` scrive `innerHTML` su `null` e si
+     porta via meta' di `bindInput`. */
+  const bDel = q('#del');
+  if (bDel) armaBottone(bDel, 'pan.eliminaLungo', 'pan.eliminaOk', removeFocused);
   q('#panel').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
   let rt;
@@ -4198,7 +4214,10 @@ function apriMia(){
   if (!g || LIB.ospitePresso()) return;
   chiudiPannelli('mia');
   q('#mia-gioco').textContent = g.title;
-  q('#mia-voto').value = g.score || '';
+  /* Il campo della recensione e' IL TUO voto, non quello di BGG: prima
+     ci arrivava dentro la media di BGG e salvando la si sovrascriveva
+     con la propria. */
+  q('#mia-voto').value = g.mioVoto || '';
   q('#mia-testo').value = (g.review || []).join(String.fromCharCode(10, 10));
   q('#mialayer').classList.add('on');
   q('#mialayer').setAttribute('aria-hidden', 'false');
@@ -4253,7 +4272,7 @@ function salvaMia(){
   if (!g) return;
   const voto = votoValido(q('#mia-voto').value);
   if (!voto.ok){ flash(TP('msg.votoAlto')); q('#mia-voto').focus(); return; }
-  const patch = { score: voto.val };
+  const patch = { mioVoto: voto.val };
   const testo = capoversi(q('#mia-testo').value);
   if (testo) patch.review = testo;
 
@@ -6288,7 +6307,14 @@ function contenutoInfo(g){
   return (chi  ? '<p class="cat-chi">' + chi + '</p>' : '') +
          (spec ? '<ul class="cat-spec">' + spec + '</ul>' : '') +
          '<p class="cat-dove">' + (L ? T('riga.inLib', {n: esc(L.nome)}) : T('riga.nonInLib')) + '</p>' +
-         (g.score ? '<p class="voto">' + esc(g.score) + '<i>/10</i></p>' : '') +
+         /* Nella riga aperta i due voti stanno insieme, con l'etichetta:
+            senza, due numeri accanto non dicono chi sia chi. */
+         (g.score || g.mioVoto
+           ? '<p class="voto">' +
+             (g.score ? '<span>' + esc(g.score) + '<i>/10</i><em>' + T('rec.votoBgg') + '</em></span>' : '') +
+             (g.mioVoto ? '<span class="mio">' + esc(g.mioVoto) + '<i>/10</i><em>' + T('rec.votoMio') + '</em></span>' : '') +
+             '</p>'
+           : '') +
          (testo || '<p class="vuoto">' + T('riga.nessunaRece') + '</p>') +
          chip;
 }
