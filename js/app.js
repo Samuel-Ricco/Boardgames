@@ -4393,6 +4393,12 @@ function goToGame(id){
 
 const CAT_PAG = 24;
 let catVoci = [], catOffset = 0, catFine = false, catCarico = false;
+/* Quante righe sono DISEGNATE. Sfogliando coincide con quante ne sono
+   arrivate, perche' ogni pagina si chiede e si disegna; cercando no --
+   i risultati arrivano tutti insieme e si mostrano a pagine, se no
+   duecento righe compaiono in blocco e "carica altro" non avrebbe
+   niente da caricare. */
+let catMostra = 0, catRicerca = false;
 
 /* Il numero del giro. Le query a Wikidata sono lente -- un paio di
    secondi buoni -- e in quel tempo si fa in fretta a premere "cerca":
@@ -4468,7 +4474,8 @@ async function catSfoglia(daCapo){
      ripassarle a rimetterle a posto. Costa una `select` piccola, e solo
      la prima volta. */
   try { await WISH.carica(); } catch(e){}
-  if (daCapo){ catVoci = []; catOffset = 0; catFine = false; q('#cat-list').innerHTML = ''; }
+  if (daCapo){ catVoci = []; catOffset = 0; catFine = false; catMostra = 0; q('#cat-list').innerHTML = ''; }
+  catRicerca = false;
   q('#cat-piu').disabled = true;
   catMsg(T(catVoci.length ? 'cat.prendoAltri' : 'cat.apro'));
   try {
@@ -4504,12 +4511,22 @@ async function catCerca(){
   try {
     const voci = await CATALOGO.cerca(t);
     if (mio !== catGiro) return;
+    /* ANCHE LA RICERCA SI SFOGLIA.
+
+       Prima dava quello che dava e basta: quaranta righe in blocco, e
+       chi cercava una parola comune non aveva modo di vedere l'undicesima
+       pagina di niente. Adesso i risultati arrivano tutti -- dal dump
+       costano quanto prima, perche' il file e' gia' in memoria -- e si
+       mostrano a pagine come lo sfogliare. Il pulsante e' lo stesso, e
+       qui non chiede niente a nessuno: scopre righe che ci sono gia'. */
     catVoci = voci;
-    catFine = true;                       // la ricerca da' quello che da', non si pagina
-    disegnaCatalogo(0);
+    catRicerca = true;
+    catMostra = 0;
+    catFine = catVoci.length <= CAT_PAG;
+    disegnaCatalogo(0, CAT_PAG);
     if (!catVoci.length){
       catMsg(T('cat.nessunGioco', {q: esc(t)}));
-    } else { catNota(); riempiMiniature(0, mio); }
+    } else { catNota(); riempiMiniature(0, mio, catMostra); }
   } catch(e){
     if (mio !== catGiro) return;
     catMsg(T('cat.ricercaNo', {e: esc(e.message)}), 'warn');
@@ -4533,11 +4550,13 @@ async function catNota(){
     : T(n === 1 ? 'cat.receUno' : 'cat.receTanti', {n: n})));
 }
 
-function disegnaCatalogo(da){
+function disegnaCatalogo(da, a){
   const ul = q('#cat-list');
-  const html = catVoci.slice(da).map(function(v, k){ return rigaCatalogo(v, da + k); }).join('');
+  const fino = (a === undefined || a > catVoci.length) ? catVoci.length : a;
+  const html = catVoci.slice(da, fino).map(function(v, k){ return rigaCatalogo(v, da + k); }).join('');
   if (da) ul.insertAdjacentHTML('beforeend', html);
   else ul.innerHTML = html;
+  catMostra = fino;
   q('.cat-fondo').classList.toggle('finito', catFine);
 }
 
@@ -4553,8 +4572,8 @@ function disegnaCatalogo(da){
    `mio` e' il giro: se nel frattempo e' stata chiesta un'altra pagina o
    un'altra ricerca, queste immagini non riguardano piu' quello che c'e'
    a schermo e si buttano via da sole. */
-async function riempiMiniature(da, mio){
-  const fette = catVoci.slice(da);
+async function riempiMiniature(da, mio, a){
+  const fette = catVoci.slice(da, a === undefined ? catVoci.length : a);
   if (!fette.length) return;
   let mappa = {};
   try { mappa = await CATALOGO.miniature(fette); } catch(e){ return; }
@@ -4883,7 +4902,19 @@ function bindCatalogo(){
     q('#cat-q').focus();
     catSfoglia(true);
   });
-  q('#cat-piu').addEventListener('click', function(){ catSfoglia(false); });
+  q('#cat-piu').addEventListener('click', function(){
+    /* Cercando, la pagina dopo e' gia' in memoria: si scopre e basta,
+       senza toccare la rete e senza `catGiro` da controllare. */
+    if (catRicerca){
+      const da = catMostra;
+      disegnaCatalogo(da, da + CAT_PAG);
+      catFine = catMostra >= catVoci.length;
+      q('.cat-fondo').classList.toggle('finito', catFine);
+      riempiMiniature(da, catGiro, catMostra);
+      return;
+    }
+    catSfoglia(false);
+  });
 
   // un ascoltatore solo sull'elenco: le righe si rifanno di continuo e
   // attaccarne uno per riga vorrebbe dire rimetterli a ogni pagina

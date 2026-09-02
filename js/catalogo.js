@@ -270,7 +270,10 @@ async function cerca(q){
       return { fonte: 'bgg', id: String(h.id), title: h.title, year: h.year || '', bgg: h.id };
     });
   }
-  if (f === 'dump') return DUMP.cerca(q);
+  /* Piu' di quanti se ne mostrino: la ricerca si sfoglia, e la
+     seconda pagina non deve costare una seconda ricerca. Il dump e'
+     gia' in memoria, quindi 200 righe costano quanto 40. */
+  if (f === 'dump') return DUMP.cerca(q, 200);
   return cercaWikidata(q);
 }
 
