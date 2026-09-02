@@ -33,6 +33,7 @@ js/config.js          url e chiave pubblica di Supabase
 js/data.js            i giochi committati: il seme della libreria
 js/auth.js            accesso con Google, e la domanda "sono admin?"
 js/store.js           la collezione: database, copia locale, ordinamenti, ricerca
+js/schede.js          quello che di un gioco e' uguale per tutti: misure, copertina
 js/recensioni.js      le recensioni del sito, pubbliche, lette da chiunque
 js/apprezzamenti.js   i cuori sotto la recensione di un amico
 js/desideri.js        la wishlist: i giochi che non hai ancora

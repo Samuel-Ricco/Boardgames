@@ -2356,6 +2356,103 @@ ridA' esattamente la tinta che c'era scritta a mano.
 l'assenza di alpha il vero indizio: una dichiarazione con `rgba(...)` non puo'
 uscire opaca, quindi a vincere era per forza un'altra regola.
 
+## Quello che di un gioco e' uguale per tutti sta in una tabella sola
+
+`js/schede.js` + tabella `schede_bgg` (migrazione `20260902120000_schede_bgg`).
+
+Arrivata come segnalazione: «nel db sono salvate le immagini, satureremo la
+memoria». Le immagini nel database non c'erano — la colonna `cover` tiene
+**l'indirizzo**, 136 caratteri, 2 KB in tutto per quattordici giochi, e le
+figure stanno nel bucket. Ma sotto la premessa sbagliata c'era una cosa vera, e
+grossa.
+
+### Il tetto non lo alzavano i giochi, lo alzavano gli utenti
+
+Misurato: **107 KB a copertina**, 14 copertine = 1,46 MB, cento giochi = 10,4 MB,
+e il gigabyte del piano gratuito basta per circa **9.800 copertine**. Sembra
+tanto. Ma il percorso era `copertine/<uid>/<slug>-p<pic>.jpg`, cioè **una
+cartella a testa**: la figura di Root stava sul server una volta per ogni
+persona che aveva Root. Con 25 giochi a testa il muro arrivava a **390 utenti**
+— non perché le immagini fossero tante, ma perché erano **le stesse ripetute**.
+Ed è il caso normale: fra due collezioni di giochi da tavolo i titoli in comune
+sono la norma, che è già scritto in queste note per un altro difetto.
+
+La chiave per non ripeterle **c'era già nel nome**: `p4254509` è l'id
+dell'immagine su BGG, unico al mondo. Adesso il percorso è
+`copertine/bgg/p4254509.jpg` e due persone con lo stesso gioco puntano allo
+**stesso oggetto**. Lo scontro che aveva motivato le cartelle personali non
+torna, perché la chiave non è più il titolo — è l'immagine.
+
+### Perché le copertine NON si possono prendere direttamente da BGG
+
+È la risposta all'altra metà della segnalazione, e non è un'opinione: il CDN di
+BGG **non manda gli header CORS**. Misurato:
+
+| | esito |
+|---|---|
+| `<img>` senza `crossOrigin` | carica (2048x1597) |
+| `crossOrigin="anonymous"` | **bloccata dal browser** |
+| `fetch()` | **bloccata** |
+
+Senza `crossOrigin` l'immagine si vede in un `<img>` — ed è esattamente perché
+le miniature del catalogo già funzionano così, vedi «Le miniature sono un caso
+diverso dalle copertine» — ma il canvas resta **contaminato**, quindi non può
+diventare una texture WebGL, e non si possono nemmeno togliere le bande né
+applicare il tetto del lato lungo, che leggono tutti e due i pixel.
+
+Per lo scaffale in 3D i byte devono passare da qualcosa che aggiunga l'header.
+Oggi è il bucket. L'alternativa — far passare ogni copertina dalla edge
+function a ogni caricamento — vorrebbe dire scaricare l'originale di BGG da 2-5
+megapixel invece di un JPEG da 107 KB, più un'invocazione a copertina.
+
+### Una tabella di id non serve: c'è già, e in una forma migliore
+
+Chiesto anche questo: «ha senso una tabella con tutti gli id dei giochi?». No.
+Quella è `dati/bgg.txt` — 106.694 giochi committati nel repo, cercati in **5 ms
+senza rete**. Una tabella sul database sarebbe un giro di rete per avere quello
+che è già in memoria.
+
+Quello che merita una tabella sono i **fatti su un gioco**: le misure (che
+stavano in `localStorage`, cioè una copia per browser — ogni dispositivo nuovo
+le richiedeva a BGG da capo) e la copertina condivisa. Il guadagno vero non è
+lo spazio: è che **l'API viene interrogata una volta per gioco invece che una
+volta per utente**.
+
+### Le scelte che vale la pena ricordare
+
+- **Niente insert e niente update diretti**, nemmeno per chi è entrato. Si passa
+  da `scheda_bgg_registra`, `security definer` come `sono_amico` e
+  `mia_partita`, che fa **COALESCE in tutte e due le direzioni**: un valore che
+  c'è non si tocca, uno che manca si riempie. Una tabella condivisa dove ognuno
+  riscrive quello che c'è è una tabella dove il primo che sbaglia sbaglia per
+  tutti. Per correggere si passa dal Table Editor, che è la stessa garanzia
+  della tabella `admin`.
+- **La copertina è l'unico campo che punta fuori invece di descrivere**, quindi
+  è l'unico da cui possa entrare qualcosa che non c'entra. La funzione pretende
+  che l'indirizzo sia `copertine/bgg/<pic>.jpg` **con il `pic` dichiarato**: e
+  siccome l'oggetto si carica con `upsert:false`, una figura già presente non si
+  può sovrascrivere.
+- **Dalla cartella condivisa non si cancella.** Un oggetto lì dentro è di tutti,
+  e chi toglie Root dalla propria collezione non deve lasciare gli altri senza
+  copertina. Lo vieta la policy **e** lo evita il client (`condiviso()` in
+  `store.js`): provarci e fallire in silenzio sarebbe peggio che non provarci.
+- **I file scelti a mano restano personali.** Non sono un fatto sul gioco, sono
+  una scelta di chi li ha caricati — ed è la stessa ragione per cui
+  `riparaCopertine` non li tocca mai.
+- **Si controlla che sia la STESSA figura** prima di riusare una copertina
+  condivisa: BGG cambia copertina quando esce una ristampa, e `riparaCopertine`
+  esiste apposta per accorgersene.
+- **Non si legge tutta la tabella.** Ha una riga per gioco esistente al mondo:
+  si chiedono gli id che si hanno, in una lettura sola, e quelli già domandati
+  non si ridomandano. `di()` è sincrona come `RECE.di` e `CUORI.di`, perché la
+  scena la interroga mentre costruisce le scatole.
+- **La copia in `localStorage` resta**, e non è una cache di comodo: è la strada
+  di chi non ha backend e di chi è senza rete, lo stesso ruolo che
+  `localStorage` ha già per la collezione.
+- **Autore, editore, anno e voto NON stanno qui.** Sono già colonne di `giochi` e
+  ci parla mezzo sito: spostarli è un altro lavoro, e non è quello che stava
+  crescendo.
+
 ## Aggiungere una colonna a `profili` e' un'operazione in tre punti
 
 Costata due volte nella stessa sessione, e la seconda con la lezione gia' scritta:
@@ -5093,13 +5190,15 @@ decimi.
 Cosa manca, in ordine di fastidio. **Riscritta il 2026-08-25**: mezza lista
 di prima era diventata falsa quando e' arrivato il token.
 
-0. **La migrazione `wishlist` non è ancora applicata** (2026-08-25). Il codice
-   c'è tutto e degrada come deve — il catalogo funziona, i cuori si disegnano
-   spenti e il pannello dice «manca la migrazione wishlist» invece di un errore
-   di schema cache — ma finché non si incolla
-   `supabase/migrations/20260825120000_wishlist.sql` nell'SQL editor, un cuore
-   premuto non salva niente. È l'unica cosa che questa macchina non può fare da
-   sola: qui non c'è la CLI di Supabase.
+0. **La migrazione `schede_bgg` non è ancora applicata** (2026-09-02). Il
+   codice c'è tutto e degrada come deve — `SCHEDE.problema()` dice «manca la
+   migrazione schede_bgg» invece di un errore di schema cache, le misure
+   restano in `localStorage` e le copertine nella cartella personale, cioè
+   esattamente il comportamento di prima — ma finché non si incolla
+   `supabase/migrations/20260902120000_schede_bgg.sql` nell'SQL editor, niente
+   viene condiviso. È l'unica cosa che questa macchina non può fare da sola:
+   qui non c'è la CLI di Supabase. (La `wishlist` invece è applicata:
+   verificato il 2026-09-02, `WISH.problema()` risponde vuoto.)
 1. **Le recensioni sono lorem ipsum.** E' l'unica cosa che tiene il sito
    lontano dall'essere finito: si scrivono dal sito con *la tua recensione*, e
    da li' si pubblicano nel catalogo con la casella in fondo al modulo. Sono
@@ -5118,10 +5217,12 @@ di prima era diventata falsa quando e' arrivato il token.
 5. **Su telefono la scatola e' larga 90 px**: si riconosce la copertina ma non
    si legge il titolo. E' il prezzo delle tre colonne; se da' fastidio,
    l'alternativa e' tornare a due.
-6. **Le misure delle scatole stanno in `localStorage`, non sul database.** Sono
-   fatti sul gioco e uguali per tutti, quindi la cache per id BGG e' il posto
-   giusto finche' e' una sola persona a usarlo. Con piu' utenti conviene una
-   tabella condivisa, o che le serva la edge function con la sua cache.
+6. **Le copertine già caricate restano nella cartella personale.** La
+   condivisione vale da qui in avanti: chi aggiunge un gioco da adesso scrive
+   in `copertine/bgg/`, ma le quattordici figure già in `copertine/<uid>/`
+   stanno dove sono — sono 1,5 MB e spostarle vorrebbe dire scaricarle e
+   ricaricarle una per una. Se un giorno serve, il posto è `riparaCopertine`,
+   che già gira all'avvio e già sa il `pic` di ogni gioco.
 
 **Quello che NON manca piu'** (era in questa lista fino al 24 agosto, e
 lasciarcelo confonde chi riparte a freddo):

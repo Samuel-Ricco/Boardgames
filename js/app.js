@@ -1079,20 +1079,57 @@ function entraNelCubo(w, h, t){
 }
 
 /* Le misure che mancano, chieste in una volta sola. Silenziosa: senza
-   proxy non fa niente e non dice niente. */
+   proxy non fa niente e non dice niente.
+
+   PRIMA SI CHIEDE A CHI LE HA GIA'. Le misure di una scatola sono un
+   fatto sul gioco, uguale per tutti, e stavano in `localStorage`: una
+   copia per browser, quindi ogni dispositivo nuovo le ridomandava a BGG
+   per giochi che qualcun altro aveva gia' chiesto. Adesso la prima
+   fermata e' `schede_bgg`, che e' una lettura sola e condivisa; a BGG
+   ci va solo quello che non sa ancora nessuno, e quello che torna si
+   rimette li' per chi viene dopo. */
 async function caricaMisure(){
   const c = misureCache();
-  const ids = [];
+  let ids = [];
   LIB.all().forEach(function(g){
     if (g.bgg && !c[String(g.bgg)] && ids.indexOf(String(g.bgg)) < 0) ids.push(String(g.bgg));
   });
   if (!ids.length) return false;
+
+  let presi = 0;
+  try {
+    await SCHEDE.carica(ids);
+    ids = ids.filter(function(k){
+      const sc = SCHEDE.di(k);
+      if (!sc || !(sc.larghezza > 0) || !(sc.lunghezza > 0)) return true;
+      c[k] = { larghezza: +sc.larghezza, lunghezza: +sc.lunghezza,
+               spessore: +sc.spessore || 0, edizione: sc.edizione || '',
+               anno: sc.edizione_anno || 0, edizioni: sc.edizioni || 0 };
+      presi++;
+      return false;
+    });
+  } catch(e){}
+  if (presi) salvaMisure();
+  if (!ids.length) return presi > 0;
+
   let nuove = {};
-  try { nuove = await BGG.misure(ids.slice(0, 30)); } catch(e){ return false; }
+  try { nuove = await BGG.misure(ids.slice(0, 30)); } catch(e){ return presi > 0; }
   const chiavi = Object.keys(nuove || {});
-  if (!chiavi.length) return false;
+  if (!chiavi.length) return presi > 0;
   chiavi.forEach(function(k){ c[k] = nuove[k]; });
   salvaMisure();
+
+  // e si rimettono dove le trova anche chi viene dopo
+  chiavi.forEach(function(k){
+    const m = nuove[k];
+    if (!m || !(m.larghezza > 0)) return;
+    try {
+      SCHEDE.registra({ bgg: parseInt(k, 10), larghezza: m.larghezza,
+                        lunghezza: m.lunghezza, spessore: m.spessore || null,
+                        edizione: m.edizione || null, edizione_anno: m.anno || null,
+                        edizioni: m.edizioni || null });
+    } catch(e){}
+  });
   return true;
 }
 
@@ -4661,14 +4698,34 @@ async function mettiInLibreria(v, btn){
     };
     let marchio = '';
     if (g.immagine){
-      btn.title = TP('cat.scaricoCop');
-      // se non arriva non e' un errore: si usa la copertina disegnata
-      try {
-        gioco.cover = await CATALOGO.copertina(g);
-        // da che figura di BGG viene: serve a `riparaCopertine` per
-        // non tornare a chiedere quello che ha gia'
-        marchio = picDi(g.immagine) ? 'p' + picDi(g.immagine) : '';
-      } catch(err){}
+      const pic = picDi(g.immagine) ? 'p' + picDi(g.immagine) : '';
+
+      /* SE QUEL GIOCO CE L'HA GIA' QUALCUN ALTRO, LA FIGURA E' GIA' SUL
+         SERVER. Si punta a quella: niente giro su BGG, niente
+         scaricamento, niente caricamento nel bucket. E' il caso normale
+         appena il sito ha piu' di un utente -- fra due collezioni di
+         giochi da tavolo i titoli in comune sono la norma.
+
+         Si controlla che sia la STESSA figura: BGG cambia copertina a un
+         gioco quando esce una ristampa, e `riparaCopertine` esiste
+         apposta per accorgersene. */
+      let gia = null;
+      if (gioco.bgg){
+        try { await SCHEDE.carica([gioco.bgg]); gia = SCHEDE.di(gioco.bgg); } catch(e){}
+      }
+      if (gia && gia.copertina && (!pic || gia.pic === pic)){
+        gioco.cover = gia.copertina;
+        marchio = gia.pic || '';
+      } else {
+        btn.title = TP('cat.scaricoCop');
+        // se non arriva non e' un errore: si usa la copertina disegnata
+        try {
+          gioco.cover = await CATALOGO.copertina(g);
+          // da che figura di BGG viene: serve a `riparaCopertine` per
+          // non tornare a chiedere quello che ha gia'
+          marchio = pic;
+        } catch(err){}
+      }
     }
     const messo = LIB.add(gioco, marchio);
     if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare

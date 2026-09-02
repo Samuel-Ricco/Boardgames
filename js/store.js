@@ -381,11 +381,32 @@ function add(g, marchio){
    incontra piu' niente; e la vecchia si cancella DOPO che la nuova e'
    arrivata -- se no un caricamento fallito lascerebbe la scatola
    senza niente addosso. */
-async function caricaCopertina(c, id, dataUrl, marchio, vecchia){
-  // una cartella a testa: con le collezioni separate due persone che
-  // aggiungono Root scriverebbero tutte e due su root.jpg
-  const path = (AUTH.stato().id || 'anonimo') + '/' + id +
-               (marchio ? '-' + marchio : '') + '.jpg';
+async function caricaCopertina(c, game, dataUrl, marchio, vecchia){
+  /* UN OGGETTO PER FIGURA, NON PER PERSONA.
+
+     Il percorso era `<uid>/<slug>-<marchio>.jpg`, una cartella a testa,
+     e la ragione di allora era giusta: con le collezioni separate due
+     persone che aggiungono Root scriverebbero tutte e due su root.jpg.
+     Ma il rimedio ha creato il problema piu' grosso -- la stessa figura
+     sul server tante volte quante le persone che hanno quel gioco. A
+     107 KB l'una il tetto non lo alza la quantita' di giochi, lo alza
+     il numero di utenti.
+
+     Quello che viene da BGG va in `bgg/p4254509.jpg`: il nome e' l'id
+     della figura, unico al mondo, quindi due persone con lo stesso
+     gioco puntano allo STESSO oggetto e la seconda non carica niente.
+     Lo scontro di prima non c'e' perche' la chiave non e' piu' il
+     titolo, e' l'immagine.
+
+     I file scelti a mano restano nella cartella personale: quelli non
+     sono un fatto sul gioco, sono una scelta di chi li ha caricati. */
+  const daBgg = /^p\d+$/.test(marchio || '');
+  const bgg = parseInt(game && game.bgg, 10) || 0;
+  const path = daBgg
+    ? 'bgg/' + marchio + '.jpg'
+    : (AUTH.stato().id || 'anonimo') + '/' + game.id +
+      (marchio ? '-' + marchio : '') + '.jpg';
+
   const pubblico = function(){
     return c.storage.from('copertine').getPublicUrl(path).data.publicUrl;
   };
@@ -393,10 +414,20 @@ async function caricaCopertina(c, id, dataUrl, marchio, vecchia){
   const r = await c.storage.from('copertine')
     .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
   if (r.error && !/exists/i.test(r.error.message || '')) throw r.error;
+  const url = pubblico();
+
+  /* Si registra QUI perche' e' l'unico punto che conosce l'indirizzo
+     definitivo. Non puo' fermare niente: se la scrittura non passa, il
+     gioco entra in collezione lo stesso e la prossima persona rifara'
+     il giro su BGG. */
+  if (daBgg && bgg && typeof SCHEDE !== 'undefined'){
+    try { await SCHEDE.registra({ bgg: bgg, pic: marchio, copertina: url }); }
+    catch(e){}
+  }
 
   const via = oggettoDi(vecchia);
-  if (via && via !== path) c.storage.from('copertine').remove([via]);
-  return pubblico();
+  if (via && via !== path && !condiviso(via)) c.storage.from('copertine').remove([via]);
+  return url;
 }
 
 /* Il percorso dentro il bucket, ricavato dall'indirizzo pubblico.
@@ -406,6 +437,15 @@ async function caricaCopertina(c, id, dataUrl, marchio, vecchia){
 function oggettoDi(url){
   const i = String(url || '').indexOf('/copertine/');
   return i < 0 ? '' : String(url).slice(i + 11).split('?')[0];
+}
+
+/* Un oggetto sotto `bgg/` e' di tutti: e' la figura di quel gioco, non
+   la tua copia. Non si cancella mai da qui -- chi toglie Root dalla
+   propria collezione non deve lasciare gli altri senza copertina. Le
+   regole dello storage lo vietano gia', ma provarci e poi fallire in
+   silenzio e' peggio che non provarci. */
+function condiviso(oggetto){
+  return String(oggetto || '').indexOf('bgg/') === 0;
 }
 
 async function mandaAlServer(c, game, marchio){
@@ -419,7 +459,7 @@ async function mandaAlServer(c, game, marchio){
 
     if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
       try {
-        riga.copertina = await caricaCopertina(c, game.id, riga.copertina, marchio, '');
+        riga.copertina = await caricaCopertina(c, game, riga.copertina, marchio, '');
         game.cover = riga.copertina;          // anche in memoria, per il prossimo giro
       } catch(e){
         // senza copertina il gioco entra lo stesso, con quella disegnata
@@ -465,7 +505,7 @@ async function mandaModifica(c, g, prima, marchio){
 
     if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
       try {
-        riga.copertina = await caricaCopertina(c, g.id, riga.copertina, marchio, prima.cover);
+        riga.copertina = await caricaCopertina(c, g, riga.copertina, marchio, prima.cover);
         g.cover = riga.copertina;
       } catch(e){
         delete riga.copertina;
@@ -969,7 +1009,7 @@ function remove(id){
       // via anche l'immagine, se stava nel bucket: se no resta li' a
       // occupare spazio per un gioco che non c'e' piu'
       const oggetto = oggettoDi(out.cover);
-      if (oggetto) c.storage.from('copertine').remove([oggetto]);
+      if (oggetto && !condiviso(oggetto)) c.storage.from('copertine').remove([oggetto]);
     });
   }
   return out;
