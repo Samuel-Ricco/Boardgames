@@ -2188,13 +2188,42 @@ function applyLibrary(opts){
         b.scale.setScalar(lerp(.9, 1, e));
       }, function(){ b.userData.busy = false; }, opts.delay || 0);
     } else if (opts.animate){
+      /* CHI SPOSTA UNA SCATOLA DEVE ANCHE RADDRIZZARLA.
+
+         Prendendola in mano le si da' un'inclinazione e la si ingrandisce
+         (`prendiScatola`: rotazione -.06/.12/.04 e scala 1.12), e finche'
+         resta in mano e' giusto cosi'. Ma questo ramo e' quello che gira
+         DOPO averla posata in un altro cubo, e animava solo la POSIZIONE:
+         la scatola arrivava a destinazione ancora storta e ancora un filo
+         piu' grande, e ci restava.
+
+         Si vedeva solo spostandola davvero: lasciandola nel cubo da cui
+         era partita il gesto non e' una posa, e' un ritorno a casa, e
+         quella strada le rimetteva a posto tutti e tre i valori. Da qui
+         il sintomo segnalato -- "rimane storto, e rimettendolo nella
+         stessa casella torna dritto".
+
+         E vanno rimesse a posto anche quando la posizione NON cambia: in
+         uno scambio la scatola che arriva puo' trovarsi gia' al suo
+         posto, e con il solo controllo sulla distanza non la raddrizzava
+         nessuno. */
       const p0 = b.position.clone();
-      if (p0.distanceTo(home) > .01){
+      const hr = b.userData.homeRot;
+      const r0 = { x: b.rotation.x, y: b.rotation.y, z: b.rotation.z };
+      const s0 = b.scale.x;
+      const muove = p0.distanceTo(home) > .01;
+      const storta = Math.abs(r0.x - hr.x) > 1e-4 || Math.abs(r0.y - hr.y) > 1e-4 ||
+                     Math.abs(r0.z - hr.z) > 1e-4 || Math.abs(s0 - 1) > 1e-4;
+      if (muove || storta){
         b.userData.busy = true;
         tween(.55, function(p){
           const e = easeInOut(p);
-          b.position.lerpVectors(p0, home, e);
-          b.position.y += Math.sin(Math.PI * p) * .35;   // saltello
+          if (muove){
+            b.position.lerpVectors(p0, home, e);
+            b.position.y += Math.sin(Math.PI * p) * .35;   // saltello
+          }
+          b.rotation.set(lerp(r0.x, hr.x, e), lerp(r0.y, hr.y, e), lerp(r0.z, hr.z, e));
+          b.scale.setScalar(lerp(s0, 1, e));
         }, function(){ b.userData.busy = false; });
       }
     } else {
