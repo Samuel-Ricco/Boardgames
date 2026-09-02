@@ -3816,7 +3816,16 @@ function bindTools(){
   legaCerca(q('#mia-q'), q('#mia-q-x'));
   legaCercaPartite();
 
-  q('#add').addEventListener('click', openAdd);
+  /* IL "+" NON E' PIU' NELLA COLLEZIONE. Un gioco si aggiunge dal
+     catalogo, che e' anche dove ci si accorge che manca. Il modulo a
+     mano resta -- serve per quello che il catalogo non conosce -- ma
+     da qui non ha piu' una porta: e' la stessa situazione dichiarata
+     di `apriModifica`, e va saputa invece che scoperta.
+
+     L'aggancio e' condizionato, se no basta un `index.html` nuovo per
+     portarsi via meta' di `bindTools` (vedi "Un aggancio che salta"). */
+  const bAdd = q('#add');
+  if (bAdd) bAdd.addEventListener('click', openAdd);
   q('#add-x').addEventListener('click', closeAdd);
   q('#add-go').addEventListener('click', doSearch);
   q('#add-q').addEventListener('keydown', function(e){ if (e.key === 'Enter') doSearch(); });
@@ -3890,17 +3899,34 @@ function setQuery(v, chi){
 /* "la mia collezione: 10", non "10". Un numero da solo non diceva ne'
    di cosa fosse ne' che ci si potesse cliccare sopra -- ed e' la porta
    dell'elenco. In casa di un amico e' la sua, e lo dice. */
+/* IL CONTATORE NON E' PIU' IN TESTATA.
+
+   Diceva tre cose insieme -- quanti giochi hai, di chi e' la libreria
+   che stai guardando, e "clicca per l'elenco" -- e da quando l'elenco
+   ha una voce sua in navigazione la terza non e' piu' sua. Le altre due
+   le dicono meglio l'occhiello dell'elenco (`mia.occhielloDi`, che
+   porta il nome di chi ospita) e `#mia-msg`, che dice anche quanti
+   sono in vetrina.
+
+   Quello che resta da fare qui e' accendere la voce quando l'elenco e'
+   aperto, come si accende quella della sezione in cui si e'. La
+   funzione tiene il vecchio nome perche' la chiamano una dozzina di
+   punti, e tutti per lo stesso motivo: qualcosa e' cambiato
+   nell'elenco. */
 function updateConta(){
-  const tot = LIB.all().length;
+  const aperto = document.body.classList.contains('elenco');
+  qa('[data-elenco]').forEach(function(b){ b.classList.toggle('on', aperto); });
+  /* Una voce accesa, non due. L'elenco si apre SOPRA la sezione in cui
+     si e', quindi restavano accese sia "libreria" sia "collezione": la
+     pastiglia dice dove sei, e due pastiglie dicono due posti. */
+  qa('#sezioni button[data-sez], #tabbar button[data-sez]').forEach(function(b){
+    b.classList.toggle('on', !aperto && b.getAttribute('data-sez') === state.sezione);
+  });
+
   const el = q('#conta');
   if (!el) return;
+  const tot = LIB.all().length;
   const sua = !!LIB.ospitePresso();
-  /* Il numero filtrato si vede solo DENTRO l'elenco, che e' dove il
-     filtro si e' messo e dove si vede che c'e'. Fuori, il contatore
-     torna a dire quanti giochi hai -- restava filtrato anche in
-     libreria e nel catalogo, dove nessuno sapeva piu' perche'. */
-  const aperto = document.body.classList.contains('elenco');
-
   /* IL PULSANTE DICE DOVE PORTA, NON DOVE SEI.
 
      E' un interruttore fra due modi di guardare la stessa collezione:
@@ -4176,11 +4202,29 @@ function chiudiMia(){
   q('#mialayer').setAttribute('aria-hidden', 'true');
 }
 
+/* IL VOTO VA DA 0 A 10, e il campo da solo non basta a dirlo.
+
+   `maxlength` tiene fuori le stringhe lunghe, non i numeri sbagliati:
+   "99" sono due caratteri. E' la stessa regola gia' scritta per i
+   limiti dei campi -- il `maxlength` e' la cortesia, il taglio vero sta
+   dove il dato si scrive. Qui il taglio e' un rifiuto e non una
+   troncatura, perche' un voto corretto in silenzio da 99 a 10 sarebbe
+   un numero che l'utente non ha scritto. */
+function votoValido(v){
+  const t = String(v || '').trim().replace(',', '.');
+  if (!t) return { ok: true, val: '' };
+  const n = parseFloat(t);
+  if (!isFinite(n) || n < 0 || n > 10) return { ok: false, val: t };
+  return { ok: true, val: t };
+}
+
 function salvaMia(){
   const box = state.focused;
   const g = box && box.userData.game;
   if (!g) return;
-  const patch = { score: q('#mia-voto').value.trim() };
+  const voto = votoValido(q('#mia-voto').value);
+  if (!voto.ok){ flash(TP('msg.votoAlto')); q('#mia-voto').focus(); return; }
+  const patch = { score: voto.val };
   const testo = capoversi(q('#mia-testo').value);
   if (testo) patch.review = testo;
 
@@ -4199,6 +4243,10 @@ async function addManual(){
 
   const testi = capoversi(q('#m-review').value);
 
+  // lo stesso limite della recensione: il voto va da 0 a 10 ovunque
+  const votoM = votoValido(q('#m-score').value);
+  if (!votoM.ok){ flash(TP('msg.votoAlto')); q('#m-score').focus(); return; }
+
   const g = {
     title: title,
     bgg: parseInt(q('#m-bgg').value, 10) || 0,
@@ -4207,7 +4255,7 @@ async function addManual(){
     year: q('#m-year').value.trim(),
     players: q('#m-players').value.trim(),
     time: q('#m-time').value.trim(),
-    score: q('#m-score').value.trim(),
+    score: votoM.val,
     art: 'generic'
   };
   if (testi) g.review = testi;
@@ -4348,6 +4396,10 @@ function setSezione(s){
      aperto: restava aperto passando al catalogo o al profilo, sospeso
      su un contenuto che non c'entrava piu' niente. */
   if (s !== 'collezione') chiudiPannelli('');
+  /* L'elenco e' una voce di navigazione come le altre: sceglierne
+     un'altra lo chiude. Restava aperto sopra la sezione nuova, e a
+     schermo c'erano due voci accese che dicevano due posti diversi. */
+  if (document.body.classList.contains('elenco')) chiudiElenco();
   /* Solo se si cambia davvero: `setSezione` gira anche all'avvio e
      rientrando sulla stessa voce. */
   if (s !== state.sezione) azzeraSchermata();
@@ -4356,7 +4408,7 @@ function setSezione(s){
   document.body.classList.toggle('sez-catalogo', s === 'catalogo');
   document.body.classList.toggle('sez-profilo',  s === 'profilo');
   document.body.classList.toggle('sez-partite',  s === 'partite');
-  qa('#sezioni button, #tabbar button').forEach(function(b){
+  qa('#sezioni button[data-sez], #tabbar button[data-sez]').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-sez') === s);
   });
   q('#catalogo').setAttribute('aria-hidden', s === 'catalogo' ? 'false' : 'true');
@@ -4757,6 +4809,21 @@ async function mettiInLibreria(v, btn){
       }
     }
     const messo = LIB.add(gioco, marchio);
+
+    /* CE L'HAI: NON LO VUOI PIU'.
+
+       La wishlist e' la lista di quello che NON hai -- e' la ragione per
+       cui esiste, ed e' anche perche' il cuore sparisce dalla riga di un
+       gioco che e' gia' in collezione. Lasciarcelo dopo l'acquisto vuol
+       dire una lista che invecchia da sola e che a un certo punto smette
+       di essere una lista dei desideri.
+
+       Non puo' fermare niente: se la riga non si toglie, il gioco e'
+       comunque entrato in collezione. */
+    if (gioco.bgg && typeof WISH !== 'undefined' && WISH.c_e(gioco.bgg)){
+      try { await WISH.alterna({ bgg: gioco.bgg, title: gioco.title, year: gioco.year }); }
+      catch(e){}
+    }
     if (cabGroup){                     // un ospite non ha nessuna scena da aggiornare
       await loadCovers(true);
       await caricaMisure();            // e quanto e' grande la sua scatola
@@ -4779,8 +4846,12 @@ function bindCatalogo(){
     e.stopPropagation();
     if (e.key === 'Enter') catCerca();
   });
-  q('#cat-tutti').addEventListener('click', function(){
+  /* La X svuota il campo e riporta all'elenco intero: e' quello che
+     faceva il tasto "tutti", detto dove lo si cerca. */
+  const catX = q('#cat-q-x');
+  if (catX) catX.addEventListener('click', function(){
     q('#cat-q').value = '';
+    q('#cat-q').focus();
     catSfoglia(true);
   });
   q('#cat-piu').addEventListener('click', function(){ catSfoglia(false); });
@@ -5040,6 +5111,13 @@ function bindGruppi(){
 
   bindViste();
   q('#mia-gestisci').addEventListener('click', apriGestioneGruppi);
+  /* Lo stesso pannello, ma aperto sul campo del nome: chi tocca
+     "aggiungi gruppo" ha gia' in mente come si chiama. */
+  const bGru = q('#gru-apri');
+  if (bGru) bGru.addEventListener('click', function(){
+    apriGestioneGruppi();
+    setTimeout(function(){ const c = q('#gru-nuovo'); if (c) c.focus(); }, 60);
+  });
   // `#gru-x` lo aggancia bindPiedeGruppi: prima svuota il campo
   q('#gruppilayer').addEventListener('pointerup', function(e){ e.stopPropagation(); });
 
@@ -6094,11 +6172,17 @@ function contenutoAzioni(g){
            ? '<button type="button" data-fa="scaffale">' + ICO.scaffale + '<span>' + T('riga.vaiScaffale') + '</span></button>' +
              '<button type="button" data-fa="fuori" class="fuori">' + ICO.fuori + '<span>' + T('riga.togliLib') + '</span></button>'
            : '<button type="button" data-fa="dentro" class="dentro">' + ICO.dentro + '<span>' + T('riga.mettiLib') + '</span></button>') +
-         /* Uscire dallo scaffale e sparire dalla collezione restano due
-            gesti diversi: il primo e' reversibile in un clic, il secondo
-            no. Per questo l'ultimo e' rosso e in due tempi. */
-         '<button type="button" data-fa="elimina" class="elimina">' + ICO.cestino +
-           '<span>' + T('riga.eliminaGioco') + '</span></button>';
+         '';
+  /* CANCELLARE NON STA PIU' QUI.
+
+     Il menu di una riga si apre scorrendo un elenco, spesso col pollice,
+     e teneva accanto due gesti che si somigliano nel nome e non nelle
+     conseguenze: togliere dallo scaffale, che si disfa in un clic, ed
+     eliminare il gioco, che no. Adesso ne tiene uno solo, e si chiama
+     "rimuovi" perche' e' l'unico rimasto.
+
+     Eliminare resta, e sta dove le conseguenze si leggono: nel piede
+     della scheda del gioco, rosso e in due tempi. */
 }
 
 /* L'elenco si divide in CARTELLE quando non si sta filtrando su un
@@ -6620,7 +6704,13 @@ function azzeraSchermata(){
 
 function bindProfilo(){
   bindBlocchi();
-  qa('#sezioni button, #tabbar button').forEach(function(b){
+  /* Solo le voci che sono una SEZIONE. Da quando l'elenco della
+     collezione sta nelle due navigazioni, in quelle barre c'e' anche
+     un pulsante senza `data-sez`: senza questo filtro gli arrivava
+     `setSezione(null)`, che spegneva la classe `sez-*` e -- peggio --
+     chiudeva l'elenco subito dopo che il suo ascoltatore l'aveva
+     aperto. Il sintomo era un interruttore che non si spegneva mai. */
+  qa('#sezioni button[data-sez], #tabbar button[data-sez]').forEach(function(b){
     b.addEventListener('click', function(){ setSezione(b.getAttribute('data-sez')); });
   });
 
@@ -6655,9 +6745,21 @@ function bindProfilo(){
   q('#pro-rinomina').addEventListener('click', function(){ apriNick(true); });
   q('#vis-torna').addEventListener('click', tornaACasa);
 
-  q('#conta').addEventListener('click', function(){
+  /* L'elenco della collezione e' una voce di navigazione, in tutte e
+     due le navigazioni -- e la regola vale sempre: una voce che sta in
+     una sola delle due e' mezza voce (vedi "Le navigazioni sono DUE").
+     Resta un interruttore: toccandola di nuovo si torna dove si era. */
+  qa('[data-elenco]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (document.body.classList.contains('elenco')) chiudiElenco();
+      else apriElenco();
+    });
+  });
+
+  const pro = q('#pro-apri');
+  if (pro) pro.addEventListener('click', function(){
     if (document.body.classList.contains('elenco')) chiudiElenco();
-    else apriElenco();
+    setSezione('profilo');
   });
 
   q('#mia-list').addEventListener('click', function(e){

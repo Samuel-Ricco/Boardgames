@@ -29,10 +29,10 @@
   </div>
 
   <nav id="sezioni" data-i18n-aria="nav.aria" aria-label="sezioni del sito">
-    <button type="button" data-sez="collezione" class="on" data-i18n="nav.collezione">collezione</button>
+    <button type="button" data-sez="collezione" class="on" data-i18n="nav.libreria">libreria</button>
+    <button type="button" data-elenco="1" class="dentro-only" data-i18n="nav.collezione">collezione</button>
     <button type="button" data-sez="catalogo" data-i18n="nav.catalogo">catalogo</button>
     <button type="button" data-sez="partite" class="dentro-only" data-i18n="nav.partite">partite</button>
-    <button type="button" data-sez="profilo" class="dentro-only" data-i18n="nav.profilo">profilo</button>
   </nav>
 
   <!-- La testata tiene solo quello che vale in TUTTE le schermate: chi
@@ -58,8 +58,20 @@
             data-i18n-aria="visita.tornaTitolo" aria-label="torna alla tua libreria">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M3.6 10.6L12 4l8.4 6.6M5.8 9.2V19a1 1 0 001 1h10.4a1 1 0 001-1V9.2M9.8 20v-5.4h4.4V20"/></svg>
     </button>
-    <button id="conta" type="button" class="tool count" aria-live="polite"
-            data-i18n-title="testa.contaTitolo" title="vedi la collezione come elenco"></button>
+    <!-- IL PROFILO STA IN TESTATA, l'elenco della collezione in
+         navigazione. Prima era il contrario: il profilo era la quarta
+         voce delle due navigazioni e qui c'era il contatore, che era
+         anche l'unica porta dell'elenco.
+
+         Il contatore diceva tre cose insieme -- quanti giochi hai, di
+         chi e' la libreria che stai guardando, e "clicca per l'elenco".
+         Le prime due le dicono gia' l'occhiello dell'elenco
+         (`mia.occhielloDi`) e `#mia-msg`, che dice anche quanti sono in
+         vetrina; la terza e' una voce di navigazione, e adesso lo e'
+         per davvero. -->
+    <button id="pro-apri" type="button" class="tool tondo dentro-only"
+            data-i18n-title="testa.profiloTitolo" title="il tuo profilo"
+            data-i18n-aria="testa.profiloTitolo" aria-label="il tuo profilo"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.2a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2zM4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></button>
     <button id="mode" type="button" class="tool chip" data-i18n-title="testa.entra"
             title="entra" data-i18n="testa.entra">entra</button>
     <button id="esci" type="button" class="tool dentro-only" data-i18n-title="testa.esciTitolo"
@@ -314,12 +326,12 @@
 <nav id="tabbar" data-i18n-aria="nav.aria" aria-label="sezioni del sito">
   <button type="button" data-sez="collezione" class="on">
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/></svg><span data-i18n="tab.libreria">libreria</span></button>
+  <button type="button" data-elenco="1" class="dentro-only">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.6" y="4.4" width="4" height="4" rx="1"/><rect x="3.6" y="15.6" width="4" height="4" rx="1"/><rect x="3.6" y="10" width="4" height="4" rx="1"/><path d="M10.6 6.4h9.8M10.6 12h9.8M10.6 17.6h6.4"/></g></svg><span data-i18n="tab.collezione">collezione</span></button>
   <button type="button" data-sez="catalogo">
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="tab.catalogo">catalogo</span></button>
   <button type="button" data-sez="partite" class="dentro-only">
     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span data-i18n="tab.partite">partite</span></button>
-  <button type="button" data-sez="profilo" class="dentro-only">
-    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 12.2a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2zM4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg><span data-i18n="tab.profilo">profilo</span></button>
 </nav>
 
 <!-- LA MIA LIBRERIA COME ELENCO. Lo scaffale in tre dimensioni e' bello
@@ -352,8 +364,14 @@
 
       <div class="mia-barra">
         <div id="mia-gruppi" class="gruppi filtro"></div>
-        <button id="mia-gestisci" type="button" class="dentro-only" data-i18n="mia.gestisci">gestisci gruppi</button>
-        <button id="add" type="button" class="dentro-only aggiungi" data-i18n="mia.aggiungi">+ aggiungi un gioco</button>
+        <!-- DUE TASTI, NON UNO. "Gestisci" impacchettava due gesti di
+             peso diverso: crearne uno e' la cosa che si fa spesso e
+             che vale un tocco, riordinare e rinominare e' la cosa che
+             si fa ogni tanto. Portano allo stesso pannello -- il posto
+             dove stanno i gruppi e' uno solo -- ma il primo apre gia'
+             sul campo del nome. -->
+        <button id="gru-apri" type="button" class="dentro-only" data-i18n="mia.gruppoNuovo">aggiungi gruppo</button>
+        <button id="mia-gestisci" type="button" class="dentro-only" data-i18n="mia.gestisci">modifica gruppi</button>
       </div>
       <p id="mia-msg"></p>
     </div>
@@ -382,12 +400,22 @@
         <i class="ind" aria-hidden="true"></i>
       </div>
 
+      <!-- LA X FA QUELLO CHE FACEVA "TUTTI", e lo dice meglio. Erano
+           due comandi per un gesto solo -- svuotare la ricerca e
+           tornare all'elenco intero -- e "tutti" occupava una parola
+           accanto a "cerca" senza dire da cosa si tornava. La X sta
+           DENTRO il campo, che e' dove la cerca chi ha appena scritto,
+           e compare solo quando c'e' qualcosa da cancellare: e' la
+           stessa forma delle altre due ricerche del sito. -->
       <div class="cat-cerca">
-        <input id="cat-q" type="text" data-i18n-ph="cat.cercaPh" maxlength="60" placeholder="cerca un gioco&hellip;"
-               autocomplete="off" spellcheck="false"
-               data-i18n-aria="cat.cercaAria" aria-label="cerca nel catalogo">
+        <div class="cercawrap">
+          <input id="cat-q" type="text" data-i18n-ph="cat.cercaPh" maxlength="60" placeholder="cerca un gioco&hellip;"
+                 autocomplete="off" spellcheck="false"
+                 data-i18n-aria="cat.cercaAria" aria-label="cerca nel catalogo">
+          <button id="cat-q-x" type="button" data-i18n-title="cat.pulisciTitolo" title="pulisci la ricerca"
+                  data-i18n-aria="vista.pulisciAria" aria-label="pulisci">&times;</button>
+        </div>
         <button id="cat-go" type="button" data-i18n="cat.cerca">cerca</button>
-        <button id="cat-tutti" type="button" class="chiaro" data-i18n="cat.tutti">tutti</button>
       </div>
       <p id="cat-msg"></p>
     </div>
