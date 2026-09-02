@@ -490,6 +490,12 @@ async function mandaAlServer(c, game, marchio){
    Stessa filosofia dell'aggiunta: la scatola cambia subito, la
    richiesta parte dietro, e se il database rifiuta si torna a com'era.
    `patch` contiene solo i campi toccati. */
+/* Le colonne che NON si possono svuotare: sul database sono `not null`,
+   e mandarci un nulla vorrebbe dire far fallire tutta la scrittura. Il
+   titolo di un gioco senza titolo non e' un caso da gestire, e' un caso
+   da non permettere. */
+const MAI_VUOTE = { id: 1, titolo: 1, tag: 1, recensione: 1, proprietario: 1, arte: 1, wrap: 1, ink: 1 };
+
 function update(id, patch, marchio){
   if (visitata) return null;
   const g = get(id);
@@ -501,16 +507,34 @@ function update(id, patch, marchio){
   });
   salvaLocale();
 
+  /* QUELLO CHE SI SVUOTA VA SVUOTATO ANCHE SUL DATABASE.
+
+     `aRiga` salta i campi vuoti apposta -- e' quello che rende parziale
+     una modifica: si manda quello che c'e', non tutto -- ma cosi' un
+     campo CANCELLATO non arrivava mai. Il sintomo era che il proprio
+     voto non si poteva piu' togliere: lo si svuotava, il sito lo
+     mostrava vuoto, e al ricaricamento tornava.
+
+     La distinzione la puo' fare solo chi ha in mano la patch: `aRiga`
+     vede il gioco gia' fuso e non sa se un campo era assente o e' stato
+     svuotato. Quindi le chiavi svuotate viaggiano a parte. */
+  const svuotati = Object.keys(patch).filter(function(k){
+    const col = A_DB[k];
+    return col && !MAI_VUOTE[col] &&
+           (patch[k] === '' || patch[k] === null);
+  }).map(function(k){ return A_DB[k]; });
+
   const c = AUTH.attivo() ? AUTH.client() : null;
-  if (c && remota) mandaModifica(c, g, prima, marchio);
+  if (c && remota) mandaModifica(c, g, prima, marchio, svuotati);
   return g;
 }
 
-async function mandaModifica(c, g, prima, marchio){
+async function mandaModifica(c, g, prima, marchio, svuotati){
   try {
     const riga = aRiga(g);
     delete riga.id;                     // la chiave non si tocca
     delete riga.proprietario;
+    (svuotati || []).forEach(function(col){ riga[col] = null; });
 
     if (riga.copertina && riga.copertina.slice(0,5) === 'data:'){
       try {

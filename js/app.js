@@ -7089,7 +7089,7 @@ function slideWrap(){
 
     ore.minuti > 0
       ? { t: 'wrap.ore', n: oreTesto(ore.minuti), tono: 1,
-          s: TP('wrap.suQuante', {n: ore.quante}),
+          s: TP(ore.quante === 1 ? 'wrap.suQuanteUna' : 'wrap.suQuante', {n: ore.quante}),
           righe: [ { k: TP('wrap.media'), v: minTesto(media) } ].concat(
             lunghe[0] ? [{ k: TP('wrap.piuLunga'), v: lunghe[0].titolo + ' &middot; ' + minTesto(lunghe[0].minuti) }] : []) }
       : { t: 'wrap.ore', n: null, s: TP('wrap.oreNo'), tono: 1 },
