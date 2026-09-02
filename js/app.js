@@ -777,7 +777,7 @@ function applicaLuce(){
      diverse. Quindi il colore si mescola nella stessa proporzione in cui
      si mescolano le due intensita' -- calcolato qui e non nel ciclo,
      perche' `state.bayLight` e' solo un moltiplicatore comune. */
-  const quota = (.34 * luceFari) / Math.max(.0001, luceVani + .34 * luceFari);
+  const quota = (.20 * luceFari) / Math.max(.0001, luceVani + .20 * luceFari);
   const coloreVani = new THREE.Color(0xfff0da).lerp(tintaFari, Math.min(1, quota));
   bayLights.forEach(function(x){ x.color.copy(coloreVani); });
   // e le copertine gia' in scena: la tinta la scelgono i faretti
@@ -6301,6 +6301,42 @@ function contenutoAzioni(g){
    errore da correggere: e' cosa vuol dire mettere delle etichette, ed
    e' anche la differenza con i mobili, dove una scatola sta in un posto
    solo perche' e' un posto fisico. */
+/* IL SEPARATORE ALFABETICO.
+
+   Vale SOLO in ordine alfabetico, ed e' l'unica cosa sensata: negli
+   altri tre ordinamenti -- il mio, data di aggiunta, voto -- le
+   iniziali non sono contigue, e una fila di lettere che si ripetono
+   non e' un indice, e' rumore. Quando l'ordine e' un altro l'elenco
+   resta quello di prima.
+
+   La lettera esce dal titolo APPIATTITO, cosi' una E accentata e una E stanno
+   insieme -- e' la stessa normalizzazione della ricerca. Quello che non
+   comincia per lettera finisce sotto `#`, che e' dove lo cerca chiunque
+   abbia mai guardato un indice: "7 Wonders" e "1830" non hanno una
+   lettera loro.
+
+   Il separatore e' un `<li>` SENZA `data-id`: tutti gli ascoltatori
+   dell'elenco mirano a `li[data-id]`, quindi non lo prendono e non c'e'
+   nessun caso nuovo da gestire. */
+function inizialeDi(g){
+  const t = String((g && g.title) || '').trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const c = t.charAt(0).toUpperCase();
+  return (c >= 'A' && c <= 'Z') ? c : '#';
+}
+
+function conLettere(l){
+  if (state.sort !== 'nome') return l.map(rigaMia).join('');
+  let ultima = null;
+  return l.map(function(g){
+    const c = inizialeDi(g);
+    const testa = c === ultima ? '' :
+      '<li class="mia-lettera" aria-hidden="true"><span>' + esc(c) + '</span></li>';
+    ultima = c;
+    return testa + rigaMia(g);
+  }).join('');
+}
+
 function disegnaMia(){
   segnaVista();
   disegnaGruppiFiltro();
@@ -6314,7 +6350,7 @@ function disegnaMia(){
   disegnaViste();
 
   if (!aCartelle){
-    q('#mia-list').innerHTML = l.map(rigaMia).join('');
+    q('#mia-list').innerHTML = conLettere(l);
   } else {
     /* Ogni gruppo e' una tendina, e quale sia aperta se lo ricorda:
        aperte tutte, con qualche gruppo, si torna a un elenco lungo come
@@ -8482,10 +8518,25 @@ function bindPartite(){
    vede. */
 function updateBoxes(dt){
   let mosso = false;
-  const fari = .17 * luceFari;
+  /* LE COPERTINE NON DEVONO SEMBRARE ILLUMINATE DA UN FARO.
+
+     Segnalato cosi': "troppo chiare, come se avessero una forte fonte
+     di luce puntata contro". Misurato, era vero due volte. Con i
+     faretti a meta' corsa le lampade dei vani prendevano 0,194 dai
+     faretti e 0,081 dalla luce della stanza -- cioe' il 70% della
+     lampada che sta ADDOSSO alla copertina veniva dai faretti -- e in
+     piu' ogni copertina si accendeva da se' di 0,097, con la tinta
+     calda dei faretti sopra i propri colori.
+
+     Le due quote scendono (.17 -> .10 qui, .34 -> .20 nelle lampade).
+     Quello che NON si tocca e' la striscia dipinta sullo schienale:
+     quella e' la sorgente e deve restare accesa. A cambiare e' quanto
+     di quella luce viene rimandato addosso alla scatola, che e' la
+     parte che si vedeva come un riflettore. */
+  const fari = .10 * luceFari;
   for (let i = 0; i < boxes.length; i++){
     const b = boxes[i], u = b.userData;
-    if (u.busy){ u.cover.emissiveIntensity = Math.max(.10, fari); continue; }
+    if (u.busy){ u.cover.emissiveIntensity = Math.max(.06, fari); continue; }
 
     // il cubo di destinazione si annuncia alzando la scatola che ci sta
     // gia': e' quella che sta per scambiarsi di posto
@@ -8668,7 +8719,7 @@ function frame(now){
        salato del sito -- e l'effetto sotto il ripiano lo fa gia' la
        luce dipinta sullo schienale. Questa serve solo a non lasciare al
        buio la copertina della scatola. */
-    bayLights[i].intensity = state.bayLight * luceVani + .34 * luceFari;
+    bayLights[i].intensity = state.bayLight * luceVani + .20 * luceFari;
     bayLights[i].position.x = camBase.x;
   }
   if (keyLight){

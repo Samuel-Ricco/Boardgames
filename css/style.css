@@ -388,12 +388,12 @@ body.cella-su #cella{display:flex}
    sola. */
 #mia .cercawrap, #partite .cercawrap{margin-bottom:2px}
 .mia-barra .gruppi{margin:0; flex:1; min-width:0}
-#mia-gestisci{
+#mia-gestisci, #gru-apri{
   flex:none; font-family:var(--ff-text); font-size:13px; font-weight:700;
   letter-spacing:0; text-transform:none; cursor:pointer;
   color:var(--ink-soft); background:var(--card); border:0; padding:6px 10px; border-radius:var(--r-s);
 }
-#mia-gestisci:hover{color:var(--accent); border-color:var(--accent)}
+#mia-gestisci:hover, #gru-apri:hover{color:var(--accent); border-color:var(--accent)}
 
 #gruppilayer{
   position:fixed; inset:0; z-index:9; display:flex; align-items:center;
@@ -2527,7 +2527,7 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 
 .tool, #conta, .riga-menu, .gruppi button, #sortmenu button, .vista-riga,
 .aggiungi, #stanza-apri, #vista-apri, .riga-azioni button, #mobili-lista button,
-.pan-azioni button, .cartella-tit, #mia-gestisci, #vis-torna{
+.pan-azioni button, .cartella-tit, #mia-gestisci, #gru-apri, #vis-torna{
   font-family:var(--ff); font-weight:500; letter-spacing:0;
   text-transform:none; border-radius:var(--r-s);
   border:0; cursor:pointer;
@@ -2552,21 +2552,21 @@ body.ready .brand span{animation:entraSu .7s var(--ease) .22s both}
 
 /* --- livello 2: tinto --------------------------------------------- */
 .tool, #conta, .riga-menu, .gruppi button, .vista-riga, #stanza-apri,
-#vista-apri, .pan-azioni button, #mia-gestisci{
+#vista-apri, .pan-azioni button, #mia-gestisci, #gru-apri{
   background:rgba(200,106,60,.10); color:var(--accent);
   padding:10px 15px; font-size:14px;
 }
 .tool:hover, #conta:hover, .riga-menu:hover, .gruppi button:hover,
 .vista-riga:hover, #stanza-apri:hover, #vista-apri:hover,
-.pan-azioni button:hover, #mia-gestisci:hover{
+.pan-azioni button:hover, #mia-gestisci:hover, #gru-apri:hover{
   background:rgba(200,106,60,.18); color:var(--accent);
 }
 /* quello che e' spento sta in grigio, non in terracotta: il colore
    dell'accento vuol dire "questo fa qualcosa adesso" */
-.gruppi button, #mia-gestisci, .riga-menu{
+.gruppi button, #mia-gestisci, #gru-apri, .riga-menu{
   background:rgba(var(--ink-rgb),.06); color:var(--ink-soft);
 }
-.gruppi button:hover, #mia-gestisci:hover, .riga-menu:hover{
+.gruppi button:hover, #mia-gestisci:hover, #gru-apri:hover, .riga-menu:hover{
   background:rgba(var(--ink-rgb),.11); color:var(--ink);
 }
 
@@ -2889,7 +2889,27 @@ body.elenco #conta b{color:#fff}
 #mia-gruppi.gruppi.filtro{
   flex:1 1 100%; margin:0 0 4px; gap:8px;
 }
-#mia-gestisci, .aggiungi{flex:0 0 auto; margin:0}
+#mia-gestisci, #gru-apri, .aggiungi{flex:0 0 auto; margin:0}
+
+/* IL SEPARATORE ALFABETICO. Un'etichetta, non una riga: sta a filo a
+   sinistra come i titoli delle cartelle, e non ha il fondo delle righe
+   -- se avesse la stessa carta sotto si conterebbe come un gioco. La
+   lettera e' piccola e in maiuscoletto spaziato, che e' come il sito
+   scrive gia' le etichette di sezione. */
+#mia-list .mia-lettera{
+  list-style:none; padding:14px 0 4px; background:none; border:0;
+  display:flex; align-items:center; gap:9px;
+}
+#mia-list .mia-lettera span{
+  font-family:var(--ff-display); font-size:12px; font-weight:600;
+  letter-spacing:.09em; color:var(--ink-soft); line-height:1;
+}
+/* Il filo tira la lettera fino al bordo: senza, in mezzo a righe tutte
+   larghe uguali una lettera sola galleggia. */
+#mia-list .mia-lettera::after{
+  content:""; flex:1; height:1px; background:var(--line);
+}
+#mia-list .mia-lettera:first-child{padding-top:2px}
 
 /* --- i tre livelli, con un nome ------------------------------------
    Finora la gerarchia dei comandi era implicita nel selettore. Adesso
@@ -3179,7 +3199,17 @@ body.sez-collezione:not(.elenco) header{
    I filtri per gruppo appartengono alla vista a cartelle. Nell'elenco
    intero restavano accesi e filtravano una lista che non li mostra:
    due comandi che dicono cose diverse sulla stessa schermata. */
-body.vista-tutti #mia-gruppi, body.vista-tutti #mia-gestisci{display:none !important}
+/* I DUE TASTI DEI GRUPPI stanno nella vista dei gruppi: la' si decide
+   cosa sta con cosa. In "tutti i giochi" non c'entrano niente.
+
+   `#mia-gruppi` invece NON si nasconde piu', ed era un errore che
+   stava li' da quando le pastiglie di filtro per gruppo sono state
+   tolte: adesso quel contenitore tiene solo il filtro dei preferiti,
+   che `disegnaGruppiFiltro` disegna **soltanto** in "tutti i giochi".
+   La regola nascondeva quindi l'unica cosa che ci finisce dentro, e il
+   filtro non si e' mai visto -- codice vivo dietro una regola morta. */
+body.vista-tutti #mia-gestisci,
+body.vista-tutti #gru-apri{display:none !important}
 
 /* --- la finestrella delle azioni non deve finire sotto le righe -----
    Non era trasparente: era COPERTA. Ogni riga ha il suo involucro

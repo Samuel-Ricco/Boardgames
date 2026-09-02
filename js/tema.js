@@ -67,6 +67,30 @@ const TAVOLOZZE = [
          woodDark:'#473928' }
   },
   {
+    /* NOTTE. La prima tavolozza scura del sito, ed e' quella che qui
+       sopra si diceva di non fare: "il sito e' fatto di superfici
+       chiare, e rovesciarlo vorrebbe dire riscrivere ogni regola che
+       da' per scontata la carta sotto il testo". Non e' stato
+       necessario, e la ragione e' la disciplina di questo file: le
+       regole non nominano quasi mai un colore, nominano `--ink` e
+       `--card`. Rovesciare quei due basta.
+
+       L'unica cosa che NON si poteva derivare sono le ombre -- erano
+       l'inchiostro a bassa opacita', e con l'inchiostro chiaro
+       diventavano aloni luminosi. Vedi `applica()`.
+
+       Le otto tinte hanno lo stesso mestiere di sempre: `bg` e' la
+       stanza (la piu' scura, perche' e' il fondo su cui tutto poggia),
+       `card` sono i pannelli, che stanno un gradino sopra. Il legno e'
+       schiarito quanto basta perche' la carta ci si legga sopra, e
+       l'accento e' la stessa terracotta tirata su: su un fondo scuro
+       quella di sempre diventava fango. */
+    v: 'notte', n: 'tema.notte',
+    c: { bg:'#1b1d22', card:'#262a31', ink:'#e8e6e1', inkSoft:'#a4a8b0',
+         sage:'#7c8894', sand:'#b09a7c', wood:'#b08c63', accent:'#e08551',
+         woodDark:'#6a5238' }
+  },
+  {
     /* Carta e china. Tutta l'altra meta' del cerchio: dove la stanza e'
        calda questa e' fredda, e l'accento e' un blu da penna invece di
        una terracotta. */
@@ -114,6 +138,17 @@ function scala(hex, q){
   const p = Math.abs(q);
   return esa(c.map(function(v){ return v + (verso - v) * p; }));
 }
+/* Luminanza relativa, quella vera di WCAG: serve a sapere se una
+   tavolozza e' chiara o scura senza doverglielo chiedere. Una
+   bandierina nella tavolozza si potrebbe dimenticare; questa no. */
+function lum(hex){
+  const c = rgb(hex).map(function(v){
+    v /= 255;
+    return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);
+  });
+  return .2126 * c[0] + .7152 * c[1] + .0722 * c[2];
+}
+
 function mescola(a, b, p){
   const x = rgb(a), y = rgb(b);
   return esa([0,1,2].map(function(i){ return x[i] + (y[i] - x[i]) * p; }));
@@ -157,9 +192,31 @@ function applica(){
   s.setProperty('--velo-lieve', 'rgba(' + tri(velo) + ',.55)');
   s.setProperty('--velo-pieno', 'rgba(' + tri(velo) + ',.94)');
   s.setProperty('--line', 'rgba(' + inkT + ',.14)');
-  s.setProperty('--shadow', '0 18px 44px rgba(' + inkT + ',.14)');
+
+  /* LE OMBRE NON SONO L'INCHIOSTRO: SONO IL BUIO.
+
+     Finche' le tavolozze sono state tutte chiare le due cose
+     coincidevano, e derivare l'ombra dall'inchiostro era la scorciatoia
+     giusta. Su una tavolozza scura no: l'inchiostro e' chiaro, e
+     un'ombra chiara e' un alone -- ogni pannello del sito sarebbe
+     sembrato retroilluminato.
+
+     Quindi l'ombra si prende dal fondo: e' l'inchiostro finche' il
+     fondo e' chiaro, ed e' il nero quando e' scuro. E su scuro serve
+     PIU' opaca, perche' un'ombra nera su un fondo gia' nero non si
+     vede: quello che stacca un pannello dal fondo li' non e' l'ombra,
+     e' il gradino di chiarezza fra `card` e `bg` -- l'ombra serve solo
+     a dargli spessore.
+
+     `--line` invece resta l'inchiostro, ed e' giusto: un filo e' un
+     segno, e su fondo scuro un segno si fa chiaro. */
+  const chiaro = lum(c.bg) > .18;
+  const ombT = chiaro ? inkT : '0,0,0';
+  const f = chiaro ? 1 : 2.2;
+  s.setProperty('--shadow', '0 18px 44px rgba(' + ombT + ',' + (.14 * f).toFixed(3) + ')');
   s.setProperty('--ombra-lieve',
-    '0 1px 2px rgba(' + inkT + ',.08), 0 4px 12px rgba(' + inkT + ',.06)');
+    '0 1px 2px rgba(' + ombT + ',' + (.08 * f).toFixed(3) + '), ' +
+    '0 4px 12px rgba(' + ombT + ',' + (.06 * f).toFixed(3) + ')');
 
   /* La barra del browser sui telefoni: e' la prima cosa che si vede
      accanto al sito, e lasciata indietro stona piu' di qualunque

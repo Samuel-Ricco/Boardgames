@@ -4341,6 +4341,73 @@ striscia azzurra non puo' schiarirsi di bianco. Le lampade restano dove stanno
 e pesano meno (la loro quota di faretti da .62 a .34), quindi il poco che resta
 del bagliore e' un accento e non un faro.
 
+## Le copertine non vanno illuminate come da un faro
+
+Segnalato cosi': «sono troppo chiare, come se avessero una forte fonte di luce
+puntata contro». Misurato, era vero — e la luce arrivava da **due** parti,
+tutte e due tarate sui faretti:
+
+- le lampade dei vani facevano `state.bayLight * luceVani + .34 * luceFari`.
+  Con i faretti a meta' corsa erano **0,194 dai faretti e 0,081 dalla luce
+  della stanza**: cioe' il 70% della lampada che sta addosso alla copertina
+  veniva dai faretti;
+- e ogni copertina si accendeva **da se'** di `.17 * luceFari` (0,097), con la
+  tinta calda dei faretti stesa sopra i propri colori.
+
+Le due quote scendono a `.20` e `.10`. Misurato sul rendering vero, sulla
+copertina di Gloomhaven: media **81 prima, 73,0 dopo**, contro i **73,8**
+dell'immagine sorgente. Cioe' prima era il 10% piu' chiara del suo file, adesso
+e' fedele.
+
+**Quello che NON si tocca e' la striscia dipinta sullo schienale**: quella e' la
+sorgente, ed e' giusto che sia accesa. Quello che si e' abbassato e' quanta di
+quella luce viene rimandata *addosso alla scatola* — che e' la parte che si
+leggeva come un riflettore.
+
+Vale come metodo: **una copertina si misura contro il proprio file**, non a
+occhio. Si legge il canvas WebGL con `drawImage` dentro due `requestAnimationFrame`
+annidati e si confronta la media della luminanza con quella della sorgente. E
+attenzione: spegnere una lampada da console non si vede, perche' il ciclo di
+rendering le riscrive l'intensita' a ogni fotogramma.
+
+## Il tema scuro, che si era detto di non fare
+
+`tema.notte` in `js/tema.js`. La nota del vaporwave diceva: «il sito e' fatto di
+superfici chiare, e rovesciarlo vorrebbe dire riscrivere ogni regola che da' per
+scontata la carta sotto il testo».
+
+**Non e' stato necessario, e il perche' e' la disciplina di quel file**: le
+regole non nominano quasi mai un colore, nominano `--ink` e `--card`.
+Rovesciare quei due basta, e tutto il resto — `--fondo`, i veli, i fili, le
+schermate piatte — si deriva da solo come si derivava prima.
+
+**L'unica cosa che non si poteva derivare sono le OMBRE.** Erano l'inchiostro a
+bassa opacita', e con l'inchiostro chiaro diventano aloni: ogni pannello del
+sito sarebbe sembrato retroilluminato. Adesso l'ombra si prende dal **fondo** —
+e' l'inchiostro finche' il fondo e' chiaro, ed e' il nero quando e' scuro — e su
+scuro va **piu' opaca** (x2,2), perche' un'ombra nera su un fondo nero non si
+vede: li' a staccare un pannello e' il gradino di chiarezza fra `card` e `bg`,
+e l'ombra serve solo a dargli spessore. Il filo (`--line`) invece resta
+l'inchiostro, ed e' giusto: un filo e' un segno, e su fondo scuro un segno si fa
+chiaro.
+
+Se una tavolozza e' chiara o scura **non lo dichiara la tavolozza**, lo dice la
+luminanza del suo fondo (`lum()`, quella vera di WCAG): una bandierina si
+dimentica, un conto no.
+
+I contrasti, misurati come per le altre quattro:
+
+| | notte |
+|---|---|
+| inchiostro su scheda | 11,6 |
+| inchiostro su fondo | 12,2 |
+| secondario su scheda | 6,0 |
+| scheda su accento | 5,2 |
+| scheda su legno | 4,7 |
+
+Passa 4,5 dappertutto — cioe' **meglio della tavolozza di partenza**, che su
+tre righe sta sotto (vedi la tabella piu' sopra).
+
 ## Il pavimento e' fatto di pezzi
 
 Era la stessa tavola del mobile, stirata: **una venatura sola lunga tutta la

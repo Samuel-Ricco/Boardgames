@@ -236,6 +236,7 @@ it: {
   'tema.stanza':        'la stanza',
   'tema.vaporwave':     'vaporwave',
   'tema.bosco':         'bosco',
+  'tema.notte':         'notte',
   'tema.china':         'carta e china',
   'pro.lingua':         'lingua',
 
@@ -856,6 +857,7 @@ en: {
   'tema.stanza':        'the room',
   'tema.vaporwave':     'vaporwave',
   'tema.bosco':         'woodland',
+  'tema.notte':         'night',
   'tema.china':         'paper and ink',
   'pro.lingua':         'language',
 
