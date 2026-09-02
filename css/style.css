@@ -235,13 +235,40 @@ body.visita #pro-apri{display:none !important}
 /* il cuore: c'e' solo in visita, ed e' l'unica cosa che si tocca */
 .visita-only{display:none !important}
 body.visita .visita-only{display:inline-flex !important}
+/* IL CUORE. Le tre righe che c'erano qui puntavano a uno
+   `<span class="cuore">` con dentro il glifo Unicode 2665: markup che
+   non esiste piu' da quando le icone sono un corredo SVG, cioe' codice
+   morto che sembrava vivo.
+
+   Acceso non cambia solo colore -- si RIEMPIE (la regola sul `path` sta
+   piu' sotto) e da' un colpetto, che e' quello che ci si aspetta oggi
+   toccando un cuore. Il numero e' a cifre tabulari: passando da 9 a 10
+   non deve muoversi il cuore accanto. */
 #p-cuore{align-items:center; gap:7px}
-#p-cuore .cuore{font-size:15px; line-height:1}
 #p-cuore[aria-pressed="true"]{color:var(--wood); border-color:var(--wood)}
-#p-cuore[aria-pressed="true"] .cuore::before{content:'\2665'}
-#p-cuore[aria-pressed="true"] .cuore{font-size:0}
-#p-cuore[aria-pressed="true"] .cuore::before{font-size:15px}
-#p-cuore-n{font-family:var(--ff-display); font-size:10.1px; letter-spacing:0}
+#p-cuore .ico{transition:transform .18s var(--ease)}
+#p-cuore:active .ico{transform:scale(.88)}
+#p-cuore[aria-pressed="true"] .ico{animation:cuore-pop .32s var(--ease)}
+@keyframes cuore-pop{
+  0%{transform:scale(1)} 42%{transform:scale(1.28)} 100%{transform:scale(1)}
+}
+@media (prefers-reduced-motion:reduce){
+  #p-cuore[aria-pressed="true"] .ico{animation:none}
+}
+#p-cuore-n{
+  font-family:var(--ff-display); font-size:10.1px; letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+}
+
+/* IL FILTRO DEI PREFERITI e' la stessa stella che si tocca sulle righe,
+   con accanto quanti sono. Acceso si riempie, come ogni altra icona a
+   due stati del sito. */
+.filtro-pref{display:inline-flex; align-items:center; gap:5px}
+.filtro-pref .ico{width:16px; height:16px}
+.filtro-pref span{font-family:var(--ff-display); font-size:10.6px; letter-spacing:0;
+  font-variant-numeric:tabular-nums}
+.filtro-pref.on{color:var(--accent); border-color:var(--accent)}
+.filtro-pref.on .ico path{fill:currentColor}
 .cat-azioni .pref{font-size:14px; line-height:1; padding:6px 9px}
 .cat-azioni .pref.on{color:var(--card); background:var(--accent); border-color:var(--accent)}
 
@@ -262,6 +289,12 @@ body.visita .visita-only{display:inline-flex !important}
 }
 .scegli-lib button:hover{background:var(--ink); border-color:var(--ink)}
 .scegli-lib button:disabled{opacity:.4; cursor:default}
+/* L'unico pulsante di questa fila che CREA qualcosa: gli altri
+   scelgono fra mobili che esistono gia'. */
+.scegli-lib button.nuova{
+  color:var(--accent); background:rgba(200,106,60,.12); border-color:transparent;
+}
+.scegli-lib button.nuova:hover{color:var(--card); background:var(--accent)}
 .scegli-lib button.lascia{
   color:var(--ink-soft); background:none; border-color:var(--line);
 }

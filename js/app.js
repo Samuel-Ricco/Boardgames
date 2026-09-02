@@ -2810,9 +2810,37 @@ function scegliLibreria(btn, id){
       return g.libreria === L.id && g.posto !== null && g.posto !== undefined;
     }).length;
     return '<button type="button" data-l="' + esc(L.id) + '"' +
-           (liberi <= 0 ? ' disabled title="pieno"' : '') + '>' + esc(L.nome) + '</button>';
-  }).join('') + '<button type="button" data-l="" class="lascia">annulla</button>';
+           (liberi <= 0 ? ' disabled title="' + esc(TP('riga.libPiena')) + '"' : '') +
+           '>' + esc(L.nome) + '</button>';
+  }).join('') +
+    /* E SE NON CE N'E' UNA GIUSTA, SE NE FA UNA. Con tutti i mobili
+       pieni questa schermata era un elenco di pulsanti spenti e un
+       "annulla": diceva che non si poteva fare, senza dire come si fa.
+       Il gesto esisteva gia' -- si trascina una scatola nel mobile di
+       scorta in fondo alla fila -- ma da qui non era raggiungibile, e
+       chi sta guardando un elenco non e' sugli scaffali.
+
+       E' l'unico pulsante di questa fila che CREA qualcosa, quindi sta
+       per ultimo e si distingue: gli altri scelgono fra cose che
+       esistono gia'. */
+    '<button type="button" data-l="+" class="nuova">' + T('riga.libNuova') + '</button>' +
+    '<button type="button" data-l="" class="lascia">' + T('riga.lascia') + '</button>';
   btn.replaceWith(box);
+}
+
+/* Una libreria nuova, e il gioco ci va dentro. Il nome lo sceglie
+   `creaLibreria('')`, che sale finche' non ne trova uno libero: dare un
+   nome e' una cosa che si fa dopo, dal pannello dei mobili, e chiederlo
+   adesso vorrebbe dire un modulo in mezzo a un gesto da un clic. */
+function libreriaNuovaPer(id){
+  LIB.creaLibreria('').then(function(L){
+    disegnaLibrerie();
+    mettiSuScaffale(id, L.id);
+    flash(TP('msg.libNuova', {n: L.nome}));
+  }).catch(function(e){
+    flash(TP('msg.libNonCreata', {e: e.message}));
+    disegnaMia();
+  });
 }
 
 function posaScatola(p){
@@ -4977,9 +5005,18 @@ function disegnaGruppiFiltro(){
   const el = q('#mia-gruppi');
   if (!el) return;
   const quanti = LIB.all().filter(function(g){ return g.preferito; }).length;
+  /* UNA STELLA, NON UNA FRASE. "solo i preferiti" e' una riga di testo
+     accanto a un elenco che si scorre, e dice con quattro parole quello
+     che il segno dice da solo -- e' anche esattamente la stessa stella
+     che si tocca sulle righe, quindi chi la vede sa gia' cosa filtra.
+     Il numero accanto dice quanti sono: un filtro che non dice quanto
+     taglia e' un filtro che si prova e basta. */
   el.innerHTML = (state.vista === 'tutti' && quanti)
-    ? '<button type="button" data-pref="1"' +
-      (state.soloPreferiti ? ' class="on"' : '') + '>' + T('mia.soloPreferiti') + '</button>'
+    ? '<button type="button" class="filtro-pref' + (state.soloPreferiti ? ' on' : '') +
+      '" data-pref="1" aria-pressed="' + (state.soloPreferiti ? 'true' : 'false') +
+      '" title="' + esc(TP('mia.soloPreferiti')) + '" ' +
+      'aria-label="' + esc(TP('mia.soloPreferiti')) + '">' +
+      ICO.stella + '<span>' + quanti + '</span></button>'
     : '';
 }
 
@@ -6806,7 +6843,9 @@ function bindProfilo(){
     const scelto = e.target.closest('.scegli-lib button[data-l]');
     if (scelto){
       const v = scelto.getAttribute('data-l');
-      if (v) mettiSuScaffale(id, v); else disegnaMia();
+      if (v === '+') libreriaNuovaPer(id);
+      else if (v) mettiSuScaffale(id, v);
+      else disegnaMia();
       return;
     }
     /* Eliminare e' l'unico gesto qui dentro che non si disfa: resta in

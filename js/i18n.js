@@ -418,7 +418,7 @@ it: {
   'gru.quali':          'giochi',
   'gru.chiudiQuali':    'chiudi',
   'gru.togli':          'togli',
-  'mia.soloPreferiti':  '&#9733; solo i preferiti',
+  'mia.soloPreferiti':  'solo i preferiti',
 
   /* --- l'elenco della collezione --- */
   'stanza.toccaAncora': 'tocca ancora per eliminare',
@@ -430,6 +430,9 @@ it: {
   'riga.vaiScaffale':   'vai allo scaffale',
   'riga.togliLib':      'rimuovi',
   'riga.mettiLib':      'metti in libreria',
+  'riga.libNuova':      '+ nuova libreria',
+  'riga.libPiena':      'libreria piena',
+  'riga.lascia':        'annulla',
   'riga.eliminaGioco':  'elimina il gioco',
   'mia.senzaGruppo':    'senza gruppo',
   'mia.per':            'per <b>{q}</b>',
@@ -1022,7 +1025,7 @@ en: {
   'gru.quali':          'games',
   'gru.chiudiQuali':    'close',
   'gru.togli':          'remove',
-  'mia.soloPreferiti':  '&#9733; favourites only',
+  'mia.soloPreferiti':  'favourites only',
 
   'stanza.toccaAncora': 'tap again to delete',
   'riga.stellaOff':     'mark as a favourite',
@@ -1033,6 +1036,9 @@ en: {
   'riga.vaiScaffale':   'go to the shelf',
   'riga.togliLib':      'remove',
   'riga.mettiLib':      'put on a shelf',
+  'riga.libNuova':      '+ new bookcase',
+  'riga.libPiena':      'this bookcase is full',
+  'riga.lascia':        'cancel',
   'riga.eliminaGioco':  'delete the game',
   'mia.senzaGruppo':    'no group',
   'mia.per':            'for <b>{q}</b>',
